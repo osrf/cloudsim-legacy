@@ -13,6 +13,7 @@ SESSION_DATABASE = '/var/www-cloudsim-auth/sessions'
 OPENID_SESSION_COOKIE_NAME = 'open_id_session_id'
 CLOUDSIM_SESSION_COOKIE_NAME = 'cloudsim_session_id'
 HTTP_COOKIE = 'HTTP_COOKIE'
+MACHINE_ID_VARNAME = 'machine_id'
 
 def get_user_database():
     # Load user database
