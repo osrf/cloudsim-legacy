@@ -11,10 +11,8 @@ import common
 if not common.check_auth_and_generate_response():
     sys.exit(0)
 
-form = cgi.FieldStorage()
-id = form.getfirst(common.MACHINE_ID_VARNAME)
-
 common.print_http_header()
-print("<title>Terminate machine %s</title>"%(id))
-print("<h1>Machine %s terminated</h1>"%(id))
+print("<title>Launch a new machine</title>")
+print("<h1>Launch a new machine</h1>")
+
 common.print_footer()

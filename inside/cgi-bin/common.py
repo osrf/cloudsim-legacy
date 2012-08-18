@@ -104,3 +104,8 @@ def check_auth_and_generate_response(check_email=False):
         print(form)
         print("<hr>")
         return False
+
+def print_footer():
+    print("<hr>")
+    print("<a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a><br>")
+    print("<a href=\"/cloudsim/inside/cgi-bin/logout.py\">Logout</a>")

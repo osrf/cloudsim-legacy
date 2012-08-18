@@ -21,10 +21,11 @@ print("Logged in as: %s"%(email))
 
 print("<h2>Running machines</h2>")
 machine_ids = ['123', '456', '789']
-print("<ul>")
+print("<p><ul>")
 for m in machine_ids:
     print("<li><a href=\"/cloudsim/inside/cgi-bin/machine_detail.py?%s=%s\">%s</a> <a href=\"/cloudsim/inside/cgi-bin/machine_kill.py?%s=%s\">[terminate]</a>"%(common.MACHINE_ID_VARNAME,m,m,common.MACHINE_ID_VARNAME,m))
-print("</ul>")
+print("</ul></p>")
 
-print("<hr><a href=\"/cloudsim/inside/cgi-bin/logout.py\">logout</a><br>")
+print("<p><a href=\"/cloudsim/inside/cgi-bin/machine_launch.py\">Launch a new machine</a></p>")
 
+common.print_footer()
