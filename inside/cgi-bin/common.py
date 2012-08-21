@@ -10,10 +10,14 @@ EMAIL_VARNAME = 'openid.ext1.value.email'
 ADMIN_EMAIL = 'cloudsim-info@osrfoundation.org'
 USER_DATABASE = '/var/www-cloudsim-auth/users'
 SESSION_DATABASE = '/var/www-cloudsim-auth/sessions'
+BOTO_CONFIG_FILE = '/var/www-cloudsim-auth/boto'
+MACHINES_DIR = '/var/www-cloudsim-auth/machines'
 OPENID_SESSION_COOKIE_NAME = 'open_id_session_id'
 CLOUDSIM_SESSION_COOKIE_NAME = 'cloudsim_session_id'
 HTTP_COOKIE = 'HTTP_COOKIE'
 MACHINE_ID_VARNAME = 'machine_id'
+OPENVPN_CONFIG_FNAME = 'openvpn.config'
+OPENVPN_STATIC_KEY_FNAME = 'static.key'
 
 def get_user_database():
     # Load user database
@@ -106,6 +110,26 @@ def check_auth_and_generate_response(check_email=False):
         return False
 
 def print_footer():
+    email = session_id_to_email()
     print("<hr>")
+    print("Logged in as: %s<br>"%(email))
     print("<a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a><br>")
     print("<a href=\"/cloudsim/inside/cgi-bin/logout.py\">Logout</a>")
+
+class Machine:
+    def __init__(self, name, path):
+        self.name = name
+        self.path = path
+        self.openvpn_config_fname = os.path.join(self.path, OPENVPN_CONFIG_FNAME)
+        self.openvpn_key_fname = os.path.join(self.path, OPENVPN_STATIC_KEY_FNAME)
+        self.ssh_key_fname = os.path.join(self.path, 'key-%s.pem'%(self.name))
+
+
+def list_machines(email):
+    userdir = os.path.join(MACHINES_DIR, email)
+    machines = []
+    if os.path.isdir(userdir):
+        for f in os.listdir(userdir):
+            # TODO: error-check
+            machines.append(Machine(f, os.path.join(userdir,f)))
+    return machines

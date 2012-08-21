@@ -5,6 +5,8 @@ import os
 import time
 import subprocess
 
+import common
+
 IMAGE_ID = 'ami-4438b474' # Vanilla 64-bit Ubuntu 12.04
 #IMAGE_ID = 'ami-44028d74' # a custom AMI used in testing
 #IMAGE_ID = 'ami-98fa58f1' # Ubuntu Server 12.04 LTS for Cluster Instances
@@ -15,8 +17,6 @@ INSTANCE_TYPE = 't1.micro' # freebie
 SECURITY_GROUPS = ['openvpn']
 # User name.  Default is 'ubuntu'
 USERNAME = 'ubuntu'
-# openvpn key file name
-STATIC_KEY_FNAME = 'static.key'
 # openvpn cloud IP
 OV_SERVER_IP = '10.8.0.1'
 # openvpn client IP
@@ -33,11 +33,10 @@ secret %s
 DELIM
 chmod 644 %s
 openvpn --config openvpn.config &
-"""%(STATIC_KEY_FNAME, OV_SERVER_IP, OV_CLIENT_IP, STATIC_KEY_FNAME, STATIC_KEY_FNAME)
-# Where to dump directory full of config files
-CONFIG_BASE_DIR = os.getcwd()
+"""%(common.OPENVPN_STATIC_KEY_FNAME, OV_SERVER_IP, OV_CLIENT_IP, common.OPENVPN_STATIC_KEY_FNAME, common.OPENVPN_STATIC_KEY_FNAME)
 
 def create_ec2_instance(boto_config_file,
+                        output_config_dir,
                         image_id=IMAGE_ID, 
                         instance_type=INSTANCE_TYPE,
                         security_groups=SECURITY_GROUPS,
@@ -53,7 +52,7 @@ def create_ec2_instance(boto_config_file,
     # Create key pair to use for SSH access.  Note that 
     # create_key_pair() registers the named key with AWS.
     uid = str(uuid.uuid1())
-    cfg_dir=os.path.join(CONFIG_BASE_DIR, uid)
+    cfg_dir=os.path.join(output_config_dir, uid)
     if os.path.exists(cfg_dir):
         print('Directory/file %s already exists; bailing'%(cfg_dir))
         raise Exception('UUID creation did not meet expectations')
@@ -90,7 +89,7 @@ def create_ec2_instance(boto_config_file,
         # key file because that's what we're going to scp next.
         #TODO: put a timeout in this loop
         while True:
-            cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-i', kp_fname, '%s@%s'%(USERNAME, hostname), 'ls', '/%s'%(STATIC_KEY_FNAME)]
+            cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-i', kp_fname, '%s@%s'%(USERNAME, hostname), 'ls', '/%s'%(common.OPENVPN_STATIC_KEY_FNAME)]
             po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out,err = po.communicate()
             if po.returncode == 0:
@@ -99,27 +98,27 @@ def create_ec2_instance(boto_config_file,
                 time.sleep(0.1)
 
         # retrieve the openvpn key
-        cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-i', kp_fname, str('%s@%s:/%s'%(USERNAME, hostname, STATIC_KEY_FNAME)), os.path.join(cfg_dir, STATIC_KEY_FNAME)]
+        cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-i', kp_fname, str('%s@%s:/%s'%(USERNAME, hostname, common.OPENVPN_STATIC_KEY_FNAME)), os.path.join(cfg_dir, common.OPENVPN_STATIC_KEY_FNAME)]
         po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out,err = po.communicate()
         if po.returncode != 0:
             raise Exception('scp failed: %s'%(err))
         # create openvpn config file
-        ov_cfgfile_base = 'openvpn.config'
+        ov_cfgfile_base = common.OPENVPN_CONFIG_FNAME
         ov_cfgfile = os.path.join(cfg_dir, ov_cfgfile_base)
         with open(ov_cfgfile, 'w') as ovcfg:
             ovcfg.write('remote %s\n'%(hostname))
             ovcfg.write('dev tun\n')
             ovcfg.write('ifconfig %s %s\n'%(OV_CLIENT_IP, OV_SERVER_IP))
-            ovcfg.write('secret %s\n'%(STATIC_KEY_FNAME))
+            ovcfg.write('secret %s\n'%(common.OPENVPN_STATIC_KEY_FNAME))
         # print stuff out
-        #print('New machine created at %s.'%(hostname))
-        #print('Keys stored locally in %s.'%(cfg_dir))
-        #print('To ssh:')
-        #print('  ssh -i %s %s@%s'%(kp_fname, USERNAME, hostname))
-        #print('To connect VPN:')
-        #print('  cd %s'%(cfg_dir))
-        #print('  sudo openvpn --config %s'%(ov_cfgfile_base))
+        print('New machine created at %s.'%(hostname))
+        print('Keys stored locally in %s.'%(cfg_dir))
+        print('To ssh:')
+        print('  ssh -i %s %s@%s'%(kp_fname, USERNAME, hostname))
+        print('To connect VPN:')
+        print('  cd %s'%(cfg_dir))
+        print('  sudo openvpn --config %s'%(ov_cfgfile_base))
     except Exception as e:
         # Clean up
         kp.delete()
