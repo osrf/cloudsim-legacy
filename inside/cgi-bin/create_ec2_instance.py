@@ -7,7 +7,8 @@ import subprocess
 
 import common
 
-IMAGE_ID = 'ami-4438b474' # Vanilla 64-bit Ubuntu 12.04
+#IMAGE_ID = 'ami-4438b474' # Vanilla 64-bit Ubuntu 12.04
+IMAGE_ID = 'ami-82fa58eb' # Vanilla 64-bit Ubuntu 12.04 for us-east
 #IMAGE_ID = 'ami-44028d74' # a custom AMI used in testing
 #IMAGE_ID = 'ami-98fa58f1' # Ubuntu Server 12.04 LTS for Cluster Instances
 INSTANCE_TYPE = 't1.micro' # freebie
@@ -24,6 +25,22 @@ OV_CLIENT_IP = '10.8.0.2'
 # Startup script
 STARTUP_SCRIPT = """#!/bin/bash
 apt-get update
+## install X
+#apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session
+#
+## setup auto xsession login
+#echo "
+#[SeatDefaults]
+#greeter-session=unity-greeter
+#autologin-user=%s
+#autologin-user-timeout=0
+#user-session=ubuntu
+#" > /etc/lightdm/lightdm.conf
+#initctl stop lightdm 
+#initctl start lightdm 
+
+# Install and start openvpn.  Do this last, because we're going to infer 
+# that the machine is ready from the presence of the openvpn static key file.
 apt-get install -y openvpn
 openvpn --genkey --secret %s
 cat <<DELIM > openvpn.config
@@ -33,7 +50,8 @@ secret %s
 DELIM
 chmod 644 %s
 openvpn --config openvpn.config &
-"""%(common.OPENVPN_STATIC_KEY_FNAME, OV_SERVER_IP, OV_CLIENT_IP, common.OPENVPN_STATIC_KEY_FNAME, common.OPENVPN_STATIC_KEY_FNAME)
+
+"""%(common.OPENVPN_STATIC_KEY_FNAME, OV_SERVER_IP, OV_CLIENT_IP, common.OPENVPN_STATIC_KEY_FNAME, common.OPENVPN_STATIC_KEY_FNAME, USERNAME)
 
 def create_ec2_instance(boto_config_file,
                         output_config_dir,
@@ -42,12 +60,7 @@ def create_ec2_instance(boto_config_file,
                         security_groups=SECURITY_GROUPS,
                         username=USERNAME):
 
-    # Load boto config from indicated file.  By overwriting boto.config,
-    # our new config will be used.
-    boto.config = boto.pyami.config.Config(boto_config_file)
-
-    # No args: uses config from boto.config
-    ec2 = boto.connect_ec2()
+    ec2 = common.create_ec2_proxy(boto_config_file)
 
     # Create key pair to use for SSH access.  Note that 
     # create_key_pair() registers the named key with AWS.
@@ -63,7 +76,7 @@ def create_ec2_instance(boto_config_file,
 
     try:
         # Start it up
-        res = ec2.run_instances(image_id=IMAGE_ID, key_name=kp_name, instance_type=INSTANCE_TYPE, security_groups=SECURITY_GROUPS, user_data=STARTUP_SCRIPT)
+        res = ec2.run_instances(image_id=image_id, key_name=kp_name, instance_type=instance_type, security_groups=SECURITY_GROUPS, user_data=STARTUP_SCRIPT)
         print('Creating instance %s...'%(res.id))
 
         # Wait for it to boot to get an IP address
@@ -80,6 +93,7 @@ def create_ec2_instance(boto_config_file,
 
         inst = r.instances[0]
         hostname = inst.public_dns_name
+        aws_id = inst.id
 
         # save the ssh key
         kp.save(cfg_dir)
@@ -88,6 +102,7 @@ def create_ec2_instance(boto_config_file,
         # Wait for sshd to respond.  We check for readability of the static
         # key file because that's what we're going to scp next.
         #TODO: put a timeout in this loop
+        #TODO: use Machine.test_ssh() instead of calling ssh directly
         while True:
             cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-i', kp_fname, '%s@%s'%(USERNAME, hostname), 'ls', '/%s'%(common.OPENVPN_STATIC_KEY_FNAME)]
             po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -103,6 +118,18 @@ def create_ec2_instance(boto_config_file,
         out,err = po.communicate()
         if po.returncode != 0:
             raise Exception('scp failed: %s'%(err))
+        # write hostname to file
+        hostname_fname = os.path.join(cfg_dir, common.HOSTNAME_FNAME)
+        with open(hostname_fname, 'w') as hostname_file:
+            hostname_file.write(hostname) 
+        # write AWS ID to file
+        aws_id_fname = os.path.join(cfg_dir, common.AWS_ID_FNAME)
+        with open(aws_id_fname, 'w') as aws_id_file:
+            aws_id_file.write(aws_id) 
+        # write username to file
+        username_fname = os.path.join(cfg_dir, common.USERNAME_FNAME)
+        with open(username_fname, 'w') as username_file:
+            username_file.write(username) 
         # create openvpn config file
         ov_cfgfile_base = common.OPENVPN_CONFIG_FNAME
         ov_cfgfile = os.path.join(cfg_dir, ov_cfgfile_base)

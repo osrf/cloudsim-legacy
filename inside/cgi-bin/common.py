@@ -1,7 +1,9 @@
 from __future__ import print_function
 import os
 import tempfile
+import subprocess
 import Cookie
+import boto
 import cgi
 import cgitb
 cgitb.enable()
@@ -18,6 +20,9 @@ HTTP_COOKIE = 'HTTP_COOKIE'
 MACHINE_ID_VARNAME = 'machine_id'
 OPENVPN_CONFIG_FNAME = 'openvpn.config'
 OPENVPN_STATIC_KEY_FNAME = 'static.key'
+HOSTNAME_FNAME = 'hostname'
+USERNAME_FNAME = 'username'
+AWS_ID_FNAME = 'aws_id'
 
 def get_user_database():
     # Load user database
@@ -121,15 +126,88 @@ class Machine:
         self.name = name
         self.path = path
         self.openvpn_config_fname = os.path.join(self.path, OPENVPN_CONFIG_FNAME)
+        self.openvpn_config = open(self.openvpn_config_fname).read()
         self.openvpn_key_fname = os.path.join(self.path, OPENVPN_STATIC_KEY_FNAME)
+        self.openvpn_key = open(self.openvpn_key_fname).read()
         self.ssh_key_fname = os.path.join(self.path, 'key-%s.pem'%(self.name))
+        self.ssh_key = open(self.ssh_key_fname).read()
+        self.hostname_fname = os.path.join(self.path, HOSTNAME_FNAME)
+        self.hostname = open(self.hostname_fname).read().strip()
+        self.username_fname = os.path.join(self.path, USERNAME_FNAME)
+        self.username = open(self.username_fname).read().strip()
+        self.aws_id_fname = os.path.join(self.path, AWS_ID_FNAME)
+        self.aws_id = open(self.aws_id_fname).read().strip()
 
+    def ping(self, timeout=1.0):
+        cmd = ['ping', '-c', '1', '-w', '%f'%(timeout), self.hostname]
+        po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out,err = po.communicate()
+        # ping returns 0 when it's happy
+        if po.returncode == 0:
+            return (True, out + err)
+        else:
+            return (False, out + err)
 
+    def test_ssh(self, timeout=1, fname='/%s'%(OPENVPN_STATIC_KEY_FNAME)):
+        cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'ls', fname]
+        po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out,err = po.communicate()
+        if po.returncode == 0:
+            return (True, out + err)
+        else:
+            return (False, out + err)
+
+    def test_X(self, timeout=1):
+        cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'DISPLAY=localhost:0', 'glxinfo']
+        po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out,err = po.communicate()
+        if po.returncode == 0:
+            return (True, out + err)
+        else:
+            return (False, out + err)
+
+    def reboot(self, timeout=1):
+        cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'sudo', 'reboot']
+        po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out,err = po.communicate()
+        if po.returncode == 0:
+            return (True, out + err)
+        else:
+            return (False, out + err)
+
+    def stop(self, timeout=1):
+        ec2 = create_ec2_proxy(BOTO_CONFIG_FILE)
+        try:
+            ec2.stop_instances([self.aws_id])
+        except Exception as e:
+            return False
+        return True
+
+    def start(self, timeout=1):
+        ec2 = create_ec2_proxy(BOTO_CONFIG_FILE)
+        try:
+            ec2.start_instances([self.aws_id])
+        except Exception as e:
+            return False
+        return True
+
+def create_ec2_proxy(boto_config_file):
+    # Load boto config from indicated file.  By overwriting boto.config,
+    # our new config will be used.
+    boto.config = boto.pyami.config.Config(boto_config_file)
+
+    # No args: uses config from boto.config
+    ec2 = boto.connect_ec2()
+    return ec2
+        
 def list_machines(email):
     userdir = os.path.join(MACHINES_DIR, email)
     machines = []
     if os.path.isdir(userdir):
         for f in os.listdir(userdir):
-            # TODO: error-check
-            machines.append(Machine(f, os.path.join(userdir,f)))
+            try:
+                machines.append(Machine(f, os.path.join(userdir,f)))
+            except Exception as e:
+                # Ignore corrupt machine directories
+                pass
     return machines

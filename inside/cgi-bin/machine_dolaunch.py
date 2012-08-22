@@ -13,14 +13,17 @@ import create_ec2_instance
 if not common.check_auth_and_generate_response():
     sys.exit(0)
 
+form = cgi.FieldStorage()
+instance_type = form.getfirst('instance_type')
+image_id = form.getfirst('image_id')
+
 email = common.session_id_to_email()
 
 common.print_http_header()
 print("<hr>")
 print("<pre>")
 create_ec2_instance.create_ec2_instance(common.BOTO_CONFIG_FILE,
-                                        os.path.join(common.MACHINES_DIR, email)
-)
+                                        os.path.join(common.MACHINES_DIR, email), instance_type=instance_type, image_id=image_id)
 print("</pre>")
 print("<hr>")
 print("Machine launched.  Proceed to the <a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a>.")
