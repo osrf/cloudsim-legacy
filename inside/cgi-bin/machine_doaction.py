@@ -13,6 +13,7 @@ if not common.check_auth_and_generate_response():
 
 form = cgi.FieldStorage()
 machine_id = form.getfirst(common.MACHINE_ID_VARNAME)
+action = form.getfirst(common.ACTION_VARNAME)
 
 common.print_http_header()
 
@@ -23,10 +24,19 @@ if not matches:
     print("Error: machine not found.<br>")
 else:
     machine = matches[0]
-    stop = machine.stop()
-    if stop:
-        print("Machine stopped.  Proceed to the <a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a>.")
+    if action == 'start':
+        ret, err = machine.start()
+    elif action == 'stop':
+        ret, err = machine.stop()
+    elif action == 'reboot':
+        ret, err = machine.reboot()
     else:
-        print("Error while stopping")
+        ret = False
+        err = "Unknown action \"%s\""%(action)
+
+    if ret:
+        print("Success.  Proceed to the <a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a>.")
+    else:
+        print("Error: <pre>%s</pre>"%(err))
 
 common.print_footer()    

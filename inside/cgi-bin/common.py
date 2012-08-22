@@ -18,6 +18,7 @@ OPENID_SESSION_COOKIE_NAME = 'open_id_session_id'
 CLOUDSIM_SESSION_COOKIE_NAME = 'cloudsim_session_id'
 HTTP_COOKIE = 'HTTP_COOKIE'
 MACHINE_ID_VARNAME = 'machine_id'
+ACTION_VARNAME = 'action'
 OPENVPN_CONFIG_FNAME = 'openvpn.config'
 OPENVPN_STATIC_KEY_FNAME = 'static.key'
 HOSTNAME_FNAME = 'hostname'
@@ -180,16 +181,16 @@ class Machine:
         try:
             ec2.stop_instances([self.aws_id])
         except Exception as e:
-            return False
-        return True
+            return False, str(e)
+        return True, ''
 
     def start(self, timeout=1):
         ec2 = create_ec2_proxy(BOTO_CONFIG_FILE)
         try:
             ec2.start_instances([self.aws_id])
         except Exception as e:
-            return False
-        return True
+            return False, str(e)
+        return True, ''
 
 def create_ec2_proxy(boto_config_file):
     # Load boto config from indicated file.  By overwriting boto.config,
