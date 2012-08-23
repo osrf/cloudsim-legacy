@@ -1,6 +1,5 @@
 from __future__ import print_function
 import uuid
-import boto
 import os
 import time
 import subprocess
@@ -18,26 +17,42 @@ INSTANCE_TYPE = 't1.micro' # freebie
 SECURITY_GROUPS = ['openvpn']
 # User name.  Default is 'ubuntu'
 USERNAME = 'ubuntu'
+# Ubuntu distro name
+DISTRO = 'precise'
 # openvpn cloud IP
 OV_SERVER_IP = '10.8.0.1'
 # openvpn client IP
 OV_CLIENT_IP = '10.8.0.2'
+# Source list
+SOURCES_LIST = 'data/sources.list'
 # Startup script
 STARTUP_SCRIPT = """#!/bin/bash
+# Exit on error
+set -e
+
+# Overwrite the sources.list file with different content
+cat <<DELIM > /etc/apt/sources.list
+%s
+DELIM
+
 apt-get update
-## install X
-#apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session
-#
-## setup auto xsession login
-#echo "
-#[SeatDefaults]
-#greeter-session=unity-greeter
-#autologin-user=%s
-#autologin-user-timeout=0
-#user-session=ubuntu
-#" > /etc/lightdm/lightdm.conf
-#initctl stop lightdm 
-#initctl start lightdm 
+
+# TODO: install linux-source (maybe), linux-headers, and nvidia-current (may involve a reboot)
+# TODO: autostart openvpn
+
+# install X
+apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit
+
+# setup auto xsession login
+echo "
+[SeatDefaults]
+greeter-session=unity-greeter
+autologin-user=%s
+autologin-user-timeout=0
+user-session=ubuntu
+" > /etc/lightdm/lightdm.conf
+initctl stop lightdm 
+initctl start lightdm 
 
 # Install and start openvpn.  Do this last, because we're going to infer 
 # that the machine is ready from the presence of the openvpn static key file.
@@ -50,15 +65,22 @@ secret %s
 DELIM
 chmod 644 %s
 openvpn --config openvpn.config &
+"""
 
-"""%(common.OPENVPN_STATIC_KEY_FNAME, OV_SERVER_IP, OV_CLIENT_IP, common.OPENVPN_STATIC_KEY_FNAME, common.OPENVPN_STATIC_KEY_FNAME, USERNAME)
+def load_startup_script(distro, username, machine_id, server_ip, client_ip):
+    # TODO: Make this less fragile with a proper templating language (e.g, empy)
+    sources_list = open('data/sources.list-%s'%(distro)).read()
+    key = common.OPENVPN_STATIC_KEY_FNAME
+    startup_script = STARTUP_SCRIPT%(sources_list, username, key, server_ip, client_ip, key, key)
+    return startup_script
 
 def create_ec2_instance(boto_config_file,
                         output_config_dir,
                         image_id=IMAGE_ID, 
                         instance_type=INSTANCE_TYPE,
                         security_groups=SECURITY_GROUPS,
-                        username=USERNAME):
+                        username=USERNAME,
+                        distro=DISTRO):
 
     ec2 = common.create_ec2_proxy(boto_config_file)
 
@@ -76,7 +98,8 @@ def create_ec2_instance(boto_config_file,
 
     try:
         # Start it up
-        res = ec2.run_instances(image_id=image_id, key_name=kp_name, instance_type=instance_type, security_groups=SECURITY_GROUPS, user_data=STARTUP_SCRIPT)
+        startup_script = load_startup_script(distro, username, uid, OV_SERVER_IP, OV_CLIENT_IP)
+        res = ec2.run_instances(image_id=image_id, key_name=kp_name, instance_type=instance_type, security_groups=SECURITY_GROUPS, user_data=startup_script)
         print('Creating instance %s...'%(res.id))
 
         # Wait for it to boot to get an IP address
@@ -113,7 +136,8 @@ def create_ec2_instance(boto_config_file,
                 time.sleep(0.1)
 
         # retrieve the openvpn key
-        cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-i', kp_fname, str('%s@%s:/%s'%(USERNAME, hostname, common.OPENVPN_STATIC_KEY_FNAME)), os.path.join(cfg_dir, common.OPENVPN_STATIC_KEY_FNAME)]
+        ov_key_fname = 'openvpn-%s.key'%(uid)
+        cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-i', kp_fname, str('%s@%s:/%s'%(USERNAME, hostname, common.OPENVPN_STATIC_KEY_FNAME)), os.path.join(cfg_dir, ov_key_fname)]
         po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out,err = po.communicate()
         if po.returncode != 0:
@@ -130,6 +154,10 @@ def create_ec2_instance(boto_config_file,
         username_fname = os.path.join(cfg_dir, common.USERNAME_FNAME)
         with open(username_fname, 'w') as username_file:
             username_file.write(username) 
+        # write botofile to file
+        botofile_fname = os.path.join(cfg_dir, common.BOTOFILE_FNAME)
+        with open(botofile_fname, 'w') as botofile_file:
+            botofile_file.write(boto_config_file) 
         # create openvpn config file
         ov_cfgfile_base = common.OPENVPN_CONFIG_FNAME
         ov_cfgfile = os.path.join(cfg_dir, ov_cfgfile_base)
@@ -137,19 +165,12 @@ def create_ec2_instance(boto_config_file,
             ovcfg.write('remote %s\n'%(hostname))
             ovcfg.write('dev tun\n')
             ovcfg.write('ifconfig %s %s\n'%(OV_CLIENT_IP, OV_SERVER_IP))
-            ovcfg.write('secret %s\n'%(common.OPENVPN_STATIC_KEY_FNAME))
-        # print stuff out
-        print('New machine created at %s.'%(hostname))
-        print('Keys stored locally in %s.'%(cfg_dir))
-        print('To ssh:')
-        print('  ssh -i %s %s@%s'%(kp_fname, USERNAME, hostname))
-        print('To connect VPN:')
-        print('  cd %s'%(cfg_dir))
-        print('  sudo openvpn --config %s'%(ov_cfgfile_base))
+            ovcfg.write('secret %s\n'%(ov_key_fname))
     except Exception as e:
         # Clean up
         kp.delete()
         if os.path.exists(kp_fname):
             os.unlink(kp_fname)
         os.rmdir(cfg_dir)
-        raise e
+        # re-raise
+        raise

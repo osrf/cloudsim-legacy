@@ -16,15 +16,24 @@ print("<title>Launch a new machine</title>")
 print("<h1>Launch a new machine</h1>")
 
 print("<form action=\"/cloudsim/inside/cgi-bin/machine_dolaunch.py\" method=\"GET\">")
-print("<input type=\"submit\" value=\"Launch non-GPU machine\"/>")
+print("<input type=\"submit\" value=\"Launch t1.micro (US East)\"/>")
 print("<input type=\"hidden\" name=\"instance_type\" value=\"t1.micro\"/>")
 print("<input type=\"hidden\" name=\"image_id\" value=\"ami-82fa58eb\"/>")
+print("<input type=\"hidden\" name=\"zone\" value=\"useast\"/>")
 print("</form>")
 
 print("<form action=\"/cloudsim/inside/cgi-bin/machine_dolaunch.py\" method=\"GET\">")
-print("<input type=\"submit\" value=\"Launch GPU machine\"/>")
+print("<input type=\"submit\" value=\"Launch cg1.4xlarge (GPU) (US East)\"/>")
 print("<input type=\"hidden\" name=\"instance_type\" value=\"cg1.4xlarge\"/>")
 print("<input type=\"hidden\" name=\"image_id\" value=\"ami-98fa58f1\"/>")
+print("<input type=\"hidden\" name=\"zone\" value=\"useast\"/>")
+print("</form>")
+
+print("<form action=\"/cloudsim/inside/cgi-bin/machine_dolaunch.py\" method=\"GET\">")
+print("<input type=\"submit\" value=\"Launch m1.xlarge (US West CA)\"/>")
+print("<input type=\"hidden\" name=\"instance_type\" value=\"m1.xlarge\"/>")
+print("<input type=\"hidden\" name=\"image_id\" value=\"ami-5965401c\"/>")
+print("<input type=\"hidden\" name=\"zone\" value=\"uswest-ca\"/>")
 print("</form>")
 
 

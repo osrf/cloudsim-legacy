@@ -12,18 +12,22 @@ EMAIL_VARNAME = 'openid.ext1.value.email'
 ADMIN_EMAIL = 'cloudsim-info@osrfoundation.org'
 USER_DATABASE = '/var/www-cloudsim-auth/users'
 SESSION_DATABASE = '/var/www-cloudsim-auth/sessions'
-BOTO_CONFIG_FILE = '/var/www-cloudsim-auth/boto'
+BOTO_CONFIG_FILE_USEAST = '/var/www-cloudsim-auth/boto-useast'
+BOTO_CONFIG_FILE_USWEST_CA = '/var/www-cloudsim-auth/boto-uswest-ca'
 MACHINES_DIR = '/var/www-cloudsim-auth/machines'
 OPENID_SESSION_COOKIE_NAME = 'open_id_session_id'
 CLOUDSIM_SESSION_COOKIE_NAME = 'cloudsim_session_id'
 HTTP_COOKIE = 'HTTP_COOKIE'
 MACHINE_ID_VARNAME = 'machine_id'
 ACTION_VARNAME = 'action'
+ATTRIB_VARNAME = 'attrib'
+FILENAME_VARNAME = 'filename'
 OPENVPN_CONFIG_FNAME = 'openvpn.config'
 OPENVPN_STATIC_KEY_FNAME = 'static.key'
 HOSTNAME_FNAME = 'hostname'
 USERNAME_FNAME = 'username'
 AWS_ID_FNAME = 'aws_id'
+BOTOFILE_FNAME = 'botofile'
 
 def get_user_database():
     # Load user database
@@ -59,6 +63,12 @@ class SessionDatabase():
 
 def print_http_header(newline=True):
     print("Content-Type: text/html")
+    if newline:
+        print("\n")
+
+def print_http_filedownload_header(fname, newline=True):
+    print("Content-Type: applicatoin/octet-stream; name=\"%s\""%(fname))
+    print("Content-Disposition: attachment; filename=\"%s\""%(fname))
     if newline:
         print("\n")
 
@@ -138,6 +148,8 @@ class Machine:
         self.username = open(self.username_fname).read().strip()
         self.aws_id_fname = os.path.join(self.path, AWS_ID_FNAME)
         self.aws_id = open(self.aws_id_fname).read().strip()
+        self.botofile_fname = os.path.join(self.path, BOTOFILE_FNAME)
+        self.botofile = open(self.botofile_fname).read().strip()
 
     def ping(self, timeout=1.0):
         cmd = ['ping', '-c', '1', '-w', '%f'%(timeout), self.hostname]
@@ -167,6 +179,9 @@ class Machine:
         else:
             return (False, out + err)
 
+    def test_gazebo(self, timeout=1):
+        return (False, "Not implemented")
+
     def reboot(self, timeout=1):
         cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'sudo', 'reboot']
         po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -177,7 +192,7 @@ class Machine:
             return (False, out + err)
 
     def stop(self, timeout=1):
-        ec2 = create_ec2_proxy(BOTO_CONFIG_FILE)
+        ec2 = create_ec2_proxy(self.botofile)
         try:
             ec2.stop_instances([self.aws_id])
         except Exception as e:
@@ -185,7 +200,7 @@ class Machine:
         return True, ''
 
     def start(self, timeout=1):
-        ec2 = create_ec2_proxy(BOTO_CONFIG_FILE)
+        ec2 = create_ec2_proxy(self.botofile)
         try:
             ec2.start_instances([self.aws_id])
         except Exception as e:
@@ -202,7 +217,8 @@ def create_ec2_proxy(boto_config_file):
     return ec2
         
 def list_machines(email):
-    userdir = os.path.join(MACHINES_DIR, email)
+    domain = email.split('@')[1]
+    userdir = os.path.join(MACHINES_DIR, domain)
     machines = []
     if os.path.isdir(userdir):
         for f in os.listdir(userdir):

@@ -5,6 +5,7 @@ import cgi
 import cgitb
 cgitb.enable()
 import sys
+import time
 
 import common
 
@@ -28,6 +29,7 @@ else:
     ping, ping_err = machine.ping()
     ssh, ssh_err = machine.test_ssh()
     x, x_err = machine.test_X()
+    gz, gz_err = machine.test_gazebo()
     print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">Start</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'start'))
     print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">Stop</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'stop'))
     print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">Reboot</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'reboot'))
@@ -36,12 +38,15 @@ else:
     print("<li>Ping: %s"%('<font color=green>OK</font>' if ping else '<font color=red>ERROR</font> (%s)'%ping_err))
     print("<li>SSH: %s"%('<font color=green>OK</font>' if ssh else '<font color=red>ERROR</font> (%s)'%ssh_err))
     print("<li>X: %s"%('<font color=green>OK</font>' if x else '<font color=red>ERROR</font> (%s)'%x_err))
+    print("<li>Gazebo: %s"%('<font color=green>OK</font>' if gz else '<font color=red>ERROR</font> (%s)'%gz_err))
     print("</ul>")
-    print("<li>AWS ID: <pre>%s</pre>"%(machine.aws_id))
     print("<li>IP Address / Hostname: <pre>%s</pre>"%(machine.hostname))
-    print("<li>SSH Key (username: <tt>%s</tt>): <pre>%s</pre>"%(machine.username, machine.ssh_key))
-    print("<li>OpenVPN Static Key: <pre>%s</pre>"%(machine.openvpn_key))
-    print("<li>OpenVPN Client Configuration: <pre>%s</pre>"%(machine.openvpn_config))
+    print("<li>SSH (username: <tt>%s</tt>): <a href=\"/cloudsim/inside/cgi-bin/machine_download.py?machine_id=%s&attrib=ssh_key\">[Download key]</a>"%(machine.username, machine_id))
+    print("<pre>chmod 600 ssh_key-%s.pem\nssh -i ssh_key-%s.pem %s@%s</pre>"%(machine_id, machine_id, machine.username, machine.hostname))
+    print("<li>OpenVPN: <a href=\"/cloudsim/inside/cgi-bin/machine_download.py?machine_id=%s&attrib=openvpn_key\">[Download key]</a> <a href=\"/cloudsim/inside/cgi-bin/machine_download.py?machine_id=%s&attrib=openvpn_config\">[Download config]</a>"%(machine_id, machine_id))
+    print("<pre>sudo openvpn --config openvpn-%s.config</pre>"%(machine_id))
+    print("<li>AWS ID: <pre>%s</pre>"%(machine.aws_id))
+    print("<li>Boto config file: <pre>%s</pre>"%(machine.botofile))
     print("</ul>")
 
 common.print_footer()
