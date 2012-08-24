@@ -133,23 +133,40 @@ class StormOnDemand:
         else:
             return self._call('storm/config/list')
 
-    # Provider-independent API below
+    # Provider-independent API below.
+    # Catch exceptions to make the caller's code simpler (a wide variety of exceptions 
+    # could be coming from different underlying implementations).
     def create_server(self, machine_type, distro):
-        config_id = MACHINE_TYPES[machine_type]
-        template = DISTROS[distro]
-        privkey, ret = self.storm_server_create(config_id=config_id, template=template)
-        machine_id = ret['uniq_id']
-        # TODO: loop on Storm/server/details(machine_id) until we get good data, then
-        # extract ipaddress
-        ipaddress = None
-        return (privkey, ipaddress, machine_id)
+        try:
+            config_id = MACHINE_TYPES[machine_type]
+            template = DISTROS[distro]
+            privkey, ret = self.storm_server_create(config_id=config_id, template=template)
+            machine_id = ret['uniq_id']
+            # TODO: loop on Storm/server/details(machine_id) until we get good data, then
+            # extract ipaddress
+            ipaddress = None
+            return (True, (privkey, ipaddress, machine_id))
+        except Exception as e:
+            return (False, e)
 
     def stop_server(self, machine_id):
-        return self._call('storm/server/shutdown', {'uniq_id': machine_id})
+        try:
+            self._call('storm/server/shutdown', {'uniq_id': machine_id})
+            return (True, None)
+        except Exception as e:
+            return (False, e)
 
     def start_server(self, machine_id):
-        return self._call('storm/server/start', {'uniq_id': machine_id})
+        try:
+            self._call('storm/server/start', {'uniq_id': machine_id})
+            return (True, None)
+        except Exception as e:
+            return (False, e)
 
     def destroy_server(self, machine_id):
-        return self._call('storm/server/destroy', {'uniq_id': machine_id})
+        try:
+            self._call('storm/server/destroy', {'uniq_id': machine_id})
+            return (True, None)
+        except Exception as e:
+            return (False, e)
 
