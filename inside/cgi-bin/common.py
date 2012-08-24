@@ -191,6 +191,14 @@ class Machine:
         else:
             return (False, out + err)
 
+    def terminate(self, timeout=1):
+        ec2 = create_ec2_proxy(self.botofile)
+        try:
+            ec2.terminate_instances([self.aws_id])
+        except Exception as e:
+            return False, str(e)
+        return True, ''
+
     def stop(self, timeout=1):
         ec2 = create_ec2_proxy(self.botofile)
         try:

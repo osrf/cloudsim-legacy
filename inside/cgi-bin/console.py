@@ -23,7 +23,7 @@ print("<h2>Running machines</h2>")
 machine_ids = common.list_machines(email)
 print("<p><ul>")
 for m in machine_ids:
-    print("<li><a href=\"/cloudsim/inside/cgi-bin/machine_detail.py?%s=%s\">%s</a> <a href=\"/cloudsim/inside/cgi-bin/machine_kill.py?%s=%s\">[terminate]</a>"%(common.MACHINE_ID_VARNAME,m.name,m.name,common.MACHINE_ID_VARNAME,m.name))
+    print("<li><a href=\"/cloudsim/inside/cgi-bin/machine_detail.py?%s=%s\">%s</a>"%(common.MACHINE_ID_VARNAME,m.name,m.name))
 print("</ul></p>")
 
 print("<p><a href=\"/cloudsim/inside/cgi-bin/machine_launch.py\">Launch a new machine</a></p>")

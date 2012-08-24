@@ -28,6 +28,8 @@ else:
         ret, err = machine.start()
     elif action == 'stop':
         ret, err = machine.stop()
+    elif action == 'terminate':
+        ret, err = machine.terminate()
     elif action == 'reboot':
         ret, err = machine.reboot()
     else:
