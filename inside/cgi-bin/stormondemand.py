@@ -4,6 +4,8 @@ import json
 import subprocess
 import tempfile
 import os
+import time
+import provider
 
 SOD_API_BASEURL = 'https://api.stormondemand.com'
 SOD_API_VERSION = '1.0/'
@@ -28,9 +30,14 @@ DISTROS = {
     'ubuntu-natty' : None,
     'ubuntu-precise' : 'UBUNTU_1204_UNMANAGED'
 }
+# Map generic state types to Storm's names
+STATES = {
+    'running' : 'Running'
+}
 
-class StormOnDemand:
+class StormOnDemand(provider.Provider):
     def __init__(self, username, password):
+        super(StormOnDemand, self).__init__()
         self.username = username
 
         # Auth code cribbed from http://docs.python.org/howto/urllib2.html#id6
@@ -75,19 +82,16 @@ class StormOnDemand:
             r = self.urlopener.open(url)
         return json.loads(r.read())
 
-    def ping(self):
+    def _ping(self):
         return self._call('utilities/info/ping')
 
-    def version(self):
+    def _version(self):
         return self._call('utilities/info/version')
 
-    def server_list(self):
-        return self._call('server/list')
-
-    def server_available(self, domain):
+    def _server_available(self, domain):
         return self._call('server/available', {'domain': domain})
 
-    def storm_server_create(self, 
+    def _storm_server_create(self, 
                             backup_enabled=0,
                             bandwidth_quota=0, 
                             config_id=DEFAULT_CONFIG_ID, 
@@ -127,46 +131,44 @@ class StormOnDemand:
         print(ret)
         return (privkey, ret)
 
-    def storm_config_list(self, baremetal=False):
-        if baremetal:
-            return self._call('storm/config/baremetal/list')
-        else:
-            return self._call('storm/config/list')
-
     # Provider-independent API below.
-    # Catch exceptions to make the caller's code simpler (a wide variety of exceptions 
-    # could be coming from different underlying implementations).
     def create_server(self, machine_type, distro):
-        try:
-            config_id = MACHINE_TYPES[machine_type]
-            template = DISTROS[distro]
-            privkey, ret = self.storm_server_create(config_id=config_id, template=template)
-            machine_id = ret['uniq_id']
-            # TODO: loop on Storm/server/details(machine_id) until we get good data, then
-            # extract ipaddress
-            ipaddress = None
-            return (True, (privkey, ipaddress, machine_id))
-        except Exception as e:
-            return (False, e)
-
+        config_id = MACHINE_TYPES[machine_type]
+        template = DISTROS[distro]
+        privkey, ret = self._storm_server_create(config_id=config_id, template=template)
+        machine_id = ret['uniq_id']
+        # No IP address yet; need to call wait_until_running()
+        ipaddress = None
+        return (privkey, ipaddress, machine_id)
+    def wait_until_running(self, machine_id, cycle_time=3.0, timeout=600):
+        print(self.test_ssh())
+        # Wait for an IP
+        t0 = time.time()
+        while (time.time() - t0) <= timeout:
+            ip = self.get_server_ip(machine_id)
+            if ip is not None and ip != '127.0.0.1':
+                return True
+            else:
+                time.sleep(cycle_time)
+        return False
+    def get_server_ip(self, machine_id):
+        resp = self._call('storm/server/details', {'uniq_id' : machine_id})
+        if 'ip' in resp:
+            return resp['ip']
+        else:
+            return None
     def stop_server(self, machine_id):
-        try:
-            self._call('storm/server/shutdown', {'uniq_id': machine_id})
-            return (True, None)
-        except Exception as e:
-            return (False, e)
-
+        return self._call('storm/server/shutdown', {'uniq_id': machine_id})
     def start_server(self, machine_id):
-        try:
-            self._call('storm/server/start', {'uniq_id': machine_id})
-            return (True, None)
-        except Exception as e:
-            return (False, e)
-
+        return self._call('storm/server/start', {'uniq_id': machine_id})
     def destroy_server(self, machine_id):
-        try:
-            self._call('storm/server/destroy', {'uniq_id': machine_id})
-            return (True, None)
-        except Exception as e:
-            return (False, e)
+        return self._call('storm/server/destroy', {'uniq_id': machine_id})
+    def get_server_status(self, machine_id):
+        resp = self._call('storm/server/status', {'uniq_id': machine_id})
+        if 'status' in resp:
+            if resp['status'] in STATES:
+                return STATES[resp['status']]
+        return None
+    def list_servers(self):
+        return self._call('storm/server/list')
 

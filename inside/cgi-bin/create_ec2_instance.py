@@ -51,7 +51,7 @@ autologin-user=%s
 autologin-user-timeout=0
 user-session=ubuntu
 " > /etc/lightdm/lightdm.conf
-initctl stop lightdm 
+initctl stop lightdm || true
 initctl start lightdm 
 
 # Install and start openvpn.  Do this last, because we're going to infer 

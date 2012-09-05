@@ -6,6 +6,7 @@ import Cookie
 import boto
 import cgi
 import cgitb
+import stat
 cgitb.enable()
 
 EMAIL_VARNAME = 'openid.ext1.value.email'
@@ -236,3 +237,22 @@ def list_machines(email):
                 # Ignore corrupt machine directories
                 pass
     return machines
+
+# Launch a long-running background process.  script can be anything 
+# that bash will understand
+def start_background_task(script):
+    with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
+        tmpfile.write(script)
+    os.chmod(tmpfile.name, stat.S_IRUSR | stat.S_IXUSR | stat.S_IWUSR | stat.S_IROTH | stat.S_IXOTH | stat.S_IRGRP | stat.S_IXGRP)
+    # Note: www-data user must not be in the /etc/at.deny file
+    print("<p>%s</p>"%(tmpfile.name))
+    cmd = ['bash', '-c', 'at NOW <<< %s'%(tmpfile.name)]
+    print("<p>%s</p>"%(cmd))
+    po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = po.communicate()
+    print('<p>%s</p>'%(out))
+    print('<p>%s</p>'%(err))
+    #os.unlink(tmpfile.name)
+    if po.returncode != 0:
+        raise Exception('start_background_task() failed: %s; %s'%(out, err))
+
