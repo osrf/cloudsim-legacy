@@ -134,23 +134,30 @@ def print_footer():
     print("<a href=\"/cloudsim/inside/cgi-bin/logout.py\">Logout</a>")
 
 class Machine:
-    def __init__(self, name, path):
+    def __init__(self, name, path, incomplete_ok=False):
         self.name = name
         self.path = path
-        self.openvpn_config_fname = os.path.join(self.path, OPENVPN_CONFIG_FNAME)
-        self.openvpn_config = open(self.openvpn_config_fname).read()
-        self.openvpn_key_fname = os.path.join(self.path, OPENVPN_STATIC_KEY_FNAME)
-        self.openvpn_key = open(self.openvpn_key_fname).read()
-        self.ssh_key_fname = os.path.join(self.path, 'key-%s.pem'%(self.name))
-        self.ssh_key = open(self.ssh_key_fname).read()
-        self.hostname_fname = os.path.join(self.path, HOSTNAME_FNAME)
-        self.hostname = open(self.hostname_fname).read().strip()
-        self.username_fname = os.path.join(self.path, USERNAME_FNAME)
-        self.username = open(self.username_fname).read().strip()
-        self.aws_id_fname = os.path.join(self.path, AWS_ID_FNAME)
-        self.aws_id = open(self.aws_id_fname).read().strip()
-        self.botofile_fname = os.path.join(self.path, BOTOFILE_FNAME)
-        self.botofile = open(self.botofile_fname).read().strip()
+        try:
+            self.openvpn_config_fname = os.path.join(self.path, OPENVPN_CONFIG_FNAME)
+            self.openvpn_config = open(self.openvpn_config_fname).read()
+            self.openvpn_key_fname = os.path.join(self.path, 'openvpn-%s.key'%(self.name))
+            self.openvpn_key = open(self.openvpn_key_fname).read()
+            self.ssh_key_fname = os.path.join(self.path, 'key-%s.pem'%(self.name))
+            self.ssh_key = open(self.ssh_key_fname).read()
+            self.hostname_fname = os.path.join(self.path, HOSTNAME_FNAME)
+            self.hostname = open(self.hostname_fname).read().strip()
+            self.username_fname = os.path.join(self.path, USERNAME_FNAME)
+            self.username = open(self.username_fname).read().strip()
+            self.aws_id_fname = os.path.join(self.path, AWS_ID_FNAME)
+            self.aws_id = open(self.aws_id_fname).read().strip()
+            self.botofile_fname = os.path.join(self.path, BOTOFILE_FNAME)
+            self.botofile = open(self.botofile_fname).read().strip()
+            self.incomplete = False
+        except Exception as e:
+            if incomplete_ok:
+                self.incomplete = True
+            else:
+                raise
 
     def ping(self, timeout=1.0):
         cmd = ['ping', '-c', '1', '-w', '%f'%(timeout), self.hostname]
@@ -193,8 +200,8 @@ class Machine:
             return (False, out + err)
 
     def terminate(self, timeout=1):
-        ec2 = create_ec2_proxy(self.botofile)
         try:
+            ec2 = create_ec2_proxy(self.botofile)
             ec2.terminate_instances([self.aws_id])
         except Exception as e:
             return False, str(e)
@@ -229,14 +236,15 @@ def list_machines(email):
     domain = email.split('@')[1]
     userdir = os.path.join(MACHINES_DIR, domain)
     machines = []
+    incompletes = []
     if os.path.isdir(userdir):
         for f in os.listdir(userdir):
             try:
                 machines.append(Machine(f, os.path.join(userdir,f)))
             except Exception as e:
-                # Ignore corrupt machine directories
-                pass
-    return machines
+                # Separate corrupt machine directories
+                incompletes.append(Machine(f, os.path.join(userdir,f), incomplete_ok=True))
+    return (machines,incompletes)
 
 # Launch a long-running background process.  script can be anything 
 # that bash will understand
@@ -245,13 +253,9 @@ def start_background_task(script):
         tmpfile.write(script)
     os.chmod(tmpfile.name, stat.S_IRUSR | stat.S_IXUSR | stat.S_IWUSR | stat.S_IROTH | stat.S_IXOTH | stat.S_IRGRP | stat.S_IXGRP)
     # Note: www-data user must not be in the /etc/at.deny file
-    print("<p>%s</p>"%(tmpfile.name))
     cmd = ['bash', '-c', 'at NOW <<< %s'%(tmpfile.name)]
-    print("<p>%s</p>"%(cmd))
     po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = po.communicate()
-    print('<p>%s</p>'%(out))
-    print('<p>%s</p>'%(err))
     #os.unlink(tmpfile.name)
     if po.returncode != 0:
         raise Exception('start_background_task() failed: %s; %s'%(out, err))

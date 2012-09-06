@@ -20,13 +20,13 @@ zone = form.getfirst('zone')
 email = common.session_id_to_email()
 domain = email.split('@')[1]
 
-common.print_http_header()
 
 if zone == 'useast':
     botofile = common.BOTO_CONFIG_FILE_USEAST
 elif zone == 'uswest-ca':
     botofile = common.BOTO_CONFIG_FILE_USWEST_CA
 else:
+    common.print_http_header()
     print("Error: unknown zone \"%s\"."%(zone))
     sys.exit(0)
 
@@ -39,6 +39,6 @@ import create_ec2_instance
 create_ec2_instance.create_ec2_instance('%s', '%s', instance_type='%s', image_id='%s')"""%(module_dir, botofile, os.path.join(common.MACHINES_DIR, domain), instance_type, image_id)
 common.start_background_task(script)
 
-print("Machine launched.  It may be up to 15 minutes before it's available. Check status at the <a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a>.")
-
-common.print_footer()
+# Extra level of indirection to avoid browser reload 
+# causing a new machine to be launched.
+print("Location: http://osrfoundation.org/cloudsim/inside/cgi-bin/machine_launched.py\n")

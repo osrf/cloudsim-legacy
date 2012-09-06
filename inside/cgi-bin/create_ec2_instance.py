@@ -37,11 +37,39 @@ DELIM
 
 apt-get update
 
-# TODO: install linux-source (maybe), linux-headers, and nvidia-current (may involve a reboot)
-# TODO: autostart openvpn
+# install X, with nvidia drivers
+apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev
 
-# install X
-apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit
+# configure X
+cat <<DELIM > /etc/X11/xorg.conf
+Section "ServerLayout"
+    Identifier     "Layout0"
+    Screen      0  "Screen0"
+EndSection
+Section "Monitor"
+    Identifier     "Monitor0"
+    VendorName     "Unknown"
+    ModelName      "Unknown"
+    HorizSync       28.0 - 33.0
+    VertRefresh     43.0 - 72.0
+    Option         "DPMS"
+EndSection
+Section "Device"
+    Identifier     "Device0"
+    Driver         "nvidia"
+    BusID          "PCI:0:3:0"
+    VendorName     "NVIDIA Corporation"
+EndSection
+Section "Screen"
+    Identifier     "Screen0"
+    Device         "Device0"
+    Monitor        "Monitor0"
+    DefaultDepth    24
+    SubSection     "Display"
+        Depth       24
+    EndSubSection
+EndSection
+DELIM
 
 # setup auto xsession login
 echo "
@@ -54,8 +82,19 @@ user-session=ubuntu
 initctl stop lightdm || true
 initctl start lightdm 
 
-# Install and start openvpn.  Do this last, because we're going to infer 
-# that the machine is ready from the presence of the openvpn static key file.
+# Install ROS.
+# For now, just pull Gazebo from Fuerte.  In the future, give 
+# options here.
+echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
+wget http://packages.ros.org/ros.key -O - | apt-key add -
+apt-get update
+apt-get -y install ros-fuerte-pr2-simulator ros-fuerte-arm-navigation ros-fuerte-pr2-teleop-app ros-fuerte-pr2-object-manipulation ros-fuerte-pr2-navigation
+
+# TODO: autostart openvpn and lightdm on boot
+
+# Install and start openvpn.  Do this last, because we're going to 
+# infer that the machine is ready from the presence of the 
+# openvpn static key file.
 apt-get install -y openvpn
 openvpn --genkey --secret %s
 cat <<DELIM > openvpn.config

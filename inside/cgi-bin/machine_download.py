@@ -16,7 +16,7 @@ machine_id = form.getfirst(common.MACHINE_ID_VARNAME)
 attrib = form.getfirst(common.ATTRIB_VARNAME)
 
 email = common.session_id_to_email()
-machines = common.list_machines(email)
+machines = common.list_machines(email)[0]
 matches = [m for m in machines if m.name == machine_id]
 if not matches:
     common.print_http_header()

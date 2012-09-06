@@ -20,7 +20,7 @@ print("<title>Detail for machine %s</title>"%(machine_id))
 print("<h1>Detail for machine %s</h1>"%(machine_id))
 
 email = common.session_id_to_email()
-machines = common.list_machines(email)
+machines = common.list_machines(email)[0]
 matches = [m for m in machines if m.name == machine_id]
 if not matches:
     print("Error: machine not found.<br>")
