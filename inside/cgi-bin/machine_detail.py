@@ -26,6 +26,7 @@ if not matches:
     print("Error: machine not found.<br>")
 else:
     machine = matches[0]
+    aws_state, aws_state_info = machine.get_aws_status()
     ping, ping_err = machine.ping()
     ssh, ssh_err = machine.test_ssh()
     x, x_err = machine.test_X()
@@ -36,6 +37,7 @@ else:
     print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">%s</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'terminate', 'Terminate'))
     print("<ul>")
     print("<li>Status:<ul>")
+    print("<li>State: %s"%('<font color=green>%s</font>'%(aws_state_info) if aws_state else '<font color=red>ERROR</font> (%s)'%(aws_state_info)))
     print("<li>Ping: %s"%('<font color=green>OK</font>' if ping else '<font color=red>ERROR</font> (%s)'%ping_err))
     print("<li>SSH: %s"%('<font color=green>OK</font>' if ssh else '<font color=red>ERROR</font> (%s)'%ssh_err))
     print("<li>X: %s"%('<font color=green>OK</font>' if x else '<font color=red>ERROR</font> (%s)'%x_err))

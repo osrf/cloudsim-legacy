@@ -190,6 +190,17 @@ class Machine:
     def test_gazebo(self, timeout=1):
         return (False, "Not implemented")
 
+    def get_aws_status(self, timeout=1):
+        try:
+            ec2 = create_ec2_proxy(self.botofile)
+            for r in ec2.get_all_instances():
+                for i in r.instances:
+                    if i.id == self.aws_id:
+                           return (True, i.state)
+            return (False, "Unable to find machine at AWS")
+        except Exception as e:
+            return (False, str(e))
+
     def reboot(self, timeout=1):
         cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'sudo', 'reboot']
         po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
