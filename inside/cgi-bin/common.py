@@ -9,6 +9,9 @@ import cgitb
 import stat
 cgitb.enable()
 
+PACKAGE_VARNAME = 'package'
+LAUNCHFILE_VARNAME = 'launchfile'
+LAUNCHARGS_VARNAME = 'launchargs'
 EMAIL_VARNAME = 'openid.ext1.value.email'
 ADMIN_EMAIL = 'cloudsim-info@osrfoundation.org'
 USER_DATABASE = '/var/www-cloudsim-auth/users'
@@ -29,6 +32,12 @@ HOSTNAME_FNAME = 'hostname'
 USERNAME_FNAME = 'username'
 AWS_ID_FNAME = 'aws_id'
 BOTOFILE_FNAME = 'botofile'
+DISTRO='fuerte'
+DISPLAY=':0'
+# openvpn cloud IP
+OV_SERVER_IP = '10.8.0.1'
+# openvpn client IP
+OV_CLIENT_IP = '10.8.0.2'
 
 def get_user_database():
     # Load user database
@@ -170,25 +179,23 @@ class Machine:
             return (False, out + err)
 
     def test_ssh(self, timeout=1, fname='/%s'%(OPENVPN_STATIC_KEY_FNAME)):
-        cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'ls', fname]
-        po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out,err = po.communicate()
-        if po.returncode == 0:
-            return (True, out + err)
-        else:
-            return (False, out + err)
+        return self.ssh(['ls', fname], timeout=timeout)
 
     def test_X(self, timeout=1):
-        cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'DISPLAY=localhost:0', 'glxinfo']
-        po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return self.ssh(['DISPLAY=localhost:0', 'glxinfo'], timeout=timeout)
+
+    def test_gazebo(self, timeout=1):
+        return self.ssh(['source /opt/ros/%s/setup.bash && rosrun gazebo gztopic list'%(DISTRO)], timeout=timeout)
+
+    def ssh(self, cmd, timeout=1, args=[]):
+        ssh_cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname] + args + ['%s@%s'%(self.username, self.hostname)]
+        ssh_cmd.extend(cmd)
+        po = subprocess.Popen(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out,err = po.communicate()
         if po.returncode == 0:
             return (True, out + err)
         else:
             return (False, out + err)
-
-    def test_gazebo(self, timeout=1):
-        return (False, "Not implemented")
 
     def get_aws_status(self, timeout=1):
         try:

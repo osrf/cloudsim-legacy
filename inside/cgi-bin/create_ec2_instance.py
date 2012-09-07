@@ -19,10 +19,6 @@ SECURITY_GROUPS = ['openvpn']
 USERNAME = 'ubuntu'
 # Ubuntu distro name
 DISTRO = 'precise'
-# openvpn cloud IP
-OV_SERVER_IP = '10.8.0.1'
-# openvpn client IP
-OV_CLIENT_IP = '10.8.0.2'
 # Source list
 SOURCES_LIST = 'data/sources.list'
 # Startup script
@@ -38,7 +34,7 @@ DELIM
 apt-get update
 
 # install X, with nvidia drivers
-apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev
+apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
 
 # configure X
 cat <<DELIM > /etc/X11/xorg.conf
@@ -77,7 +73,7 @@ echo "
 greeter-session=unity-greeter
 autologin-user=%s
 autologin-user-timeout=0
-user-session=ubuntu
+user-session=gnome-fallback
 " > /etc/lightdm/lightdm.conf
 initctl stop lightdm || true
 initctl start lightdm 
@@ -90,8 +86,6 @@ wget http://packages.ros.org/ros.key -O - | apt-key add -
 apt-get update
 apt-get -y install ros-fuerte-pr2-simulator ros-fuerte-arm-navigation ros-fuerte-pr2-teleop-app ros-fuerte-pr2-object-manipulation ros-fuerte-pr2-navigation
 
-# TODO: autostart openvpn and lightdm on boot
-
 # Install and start openvpn.  Do this last, because we're going to 
 # infer that the machine is ready from the presence of the 
 # openvpn static key file.
@@ -103,14 +97,17 @@ ifconfig %s %s
 secret %s
 DELIM
 chmod 644 %s
-openvpn --config openvpn.config &
+# Set up for autostart by dropping this stuff in /etc/openvpn
+cp openvpn.config /etc/openvpn/openvpn.conf
+cp %s /etc/openvpn/%s
+service openvpn start
 """
 
 def load_startup_script(distro, username, machine_id, server_ip, client_ip):
     # TODO: Make this less fragile with a proper templating language (e.g, empy)
     sources_list = open('data/sources.list-%s'%(distro)).read()
     key = common.OPENVPN_STATIC_KEY_FNAME
-    startup_script = STARTUP_SCRIPT%(sources_list, username, key, server_ip, client_ip, key, key)
+    startup_script = STARTUP_SCRIPT%(sources_list, username, key, server_ip, client_ip, key, key, key, key)
     return startup_script
 
 def create_ec2_instance(boto_config_file,
@@ -137,7 +134,7 @@ def create_ec2_instance(boto_config_file,
 
     try:
         # Start it up
-        startup_script = load_startup_script(distro, username, uid, OV_SERVER_IP, OV_CLIENT_IP)
+        startup_script = load_startup_script(distro, username, uid, common.OV_SERVER_IP, common.OV_CLIENT_IP)
         res = ec2.run_instances(image_id=image_id, key_name=kp_name, instance_type=instance_type, security_groups=SECURITY_GROUPS, user_data=startup_script)
         print('Creating instance %s...'%(res.id))
 
@@ -203,7 +200,7 @@ def create_ec2_instance(boto_config_file,
         with open(ov_cfgfile, 'w') as ovcfg:
             ovcfg.write('remote %s\n'%(hostname))
             ovcfg.write('dev tun\n')
-            ovcfg.write('ifconfig %s %s\n'%(OV_CLIENT_IP, OV_SERVER_IP))
+            ovcfg.write('ifconfig %s %s\n'%(common.OV_CLIENT_IP, common.OV_SERVER_IP))
             ovcfg.write('secret %s\n'%(ov_key_fname))
     except Exception as e:
         # Clean up

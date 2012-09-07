@@ -14,6 +14,9 @@ if not common.check_auth_and_generate_response():
 
 form = cgi.FieldStorage()
 machine_id = form.getfirst(common.MACHINE_ID_VARNAME)
+test = form.getfirst('test')
+if test:
+    test = int(test)
 
 common.print_http_header()
 print("<title>Detail for machine %s</title>"%(machine_id))
@@ -31,8 +34,10 @@ else:
     ssh, ssh_err = machine.test_ssh()
     x, x_err = machine.test_X()
     gz, gz_err = machine.test_gazebo()
-    print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">%s</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'start', 'Start'))
-    print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">%s</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'stop', 'Stop'))
+    if test:
+        print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">%s</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'start', 'Start'))
+        print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">%s</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'stop', 'Stop'))
+    print("<a href=\"/cloudsim/inside/cgi-bin/gazebo_launch.py?%s=%s\">%s</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, 'Configure/launch Gazebo'))
     print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">%s</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'reboot', 'Reboot'))
     print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">%s</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'terminate', 'Terminate'))
     print("<ul>")
