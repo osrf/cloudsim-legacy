@@ -125,14 +125,6 @@ def check_auth_and_generate_response(check_email=False):
         print("<title>Access Denied</title>")
         print("<h1>Access Denied</h1>")
         print("Try <a href=\"/cloudsim/inside/cgi-bin/logout.py\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(ADMIN_EMAIL, ADMIN_EMAIL))
-        print("<hr>")
-        C = Cookie.Cookie()
-        C.load(os.environ[HTTP_COOKIE])
-        print(C)
-        print("<hr>")
-        form = cgi.FieldStorage()
-        print(form)
-        print("<hr>")
         return False
 
 def print_footer():

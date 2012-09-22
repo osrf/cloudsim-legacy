@@ -30,7 +30,7 @@ if test:
     print("</form>")
 
 print("<form action=\"/cloudsim/inside/cgi-bin/machine_dolaunch.py\" method=\"GET\">")
-print("<input type=\"submit\" value=\"Launch New Simulation Server (type cg1.4xlarge, zone US East, $2.10/hour)\"/>")
+print("<input type=\"submit\" value=\"Launch New Simulation Machine\"/> (type cg1.4xlarge, zone US East, <b>$2.10/hour</b>)")
 print("<input type=\"hidden\" name=\"instance_type\" value=\"cg1.4xlarge\"/>")
 print("<input type=\"hidden\" name=\"image_id\" value=\"ami-98fa58f1\"/>")
 print("<input type=\"hidden\" name=\"zone\" value=\"useast\"/>")

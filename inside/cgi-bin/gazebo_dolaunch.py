@@ -21,6 +21,7 @@ common.print_http_header()
 
 if not machine_id or not package or not launchfile:
     print("Error: machine_id, package, and launchfile are all required.")
+    print("<a href=\"/cloudsim/inside/cgi-bin/gazebo_launch.py?%s=%s\">Go back</a>.</p>"%(common.MACHINE_ID_VARNAME, machine_id))
     common.print_footer()    
     sys.exit(0)
 if not launchargs:
@@ -37,9 +38,9 @@ else:
     print("<p>Running the following command: <pre>%s</pre></p>"%(cgi.escape(' '.join(cmd))))
     ret, err = machine.ssh(cmd, args=['-f'])
     if ret:
-        print("<p>Success.")
+        print("<p>Gazebo has been launched; this process can take a few minutes to complete, or to fail.")
     else:
         print("<p>Error: <pre>%s</pre>"%(err))
-    print("Proceed to the <a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a>.</p>")
+    print("Return to <a href=\"/cloudsim/inside/cgi-bin/machine_detail.py?%s=%s\">machine details</a> to check status.</p>"%(common.MACHINE_ID_VARNAME, machine_id))
 
 common.print_footer()
