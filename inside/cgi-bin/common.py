@@ -5,9 +5,10 @@ import subprocess
 import Cookie
 import boto
 import cgi
-import cgitb
 import stat
-cgitb.enable()
+import cgitb
+# TODO: turn this back on 
+#cgitb.enable()
 
 PACKAGE_VARNAME = 'package'
 LAUNCHFILE_VARNAME = 'launchfile'
@@ -133,6 +134,8 @@ def print_footer():
     print("Logged in as: %s<br>"%(email))
     print("<a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a><br>")
     print("<a href=\"/cloudsim/inside/cgi-bin/logout.py\">Logout</a>")
+
+
 
 class Machine:
     def __init__(self, name, path, incomplete_ok=False):
