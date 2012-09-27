@@ -149,15 +149,17 @@ apt-get update
 echo "ppa:rye/ppa repository added" >> /home/ubuntu/STARTUP_SCRIPT_LOG
 
 apt-get install -y libapache2-mod-auth-openid
+ln -s /etc/apache2/mods-available/authopenid.load /etc/apache2/mods-enabled
 echo "libapache2-mod-auth-openid 0.6 installed from ppa:rye/ppa" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-
 
 /etc/init.d/apache2 restart
 echo "apache2 restarted" >> /home/ubuntu/STARTUP_SCRIPT_LOG
 
 # to list installed modules  
 # apachectl -t -D DUMP_MODULES
+
+# Make sure that www-data can run programs in the background (used inside CGI scripts)
+echo www-data > /etc/at.allow
 
 mv /home/ubuntu/STARTUP_SCRIPT_LOG /home/ubuntu/STARTUP_SCRIPT_LOG_DONE
 echo "STARTUP COMPLETE" >> /home/ubuntu/STARTUP_SCRIPT_LOG

@@ -41,4 +41,4 @@ common.start_background_task(script)
 
 # Extra level of indirection to avoid browser reload 
 # causing a new machine to be launched.
-print("Location: http://osrfoundation.org/cloudsim/inside/cgi-bin/machine_launched.py\n")
+print("Location: /cloudsim/inside/cgi-bin/machine_launched.py\n")

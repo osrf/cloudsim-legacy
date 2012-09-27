@@ -16,4 +16,4 @@ if common.OPENID_SESSION_COOKIE_NAME in in_cookies:
     out_cookies = Cookie.Cookie()
     out_cookies[common.CLOUDSIM_SESSION_COOKIE_NAME] = in_cookies[common.OPENID_SESSION_COOKIE_NAME].value
     print(out_cookies)
-    print("Location: http://osrfoundation.org/cloudsim/inside/cgi-bin/console.py\n")
+    print("Location: /cloudsim/inside/cgi-bin/console.py\n")
