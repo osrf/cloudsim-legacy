@@ -1,6 +1,8 @@
 #!/bin/bash
 
+# DIR="/home/ubuntu/cloudsim"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 sudo cp $DIR/distfiles/apache2.conf /etc/apache2/apache2.conf
 sudo cp -a $DIR/* /var/www/
 sudo rm -rf /var/www/distfiles

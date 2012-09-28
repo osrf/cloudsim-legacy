@@ -1,6 +1,7 @@
 from __future__ import print_function
 import uuid
 import os
+import sys
 import time
 import subprocess
 import commands
@@ -104,69 +105,7 @@ cp %s /etc/openvpn/%s
 service openvpn start
 """
 
-TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """#!/bin/bash
 
-echo "In the beginning was the Computer http://%s" > /home/ubuntu/STARTUP_SCRIPT_LOG
-
-# Exit on error
-set -e
-echo "config: exit on error" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-#echo "waiting for network" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-#while true; do if ping -w 1 security.ubuntu.com; then break; else sleep 1; fi; done
-#echo "security.ubuntu.com ping success" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-
-# Overwrite the sources.list file with different content
-cat <<DELIM > /etc/apt/sources.list
-%s
-DELIM
-echo "sources.list overriden" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-
-apt-get update
-echo "SYSTEM UPDATED" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-echo "Installing packages" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-apt-get install -y unzip
-echo "unzip installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-# install mercurial and fetch latest version of the Team Login website
-#apt-get install -y mercurial
-#echo "mercurial installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-
-apt-get install -y apache2
-echo "apache2 installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-# apt-get install -y libapache2-mod-python
-# echo "apache2 with mod-python installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
- 
-apt-add-repository -y ppa:rye/ppa
-apt-get update
-echo "ppa:rye/ppa repository added" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-apt-get install -y libapache2-mod-auth-openid
-ln -s /etc/apache2/mods-available/authopenid.load /etc/apache2/mods-enabled
-echo "libapache2-mod-auth-openid 0.6 installed from ppa:rye/ppa" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-/etc/init.d/apache2 restart
-echo "apache2 restarted" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-# to list installed modules  
-# apachectl -t -D DUMP_MODULES
-
-# Make sure that www-data can run programs in the background (used inside CGI scripts)
-echo www-data > /etc/at.allow
-
-mv /home/ubuntu/STARTUP_SCRIPT_LOG /home/ubuntu/STARTUP_SCRIPT_LOG_DONE
-echo "STARTUP COMPLETE" >> /home/ubuntu/STARTUP_SCRIPT_LOG
-
-
-
-"""
 
 def load_startup_script(distro, username, machine_id, server_ip, client_ip):
     # TODO: Make this less fragile with a proper templating language (e.g, empy)
@@ -312,14 +251,17 @@ class Machine2 (object):
     def user_ssh_command(self):
         return "ssh -i %s %s@%s"%(self.kp_fname, self.username, self.hostname)
 
-    def wait_for_ssh_ready(self, retries=200, delay=0.1, file_to_look_for=None):
+    def ssh_wait_for_ready(self, retries=200, delay=0.1, file_to_look_for=None):
         if not file_to_look_for:
             file_to_look_for = self.startup_script_done_file
         cmd = ['ls', file_to_look_for]
         tries = 0
+        sys.stdout.write("%s retries " % retries)
         while tries < retries:
             tries += 1
-            print ( "%s / %s" % (tries, retries))
+            # print ( "%s / %s" % (tries, retries))
+            sys.stdout.write('.')
+            sys.stdout.flush()
             try:
                 self.ssh_send_command(cmd)
             except MachineException as ex:
@@ -337,102 +279,102 @@ class Machine2 (object):
     
 
 
-def create_team_login_instance():
-
-    credentials_ec2 = "boto_cfg.ini"
-    pem_key_directory = "team_login_pem" 
-    image_id = "ami-137bcf7a"
-    instance_type= "m1.small" # "t1.micro"
-    security_group = "TeamLogin"
-    username = "ubuntu" 
-    distro = "precise"
-    
-    
-    website_distribution = "cloudsim.zip"
-    
-    ec2 = common.create_ec2_proxy(credentials_ec2)
-    address = ec2.allocate_address()
-        
-    print("create_team_login_instance")
-    print("    BOTO file: %s" % credentials_ec2)
-    print("    pem_key_directory: %s" % pem_key_directory)
-    print("    image_id: %s" % image_id)
-    print("    instance_type: %s" % instance_type)
-    print("    security_group: %s" % security_group)
-    print("    username: %s" % username)
-    print("    distro: %s" % distro)
-    print("    public IP address: %s" % address.public_ip)
-    
-#    print("startup_script",startup_script)
-
-    sources_list = open('data/sources.list-%s'%(distro)).read()
-    startup_script = TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE % (address.public_ip, sources_list)
-    
-#    if len(startup_script) > 0 :
-#        print(startup_script)
-#        return
-    
-    uid, kp_name, kp_fname = create_machine_instance(ec2, pem_key_directory, image_id, instance_type, username, distro)
-    try:
-        # Start it up
-        #print("Load startup script: image_id %s, security_group %s" % (image_id, security_group ) )
-        res = ec2.run_instances(    image_id=image_id, 
-                                    key_name=kp_name, 
-                                    instance_type=instance_type, 
-                                    security_groups=[security_group], user_data=startup_script)
-        
-        print('    instance: %s' % res.id)
-        print('    key file: %s' % kp_fname)
-        
-        # Wait for it to boot to get an IP address
-        while True:
-            done = False
-            for r in ec2.get_all_instances():
-                if r.id == res.id and r.instances[0].public_dns_name:
-                    done = True
-                    break
-            if done:
-                break
-            else:
-                time.sleep(0.1)
-
-        inst = r.instances[0]
-        # hostname = inst.public_dns_name
-        aws_id = inst.id
-
-        print("Associating the instance with an Elastic IP:")
-        res = ec2.associate_address(inst.id, address.public_ip)
-        if not res:
-            raise "Elastic IP association failure"
-        
-        retries = 500
-        delay = 0.1
-        
-        print ("    ssh -i %s %s@%s" % ( kp_fname, username ,address.public_ip) )
-        print ("Waiting for ssh ready: %s retries, %s delay" % (retries, delay) )
-        wait_for_ssh_ready(username, kp_fname, address.public_ip, retries, delay)
-        
-        print ("Installing the web server code")
-        cmd = ("scp -i %s %s/%s %s@%s:/home/%s" % (kp_fname, os.getcwd(), website_distribution,username ,address.public_ip, username) )
-        
-        print ("Deploy the web server code")
-        execute_ssh_command ( "ssh -i%s %s@%s unzip cloudsim.zip; cd cloudsim; sh deploy.sh")
-        
-        print(cmd)
-        status, output = commands.getstatusoutput(cmd)
-        print ("    ", output)
-        print ("status", status)
-
-    except Exception as e:
-        # Clean up
-        
-        if os.path.exists(kp_fname):
-            os.unlink(kp_fname)
-            
-        cfg_dir=os.path.join(pem_key_directory, uid)
-        os.rmdir(cfg_dir)
-        # re-raise
-        raise
+#def create_team_login_instance():
+#
+#    credentials_ec2 = "boto_cfg.ini"
+#    pem_key_directory = "team_login_pem" 
+#    image_id = "ami-137bcf7a"
+#    instance_type= "m1.small" # "t1.micro"
+#    security_group = "TeamLogin"
+#    username = "ubuntu" 
+#    distro = "precise"
+#    
+#    
+#    website_distribution = "cloudsim.zip"
+#    
+#    ec2 = common.create_ec2_proxy(credentials_ec2)
+#    address = ec2.allocate_address()
+#        
+#    print("create_team_login_instance")
+#    print("    BOTO file: %s" % credentials_ec2)
+#    print("    pem_key_directory: %s" % pem_key_directory)
+#    print("    image_id: %s" % image_id)
+#    print("    instance_type: %s" % instance_type)
+#    print("    security_group: %s" % security_group)
+#    print("    username: %s" % username)
+#    print("    distro: %s" % distro)
+#    print("    public IP address: %s" % address.public_ip)
+#    
+##    print("startup_script",startup_script)
+#
+#    sources_list = open('data/sources.list-%s'%(distro)).read()
+#    startup_script = TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE % (address.public_ip, sources_list)
+#    
+##    if len(startup_script) > 0 :
+##        print(startup_script)
+##        return
+#    
+#    uid, kp_name, kp_fname = create_machine_instance(ec2, pem_key_directory, image_id, instance_type, username, distro)
+#    try:
+#        # Start it up
+#        #print("Load startup script: image_id %s, security_group %s" % (image_id, security_group ) )
+#        res = ec2.run_instances(    image_id=image_id, 
+#                                    key_name=kp_name, 
+#                                    instance_type=instance_type, 
+#                                    security_groups=[security_group], user_data=startup_script)
+#        
+#        print('    instance: %s' % res.id)
+#        print('    key file: %s' % kp_fname)
+#        
+#        # Wait for it to boot to get an IP address
+#        while True:
+#            done = False
+#            for r in ec2.get_all_instances():
+#                if r.id == res.id and r.instances[0].public_dns_name:
+#                    done = True
+#                    break
+#            if done:
+#                break
+#            else:
+#                time.sleep(0.1)
+#
+#        inst = r.instances[0]
+#        # hostname = inst.public_dns_name
+#        aws_id = inst.id
+#
+#        print("Associating the instance with an Elastic IP:")
+#        res = ec2.associate_address(inst.id, address.public_ip)
+#        if not res:
+#            raise "Elastic IP association failure"
+#        
+#        retries = 500
+#        delay = 0.1
+#        
+#        print ("    ssh -i %s %s@%s" % ( kp_fname, username ,address.public_ip) )
+#        print ("Waiting for ssh ready: %s retries, %s delay" % (retries, delay) )
+#        wait_for_ssh_ready(username, kp_fname, address.public_ip, retries, delay)
+#        
+#        print ("Installing the web server code")
+#        cmd = ("scp -i %s %s/%s %s@%s:/home/%s" % (kp_fname, os.getcwd(), website_distribution,username ,address.public_ip, username) )
+#        
+#        print ("Deploy the web server code")
+#        execute_ssh_command ( "ssh -i%s %s@%s unzip cloudsim.zip; cd cloudsim; sh deploy.sh")
+#        
+#        print(cmd)
+#        status, output = commands.getstatusoutput(cmd)
+#        print ("    ", output)
+#        print ("status", status)
+#
+#    except Exception as e:
+#        # Clean up
+#        
+#        if os.path.exists(kp_fname):
+#            os.unlink(kp_fname)
+#            
+#        cfg_dir=os.path.join(pem_key_directory, uid)
+#        os.rmdir(cfg_dir)
+#        # re-raise
+#        raise
     
 
 def create_ec2_instance(boto_config_file,
@@ -543,33 +485,7 @@ def create_ec2_instance(boto_config_file,
 
 if __name__ == '__main__':
     print ("create_ec2_instance::__main__\n\n")
-   #  create_team_login_instance()
-
-    
-    team_login =  Machine2(credentials_ec2 = "boto_cfg.ini",
-            pem_key_directory = "team_login_pem", 
-            image_id = "ami-137bcf7a",
-            instance_type= "m1.small", # "t1.micro"
-            security_groups = ["TeamLogin"],
-            username = "ubuntu", 
-            distro = "precise")
-    
-    sources_list = open('data/sources.list-%s'%(team_login.distro)).read()
-    startup_script = TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE % (team_login.hostname, sources_list)
-    team_login.launch(startup_script)
-    print("Machine launched at: %s"%(team_login.hostname))
-    print("SSH command:\n  %s"%(team_login.user_ssh_command()))
-    print("Waiting for ssh...")
-    team_login.wait_for_ssh_ready()
-    print("SSH connection test succeeded.")
-    website_distribution = "cloudsim.zip"
-    team_login.scp_send_file(website_distribution, '/home/%s'%(team_login.username))
-    remote_fname = "/home/%s/%s" % (team_login.username, website_distribution) 
-    team_login.ssh_send_command(["ls", remote_fname ] )
-    team_login.ssh_send_command(["unzip" , remote_fname] )
-    team_login.ssh_send_command(["sh", "/home/%s/cloudsim/deploy.sh" % team_login.username ] )
-
-    
+ 
                                     
                                         
                        
