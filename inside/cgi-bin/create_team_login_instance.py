@@ -1,4 +1,6 @@
-from create_ec2_instance import Machine2
+import os
+import sys
+from common import Machine2
 
 TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """#!/bin/bash
 
@@ -64,17 +66,86 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/STARTUP_SCRIPT_LOG
 
 """
 
+
+SOURCES_LIST = """
+## Note, this file is written by cloud-init on first boot of an instance
+## modifications made here will not survive a re-bundle.
+## if you wish to make changes you can:
+## a.) add 'apt_preserve_sources_list: true' to /etc/cloud/cloud.cfg
+##     or do the same in user-data
+## b.) add sources in /etc/apt/sources.list.d
+## c.) make changes to template file /etc/cloud/templates/sources.list.tmpl
+#
+
+# See http://help.ubuntu.com/community/UpgradeNotes for how to upgrade to
+# newer versions of the distribution.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
+
+## Major bug fix updates produced after the final release of the
+## distribution.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+## team. Also, please note that software in universe WILL NOT receive any
+## review or updates from the Ubuntu security team.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
+
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
+## team, and may not be under a free licence. Please satisfy yourself as to
+## your rights to use the software. Also, please note that software in 
+## multiverse WILL NOT receive any review or updates from the Ubuntu
+## security team.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+
+## Uncomment the following two lines to add software from the 'backports'
+## repository.
+## N.B. software from this repository may not have been tested as
+## extensively as that contained in the main release, although it includes
+## newer versions of some applications which may provide useful features.
+## Also, please note that software in backports WILL NOT receive any review
+## or updates from the Ubuntu security team.
+# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+# deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+
+## Uncomment the following two lines to add software from Canonical's
+## 'partner' repository.
+## This software is not part of Ubuntu, but is offered by Canonical and the
+## respective vendors as a service to Ubuntu users.
+# deb http://archive.canonical.com/ubuntu precise partner
+# deb-src http://archive.canonical.com/ubuntu precise partner
+
+deb http://security.ubuntu.com/ubuntu precise-security main restricted
+deb-src http://security.ubuntu.com/ubuntu precise-security main restricted
+deb http://security.ubuntu.com/ubuntu precise-security universe
+deb-src http://security.ubuntu.com/ubuntu precise-security universe
+deb http://security.ubuntu.com/ubuntu precise-security multiverse
+deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
+
+"""
+
 def generate_setup_script(distro):
-    sources_list = open('data/sources.list-%s'%(distro)).read()
-    startup_script = TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE % (sources_list)
+    startup_script = TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE % (SOURCES_LIST)
     return startup_script
 
 if __name__ == '__main__':
-    print ("create_team_login_instance::__main__\n\n")
-   #  create_team_login_instance()
-
+    print ("create_team_login_instance\n")
     
-    team_login =  Machine2(credentials_ec2 = "boto_cfg.ini",
+    credentials_ec2 = sys.argv[1]       # "boto.cfg"
+    website_distribution = sys.argv[2]  # "cloudsim.zip"
+    
+    print("credentials_ec2: %s" % credentials_ec2)
+    print("website_distribution: %s" % website_distribution)
+    print()
+    
+    team_login =  Machine2(credentials_ec2 = credentials_ec2,
             pem_key_directory = "team_login_pem", 
             image_id = "ami-137bcf7a",
             instance_type= "m1.small", # "t1.micro"
@@ -82,32 +153,34 @@ if __name__ == '__main__':
             username = "ubuntu", 
             distro = "precise")
     
-    website_distribution = "cloudsim.zip"
     deploy_script_fname = "/home/%s/cloudsim/deploy.sh" % team_login.username 
-    local_fname = "../../../%s" % website_distribution
     remote_fname = '/home/%s' % (team_login.username)
     
     startup_script = generate_setup_script(team_login.distro, )
     team_login.launch(startup_script)
+    
     print("Machine launched at: %s"%(team_login.hostname))
     print("\nIn case of emergency:\n\n%s\n\n"%(team_login.user_ssh_command()))
     print("Waiting for ssh")
     team_login.ssh_wait_for_ready()
     print("Good to go.")
     
-    print("uploading '%s' to the server to '%s'" % (local_fname, remote_fname) )
-    team_login.scp_send_file(local_fname, remote_fname)
+    print("uploading '%s' to the server to '%s'" % (website_distribution, remote_fname) )
+    team_login.scp_send_file(website_distribution, remote_fname)
     
     #checking that the file is there
-    remote_fname = "/home/%s/%s" % (team_login.username, website_distribution)
+    short_file_name = os.path.split(website_distribution)[1] 
+    remote_fname = "/home/%s/%s" % (team_login.username, short_file_name)
     team_login.ssh_send_command(["ls", remote_fname ] )
     
     print("unzip web app")
     out = team_login.ssh_send_command(["unzip" , remote_fname] )
     print ("\t%s"% out)
     
-    print("run deploy script '%s" % deploy_script_fname)
+    print("running deploy script '%s' remotely" % deploy_script_fname)
     out = team_login.ssh_send_command(["bash", deploy_script_fname ] )
     print ("\t%s"% out)
-
+    print('setup complete')
+    print("%s\n"%(team_login.user_ssh_command()))
+    
     # sudo apache2ctl restart

@@ -16,21 +16,43 @@ common.print_http_header()
 
 form = cgi.FieldStorage()
 
-action = form.getfirst('action') # common.MACHINE_ID_VARNAME
-email = form.getfirst('email') # common.MACHINE_ID_VARNAME
+d = {}
 
-keys = form.keys()
+d['action'] = form.getfirst('action') # common.MACHINE_ID_VARNAME
+d['user'] = form.getfirst('email') # common.MACHINE_ID_VARNAME
+d['keys'] = form.keys()
+
+udb = common.UserDatabase()
 
 template = """
 <h1>CloudSim admin</h1>
-<h2>Add / remove users</h2>
-keys = %s<br>
-action = %s<br>
-email = %s<br>
+<h2>UNKNOWN ACTION!</h2>
+keys = {keys}<br>
+action = {action}<br>
+email = {user}<br>
 """ 
 
-page = template % (keys, action, email)
 
+
+if d['action'] == "add":
+    udb.add_user(d['user'])
+    template = """
+<h1>CloudSim admin</h1>
+<h2>User {user} added succesfully</h2>
+<a href="/cloudsim/inside/cgi-bin/admin.py">Return</a><br>
+""" 
+
+if d['action'] == "remove":
+    udb.remove_user(d['user'])
+    template = """
+<h1>CloudSim admin</h1>
+<h2>User {user} removed</h2>
+<a href="/cloudsim/inside/cgi-bin/admin.py">Return</a><br>
+""" 
+    
+
+
+page = template.format(**d)
 print(page)
 
 common.print_footer()
