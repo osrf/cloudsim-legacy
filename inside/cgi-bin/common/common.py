@@ -7,8 +7,16 @@ import boto
 import cgi
 import stat
 import cgitb
+import unittest
+
+from machine import *
+
 # TODO: turn this back on 
 cgitb.enable()
+
+
+DISABLE_AUTHENTICATION_FOR_DEBUG_PURPOSES_ONLY = True
+
 
 PACKAGE_VARNAME = 'package'
 LAUNCHFILE_VARNAME = 'launchfile'
@@ -40,14 +48,92 @@ OV_SERVER_IP = '10.8.0.1'
 # openvpn client IP
 OV_CLIENT_IP = '10.8.0.2'
 
+class UserDatabase (object):
+    def __init__(self, fname = USER_DATABASE):
+        self.fname = fname
+        if not os.path.exists(self.fname):
+            self._write_users([])
+        
+    def get_users(self):    
+        
+        users = []
+        if os.path.exists(self.fname):
+            with open(self.fname, 'r') as f:
+                for u in f.readlines():
+                    users.append(u.strip())
+                f.close()
+        return users    
+    
+    def add_user(self, email_address):
+        users = self.get_users()
+        new_guy = email_address.strip()
+        if not new_guy in users:
+            users.append(new_guy)
+            self._write_users(users)
+            
+    def _write_users(self, users):
+        with open(self.fname, 'w') as f:
+            for u in users:
+                f.write("%s\n" % u)
+            f.close()
+                
+    def remove_user(self, email_address):
+        old_guy = email_address.strip()
+        users = self.get_users()
+        if old_guy in users:
+            users.remove(old_guy)
+            self._write_users(users)
+
+
 def get_user_database():
     # Load user database
-    users = []
-    with open(USER_DATABASE, 'r') as f:
-        for u in f.readlines():
-            users.append(u.strip())
-    return users
+#    users = []
+#    with open(USER_DATABASE, 'r') as f:
+#        for u in f.readlines():
+#            users.append(u.strip())
+#    return users
+    db = UserDatabase()
+    return db.get_users()
 
+class CloudCredentials(object):
+    
+    def __init__(self, 
+                 aws_access_key_id, 
+                 aws_secret_access_key, 
+                 ec2_region_name = 'us-east-1', 
+                 ec2_region_endpoint = 'ec2.amazonaws.com', 
+                 fname = BOTO_CONFIG_FILE_USEAST ):
+        
+        self.fname = fname
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
+                
+        self.config_text = """
+[Credentials]
+aws_access_key_id = %s
+aws_secret_access_key = %s
+
+[Boto]
+ec2_region_name = %s
+ec2_region_endpoint = %s
+"""    % (aws_access_key_id, self.aws_secret_access_key, ec2_region_name, ec2_region_endpoint)
+        
+        
+    
+    def save(self ):
+        with open(self.fname, 'w') as f:
+            f.write(self.config_text)
+            f.close()
+
+    def validate(self):
+        from boto.ec2.connection import EC2Connection
+        try:
+            conn = EC2Connection(self.aws_access_key_id, self.aws_secret_access_key)
+            conn.get_all_zones()
+        except:
+            return False
+        return True
+        
 class SessionDatabase():
     def __init__(self, fname):
         self.db = {}
@@ -72,6 +158,7 @@ class SessionDatabase():
                 tmpfile.write("%s %s\n"%(k,v))
         os.rename(tmpfname, self.fname)
 
+
 def print_http_header(newline=True):
     print("Content-Type: text/html")
     if newline:
@@ -83,7 +170,7 @@ def print_http_filedownload_header(fname, newline=True):
     if newline:
         print("\n")
 
-def session_id_to_email_bak():
+def session_id_to_email_internal():
     in_cookies = Cookie.Cookie()
     in_cookies.load(os.environ[HTTP_COOKIE])
     # Check for a session cookie
@@ -96,7 +183,11 @@ def session_id_to_email_bak():
     return None
 
 def session_id_to_email():
-    return "hugo@osrfoundation.org"
+    if DISABLE_AUTHENTICATION_FOR_DEBUG_PURPOSES_ONLY:
+        return "debug@osrfoundation.org"
+    r = session_id_to_email_internal()
+    return r
+
 
 def check_auth(check_email=False):
     email = None
@@ -125,15 +216,16 @@ def check_auth_and_generate_response(check_email=False):
 #    if check_auth(check_email):
 #        return True
 
-    check = False
-    
+    user_checked = False
     str = "check_email = %s<p>" % check_email
 
     email = None
     if check_email:
         form = cgi.FieldStorage()
         email = form.getfirst(EMAIL_VARNAME)
-        str += "form.getfirst('openid.ext1.value.email') returns '%s'<p>" % email
+        str += "available form keys: %s<p>" % form.keys()
+        str += "email = form.getfirst('openid.ext1.value.email') returns '%s'<p>" % email
+        
     if email:
         save_session_id = True
     else:
@@ -158,13 +250,15 @@ def check_auth_and_generate_response(check_email=False):
                 str += "db[%s] = %s<p>" % (cloudsim_session_id, email)
             else:
                 str += "???<p>"
-            check = True
+            user_checked = True
     str += "check done!"    
     #return None
-    check = True
+    
+    if DISABLE_AUTHENTICATION_FOR_DEBUG_PURPOSES_ONLY:
+        user_checked = True
     
     
-    if check:
+    if user_checked:
         return True
     else:
         print_http_header()
@@ -321,4 +415,31 @@ def start_background_task(script):
     #os.unlink(tmpfile.name)
     if po.returncode != 0:
         raise Exception('start_background_task() failed: %s; %s'%(out, err))
+
+#########################################################################
+    
+class AdminDb(unittest.TestCase):
+
+    def test_addremove_users(self):
+        db = UserDatabase('toto.txt')
+        users = db.get_users()
+        self.assert_(len(users) == 0, "not empty!")
+        db.add_user('toto@popo.com')
+        self.assert_(len(db.get_users()) == 1, "not added!")
+        db.remove_user('not_a_real_user@popo.com')
+        self.assert_(len(db.get_users()) == 1, "not not removed!")
+        db.remove_user('toto@popo.com')
+        self.assert_(len(db.get_users()) == 0, "not removed!")
+    
+    def test_credentials(self):
+        cloud = CloudCredentials('aws_access_key_id', 'aws_secret_access_key', 'ec2_region_name', 'ec2_region_endpoint', 'toto.cfg' )
+        valid = cloud.validate()
+        self.assert_(valid == False, "valid?")
+        cloud.save()
+        self.assert_(os.path.exists('toto.cfg'), 'no cred!')
+         
+        
+if __name__ == '__main__':
+    print('COMMON TESTS')
+    unittest.main()    
 

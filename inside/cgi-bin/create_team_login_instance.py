@@ -1,6 +1,7 @@
 import os
 import sys
-from common import Machine2
+
+from common import Machine2, Machine_configuration
 
 TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """#!/bin/bash
 
@@ -138,28 +139,44 @@ def generate_setup_script(distro):
 if __name__ == '__main__':
     print ("create_team_login_instance\n")
     
+    if(len(sys.argv) < 3 ):
+        print("usage:\npython %s boto_file website_distribution" % os.path.split(sys.argv[0])[1])
+        exit(0)
+    
     credentials_ec2 = sys.argv[1]       # "boto.cfg"
     website_distribution = sys.argv[2]  # "cloudsim.zip"
+    
+    
     
     print("credentials_ec2: %s" % credentials_ec2)
     print("website_distribution: %s" % website_distribution)
     print()
     
-    team_login =  Machine2(credentials_ec2 = credentials_ec2,
-            pem_key_directory = "team_login_pem", 
-            image_id = "ami-137bcf7a",
-            instance_type= "m1.small", # "t1.micro"
-            security_groups = ["TeamLogin"],
-            username = "ubuntu", 
-            distro = "precise")
+#    team_login =  Machine2(credentials_ec2 = credentials_ec2,
+#            pem_key_directory = "team_login_pem", 
+#            image_id = "ami-137bcf7a",
+#            instance_type= "m1.small", # "t1.micro"
+#            security_groups = ["TeamLogin"],
+#            username = "ubuntu", 
+#            distro = "precise")
     
-    deploy_script_fname = "/home/%s/cloudsim/deploy.sh" % team_login.username 
-    remote_fname = '/home/%s' % (team_login.username)
+    config = Machine_configuration()
+            
+    config.initialize(  pem_key_directory = "team_login_pem", 
+                        credentials_ec2 = credentials_ec2, 
+                        image_id ="ami-137bcf7a", 
+                        instance_type= "m1.small", # "t1.micro"
+                        security_groups = ["TeamLogin"],
+                        username = "ubuntu", 
+                        distro = "precise")
     
-    startup_script = generate_setup_script(team_login.distro, )
-    team_login.launch(startup_script)
+    deploy_script_fname = "/home/%s/cloudsim/deploy.sh" % config.username 
+    remote_fname = '/home/%s' % (config.username)
     
-    print("Machine launched at: %s"%(team_login.hostname))
+    startup_script = generate_setup_script(config.distro, )
+    team_login  = Machine2(config, startup_script)
+    
+    print("Machine launched at: %s"%(team_login.config.hostname))
     print("\nIn case of emergency:\n\n%s\n\n"%(team_login.user_ssh_command()))
     print("Waiting for ssh")
     team_login.ssh_wait_for_ready()
@@ -170,7 +187,7 @@ if __name__ == '__main__':
     
     #checking that the file is there
     short_file_name = os.path.split(website_distribution)[1] 
-    remote_fname = "/home/%s/%s" % (team_login.username, short_file_name)
+    remote_fname = "/home/%s/%s" % (team_login.config.username, short_file_name)
     team_login.ssh_send_command(["ls", remote_fname ] )
     
     print("unzip web app")
