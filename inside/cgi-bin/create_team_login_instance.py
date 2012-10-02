@@ -150,7 +150,7 @@ if __name__ == '__main__':
     
     print("credentials_ec2: %s" % credentials_ec2)
     print("website_distribution: %s" % website_distribution)
-    print()
+    print("")
     
 #    team_login =  Machine2(credentials_ec2 = credentials_ec2,
 #            pem_key_directory = "team_login_pem", 
@@ -176,11 +176,11 @@ if __name__ == '__main__':
     startup_script = generate_setup_script(config.distro, )
     team_login  = Machine2(config, startup_script)
     
-    print("Machine launched at: %s"%(team_login.config.hostname))
-    print("\nIn case of emergency:\n\n%s\n\n"%(team_login.user_ssh_command()))
+    print("\n%s"%(team_login.config.hostname))
+    print("%s\n\n"%(team_login.user_ssh_command()))
     print("Waiting for ssh")
     team_login.ssh_wait_for_ready()
-    print("Good to go.")
+    
     
     print("uploading '%s' to the server to '%s'" % (website_distribution, remote_fname) )
     team_login.scp_send_file(website_distribution, remote_fname)
@@ -199,5 +199,6 @@ if __name__ == '__main__':
     print ("\t%s"% out)
     print('setup complete')
     print("%s\n"%(team_login.user_ssh_command()))
+    print("http://%s"% team_login.config.hostname)
     
     # sudo apache2ctl restart

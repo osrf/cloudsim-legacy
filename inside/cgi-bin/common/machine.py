@@ -97,7 +97,7 @@ class Machine2 (object):
         print("event: %s" % (event_name)) 
         if event_data:
             print("data:%s" %  (event_data))
-        print()
+        print("")
         sys.stdout.flush()
         
                         

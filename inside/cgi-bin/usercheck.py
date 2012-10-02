@@ -33,5 +33,5 @@ sdb.save()
 #out_cookies[common.CLOUDSIM_SESSION_COOKIE_NAME] = openid_session
 #out_cookies[common.CLOUDSIM_SESSION_COOKIE_NAME]['path'] = '/cloudsim/inside/cgi-bin/'
 #print(out_cookies)
-print("Location: /cloudsim/inside/cgi-bin/console2.py\n")
+print("Location: /cloudsim/inside/cgi-bin/console.py\n")
 
