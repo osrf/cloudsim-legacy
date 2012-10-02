@@ -24,7 +24,7 @@ if not matches:
     print("Error: machine not found.  Perhaps the machine is still being provisioned.<br>")
 else:
     machine = matches[0]
-    cmd = ['\"nohup killall -INT roslaunch >/dev/null 2>/dev/null </dev/null &\"']
+    cmd = ['killall', '-INT', 'roslaunch']
     print("<p>Running the following command: <pre>%s</pre></p>"%(cgi.escape(' '.join(cmd))))
     ret, err = machine.ssh(cmd, args=['-f'])
     # TODO: Differentiate between success and failure, and make message better.

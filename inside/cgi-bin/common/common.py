@@ -12,7 +12,7 @@ import unittest
 from machine import *
 
 # TODO: turn this back on 
-cgitb.enable()
+# cgitb.enable()
 
 
 DISABLE_AUTHENTICATION_FOR_DEBUG_PURPOSES_ONLY = False
@@ -103,95 +103,95 @@ ec2_region_endpoint = %s
 
 
 
-def acheck_auth(check_email=False):
-    email = None
-    if check_email:
-        form = cgi.FieldStorage()
-        email = form.getfirst(EMAIL_VARNAME)
-    if email:
-        save_session_id = True
-    else:
-        email = session_id_to_email()
-        save_session_id = False
-    if email:
-        users = get_user_database()
-        if email in users:
-            in_cookies = Cookie.Cookie()
-            in_cookies.load(os.environ[HTTP_COOKIE])
-            if save_session_id and OPENID_SESSION_COOKIE_NAME in in_cookies:
-                cloudsim_session_id = in_cookies[OPENID_SESSION_COOKIE_NAME].value
-                sdb = SessionDatabase(SESSION_DATABASE)
-                sdb.db[cloudsim_session_id] = email
-                sdb.save()
-            return True
-    return None
-
-    
-def acheck_auth_and_generate_response(check_email=False):
-#    if check_auth(check_email):
+#def acheck_auth(check_email=False):
+#    email = None
+#    if check_email:
+#        form = cgi.FieldStorage()
+#        email = form.getfirst(EMAIL_VARNAME)
+#    if email:
+#        save_session_id = True
+#    else:
+#        email = session_id_to_email()
+#        save_session_id = False
+#    if email:
+#        users = get_user_database()
+#        if email in users:
+#            in_cookies = Cookie.Cookie()
+#            in_cookies.load(os.environ[HTTP_COOKIE])
+#            if save_session_id and OPENID_SESSION_COOKIE_NAME in in_cookies:
+#                cloudsim_session_id = in_cookies[OPENID_SESSION_COOKIE_NAME].value
+#                sdb = SessionDatabase(SESSION_DATABASE)
+#                sdb.db[cloudsim_session_id] = email
+#                sdb.save()
+#            return True
+#    return None
+#
+#    
+#def acheck_auth_and_generate_response(check_email=False):
+##    if check_auth(check_email):
+##        return True
+# 
+#    # print_http_header()
+#    check_email = True
+#    user_checked = False
+#    str = "check_email = %s<p>" % check_email
+#
+#    for e in os.environ:
+#        str += "%s = %s <p>" % (e, os.environ[e])
+#            
+#    email = None
+#    if check_email:
+#        form = cgi.FieldStorage()
+#        email = form.getfirst(EMAIL_VARNAME)
+#        d = {}
+#        for k in form.keys():
+#            d[k] = form.getfirst(k)
+#        str += "available form keys: %s<p>" % form.keys() 
+#        str += "email = form.getfirst('openid.ext1.value.email') returns '%s'<p>" % email
+#        
+#    if email:
+#        save_session_id = True
+#    else:
+#        email = session_id_to_email()
+#        save_session_id = False
+#        str += "session_id_to_email() returns '%s' <p>" % email
+#    if email:
+#        users = get_user_database()
+#        str += "users %s <p>" % users
+#        if email in users:
+#            in_cookies = Cookie.Cookie()
+#            in_cookies.load(os.environ[HTTP_COOKIE])
+#            str += "OPENID_SESSION_COOKIE_NAME = %s<p>" % OPENID_SESSION_COOKIE_NAME
+#            str += "save_session_id = %s<p>" % save_session_id
+#            str += "in_cookies = %s<p>" % in_cookies
+#            if save_session_id and OPENID_SESSION_COOKIE_NAME in in_cookies:
+#                # str += "%s" % email
+#                cloudsim_session_id = in_cookies[OPENID_SESSION_COOKIE_NAME].value
+#                sdb = SessionDatabase(SESSION_DATABASE)
+#                sdb.db[cloudsim_session_id] = email
+#                sdb.save()
+#                str += "db[%s] = %s<p>" % (cloudsim_session_id, email)
+#            else:
+#                str += "???<p>"
+#            user_checked = True
+#    str += "check done!"    
+#    #return None
+#    
+#    if DISABLE_AUTHENTICATION_FOR_DEBUG_PURPOSES_ONLY:
+#        user_checked = True
+#    
+#    
+#    if user_checked:
 #        return True
- 
-    # print_http_header()
-    check_email = True
-    user_checked = False
-    str = "check_email = %s<p>" % check_email
-
-    for e in os.environ:
-        str += "%s = %s <p>" % (e, os.environ[e])
-            
-    email = None
-    if check_email:
-        form = cgi.FieldStorage()
-        email = form.getfirst(EMAIL_VARNAME)
-        d = {}
-        for k in form.keys():
-            d[k] = form.getfirst(k)
-        str += "available form keys: %s<p>" % form.keys() 
-        str += "email = form.getfirst('openid.ext1.value.email') returns '%s'<p>" % email
-        
-    if email:
-        save_session_id = True
-    else:
-        email = session_id_to_email()
-        save_session_id = False
-        str += "session_id_to_email() returns '%s' <p>" % email
-    if email:
-        users = get_user_database()
-        str += "users %s <p>" % users
-        if email in users:
-            in_cookies = Cookie.Cookie()
-            in_cookies.load(os.environ[HTTP_COOKIE])
-            str += "OPENID_SESSION_COOKIE_NAME = %s<p>" % OPENID_SESSION_COOKIE_NAME
-            str += "save_session_id = %s<p>" % save_session_id
-            str += "in_cookies = %s<p>" % in_cookies
-            if save_session_id and OPENID_SESSION_COOKIE_NAME in in_cookies:
-                # str += "%s" % email
-                cloudsim_session_id = in_cookies[OPENID_SESSION_COOKIE_NAME].value
-                sdb = SessionDatabase(SESSION_DATABASE)
-                sdb.db[cloudsim_session_id] = email
-                sdb.save()
-                str += "db[%s] = %s<p>" % (cloudsim_session_id, email)
-            else:
-                str += "???<p>"
-            user_checked = True
-    str += "check done!"    
-    #return None
-    
-    if DISABLE_AUTHENTICATION_FOR_DEBUG_PURPOSES_ONLY:
-        user_checked = True
-    
-    
-    if user_checked:
-        return True
-    else:
-        print_http_header()
-        print("<title>Access Denied</title>")
-        print("<h1>ze Access Denied</h1>")
-        
-        print("<h2>%s</h2>" % str)
-           
-        print("Try <a href=\"/cloudsim/inside/cgi-bin/logout.py\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(ADMIN_EMAIL, ADMIN_EMAIL))
-        return False
+#    else:
+#        print_http_header()
+#        print("<title>Access Denied</title>")
+#        print("<h1>ze Access Denied</h1>")
+#        
+#        print("<h2>%s</h2>" % str)
+#           
+#        print("Try <a href=\"/cloudsim/inside/cgi-bin/logout.py\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(ADMIN_EMAIL, ADMIN_EMAIL))
+#        return False
 
    
 

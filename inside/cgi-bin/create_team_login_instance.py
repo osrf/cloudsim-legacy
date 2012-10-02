@@ -60,6 +60,7 @@ echo "apache2 restarted" >> /home/ubuntu/STARTUP_SCRIPT_LOG
 # Make sure that www-data can run programs in the background (used inside CGI scripts)
 echo www-data > /etc/at.allow
 
+
 mv /home/ubuntu/STARTUP_SCRIPT_LOG /home/ubuntu/STARTUP_SCRIPT_LOG_DONE
 echo "STARTUP COMPLETE" >> /home/ubuntu/STARTUP_SCRIPT_LOG
 
