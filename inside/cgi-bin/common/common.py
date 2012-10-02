@@ -15,7 +15,7 @@ from machine import *
 cgitb.enable()
 
 
-DISABLE_AUTHENTICATION_FOR_DEBUG_PURPOSES_ONLY = True
+DISABLE_AUTHENTICATION_FOR_DEBUG_PURPOSES_ONLY = False
 
 
 PACKAGE_VARNAME = 'package'
@@ -29,7 +29,7 @@ BOTO_CONFIG_FILE_USEAST = '/var/www-cloudsim-auth/boto-useast'
 BOTO_CONFIG_FILE_USWEST_CA = '/var/www-cloudsim-auth/boto-uswest-ca'
 MACHINES_DIR = '/var/www-cloudsim-auth/machines'
 OPENID_SESSION_COOKIE_NAME = 'open_id_session_id'
-CLOUDSIM_SESSION_COOKIE_NAME = 'cloudsim_session_id'
+#CLOUDSIM_SESSION_COOKIE_NAME = 'cloudsim_session_id'
 HTTP_COOKIE = 'HTTP_COOKIE'
 MACHINE_ID_VARNAME = 'machine_id'
 ACTION_VARNAME = 'action'
@@ -48,41 +48,6 @@ OV_SERVER_IP = '10.8.0.1'
 # openvpn client IP
 OV_CLIENT_IP = '10.8.0.2'
 
-class UserDatabase (object):
-    def __init__(self, fname = USER_DATABASE):
-        self.fname = fname
-        if not os.path.exists(self.fname):
-            self._write_users([])
-        
-    def get_users(self):    
-        
-        users = []
-        if os.path.exists(self.fname):
-            with open(self.fname, 'r') as f:
-                for u in f.readlines():
-                    users.append(u.strip())
-                f.close()
-        return users    
-    
-    def add_user(self, email_address):
-        users = self.get_users()
-        new_guy = email_address.strip()
-        if not new_guy in users:
-            users.append(new_guy)
-            self._write_users(users)
-            
-    def _write_users(self, users):
-        with open(self.fname, 'w') as f:
-            for u in users:
-                f.write("%s\n" % u)
-            f.close()
-                
-    def remove_user(self, email_address):
-        old_guy = email_address.strip()
-        users = self.get_users()
-        if old_guy in users:
-            users.remove(old_guy)
-            self._write_users(users)
 
 
 def get_user_database():
@@ -134,62 +99,11 @@ ec2_region_endpoint = %s
             return False
         return True
         
-class SessionDatabase():
-    def __init__(self, fname):
-        self.db = {}
-        self.fname = fname
-        self.load()
-
-    def load(self):
-        self.db = {}
-        if not os.path.isfile(self.fname):
-            # Touch
-            open(self.fname, 'w')    
-        with open(self.fname, 'r') as f:
-            for u in f.readlines():
-                fields = u.split()
-                if len(fields) == 2:
-                    self.db[fields[0]] = fields[1]
-
-    def save(self):
-        with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
-            tmpfname = tmpfile.name
-            for k,v in self.db.iteritems():
-                tmpfile.write("%s %s\n"%(k,v))
-        os.rename(tmpfname, self.fname)
 
 
-def print_http_header(newline=True):
-    print("Content-Type: text/html")
-    if newline:
-        print("\n")
-
-def print_http_filedownload_header(fname, newline=True):
-    print("Content-Type: applicatoin/octet-stream; name=\"%s\""%(fname))
-    print("Content-Disposition: attachment; filename=\"%s\""%(fname))
-    if newline:
-        print("\n")
-
-def session_id_to_email_internal():
-    in_cookies = Cookie.Cookie()
-    in_cookies.load(os.environ[HTTP_COOKIE])
-    # Check for a session cookie
-    if CLOUDSIM_SESSION_COOKIE_NAME in in_cookies:
-        cloudsim_session_id = in_cookies[CLOUDSIM_SESSION_COOKIE_NAME].value
-        sdb = SessionDatabase(SESSION_DATABASE)
-        if cloudsim_session_id in sdb.db:
-            email = sdb.db[cloudsim_session_id]
-            return email
-    return None
-
-def session_id_to_email():
-    if DISABLE_AUTHENTICATION_FOR_DEBUG_PURPOSES_ONLY:
-        return "debug@osrfoundation.org"
-    r = session_id_to_email_internal()
-    return r
 
 
-def check_auth(check_email=False):
+def acheck_auth(check_email=False):
     email = None
     if check_email:
         form = cgi.FieldStorage()
@@ -212,18 +126,27 @@ def check_auth(check_email=False):
             return True
     return None
 
-def check_auth_and_generate_response(check_email=False):
+    
+def acheck_auth_and_generate_response(check_email=False):
 #    if check_auth(check_email):
 #        return True
-
+ 
+    # print_http_header()
+    check_email = True
     user_checked = False
     str = "check_email = %s<p>" % check_email
 
+    for e in os.environ:
+        str += "%s = %s <p>" % (e, os.environ[e])
+            
     email = None
     if check_email:
         form = cgi.FieldStorage()
         email = form.getfirst(EMAIL_VARNAME)
-        str += "available form keys: %s<p>" % form.keys()
+        d = {}
+        for k in form.keys():
+            d[k] = form.getfirst(k)
+        str += "available form keys: %s<p>" % form.keys() 
         str += "email = form.getfirst('openid.ext1.value.email') returns '%s'<p>" % email
         
     if email:
@@ -270,14 +193,7 @@ def check_auth_and_generate_response(check_email=False):
         print("Try <a href=\"/cloudsim/inside/cgi-bin/logout.py\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(ADMIN_EMAIL, ADMIN_EMAIL))
         return False
 
-def print_footer():
-    email = session_id_to_email()
-    print("<hr>")
-    print("Logged in as: %s<br>"%(email))
-    print("<a href=\"/cloudsim/inside/cgi-bin/admin.py\">Admin</a><br>")
-    print("<a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a><br>")
-    print("<a href=\"/cloudsim/inside/cgi-bin/logout.py\">Logout</a>")
-    
+   
 
 
 class Machine:

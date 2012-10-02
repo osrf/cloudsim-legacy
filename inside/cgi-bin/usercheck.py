@@ -4,16 +4,34 @@ from __future__ import print_function
 import sys
 import os
 import Cookie
-
+import cgi
 import common
 
-if not common.check_auth_and_generate_response(True):
-    sys.exit(0)
-
+# Get form and cookie data
+form = cgi.FieldStorage()
+email = form.getfirst(common.EMAIL_VARNAME)
 in_cookies = Cookie.Cookie()
 in_cookies.load(os.environ[common.HTTP_COOKIE])
-if common.OPENID_SESSION_COOKIE_NAME in in_cookies:
-    out_cookies = Cookie.Cookie()
-    out_cookies[common.CLOUDSIM_SESSION_COOKIE_NAME] = in_cookies[common.OPENID_SESSION_COOKIE_NAME].value
-    print(out_cookies)
-    print("Location: /cloudsim/inside/cgi-bin/console.py\n")
+openid_session = in_cookies[common.OPENID_SESSION_COOKIE_NAME].value
+
+# Check email 
+udb = common.UserDatabase()
+users = udb.get_users()
+if email not in users:
+    common.print_http_header()
+    print("Access Denied ... '%s' not in %s<p>" % (email, users))
+    sys.exit(0)
+
+# Save session ID and email to our own database
+sdb = common.SessionDatabase()
+sdb.load()
+sdb.db[openid_session] = email
+sdb.save()
+
+# Set a session cookie with our name.
+#out_cookies = Cookie.SmartCookie()
+#out_cookies[common.CLOUDSIM_SESSION_COOKIE_NAME] = openid_session
+#out_cookies[common.CLOUDSIM_SESSION_COOKIE_NAME]['path'] = '/cloudsim/inside/cgi-bin/'
+#print(out_cookies)
+print("Location: /cloudsim/inside/cgi-bin/console2.py\n")
+

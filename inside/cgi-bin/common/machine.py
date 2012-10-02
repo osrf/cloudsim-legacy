@@ -92,31 +92,43 @@ class Machine2 (object):
         x = Machine2(config, script, do_launch = False)  
         return x
                 
+    def _event(self, event_name, event_data=None):
+        data = event_data
+        print("event: %s" % (event_name)) 
+        if event_data:
+            print("data:%s" %  (event_data))
+        print()
+        sys.stdout.flush()
+        
+                        
     def _launch(self, startup_script):
         
         self.config.startup_script = startup_script + '\ntouch %s\n'%(self.startup_script_done_file)
         self._create_machine_keys()
         try:
             # Start it up
-            print("run instances")#print(Load startup script: image_id %s, security_group %s" % (image_id, security_group ) )
+            self._event("action", "{state:run}")
             res = self.ec2.run_instances(   image_id=self.config.image_id, 
                                             key_name=self.config.kp_name, 
                                             instance_type=self.config.instance_type, 
                                             security_groups = self.config.security_groups, 
                                             user_data=self.config.startup_script)
             
-            
+           
             self.config.print_cfg()
             
-            print("create_instance %s" % res.id)            
-            print('Wait for it to boot to get an IP address')
+            self.config.reservation = res.id
+            self._event("milestone", "{state:reserved, reservation_id:'%s'}" % self.config.reservation)
+            self._event("action", "{state:'waiting_for_ip'}") # print('Wait for it to boot to get an IP address')
+            
+            # to do: add retries
             while True:
-                sys.stdout.write(".")
+                self._event("action", "{state:'waiting_for_ip'}") # print('Wait for it to boot to get an IP address')
                 done = False
                 for r in self.ec2.get_all_instances():
                     if r.id == res.id and r.instances[0].public_dns_name:
                         done = True
-                        print("Got it!")
+                        self._event("milestone", "{state:'ip_set'}")
                         break
                 if done:
                     break
@@ -126,10 +138,14 @@ class Machine2 (object):
             inst = r.instances[0]
             self.config.hostname = inst.public_dns_name
             self.config.aws_id = inst.id
-
+            
+#            d = {}
+#            d.update(self.config)
+#            del d['startup_script']
+#            d['state'] = "connected"
+#            self._event("milestone", "%s" % d)
  
-            print('    instance: %s' % self.config.aws_id)
-            print('    key file: %s' % self.config.kp_fname)
+            
 
         except Exception as e:
             # Clean up
@@ -189,11 +205,13 @@ class Machine2 (object):
             file_to_look_for = self.startup_script_done_file
         cmd = ['ls', file_to_look_for]
         tries = 0
+        self._event("action", "{state:'ssh_wait_for_ready', try:%s, retries:%s}" % (tries, retries) )
         sys.stdout.write("%s retries " % retries)
+        
         while tries < retries:
             tries += 1
             # print ( "%s / %s" % (tries, retries))
-            sys.stdout.write('.')
+            self._event("action", "{state:'ssh_wait_for_ready', try:%s, retries:%s}" % (tries, retries) )
             sys.stdout.flush()
             try:
                 self.ssh_send_command(cmd)
@@ -201,15 +219,16 @@ class Machine2 (object):
                 # Expected; e.g., the machine isn't up yet
                 time.sleep(delay)
             else:
-                print ("    Success")
+                self._event("milestone", "{state:'ssh_connected'}")
                 return
-        raise MachineException("Maximum retry limit exceeded; ssh connection could not be established.")
+        raise MachineException("Maximum retry limit exceeded; ssh connection could not be established or file '%s' not found" % file_to_look_for)
     
     def terminate(self):
         terminated_list = self.ec2.terminate_instances(instance_ids=[self.config.aws_id])
         if(len(terminated_list) == 0 ):
             raise MachineException("Could not terminate instance %s" % self.config.aws_id)
-        print("%s terminated" % terminated_list[0])
+        print("{state:'terminated', machine_id:'%s'" % terminated_list[0])
+        
         
     
 #########################################################################
@@ -255,8 +274,12 @@ class MachineCase(unittest.TestCase):
             fname = 'test_pems/machine.instance'
             print('saving machine instance info to "%s"'%fname)
             micro_original.config.save_json(fname)
-            
-
+           
+            #
+            # !!!
+            # From now on we're using a new Machine instance, initialized by the json data
+            #  
+            #
             
             micro = Machine2.from_file(fname)
             print("Machine launched at: %s"%(micro.config.hostname))
@@ -264,7 +287,6 @@ class MachineCase(unittest.TestCase):
             print("Waiting for ssh")
             micro.ssh_wait_for_ready()
             print("Good to go.")            
-
 
             micro.terminate()
             

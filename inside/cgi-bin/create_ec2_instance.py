@@ -7,6 +7,8 @@ import subprocess
 import commands
 
 import common
+import unittest
+from common import Machine2, Machine_configuration
 
 #IMAGE_ID = 'ami-4438b474' # Vanilla 64-bit Ubuntu 12.04
 IMAGE_ID = 'ami-82fa58eb' # Vanilla 64-bit Ubuntu 12.04 for us-east
@@ -114,120 +116,6 @@ def load_startup_script(distro, username, machine_id, server_ip, client_ip):
     startup_script = STARTUP_SCRIPT%(sources_list, username, key, server_ip, client_ip, key, key, key, key)
     return startup_script
 
-    
-    
-
-    # Create key pair to use for SSH access.  Note that 
-    # create_key_pair() registers the named key with AWS.
-
-        
-
-
-   
-#    def assign_public_ip(self):
-#        address = ec2.allocate_address()
-#        return 
-    
-    
-
-
-#def create_team_login_instance():
-#
-#    credentials_ec2 = "boto_cfg.ini"
-#    pem_key_directory = "team_login_pem" 
-#    image_id = "ami-137bcf7a"
-#    instance_type= "m1.small" # "t1.micro"
-#    security_group = "TeamLogin"
-#    username = "ubuntu" 
-#    distro = "precise"
-#    
-#    
-#    website_distribution = "cloudsim.zip"
-#    
-#    ec2 = common.create_ec2_proxy(credentials_ec2)
-#    address = ec2.allocate_address()
-#        
-#    print("create_team_login_instance")
-#    print("    BOTO file: %s" % credentials_ec2)
-#    print("    pem_key_directory: %s" % pem_key_directory)
-#    print("    image_id: %s" % image_id)
-#    print("    instance_type: %s" % instance_type)
-#    print("    security_group: %s" % security_group)
-#    print("    username: %s" % username)
-#    print("    distro: %s" % distro)
-#    print("    public IP address: %s" % address.public_ip)
-#    
-##    print("startup_script",startup_script)
-#
-#    sources_list = open('data/sources.list-%s'%(distro)).read()
-#    startup_script = TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE % (address.public_ip, sources_list)
-#    
-##    if len(startup_script) > 0 :
-##        print(startup_script)
-##        return
-#    
-#    uid, kp_name, kp_fname = create_machine_instance(ec2, pem_key_directory, image_id, instance_type, username, distro)
-#    try:
-#        # Start it up
-#        #print("Load startup script: image_id %s, security_group %s" % (image_id, security_group ) )
-#        res = ec2.run_instances(    image_id=image_id, 
-#                                    key_name=kp_name, 
-#                                    instance_type=instance_type, 
-#                                    security_groups=[security_group], user_data=startup_script)
-#        
-#        print('    instance: %s' % res.id)
-#        print('    key file: %s' % kp_fname)
-#        
-#        # Wait for it to boot to get an IP address
-#        while True:
-#            done = False
-#            for r in ec2.get_all_instances():
-#                if r.id == res.id and r.instances[0].public_dns_name:
-#                    done = True
-#                    break
-#            if done:
-#                break
-#            else:
-#                time.sleep(0.1)
-#
-#        inst = r.instances[0]
-#        # hostname = inst.public_dns_name
-#        aws_id = inst.id
-#
-#        print("Associating the instance with an Elastic IP:")
-#        res = ec2.associate_address(inst.id, address.public_ip)
-#        if not res:
-#            raise "Elastic IP association failure"
-#        
-#        retries = 500
-#        delay = 0.1
-#        
-#        print ("    ssh -i %s %s@%s" % ( kp_fname, username ,address.public_ip) )
-#        print ("Waiting for ssh ready: %s retries, %s delay" % (retries, delay) )
-#        wait_for_ssh_ready(username, kp_fname, address.public_ip, retries, delay)
-#        
-#        print ("Installing the web server code")
-#        cmd = ("scp -i %s %s/%s %s@%s:/home/%s" % (kp_fname, os.getcwd(), website_distribution,username ,address.public_ip, username) )
-#        
-#        print ("Deploy the web server code")
-#        execute_ssh_command ( "ssh -i%s %s@%s unzip cloudsim.zip; cd cloudsim; sh deploy.sh")
-#        
-#        print(cmd)
-#        status, output = commands.getstatusoutput(cmd)
-#        print ("    ", output)
-#        print ("status", status)
-#
-#    except Exception as e:
-#        # Clean up
-#        
-#        if os.path.exists(kp_fname):
-#            os.unlink(kp_fname)
-#            
-#        cfg_dir=os.path.join(pem_key_directory, uid)
-#        os.rmdir(cfg_dir)
-#        # re-raise
-#        raise
-    
 
 def create_ec2_instance(boto_config_file,
                         output_config_dir,
@@ -335,9 +223,72 @@ def create_ec2_instance(boto_config_file,
         # re-raise
         raise
 
+
+
+class Simputer_test(unittest.TestCase): 
+    
+    def test_launch_sim(self):
+        
+        data_dir = "sim_launch_test"
+        try:
+            username=USERNAME
+            distro=DISTRO
+            image_id=IMAGE_ID 
+            instance_type=INSTANCE_TYPE
+            security_groups=SECURITY_GROUPS
+            server_ip = common.OV_SERVER_IP
+            client_ip = common.OV_CLIENT_IP
+            
+            
+            # used for openvpn
+            uid = str(uuid.uuid1())
+            print("uid %s" % uid)
+            
+            package_sources_dir = os.path.dirname(__file__)+"/data"
+            sources_list = open('%s/sources.list-%s'% (package_sources_dir, distro)).read()
+            key = common.OPENVPN_STATIC_KEY_FNAME
+            startup_script = STARTUP_SCRIPT%(sources_list, username, key, server_ip, client_ip, key, key, key, key)
+            
+            
+            print ("script: %s" % startup_script)
+            
+            
+            config = Machine_configuration()
+            
+            config.initialize(   pem_key_directory = data_dir, 
+                                 credentials_ec2 = '../../../boto.ini', 
+                                 image_id ="ami-98fa58f1", 
+                                 instance_type = 'cg1.4xlarge' , 
+                                 security_groups = ['openvpn'], 
+                                 username = 'ubuntu', 
+                                 distro = 'precise')
+            config.print_cfg()
+            
+            
+            # launches the machine
+            simulator  = Machine2(config, startup_script)
+            fname = '%s/machine.instance' % data_dir
+            print('saving machine instance info to "%s"'%fname)
+            simulator.config.save_json(fname)
+            
+                        #simulator = Machine2.from_file(fname)
+            print("Machine launched at: %s"%(simulator.config.hostname))
+            print("\nIn case of emergency:\n\n%s\n\n"%(simulator.user_ssh_command()))
+            print("Waiting for ssh")
+            simulator.ssh_wait_for_ready(retries = 800)
+            print("Good to go.")            
+
+            simulator.terminate()
+            commands.getoutput('rm -rf %s' % data_dir)
+            
+        finally:
+            pass       
+    
+        
+    
 if __name__ == '__main__':
     print ("create_ec2_instance::__main__\n\n")
- 
+    unittest.main()  
                                     
                                         
                        
