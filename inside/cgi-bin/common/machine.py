@@ -84,7 +84,7 @@ class Machine2 (object):
         self.ec2 = create_ec2_proxy(self.config.credentials_ec2)
         if do_launch:
             self._launch(startup_script)
-            os.path.join(self.config.cfg_dir, 'config.json')
+            fname = os.path.join(self.config.cfg_dir, 'config.json')
             save_json(fname)
 
     @classmethod
