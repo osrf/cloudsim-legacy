@@ -34,7 +34,6 @@ page_template = """
 
 <h2>Add / remove users</h2>
 <p>These users are authorized to Launch simulation instances</p>
-    
     {list_of_users}
 <p/>
     
@@ -48,7 +47,13 @@ page_template = """
 
 db = common.UserDatabase()
 users = db.get_users()
+
+if 'test@osrfoundation.org' in users:
+    users.remove('test@osrfoundation.org')
+
+
 htlm_list_of_users = html_list_from_str_list(users)
+
 
 page = page_template.format(list_of_users = htlm_list_of_users)
 
