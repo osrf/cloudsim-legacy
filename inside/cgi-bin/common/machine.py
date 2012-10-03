@@ -84,7 +84,8 @@ class Machine2 (object):
         self.ec2 = create_ec2_proxy(self.config.credentials_ec2)
         if do_launch:
             self._launch(startup_script)
-            config.
+            os.path.join(self.config.cfg_dir, 'config.json')
+            save_json(fname)
 
     @classmethod
     def from_file(cls,  fname):
@@ -115,7 +116,7 @@ class Machine2 (object):
                                             security_groups = self.config.security_groups, 
                                             user_data=self.config.startup_script)
            
-            self.config.print_cfg()
+            #self.config.print_cfg()
             
             self.config.reservation = res.id
             self._event("milestone", "{state:reserved, reservation_id:'%s'}" % self.config.reservation)
