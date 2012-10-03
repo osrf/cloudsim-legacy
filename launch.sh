@@ -10,7 +10,7 @@ rm -rf  inside/cgi-bin/team_login_pem/
 echo $1 > distfiles/users
 
 rm cloudsim.zip
-zip -r cloudsim.zip .
+zip -r cloudsim.zip ..
 
 python inside/cgi-bin/create_team_login_instance.py $2 cloudsim.zip
 
