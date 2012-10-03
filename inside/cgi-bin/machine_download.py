@@ -41,7 +41,7 @@ else:
     elif attrib == 'ros_sh': 
         filename = 'ros-%s.sh'%(machine_id)
         common.print_http_filedownload_header(filename)
-        print(machine.openvpn_config)
+        print(machine.ros_sh)
                 
     else:
         common.print_http_header()
