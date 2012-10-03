@@ -60,7 +60,7 @@ else:
           <li><b>To connect via ROS:</li></b><p> 
               <ol>
                   <li>Connect via OpenVPN (see above).
-                  <li>Download this file: <a href=\"/cloudsim/inside/cgi-bin/machine_download.py?machine_id=%s&attrib=ros_sh\">[ros.sh]
+                  <li>Download this file: <a href=\"/cloudsim/inside/cgi-bin/machine_download.py?machine_id=%s&attrib=ros_sh\">[ros.sh]</a>
                   <li>In a terminal, go to the directory containing that file.
                   <li>Execute the following command:
                   <pre>. ros.sh</pre>
