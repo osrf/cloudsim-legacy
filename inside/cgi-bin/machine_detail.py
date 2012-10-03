@@ -66,7 +66,7 @@ else:
                   <pre>. ros.sh</pre>
               </ol>
                
-          """)
+          """ % (machine_id))
     
     print("<li><b>Machine status:</b><ul>")
     print("<li>State: %s"%('<font color=green>%s</font>'%(aws_state_info) if aws_state else '<font color=red>ERROR</font> (%s)'%(aws_state_info)))
