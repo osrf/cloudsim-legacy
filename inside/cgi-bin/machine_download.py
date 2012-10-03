@@ -36,6 +36,13 @@ else:
         filename = 'openvpn-%s.config'%(machine_id)
         common.print_http_filedownload_header(filename)
         print(machine.openvpn_config)
+
+    # a script that users download to connect ros to the remote sim        
+    elif attrib == 'ros_sh': 
+        filename = 'ros-%s.sh'%(machine_id)
+        common.print_http_filedownload_header(filename)
+        print(machine.openvpn_config)
+                
     else:
         common.print_http_header()
         err = "Unknown attribute \"%s\""%(attrib)

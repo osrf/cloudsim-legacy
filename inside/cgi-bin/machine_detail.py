@@ -34,11 +34,13 @@ else:
     ssh, ssh_err = machine.test_ssh()
     x, x_err = machine.test_X()
     gz, gz_err = machine.test_gazebo()
+    
 #    aws_state, aws_state_info = (None, None)
 #    ping, ping_err = (None, None)
 #    ssh, ssh_err = (None, None)
 #    x, x_err = (None, None)
 #    gz, gz_err = (None, None)
+
     if test:
         print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">%s</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'start', 'Start'))
         print("<a href=\"/cloudsim/inside/cgi-bin/machine_action.py?%s=%s&%s=%s\">%s</a><br>"%(common.MACHINE_ID_VARNAME, machine_id, common.ACTION_VARNAME, 'stop', 'Stop'))
@@ -55,10 +57,10 @@ else:
 
     
     print("""
-          <li><b>To connect via ROS:</li><p> 
+          <li><b>To connect via ROS:</li></b><p> 
               <ol>
                   <li>Connect via OpenVPN (see above).
-                  <li>Download this file: [ros.sh]
+                  <li>Download this file: <a href=\"/cloudsim/inside/cgi-bin/machine_download.py?machine_id=%s&attrib=ros_sh\">[ros.sh]
                   <li>In a terminal, go to the directory containing that file.
                   <li>Execute the following command:
                   <pre>. ros.sh</pre>
