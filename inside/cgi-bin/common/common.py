@@ -48,7 +48,7 @@ OV_SERVER_IP = '10.8.0.1'
 # openvpn client IP
 OV_CLIENT_IP = '10.8.0.2'
 
-
+ROS_SH_FNAME = "ros.sh"
 
 def get_user_database():
     # Load user database
