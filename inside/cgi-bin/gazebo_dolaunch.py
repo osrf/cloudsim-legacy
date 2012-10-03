@@ -34,22 +34,16 @@ if not matches:
     print("Error: machine not found.  Perhaps the machine isn't done being created yet.<br>")
 else:
     machine = matches[0]
-    #cmd = ['\"source /opt/ros/fuerte/setup.bash && ROS_IP=%s DISPLAY=%s nohup roslaunch %s %s %s >/dev/null 2>/dev/null </dev/null &\"'%(common.OV_SERVER_IP, common.DISPLAY, package, launchfile, launchargs)]
-    #cmd = ['source /opt/ros/fuerte/setup.bash && ROS_IP=%s DISPLAY=%s nohup roslaunch %s %s %s >/dev/null 2>/dev/null </dev/null &'%(common.OV_SERVER_IP, common.DISPLAY, package, launchfile, launchargs)]
-    
-    
-    #cmd = ['bash', '-c', '"source /opt/ros/fuerte/setup.bash && ROS_IP=10.8.0.1 DISPLAY=:0 nohup roslaunch pr2_gazebo pr2_empty_world.launch  >/dev/null 2>/dev/null </dev/null"', '&']
-    
+   
     script = '". /opt/ros/fuerte/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  >/dev/null 2>/dev/null </dev/null &"'%(common.OV_SERVER_IP, common.DISPLAY, package, launchfile, launchargs)
     
-    cmd = ['echo', script, '>start_me.sh']
+    cmd = ['echo', script, '>start_ros.sh']
     
-    print("<p>Running the echo: <pre>%s</pre></p>"%(cgi.escape(' '.join(cmd))))
+    print("<p>Running the following command: <pre>%s</pre></p>"%(cgi.escape(' '.join(cmd))))
     ret, err = machine.ssh(cmd, args=['-f'])
     print ("ret: %s<p>err: %s<p>" % (ret, err) )
     
-    
-    cmd = ['at', 'NOW', '<start_me.sh']
+    cmd = ['at', 'NOW', '<start_ros.sh']
     print("<p>Running the following command: <pre>%s</pre></p>"%(cgi.escape(' '.join(cmd))))
     ret, err = machine.ssh(cmd, args=['-f'])
     print ("ret: %s<p>err: %s<p>" % (ret, err) )
