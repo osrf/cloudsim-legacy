@@ -85,7 +85,7 @@ class Machine2 (object):
         if do_launch:
             self._launch(startup_script)
             fname = os.path.join(self.config.cfg_dir, 'config.json')
-            save_json(fname)
+            self.config.save_json(fname)
 
     @classmethod
     def from_file(cls,  fname):
