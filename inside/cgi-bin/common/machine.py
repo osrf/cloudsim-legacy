@@ -84,6 +84,7 @@ class Machine2 (object):
         self.ec2 = create_ec2_proxy(self.config.credentials_ec2)
         if do_launch:
             self._launch(startup_script)
+            config.
 
     @classmethod
     def from_file(cls,  fname):
@@ -113,7 +114,6 @@ class Machine2 (object):
                                             instance_type=self.config.instance_type, 
                                             security_groups = self.config.security_groups, 
                                             user_data=self.config.startup_script)
-            
            
             self.config.print_cfg()
             
@@ -139,14 +139,6 @@ class Machine2 (object):
             self.config.hostname = inst.public_dns_name
             self.config.aws_id = inst.id
             
-#            d = {}
-#            d.update(self.config)
-#            del d['startup_script']
-#            d['state'] = "connected"
-#            self._event("milestone", "%s" % d)
- 
-            
-
         except Exception as e:
             # Clean up
             

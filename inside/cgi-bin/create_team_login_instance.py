@@ -166,7 +166,7 @@ if __name__ == '__main__':
     config.initialize(  pem_key_directory = "team_login_pem", 
                         credentials_ec2 = credentials_ec2, 
                         image_id ="ami-137bcf7a", 
-                        instance_type= "m1.small", # "t1.micro"
+                        instance_type= "t1.micro", # "m1.small"
                         security_groups = ["TeamLogin"],
                         username = "ubuntu", 
                         distro = "precise")

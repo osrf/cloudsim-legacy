@@ -16,8 +16,8 @@ common.print_http_header()
 
 form = cgi.FieldStorage()
 
-aws_access_key_id = form.getfirst('aws_access_key_id') # common.MACHINE_ID_VARNAME
-aws_secret_access_key = form.getfirst('aws_secret_access_key') # common.MACHINE_ID_VARNAME
+aws_access_key_id = form.getfirst('aws_access_key_id')  
+aws_secret_access_key = form.getfirst('aws_secret_access_key') 
 
 keys = form.keys()
 cloud = common.CloudCredentials(aws_access_key_id, aws_secret_access_key)

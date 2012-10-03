@@ -18,9 +18,6 @@ common.print_http_header()
 
 form = cgi.FieldStorage()
 
-# machine_id = form.getfirst(common.MACHINE_ID_VARNAME)
-
-
 def html_list_from_str_list(users):
     l =['<li>' + u + '</li>' for u in users]
     return '\n'.join(l)
