@@ -4,7 +4,7 @@ echo admin user $1
 echo boto config $2
 
 # cleanup
-rm -rf  inside/cgi-bin/team_login_pem/
+rm -rf  team_login_pem/
 
 # setup admin account
 echo $1 > distfiles/users
