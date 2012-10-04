@@ -215,7 +215,7 @@ class Machine:
             self.aws_id = open(self.aws_id_fname).read().strip()
             self.botofile_fname = os.path.join(self.path, BOTOFILE_FNAME)
             self.botofile = open(self.botofile_fname).read().strip()
-            self.ros_sh_fname = os.path.join(cfg_dir, common.ROS_SH_FNAME) 
+            self.ros_sh_fname = os.path.join(self.path, ROS_SH_FNAME) 
             self.ros_sh = open(self.ros_sh_fname).read().strip()
             
             self.incomplete = False
