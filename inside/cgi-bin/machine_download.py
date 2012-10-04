@@ -39,7 +39,7 @@ else:
 
     # a script that users download to connect ros to the remote sim        
     elif attrib == 'ros_sh': 
-        filename = 'ros.sh'
+        filename = 'ros-%s.sh'%(machine_id)
         common.print_http_filedownload_header(filename)
         print(machine.ros_sh)
                 
