@@ -14,17 +14,26 @@ in_cookies = Cookie.Cookie()
 in_cookies.load(os.environ[common.HTTP_COOKIE])
 openid_session = in_cookies[common.OPENID_SESSION_COOKIE_NAME].value
 
+sdb = common.SessionDatabase()
+sdb.load()
+
 # Check email 
 udb = common.UserDatabase()
 users = udb.get_users()
+
+if not email:
+    if openid_session in sdb.db:
+        email = sdb.db[openid_session]
+        
+
 if email not in users:
     common.print_http_header()
-    print("Access Denied ... '%s' not in %s<p>" % (email, users))
+    print("Access Denied ... '%s' not in users<p>" % (email))
     sys.exit(0)
 
+    
 # Save session ID and email to our own database
-sdb = common.SessionDatabase()
-sdb.load()
+
 sdb.db[openid_session] = email
 sdb.save()
 
