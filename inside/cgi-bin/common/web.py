@@ -145,7 +145,7 @@ def check_auth_and_generate_response():
         
         print("<h2>%s</h2>" % e)
            
-        print("Try <a href=\"/cloudsim/inside/cgi-bin/logout.py\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(ADMIN_EMAIL, ADMIN_EMAIL))
+        print("Try <a href=\"/cloudsim/inside/cgi-bin/logout.py\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(common.ADMIN_EMAIL, common.ADMIN_EMAIL))
         exit(0)
         
  
