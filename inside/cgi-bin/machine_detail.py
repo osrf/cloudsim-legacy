@@ -63,10 +63,10 @@ else:
                   <li>Download this file: <a href=\"/cloudsim/inside/cgi-bin/machine_download.py?machine_id=%s&attrib=ros_sh\">[ros.sh]</a>
                   <li>In a terminal, go to the directory containing that file.
                   <li>Execute the following command:
-                  <pre>. ros.sh</pre>
+                  <pre>. ros-%s.sh</pre>
               </ol>
                
-          """ % (machine_id))
+          """ % (machine_id, machine_id ))
     
     print("<li><b>Machine status:</b><ul>")
     print("<li>State: %s"%('<font color=green>%s</font>'%(aws_state_info) if aws_state else '<font color=red>ERROR</font> (%s)'%(aws_state_info)))
