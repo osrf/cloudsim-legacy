@@ -48,7 +48,7 @@ OV_SERVER_IP = '10.8.0.1'
 # openvpn client IP
 OV_CLIENT_IP = '10.8.0.2'
 
-
+ROS_SH_FNAME = "ros.sh"
 
 def get_user_database():
     # Load user database
@@ -215,6 +215,9 @@ class Machine:
             self.aws_id = open(self.aws_id_fname).read().strip()
             self.botofile_fname = os.path.join(self.path, BOTOFILE_FNAME)
             self.botofile = open(self.botofile_fname).read().strip()
+            self.ros_sh_fname = os.path.join(self.path, ROS_SH_FNAME) 
+            self.ros_sh = open(self.ros_sh_fname).read().strip()
+            
             self.incomplete = False
         except Exception as e:
             if incomplete_ok:
