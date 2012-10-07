@@ -3,6 +3,7 @@ import cgi
 import common
 import tempfile
 import Cookie
+import time
 
 class UserDatabase (object):
     def __init__(self, fname = common.USER_DATABASE):
@@ -126,16 +127,16 @@ def _check_auth():
     if email not in users:
         raise AuthException("Access denied (email address %s not found in db)"%(email) )
     
-
+    return email
    
 
 
 
 def check_auth_and_generate_response():
     
-    
+    email = None
     try:        
-        _check_auth()
+        email = _check_auth()
         return True
     
     except AuthException as e:
@@ -147,5 +148,37 @@ def check_auth_and_generate_response():
            
         print("Try <a href=\"/cloudsim/inside/cgi-bin/logout.py\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(common.ADMIN_EMAIL, common.ADMIN_EMAIL))
         exit(0)
-        
  
+ 
+        
+def authorize():
+    email = None
+    try:        
+        email = _check_auth()
+        return email
+    
+    except AuthException as e:
+        print_http_header()
+        print("<title>Access Denied</title>")
+        print("<h1>Access Denied</h1>")
+        
+        print("<h2>%s</h2>" % e)
+           
+        print("Try <a href=\"/cloudsim/inside/cgi-bin/logout.py\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(common.ADMIN_EMAIL, common.ADMIN_EMAIL))
+        exit(0)     
+        
+               
+def tail(fname):
+    file = open(fname,'r')
+    
+    for l in file.readlines():
+        print ("* %s" % l)
+    while 1:
+        where = file.tell()
+        line = file.readline()
+        if not line:
+            time.sleep(1)
+            file.seek(where)
+        else:
+            print line, # already has newline    
+

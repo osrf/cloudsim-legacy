@@ -48,7 +48,7 @@ else:
     
 
 def event(name,data,log = None):
-    print("event: %s" % n)
+    print("event: %s" % name)
     print("data: %s\n" % data )
     sys.stdout.flush()
     if log:

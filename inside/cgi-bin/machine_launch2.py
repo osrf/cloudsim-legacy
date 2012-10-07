@@ -7,20 +7,27 @@ cgitb.enable()
 import sys
 
 import common
+from common import ConfigsDb, authorize
 
-if not common.check_auth_and_generate_response():
-    sys.exit(0)
+email = authorize()
 
 form = cgi.FieldStorage()
-
 common.print_http_header()
-page = """
+
+cdb = ConfigsDb(email)
+configs_json_str = cdb.get_configs_as_json()
+
+
+values = {'configs_json_str': configs_json_str}
+
+template = """
 <html>
 <title>Launch a new machine</title>
 
 <script>
 
-var machine_configs = ["type cg1.4xlarge, zone US East, $2.10/hour"];
+var machine_configurations = %s;
+
 
 </script>
 
@@ -38,8 +45,6 @@ function get_selectected_machine_config()
     var machine_config =document.getElementById("config_select").options[i].text;
     return machine_config;
 }
-
-
 
 function log_to_div(div_name, message)
 {
@@ -77,11 +82,10 @@ function body_load()
     log_to_div("log_div", "<b>body_load</b><p>");
     var config_select = document.getElementById("config_select");
     var opts = config_select.options;
-    
-    
-    for(var i=0; i<machine_configs.length;i++)
+     
+    for(var configuration in machine_configurations)
     {
-        var opt = new Option(machine_configs[i]);
+        var opt = new Option(configuration);
         opts.add(opt);
     }
 }
@@ -126,6 +130,15 @@ function clear_machine_log(div_name)
 </html>
 """
 
+#values = {'configs_json_str': configs_json_str}
+#template = """
+#<h1>ho</h1>
+#var machine_configurations = {configs_json_str};
+#
+#"""
+
+
+page = template % configs_json_str
 print(page)
 
 common.print_footer()

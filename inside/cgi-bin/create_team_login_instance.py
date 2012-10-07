@@ -1,3 +1,6 @@
+from __future__ import with_statement
+from __future__ import print_function
+
 import os
 import sys
 
@@ -32,9 +35,11 @@ apt-get install -y unzip
 echo "unzip installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
 
 # install mercurial and fetch latest version of the Team Login website
-#apt-get install -y mercurial
-#echo "mercurial installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
+apt-get install -y mercurial
+echo "mercurial installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
 
+apt-get install -y cloud-utils
+echo "cloud-utils installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
 
 apt-get install -y apache2
 echo "apache2 installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
@@ -137,7 +142,9 @@ def generate_setup_script(distro):
     startup_script = TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE % (SOURCES_LIST)
     return startup_script
 
+
 if __name__ == '__main__':
+    
     print ("create_team_login_instance\n")
     
     if(len(sys.argv) < 3 ):
@@ -163,7 +170,7 @@ if __name__ == '__main__':
     
     config = Machine_configuration()
             
-    config.initialize(  pem_key_directory = "team_login_pem", 
+    config.initialize(  root_directory = "team_login_pem", 
                         credentials_ec2 = credentials_ec2, 
                         image_id ="ami-137bcf7a", 
                         instance_type= "t1.micro", # "m1.small"

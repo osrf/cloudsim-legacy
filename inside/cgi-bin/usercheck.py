@@ -7,6 +7,9 @@ import Cookie
 import cgi
 import common
 
+import cgitb
+cgitb.enable()
+
 # Get form and cookie data
 form = cgi.FieldStorage()
 email = form.getfirst(common.EMAIL_VARNAME)
@@ -26,10 +29,27 @@ if not email:
         email = sdb.db[openid_session]
         
 
+
 if email not in users:
-    common.print_http_header()
-    print("Access Denied ... '%s' not in users<p>" % (email))
-    sys.exit(0)
+    
+    # print ("openid_session %s" % openid_session)
+    if email:
+        common.print_http_header()
+        print("Access Denied ... '%s' not in users<br>" % (email))
+        sys.exit(0)
+    else:
+        
+        out_cookies = Cookie.SmartCookie()
+        out_cookies[common.OPENID_SESSION_COOKIE_NAME] = ''
+        out_cookies[common.OPENID_SESSION_COOKIE_NAME]['path'] = '/cloudsim/inside/cgi-bin/'
+        print(out_cookies)
+        common.print_http_header()
+        print("""
+        Your open session ID is not associated with a user. Please login again<br>
+        <a href="/cloudsim/login.html">login</a>
+        """)
+        sys.exit(0)
+    
 
     
 # Save session ID and email to our own database

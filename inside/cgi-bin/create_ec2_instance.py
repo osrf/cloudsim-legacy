@@ -109,7 +109,7 @@ service openvpn start
 
 
 
-def load_startup_script(distro, username, machine_id, server_ip, client_ip):
+def load_startup_script(distro, machine_id, server_ip, client_ip):
     # TODO: Make this less fragile with a proper templating language (e.g, empy)
     sources_list = open('data/sources.list-%s'%(distro)).read()
     key = common.OPENVPN_STATIC_KEY_FNAME
@@ -142,7 +142,7 @@ def create_ec2_instance(boto_config_file,
     try:
         # Start it up
         print("Load startup script: image_id %s, security_groups %s" % (image_id, security_groups ) )
-        startup_script = load_startup_script(distro, username, uid, common.OV_SERVER_IP, common.OV_CLIENT_IP)
+        startup_script = load_startup_script(distro, username, common.OV_SERVER_IP, common.OV_CLIENT_IP)
         res = ec2.run_instances(image_id=image_id, key_name=kp_name, instance_type=instance_type, security_groups=security_groups, user_data=startup_script)
         print('Creating instance %s...'%(res.id))
 
@@ -260,11 +260,7 @@ class Simputer_test(unittest.TestCase):
             server_ip = common.OV_SERVER_IP
             client_ip = common.OV_CLIENT_IP
             
-            
-            # used for openvpn
-            uid = str(uuid.uuid1())
-            print("uid %s" % uid)
-            
+             
             package_sources_dir = os.path.dirname(__file__)+"/data"
             sources_list = open('%s/sources.list-%s'% (package_sources_dir, distro)).read()
             key = common.OPENVPN_STATIC_KEY_FNAME
@@ -276,7 +272,7 @@ class Simputer_test(unittest.TestCase):
             
             config = Machine_configuration()
             
-            config.initialize(   pem_key_directory = data_dir, 
+            config.initialize(   root_directory = data_dir, 
                                  credentials_ec2 = '../../../boto.ini', 
                                  image_id ="ami-98fa58f1", 
                                  instance_type = 'cg1.4xlarge' , 

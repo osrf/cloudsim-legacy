@@ -1,14 +1,22 @@
+from __future__ import with_statement
+from __future__ import print_function
+
 import commands
 import unittest
-
 import uuid
 import boto
 import os
 import sys
 import time
 import subprocess
-import  common 
 import json
+import shutil
+import common 
+from constants import *
+
+from machine_configuration import Machine_configuration
+
+
 
 
 
@@ -17,100 +25,79 @@ class MachineException(Exception):
     pass
 
 def create_ec2_proxy(boto_config_file):
-    # Load boto config from indicated file.  By overwriting boto.config,
-    # our new config will be used.
     boto.config = boto.pyami.config.Config(boto_config_file)
-
-    # No args: uses config from boto.config
     ec2 = boto.connect_ec2()
     return ec2
 
-
-class Machine_configuration(object):
-
-    @classmethod
-    def from_file(cls, fname):
-        with open(fname,'r') as fp:
-            dict = json.load(fp)
-            #x = Machine_configuration(**dict)
-            x = Machine_configuration()
-            x.__dict__.update(dict)
-            fp.close()
-            return x
-    
-    def __init__(self):
-        pass
-        
-    def initialize(self, 
-                 pem_key_directory,
-                 credentials_ec2 ,   
-                 image_id,
-                 instance_type,
-                 security_groups,
-                 username,
-                 distro):
-
-        # launching parameters
-        self.credentials_ec2 = credentials_ec2 # boto file
-        self.pem_key_directory = pem_key_directory
-        self.image_id = image_id
-        self.instance_type = instance_type
-        self.security_groups = security_groups
-        self.username = username
-        self.distro = distro
-    
-    def save_json(self, fname):
-        print("save json:",self.__dict__) 
-        with open(fname,'w') as fp:
-            json.dump(self.__dict__, fp) #, skipkeys, ensure_ascii, check_circular, allow_nan, cls, indent, separators, encoding, default)
-            fp.close()
-
-    def print_cfg(self):
-        print("Machine configuration")
-        for item in self.__dict__:
-            print ("%s: %s" % (item, self.__dict__[item]) )
-                       
-    
 
 class Machine2 (object):
     
     def __init__(   self,
                     config, 
-                    startup_script, do_launch = True):
+                    tags ={},
+                    credentials_ec2 = BOTO_CONFIG_FILE_USEAST, # boto file
+                    root_directory = MACHINES_DIR,
+                    do_launch = True):
+        
+        self.log = None
         self.config = config
-        self.ssh_connect_timeout = 1
-        # We use this file as an indicator that our startup script has completed successfully
         self.startup_script_done_file = '/tmp/startup_script_done'
-        self.ec2 = create_ec2_proxy(self.config.credentials_ec2)
+        self.ssh_connect_timeout = 1
+        
+        # We use this file as an indicator that our startup script has completed successfully
+        self.ec2 = create_ec2_proxy(credentials_ec2)
+        
         if do_launch:
-            self._launch(startup_script)
-            fname = os.path.join(self.config.cfg_dir, 'config.json')
-            self.config.save_json(fname)
+            self.config.tags = tags
+            self.config.uid = str(uuid.uuid1())
+            self.config.root_directory = root_directory
+            self.config.cfg_dir=os.path.join(self.config.root_directory, self.config.uid)
+            os.makedirs(self.config.cfg_dir)
+            self.config.launch_log_fname = os.path.join(self.config.cfg_dir, 'launch.log')
+            self.log = open(self.config.launch_log_fname, 'w')
+            self.config.instance_fname = os.path.join(self.config.cfg_dir, 'instance.json')
+            self.config.save_json(self.config.instance_fname)
+            self._create_machine_keys() 
+            self.config.save_json(self.config.instance_fname)
+            
+            self._launch()
+            
+            self.config.save_json(self.config.instance_fname)
+            self.log.close()
+            self.log = None
 
     @classmethod
     def from_file(cls,  fname):
         config = Machine_configuration.from_file(fname)
-        script = config.startup_script
-        x = Machine2(config, script, do_launch = False)  
+        x = Machine2(config, do_launch = False)  
+        
         return x
                 
     def _event(self, event_name, event_data=None):
         data = event_data
-        print("event: %s" % (event_name)) 
+        event_str = "event: %s" % (event_name)
+        print(event_str)
+        if self.log:    
+            self.log.write("%s\n" % event_str)
+            
         if event_data:
-            print("data:%s" %  (event_data))
-        print("")
+            data_str = "data:%s\n" %  (event_data)
+            print(data_str)
+            if self.log:
+                self.log.write("%s\n\n" % data_str)
         sys.stdout.flush()
-        
+        if self.log:
+            self.log.flush()
                         
-    def _launch(self, startup_script):
+    def _launch(self):
         
-        self.config.startup_script = startup_script + '\ntouch %s\n'%(self.startup_script_done_file)
-        self._create_machine_keys()
+        self.config.startup_script += '\ntouch %s\n'%(self.startup_script_done_file)
         try:
             # Start it up
-            self._event("action", "{state:run}")
+            self._event("action", "{state:'reserve'}")
             res = self.ec2.run_instances(   image_id=self.config.image_id, 
+                                            min_count =1,
+                                            max_count =1,
                                             key_name=self.config.kp_name, 
                                             instance_type=self.config.instance_type, 
                                             security_groups = self.config.security_groups, 
@@ -119,52 +106,53 @@ class Machine2 (object):
             #self.config.print_cfg()
             
             self.config.reservation = res.id
-            self._event("milestone", "{state:reserved, reservation_id:'%s'}" % self.config.reservation)
-            self._event("action", "{state:'waiting_for_ip'}") # print('Wait for it to boot to get an IP address')
-            
-            # to do: add retries
-            while True:
-                self._event("action", "{state:'waiting_for_ip'}") # print('Wait for it to boot to get an IP address')
+            self._event("check", "{state:reserve, reservation_id:'%s'}" % self.config.reservation)
+                        
+            self._event("action", "{state:'waiting_for_ip'}")
+            retries = self.config.ip_retries
+            tries = 0
+            while tries< retries:
                 done = False
+                tries += 1
+                self._event("retry", "{state:'ip_set', try:%s, retries:%s}" % (tries, retries) )
                 for r in self.ec2.get_all_instances():
                     if r.id == res.id and r.instances[0].public_dns_name:
                         done = True
-                        self._event("milestone", "{state:'ip_set'}")
+                        self._event("check", "{state:'ip_set'}")
                         break
-                if done:
-                    break
-                else:
                     time.sleep(0.1)
-        
+                if done:
+                    break 
+                
+            if tries >= retries:
+                self._event("fail", "{state:'ip_set'}")
+                raise MachineException("Can't get IP for machine reservation '%s'" % self.config.reservation)
+    
             inst = r.instances[0]
+            
             self.config.hostname = inst.public_dns_name
             self.config.aws_id = inst.id
+            
+            if len(self.config.tags):
+                self._event("action", "{state:'tags_set'}")
+                self.ec2.create_tags([self.config.aws_id], self.config.tags)
+                self._event("check", "{state:'tags_set'}")
+            
             
         except Exception as e:
             # Clean up
             
             if os.path.exists(self.config.kp_fname):
                 os.unlink(self.config.kp_fname)
-                
-            #cfg_dir=os.path.join(pem_key_directory, uid)
-            os.rmdir(self.config.cfg_dir)
+
+            shutil.rmtree(self.config.cfg_dir)
             # re-raise
             raise
 
     def _create_machine_keys(self):
-        
-        #ec2, pem_key_directory, image_id, instance_type, username, distro
-        self.config.uid = str(uuid.uuid1())
-        self.config.cfg_dir=os.path.join(self.config.pem_key_directory, self.config.uid)
-        
-        if os.path.exists(self.config.cfg_dir):
-            print('Directory/file %s already exists; bailing'%(self.config.cfg_dir))
-            raise MachineException('UUID creation did not meet expectations')
-       
         # save the ssh key
         self.config.kp_name = 'key-%s'%(self.config.uid)
         kp = self.ec2.create_key_pair(self.config.kp_name)
-        os.makedirs(self.config.cfg_dir)
         kp.save(self.config.cfg_dir)
         self.config.kp_fname = os.path.join(self.config.cfg_dir, self.config.kp_name + '.pem')
 
@@ -193,18 +181,20 @@ class Machine2 (object):
     def user_ssh_command(self):
         return "ssh -i %s %s@%s"%(self.config.kp_fname, self.config.username, self.config.hostname)
 
-    def ssh_wait_for_ready(self, retries=200, delay=0.1, file_to_look_for=None):
+    def ssh_wait_for_ready(self, the_file_to_look_for=None):
+        delay = 0.5
+        file_to_look_for = the_file_to_look_for
         if not file_to_look_for:
             file_to_look_for = self.startup_script_done_file
         cmd = ['ls', file_to_look_for]
-        tries = 0
-        self._event("action", "{state:'ssh_wait_for_ready', try:%s, retries:%s}" % (tries, retries) )
-        sys.stdout.write("%s retries " % retries)
         
+        retries = self.config.ssh_retries
+        tries = 0
+        self._event("action", "{state:'ssh_wait_for_ready', try:%s, retries:%s}" % (tries, retries)) 
         while tries < retries:
             tries += 1
             # print ( "%s / %s" % (tries, retries))
-            self._event("action", "{state:'ssh_wait_for_ready', try:%s, retries:%s}" % (tries, retries) )
+            self._event("retry", "{state:'ssh_wait_for_ready', try:%s, retries:%s}" % (tries, retries) )
             sys.stdout.flush()
             try:
                 self.ssh_send_command(cmd)
@@ -212,62 +202,93 @@ class Machine2 (object):
                 # Expected; e.g., the machine isn't up yet
                 time.sleep(delay)
             else:
-                self._event("milestone", "{state:'ssh_connected'}")
+                self._event("check", "{state:'ssh_connected'}")
                 return
+        self._event("fail", "{state:'ssh_connected'}")   
         raise MachineException("Maximum retry limit exceeded; ssh connection could not be established or file '%s' not found" % file_to_look_for)
     
     def terminate(self):
+        self._event("action", "{state:'terminated'}")
         terminated_list = self.ec2.terminate_instances(instance_ids=[self.config.aws_id])
         if(len(terminated_list) == 0 ):
+            self._event("fail", "{state:'terminated, machine_id:'%s'}" % terminated_list[0])   
             raise MachineException("Could not terminate instance %s" % self.config.aws_id)
-        print("{state:'terminated', machine_id:'%s'" % terminated_list[0])
-        
-        
-    
-#########################################################################
-    
-class MachineCase(unittest.TestCase):
-    
-    def test_config(self):
-        
-        config = Machine_configuration()
-        config.initialize(pem_key_directory = 'test_pems', 
-                                         credentials_ec2 = '../../../../boto.ini', 
-                                         image_id ="ami-137bcf7a", 
-                                         instance_type = 't1.micro' , 
-                                         security_groups = ['ping_ssh'], 
-                                         username = 'ubuntu', 
-                                         distro = 'precise')
-        fname = "test_machine.config"
-        config.save_json(fname)
-        
-        config2 = Machine_configuration.from_file(fname)
-        print("\nfrom file:")
-        config2.print_cfg()
-        self.assertEqual(config.image_id, config2.image_id, "json fail")
+        self._event("check", "{state:'terminated, machine_id:'%s'}" % terminated_list[0]) 
         
 
-    def test_start_stop(self):
+class MachineDb(object):
+    
+    def __init__(self, email, machine_dir = MACHINES_DIR):
+        self.user = email
+        self.domain = email.split('@')[1]
+        self.root_dir =  os.path.join(machine_dir, self.domain)
+        
+        
+    def get_machines(self):
+        machines = {}
+        for short_name in os.listdir(self.root_dir):
+            machine = self.get_machine(short_name)
+            machines[short_name] = machine 
+        return machines
+    
+    def get_machine(self, name):
+        fname =  os.path.join(self.root_dir, name)
+        
+        #machine = Machine2.from_file(fname)
+        
+        print(fname," file <br>")
+        machine = {'toto':'toto'}
+        
+        return machine
+    
+    def get_machines_as_json(self):
+        machines = self.get_machines()
+        l = []
+        l.append("{")
+        
+        for name, machine in machines.iteritems():
+            l.append( '"%s":' % name)
+            # str += machine.config.as_json()
+            l.append('{name:"hi"}')
+            l.append(",")
+        l.append("}")
+        str = "".join(l)
+        return str   
+
+
+
+#########################################################################
+    
+class MachineCase(unittest.TestCase): 
+    """
+    This test is longer: it creates a machine instance, and kills it
+    """
+    def atest_start_stop(self):
 
         try:
             
-            config = Machine_configuration()
+            startup_script = "#!/bin/bash\necho hello > test.txt\n\n"
             
-            config.initialize(   pem_key_directory = 'test_pems', 
+            config = Machine_configuration()
+            config.initialize(   root_directory = 'test_pems', 
                                  credentials_ec2 = '../../../../boto.ini', 
                                  image_id ="ami-137bcf7a", 
                                  instance_type = 't1.micro' , 
                                  security_groups = ['ping_ssh'], 
                                  username = 'ubuntu', 
                                  distro = 'precise')
+            
+            tags = {'hello':'world', 'user':'toto@toto.com'}
                    
-            startup_script = "#!/bin/bash\necho hello > test.txt\n\n"
-            micro_original  = Machine2(config, startup_script)
+            
+            micro_original  = Machine2(config, startup_script, tags)
+            
+            #fname = 'test_pems/machine.instance'
+            #print('saving machine instance info to "%s"'%fname)
+            #micro_original.config.save_json(fname)
+            
+            fname = micro_original.config.instance_fname
 
-            fname = 'test_pems/machine.instance'
-            print('saving machine instance info to "%s"'%fname)
-            micro_original.config.save_json(fname)
-           
             #
             # !!!
             # From now on we're using a new Machine instance, initialized by the json data
@@ -280,12 +301,16 @@ class MachineCase(unittest.TestCase):
             print("Waiting for ssh")
             micro.ssh_wait_for_ready()
             print("Good to go.")            
+            print ("tags original: %s, new: %s" % (micro_original.config.tags, micro.config.tags))
+            # check tag (this is not from the ec2... only from local state
+            
 
             micro.terminate()
+            self.assertEqual(micro.config.tags['hello'] , 'world', 'Not tagged')
             
         finally:
-            commands.getoutput('rm -rf test_pems')
-        
+           #  commands.getoutput('rm -rf test_pems')
+           pass
          
         
 if __name__ == '__main__':
