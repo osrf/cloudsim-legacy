@@ -1,4 +1,5 @@
 import os
+import sys
 import cgi
 import common
 import tempfile
@@ -172,7 +173,12 @@ def tail(fname):
     file = open(fname,'r')
     
     for l in file.readlines():
-        print ("* %s" % l)
+        sys.stdout.write (l)
+        sys.stdout.flush()
+    
+#    file.close()
+#    return
+    
     while 1:
         where = file.tell()
         line = file.readline()
@@ -180,5 +186,6 @@ def tail(fname):
             time.sleep(1)
             file.seek(where)
         else:
-            print line, # already has newline    
-
+            print line    
+            sys.stdout.flush()
+    # todo: close file at some point

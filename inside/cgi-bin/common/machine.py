@@ -236,7 +236,7 @@ class MachineDb(object):
         
         #machine = Machine2.from_file(fname)
         
-        print(fname," file <br>")
+        # print(fname," file <br>")
         machine = {'toto':'toto'}
         
         return machine
@@ -255,7 +255,9 @@ class MachineDb(object):
         str = "".join(l)
         return str   
 
-
+    def get_launch_log_fname(self, machine_name):
+        fname =  os.path.join(self.root_dir, machine_name, "launch.log")
+        return fname
 
 #########################################################################
     
