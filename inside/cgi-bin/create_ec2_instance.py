@@ -105,11 +105,12 @@ chmod 644 %s
 cp openvpn.config /etc/openvpn/openvpn.conf
 cp %s /etc/openvpn/%s
 service openvpn start
+
 """
 
 
 
-def load_startup_script(distro, machine_id, server_ip, client_ip):
+def load_startup_script(distro, username, server_ip, client_ip):
     # TODO: Make this less fragile with a proper templating language (e.g, empy)
     sources_list = open('data/sources.list-%s'%(distro)).read()
     key = common.OPENVPN_STATIC_KEY_FNAME
@@ -281,8 +282,7 @@ class Simputer_test(unittest.TestCase):
                                  distro = 'precise')
             config.print_cfg()
             
-            
-            # launches the machine
+                        # launches the machine
             simulator  = Machine2(config, startup_script)
             fname = '%s/machine.instance' % data_dir
             print('saving machine instance info to "%s"'%fname)
@@ -294,7 +294,11 @@ class Simputer_test(unittest.TestCase):
             print("Waiting for ssh")
             simulator.ssh_wait_for_ready(retries = 800)
             print("Good to go.")            
+            
+            
+            cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-i', kp_fname, '%s@%s'%(USERNAME, hostname), 'ls', '/%s'%(common.OPENVPN_STATIC_KEY_FNAME)]
 
+            
             simulator.terminate()
             commands.getoutput('rm -rf %s' % data_dir)
             
