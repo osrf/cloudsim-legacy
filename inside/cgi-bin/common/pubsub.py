@@ -22,8 +22,6 @@ class RedisPublisher(object):
         message = json.dumps(data)
         self.redis_cli.publish(self.channel_name, message)
         print("%s" %(message ) )
-
-
         
 class TestMach(object):
     
@@ -44,7 +42,14 @@ class PublishTest(unittest.TestCase):
         
         m2 = TestMach(redis_pub.event)
         m2.publish( {'data':3})
-        
+
+def subscribe(channels):
+    redis_client = redis.Redis()
+    ps = redis_client.pubsub()
+    ps.subscribe(channels)
+    for e in ps.listen():
+        print(e)
+    
         
 class TestMachinePub(unittest.TestCase):
     
