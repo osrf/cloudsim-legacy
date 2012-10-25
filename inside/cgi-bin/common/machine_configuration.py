@@ -1,7 +1,7 @@
 import unittest
 import json
 import os
-import common    
+#import common    
 
 MACHINE_CONFIG_DIR = '/var/www-cloudsim-auth/configs'
        

@@ -10,6 +10,7 @@ import cgitb
 import unittest
 
 from constants import *
+from web import UserDatabase
 # TODO: turn this back on 
 # cgitb.enable()
 
