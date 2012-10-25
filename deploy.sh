@@ -28,4 +28,15 @@ sudo mkdir -p /var/www-cloudsim-auth/configs
 sudo cp $DIR/distfiles/configs/* /var/www-cloudsim-auth/configs
 sudo chown -R www-data:www-data /var/www-cloudsim-auth
 sudo chmod 700 /var/www-cloudsim-auth
+
+#
+# Setup a daemon to launch simulations for us
+#
+sudo cp $DIR/distfiles/cloudsimd.conf /etc/init
+sudo mkdir -p /var/cloudsimd
+sudo cp -a $DIR/cloudsimd/* /var/cloudsimd
+
+sudo initctl reload-configuration
+sudo start cloudsimd
+
 sudo apache2ctl restart

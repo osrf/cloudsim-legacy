@@ -11,7 +11,7 @@ import cgitb
 cgitb.enable()
 
 import common
-from common import Machine_configuration, authorize, ConfigsDb, MachineDb
+from common import  authorize, ConfigsDb, MachineDb
 
 email = authorize()
 

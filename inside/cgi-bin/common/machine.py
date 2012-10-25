@@ -56,14 +56,14 @@ def create_ec2_proxy(boto_config_file):
     return ec2
 
 class StdoutPublisher(object):
-    def __init__(self, username):
+    def __init__(self, username = None):
         self.username = username
         
         
     def event(self, event_data):
         #print("%s = (%s, %s)" %(self.username, name, data) )
         event_str = "event: cloudsim"
-        data_str = "data:%s\n" %  (event_data)
+        data_str = "data:%s\n\n" %  (event_data)
             
         print(event_str)
         if event_data:
@@ -115,8 +115,10 @@ class Machine2 (object):
             self.ec2 = create_ec2_proxy(self.config.credentials_ec2 )
 
     @classmethod
-    def from_file(cls,  fname, event):
-        
+    def from_file(cls,  fname, event = None):
+        if(event == None):
+            x = StdoutPublisher()
+            event = x.event
         config = Machine_configuration.from_file(fname)
         x = Machine2(config.uid, config, event, do_launch = False)
         return x
@@ -375,13 +377,8 @@ class MachineDb(object):
         return machines
     
     def get_machine(self, name):
-        fname =  os.path.join(self.root_dir, name)
-        
-        #machine = Machine2.from_file(fname)
-        
-        # print(fname," file <br>")
-        machine = {'toto':'toto'}
-        
+        fname =  os.path.join(self.root_dir, name, 'instance.json')
+        machine = Machine2.from_file(fname)
         return machine
     
     def get_machines_as_json(self):
