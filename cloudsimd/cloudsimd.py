@@ -27,32 +27,33 @@ def launch(config_name, username):
     proc = multiprocessing.current_process().name
     red.publish("cloudsim_log", "Launching '%s' for '%s' from '%s'" % (config_name, username, proc))
    
-    #red.publish("cloudsim_log", "X")
+    red.publish("cloudsim_log", "X")
     cdb = common.ConfigsDb(username)
-    #red.publish("cloudsim_log", "X")
+    red.publish("cloudsim_log", "XX")
     
     config = cdb.get_configs()[config_name]
     
-    Machine2.from_file()
+    red.publish("cloudsim_log", "XX.X")
+    
     
     publisher = RedisPublisher(username)
-    machine_name = uuid.uuid1()
+    machine_name = str(uuid.uuid1())
     
     tags = {'configuration':config_name , 'user':username}
-               
-    machine = Machine2(machine_name,
+    
+    machine = common.Machine2(machine_name,
                          config,
                          publisher.event,
                          tags)
-    
+    red.publish("cloudsim_log", "XXX")
     machine.create_ssh_connect_script()
     
     print("Waiting for ssh")
     machine.ssh_wait_for_ready("/home/ubuntu")
-    
+    red.publish("cloudsim_log", "XXX X")
     print("Waiting for setup to complete")
     machine.ssh_wait_for_ready()
-    
+    red.publish("cloudsim_log", "XXX XX")
 #    repeats = 3
 #    for i in range(repeats):
 #        print("Checking status [%s / %s]" % (i+1, repeats))
