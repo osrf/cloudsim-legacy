@@ -7,17 +7,17 @@ import cgitb
 import json
 cgitb.enable()
 
-from common import  authorize, ConfigsDb
+from common import  authorize, MachineDb
 
 email = authorize()
 
 
 
 print('Content-type: application/json')
-print('\n')
+print("\n")
 
 
-cdb = ConfigsDb(email)
-configs = cdb.get_configs_as_json()
+mdb = MachineDb(email)
+machines = mdb.get_machines_as_json()
 
-print(configs)
+print(machines)

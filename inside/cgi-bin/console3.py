@@ -40,8 +40,6 @@ function log_to_div(div_name, message)
 }
 
 
-
-
 function on_load_page()
 {
     var div_name = "log_div";
@@ -60,7 +58,6 @@ function on_load_page()
         opts.add(opt);
     }
     launchSelectionChanged()
-   
     
     stream();
 }
@@ -69,7 +66,6 @@ function on_load_page()
 // =====================================
 function launch(machine_config)
 {
-    // alert(machine_config + " ... seriously? ");
     machine_index = 0;
     var machine_div_name =  "machine_div_" + machine_index;
 
@@ -80,9 +76,12 @@ function launch(machine_config)
         return;
     }
 
-    var url = '/cloudsim/inside/cgi-bin/launch_machine.py?machine_config=' + get_selectected_machine_config();
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=launch&machine_config=' + get_selectected_machine_config();
     log_to_div("log_div", url);
-    
+    msg = httpGet(url)
+    //alert(msg);
+    log_to_div("log_div", "\\n");
+    log_to_div("log_div", msg);
 }
 
 function get_selectected_machine_index()
@@ -152,7 +151,7 @@ template = """
 <h1>Console 3</h1>
 
 <select id="config_select" onchange="launchSelectionChanged()";></select>
-<button type="button" onclick="launch(get_selectected_machine_config())">Launch2</button>
+<button type="button" onclick="launch(get_selectected_machine_config())">Launch</button>
 <div id="config_div"></div>
 
 <h2>Log</h2>

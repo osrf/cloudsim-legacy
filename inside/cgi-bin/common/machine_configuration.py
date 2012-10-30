@@ -84,6 +84,10 @@ class ConfigsDb(object):
             str += ","
         str += "}"    
         return str
+    
+#    def get_config_fname(self, config_name):
+#        fname = os.path.join(self.configs_dir, config_name)
+#        return fname
                        
 class ConfigsCase(unittest.TestCase):
         

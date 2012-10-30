@@ -22,7 +22,7 @@ else
    echo preserving existing users file
 fi
 
-echo 
+ 
 
 sudo mkdir -p /var/www-cloudsim-auth/configs
 sudo cp $DIR/distfiles/configs/* /var/www-cloudsim-auth/configs
@@ -32,11 +32,13 @@ sudo chmod 700 /var/www-cloudsim-auth
 #
 # Setup a daemon to launch simulations for us
 #
-sudo cp $DIR/distfiles/cloudsimd.conf /etc/init
+sudo cp $DIR/cloudsimd/cloudsimd.conf /etc/init
 sudo mkdir -p /var/cloudsimd
 sudo cp -a $DIR/cloudsimd/* /var/cloudsimd
+sudo cp -a $DIR/inside/cgi-bin/common /var/cloudsimd
 
 sudo initctl reload-configuration
+sudo stop cloudsimd
 sudo start cloudsimd
 
 sudo apache2ctl restart
