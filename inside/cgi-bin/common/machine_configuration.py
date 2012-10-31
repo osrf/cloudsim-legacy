@@ -64,102 +64,31 @@ class Machine_configuration(object):
     
  
 class ConfigsDb(object):
-    def __init__(self, email, configs_dir = MACHINE_CONFIG_DIR):
+    def __init__(self, email):
         self.user = email
         self.domain = email.split('@')[1]
-        self.configs_dir = configs_dir
+        
         
     def get_configs(self):
         configs = {}
-        config_files = os.listdir(self.configs_dir)
-        for short_name in config_files:
-            fname = os.path.join(self.configs_dir, short_name)
-            config = Machine_configuration.from_file(fname)
-            configs[short_name] = config
+        configs['gazebo'] = {'description': "ami-137bcf7a, cg1.4xlarge, security: ping_ssh"}
+        
+        configs['micro_vpn'] = {'description': "ami-137bcf7a, t1.micro, security: ping_ssh"}
+        
         return configs
-            
+
     def get_configs_as_json(self):
         configs = self.get_configs()
-        str = "{"
-        for name, cfg in configs.items():
-            str += name
-            str += ":" 
-            str += cfg.as_json()
-            str += ","
-        str += "}"    
+        str = json.dumps(configs)
         return str
-    
-#    def get_config_fname(self, config_name):
-#        fname = os.path.join(self.configs_dir, config_name)
-#        return fname
                        
 class ConfigsCase(unittest.TestCase):
-        
-    def test_config(self):
-        
-        config = Machine_configuration()
-        config.initialize( image_id ="ami-137bcf7a", 
-                           instance_type = 't1.micro' , 
-                           security_groups = ['ping_ssh'], 
-                           username = 'ubuntu', 
-                           distro = 'precise',
-                           startup_script = "",
-                           ip_retries=100,
-                           ssh_retries=200)
-        fname = "test_machine.config"
-        config.save_json(fname)
-        
-        config2 = Machine_configuration.from_file(fname)
-        print("\nfrom file:")
-        config2.print_cfg()
-        self.assertEqual(config.image_id, config2.image_id, "json fail")
 
-    def get_config_dir(self):
-        config_dir = os.path.join(os.path.split(__file__)[0], '../../../distfiles/configs')
-        self.assert_(os.path.exists(config_dir), '%s does not exist' % config_dir)
-        return config_dir
-            
-    
-    def test_make_configs(self):
-        
-        startup_script = ""
-        
-        config = Machine_configuration()
-        config.initialize(image_id ="ami-98fa58f1", 
-                     instance_type = 'cg1.4xlarge' , 
-                     security_groups = ['openvpn'], 
-                     username = 'ubuntu', 
-                     distro = 'precise',
-                     startup_script = "#!/bin/bash\ndate > /home/ubuntu/check.txt\n\n",
-                     ip_retries=100,
-                     ssh_retries=200)
-        
-        config_dir = self.get_config_dir()
-        fname = os.path.join(config_dir, 'simulation_gpu')
-        print("Saving to '%s'" % fname)
-        config.save_json(fname)
-        
-        
-        
-        config_test = Machine_configuration()
-        config_test.initialize( image_id ="ami-98fa58f1", 
-                     instance_type = 't1.micro' , 
-                     security_groups = ['openvpn'], 
-                     username = 'ubuntu', 
-                     distro = 'precise',
-                     startup_script = "#!/bin/bash\ndate > /home/ubuntu/check.txt\n\n",
-                     ip_retries=100,
-                     ssh_retries=200)
-        
-        config_dir = self.get_config_dir()
-        fname = os.path.join(config_dir, 'empty_micro_vpn')
-        print("Saving to '%s'" % fname)
-        config_test.save_json(fname)
         
     def test_configsdb(self):
         
-        configs_dir = self.get_config_dir()
-        cdb = ConfigsDb('toto@cloud.com',configs_dir)
+        # configs_dir = self.get_config_dir()
+        cdb = ConfigsDb('toto@cloud.com')
         
         cfgs = cdb.get_configs()
         self.assert_(len(cfgs)>0, "empty configs db")
