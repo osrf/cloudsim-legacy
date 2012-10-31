@@ -169,8 +169,8 @@ def create_ec2_instance(boto_config_file,
         print('Waiting for sshd to respond...')
         # Wait for sshd to respond.  We check for readability of the static
         # key file because that's what we're going to scp next.
-        #TODO: put a timeout in this loop
-        #TODO: use Machine.test_ssh() instead of calling ssh directly
+        # TODO: put a timeout in this loop
+        # TODO: use Machine.test_ssh() instead of calling ssh directly
         
         cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-i', kp_fname, '%s@%s'%(USERNAME, hostname), 'ls', '/%s'%(common.OPENVPN_STATIC_KEY_FNAME)]
         print(cmd)

@@ -153,7 +153,7 @@ template = """
 <select id="config_select" onchange="launchSelectionChanged()";></select>
 <button type="button" onclick="launch(get_selectected_machine_config())">Launch</button>
 <div id="config_div"></div>
-
+<div id="machines_div"></div>
 <h2>Log</h2>
 <div id="log_div"></div>
 

@@ -1,6 +1,10 @@
+from __future__ import with_statement
+from __future__ import print_function
+
 import unittest
 import json
 import os
+from constants import MACHINES_DIR, BOTO_CONFIG_FILE_USEAST
 #import common    
 
 MACHINE_CONFIG_DIR = '/var/www-cloudsim-auth/configs'
@@ -94,13 +98,14 @@ class ConfigsCase(unittest.TestCase):
     def test_config(self):
         
         config = Machine_configuration()
-        config.initialize(root_directory = 'test_pems', 
-                                         credentials_ec2 = '../../../../boto.ini', 
-                                         image_id ="ami-137bcf7a", 
-                                         instance_type = 't1.micro' , 
-                                         security_groups = ['ping_ssh'], 
-                                         username = 'ubuntu', 
-                                         distro = 'precise')
+        config.initialize( image_id ="ami-137bcf7a", 
+                           instance_type = 't1.micro' , 
+                           security_groups = ['ping_ssh'], 
+                           username = 'ubuntu', 
+                           distro = 'precise',
+                           startup_script = "",
+                           ip_retries=100,
+                           ssh_retries=200)
         fname = "test_machine.config"
         config.save_json(fname)
         
@@ -120,13 +125,14 @@ class ConfigsCase(unittest.TestCase):
         startup_script = ""
         
         config = Machine_configuration()
-        config.initialize(  root_directory = common.MACHINES_DIR, 
-                     credentials_ec2 = common.BOTO_CONFIG_FILE_USEAST, 
-                     image_id ="ami-98fa58f1", 
+        config.initialize(image_id ="ami-98fa58f1", 
                      instance_type = 'cg1.4xlarge' , 
                      security_groups = ['openvpn'], 
                      username = 'ubuntu', 
-                     distro = 'precise')
+                     distro = 'precise',
+                     startup_script = "#!/bin/bash\ndate > /home/ubuntu/check.txt\n\n",
+                     ip_retries=100,
+                     ssh_retries=200)
         
         config_dir = self.get_config_dir()
         fname = os.path.join(config_dir, 'simulation_gpu')
@@ -136,14 +142,14 @@ class ConfigsCase(unittest.TestCase):
         
         
         config_test = Machine_configuration()
-        config_test.initialize(   root_directory = common.MACHINES_DIR, 
-                     credentials_ec2 = common.BOTO_CONFIG_FILE_USEAST, 
-                     image_id ="ami-98fa58f1", 
+        config_test.initialize( image_id ="ami-98fa58f1", 
                      instance_type = 't1.micro' , 
                      security_groups = ['openvpn'], 
                      username = 'ubuntu', 
                      distro = 'precise',
-                     startup_script = "#!/bin/bash\necho hello > test.txt\n\n")
+                     startup_script = "#!/bin/bash\ndate > /home/ubuntu/check.txt\n\n",
+                     ip_retries=100,
+                     ssh_retries=200)
         
         config_dir = self.get_config_dir()
         fname = os.path.join(config_dir, 'empty_micro_vpn')
@@ -159,7 +165,7 @@ class ConfigsCase(unittest.TestCase):
         self.assert_(len(cfgs)>0, "empty configs db")
         
         json_str = cdb.get_configs_as_json()
-        print json_str
+        print (json_str)
         
 if __name__ == '__main__':
     print('Machine TESTS')

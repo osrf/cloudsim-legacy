@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+from __future__ import with_statement
+from __future__ import print_function
+
 import os
 import time
 
@@ -10,6 +13,8 @@ import redis
 import common
 from common import RedisPublisher
 import uuid
+import launchers
+from pubsub import RedisPublisher
 
 redis_client = redis.Redis()
 
@@ -20,40 +25,57 @@ redis_client = redis.Redis()
 # sudo start script
 
 
-jobs = []
+# jobs = []
+
+
 
 def launch(config_name, username):
-    red = redis.Redis()
-    proc = multiprocessing.current_process().name
-    red.publish("cloudsim_log", "Launching '%s' for '%s' from '%s'" % (config_name, username, proc))
-   
-    red.publish("cloudsim_log", "X")
-    cdb = common.ConfigsDb(username)
-    red.publish("cloudsim_log", "XX")
-    
-    config = cdb.get_configs()[config_name]
-    
-    red.publish("cloudsim_log", "XX.X")
     
     
-    publisher = RedisPublisher(username)
-    machine_name = str(uuid.uuid1())
+    try:
+        red = redis.Redis()
+        proc = multiprocessing.current_process().name
+        red.publish("cloudsim_log", "Launching '%s' for '%s' from '%s'" % (config_name, username, proc))
+        
+        
+        launchers.launch(username, machine_name, tags, publisher, root_directory)
+        
+#        launchers = get_launch_functions()
+#        launch = launchers[config_name]
+#        
+#        machine_name = str(uuid.uuid1())
+#        publisher = RedisPublisher(username)
+#        launch(username, machine_name, tags, publisher, root_directory)
+        
+#        str = "%Y-%m-%d %H:%M:%S", time.localtime()
+#        str += " time zone %s" % time.tzname
+#        tags['time'] = time.strftime(str)
+       
+#        cdb = common.ConfigsDb(username)
+#        config = cdb.get_configs()[config_name]
+#        publisher = RedisPublisher(username)
+#        
+#        machine_name = str(uuid.uuid1())
+#        
+#        tags = {'configuration':config_name , 'user':username}
+#        
+#        machine = common.Machine2(machine_name,
+#                             config,
+#                             publisher.event,
+#                             tags)
+#        red.publish("cloudsim_log", "XXX")
+#        machine.create_ssh_connect_script()
+#        
+#        print("Waiting for ssh")
+#        machine.ssh_wait_for_ready("/home/ubuntu")
+#        #red.publish("cloudsim_log", "XXX X")
+#        print("Waiting for setup to complete")
+#        machine.ssh_wait_for_ready()
+#        #red.publish("cloudsim_log", "XXX XX")
+        
+    except Exception, e:
+        red.publish("cloudsim_log", e)
     
-    tags = {'configuration':config_name , 'user':username}
-    
-    machine = common.Machine2(machine_name,
-                         config,
-                         publisher.event,
-                         tags)
-    red.publish("cloudsim_log", "XXX")
-    machine.create_ssh_connect_script()
-    
-    print("Waiting for ssh")
-    machine.ssh_wait_for_ready("/home/ubuntu")
-    red.publish("cloudsim_log", "XXX X")
-    print("Waiting for setup to complete")
-    machine.ssh_wait_for_ready()
-    red.publish("cloudsim_log", "XXX XX")
 #    repeats = 3
 #    for i in range(repeats):
 #        print("Checking status [%s / %s]" % (i+1, repeats))

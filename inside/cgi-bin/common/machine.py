@@ -371,9 +371,10 @@ class MachineDb(object):
         
     def get_machines(self):
         machines = {}
-        for short_name in os.listdir(self.root_dir):
-            machine = self.get_machine(short_name)
-            machines[short_name] = machine 
+        if os.path.exists(self.root_dir):
+            for short_name in os.listdir(self.root_dir):
+                machine = self.get_machine(short_name)
+                machines[short_name] = machine 
         return machines
     
     def get_machine(self, name):
@@ -448,7 +449,7 @@ class PingTest(unittest.TestCase):
         self.assert_(caught)
         
              
-class MachineCase(unittest.TestCase): 
+class MachineCaseVpn(unittest.TestCase): 
 
     def get_boto_path(self):
         return "/home/hugo/code/boto.ini"    
