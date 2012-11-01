@@ -21,7 +21,7 @@ def run():
         print(msg) 
         try:
             data = loads(msg['data'])
-            print ("\n%s\n" % data)
+            print ("\nDATA\n%s\n" % data)
         except:
             print("NO DATA")
 

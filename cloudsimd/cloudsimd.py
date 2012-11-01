@@ -14,9 +14,11 @@ import common
 from common import RedisPublisher
 import uuid
 import launchers
-from pubsub import RedisPublisher
+from common import MACHINES_DIR
+from common import BOTO_CONFIG_FILE_USEAST
+from common import Machine2
+from monitoring import sweep_monitor
 
-redis_client = redis.Redis()
 
 # register the daemon
 # sudo initctl reload-configuration
@@ -24,105 +26,83 @@ redis_client = redis.Redis()
 # How to start and stop
 # sudo start script
 
-
 # jobs = []
 
+def log(msg):
+    print ("LOG: %s" % msg)
+    red = redis.Redis()
+    red.publish("cloudsim_log", msg)
 
-
-def launch(config_name, username):
+def launch(config_name, username, credentials_ec2 =  BOTO_CONFIG_FILE_USEAST, root_directory =  MACHINES_DIR):
     
     
     try:
         red = redis.Redis()
         proc = multiprocessing.current_process().name
-        red.publish("cloudsim_log", "Launching '%s' for '%s' from '%s'" % (config_name, username, proc))
+        log("Launching '%s' for '%s' from proc '%s'" % (config_name, username, proc))
         
+        machine_name = str(uuid.uuid1()) 
+        publisher = RedisPublisher(username) 
         
-        launchers.launch(username, machine_name, tags, publisher, root_directory)
-        
-#        launchers = get_launch_functions()
-#        launch = launchers[config_name]
-#        
-#        machine_name = str(uuid.uuid1())
-#        publisher = RedisPublisher(username)
-#        launch(username, machine_name, tags, publisher, root_directory)
-        
-#        str = "%Y-%m-%d %H:%M:%S", time.localtime()
-#        str += " time zone %s" % time.tzname
-#        tags['time'] = time.strftime(str)
-       
-#        cdb = common.ConfigsDb(username)
-#        config = cdb.get_configs()[config_name]
-#        publisher = RedisPublisher(username)
-#        
-#        machine_name = str(uuid.uuid1())
-#        
-#        tags = {'configuration':config_name , 'user':username}
-#        
-#        machine = common.Machine2(machine_name,
-#                             config,
-#                             publisher.event,
-#                             tags)
-#        red.publish("cloudsim_log", "XXX")
-#        machine.create_ssh_connect_script()
-#        
-#        print("Waiting for ssh")
-#        machine.ssh_wait_for_ready("/home/ubuntu")
-#        #red.publish("cloudsim_log", "XXX X")
-#        print("Waiting for setup to complete")
-#        machine.ssh_wait_for_ready()
-#        #red.publish("cloudsim_log", "XXX XX")
+                
+        launchers.launch(config_name, 
+                         username, 
+                         machine_name, 
+                         publisher,
+                         credentials_ec2,
+                         root_directory)
         
     except Exception, e:
         red.publish("cloudsim_log", e)
     
-#    repeats = 3
-#    for i in range(repeats):
-#        print("Checking status [%s / %s]" % (i+1, repeats))
-#        
-#        m =  machine.test_aws_status()
-#        print("    aws status= %s" % m)
-#        try:
-#            p = machine.ping()
-#            print("    ping= %s" % str(p) )
-#        except Exception, e:
-#            print("    ",e)
-#        x = machine.test_X()
-#        print("    X= %s" % x)
-#        g = machine.test_gazebo()
-#        print("    gazebo= %s" % g)
-#          
-#    print("Shuting down\n\n\n")      
-#    machine.terminate()
-#    print("\n\n\n")
-#    sys.stdout.flush()
-
-    
-    # cdb = common.ConfigDb(username)
     return
+    
+
+def monitor(root_directory):
+    proc = multiprocessing.current_process().name
+    log("monitoring '%s' from proc '%s'" % (root_directory, proc))
+    
+    while True:
+        try:
+            sweep_monitor(root_directory)
+        except Exception, e:
+            log("Error %s" % e) 
     
     
 def async_launch(config, username):
-    redis_client.publish("cloudsim_log", "launch! %s for %s"% (config, username) )
+    log("launch! %s for %s"% (config, username) )
     
     try:
         p = multiprocessing.Process(target=launch, args=(config, username))
         # jobs.append(p)
         p.start()
     except Exception, e:
-        redis_client.publish("cloudsim_log",e)
+        log("Error %s" % e)
 
-
+def async_monitor():
+    
+    root_directory =  MACHINES_DIR
+    log("monitoring machines in '%s'"% (root_directory) )
+    
+    try:
+        p = multiprocessing.Process(target=monitor, args=(root_directory, ) )
+        # jobs.append(p)
+        p.start()
+    except Exception, e:
+        log("Error %s" % e)    
+    
 
 def run():
-    redis_client.publish("cloudsim_log", 
-                         "Cloudsim daemon started pid %s" %  os.getpid())
-
-    ps = redis_client.pubsub()
+    
+    red = redis.Redis()
+    ps = red.pubsub()
     ps.subscribe("cloudsim_cmds")
     
+     
+    async_monitor()
+    
     for msg in ps.listen():
-        redis_client.publish("cloudsim_log", "CLOUDSIM = '%s'" % msg) 
+        log("COMMAND = '%s'" % msg) 
         try:
             data = loads(msg['data'])
             cmd = data['command']
@@ -132,6 +112,16 @@ def run():
                 config = data['configuration']
                 async_launch(config, username)
         except:
-            redis_client.publish("cloudsim_log", "not a valid message [%s]" % msg)
+            log("not a valid message [%s]" % msg)
+            
+            
 
-run()
+if __name__ == "__main__":
+    
+    try:
+        
+        log("Cloudsim daemon started pid %s" %  os.getpid())
+        run()
+        
+    except Exception, e:
+        log("Cloudsim daemon error: %s" %  e)

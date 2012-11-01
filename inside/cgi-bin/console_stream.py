@@ -10,7 +10,7 @@ import cgitb
 
 import redis
 
-from common import MachineDb
+from json import loads
 
 cgitb.enable()
  
@@ -21,11 +21,13 @@ cgitb.enable()
 VIEW_AS_HTML = False
 
 email = authorize()
+domain = email.split('@')[1]
 
 form = cgi.FieldStorage()
 if form.has_key('html'):
     VIEW_AS_HTML = True
-    print_http_header()
+    print("Content-Type: text/html")
+    print("\n")
     print("<html><h1>Form</h1>")
     for k in form.keys():
         v = form.getfirst(k)
@@ -48,33 +50,26 @@ else:
 #    data['type'] = 'action'
 #    data['counter'] = i
 #    print ("data: %s\n\n" % data)
+#    sys.stdout.flush()
 #    # time.sleep(0.05)    
 #    
 #exit(0)
-    
-mdb = MachineDb(email)
-machines = mdb.get_machines()
-for config in machines:
-    machine = mdb.get_machine(config)
-    m = machine.test_aws_status()
-    print("event: cloudsim")
-    print("data:  {'aws_status': '%s', 'machine':'%s' }\n\n" % (m, config ))
-    p = machine.ping()
-    print("event: cloudsim")
-    print("data: {'ping': '%s', 'machine':'%s' \n\n" % (str(p), config  ) )
-    x = machine.test_X()
-    print("event: cloudsim")
-    print("data: {'X_GL': '%s', 'machine':'%s' \n\n" % (str(x), config ) )
-    g = machine.test_gazebo()
-    print("event: cloudsim")
-    print("data: {'sim': '%s', 'machine':'%s' \n\n" % (str(g), config  ) )
-        #    
-    #    launch_log_fname = mdb.get_launch_log_fname(machine_name)
-#         domain = email.split('@')[1]
-#         ps = redis.Redis().pubsub()
-#         ps.subscribe([domain])
-#         
 
-    
-if not VIEW_AS_HTML:
+red = redis.Redis()
+pubsub = red.pubsub()
+
+
+pubsub.subscribe([domain])
+
+for msg in pubsub.listen():
+    try:
+        data = msg['data']
+        print("event: cloudsim")
+        print("data: %s\n\n" % data)
+        sys.stdout.flush() 
+    except:
+        pass
+
+
+if VIEW_AS_HTML:
     print ("</pre></html>")     

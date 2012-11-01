@@ -102,9 +102,9 @@ class Machine2 (object):
             self.log = open(self.config.launch_log_fname, 'w')
             self.config.instance_fname = os.path.join(self.config.cfg_dir, 'instance.json')
             
-            self.config.save_json(self.config.instance_fname)
+            #self.config.save_json(self.config.instance_fname)
             self._create_machine_keys() 
-            self.config.save_json(self.config.instance_fname)
+            # self.config.save_json(self.config.instance_fname)
             
             self._launch()
             
@@ -289,14 +289,12 @@ class Machine2 (object):
         self.ec2.delete_key_pair(self.config.kp_name)
         self._event({"type":"check", "state":'terminated', "machine_id":self.config.aws_id})
     
-    def test_X(self):
+    def get_X_status(self):
         self._event({"type":"test", "state":'X, OpenGL'})
         try:
             r = self.ssh_send_command('DISPLAY=localhost:0; glxinfo')
-            self._event({"type":"check", "state":'X, OpenGL'})
             return True
         except:
-            self._event({"type":"fail", "state":'X, OpenGL'})
             return False
 
     def ping(self, count = 3):
@@ -304,38 +302,29 @@ class Machine2 (object):
         host = self.config.hostname
         try:
             min, avg, max, mdev = ping(host, count)
-            self._event({"type":"check", "state":'latency', 'count':count, 'min':min, 'avg':avg, 'max':max, 'mdev':mdev})
-            return True
+            return {'count':count, 'min':min, 'avg':avg, 'max':max, 'mdev':mdev}
         except:
-            self._event({"type":"fail", "state":'latency'})
-        return False
+            return None
 
-    def test_gazebo(self):
-        self._event({"type":"test", "state":'simulation'})
+    def get_gazebo_status(self):
+        
         d = self.config.distro
         cmd = 'source /opt/ros/%s/setup.bash && rosrun gazebo gztopic list' % d 
         try:
             r = self.ssh_send_command(cmd)
-            self._event({"type":"check", "state":'simulation'}) 
             return True
         except:
-            self._event({"type":"fail", "state":'simulation'})
             return False
 
-    def test_aws_status(self, timeout=1):
+    def get_aws_status(self, timeout=1):
         self._event({"type":"test", "state":'aws'})
-        try:
             
-            for r in self.ec2.get_all_instances():
-                for i in r.instances:
-                    if i.id == self.config.aws_id:
-                        self._event({"type":"check", "state":'cloud', 'status':i.state}) 
-                        return True 
-            self._event({"type":"fail", 'state':'cloud', 'status':"Unable to find machine at AWS"})
-            return False
-        except Exception as e:
-            self._event({"type":"fail", 'state':'cloud', 'status':str(e)})
-            return False
+        for r in self.ec2.get_all_instances():
+            for i in r.instances:
+                if i.id == self.config.aws_id:
+                    self._event({"type":"check", "state":'cloud', 'status':i.state}) 
+                    return i.state 
+        return None
 
 #    def reboot(self, timeout=1):
 #        cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'sudo', 'reboot']

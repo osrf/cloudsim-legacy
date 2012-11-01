@@ -24,8 +24,6 @@ fi
 
  
 
-sudo mkdir -p /var/www-cloudsim-auth/configs
-sudo cp $DIR/distfiles/configs/* /var/www-cloudsim-auth/configs
 sudo chown -R www-data:www-data /var/www-cloudsim-auth
 sudo chmod 700 /var/www-cloudsim-auth
 

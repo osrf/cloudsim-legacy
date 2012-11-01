@@ -4,7 +4,7 @@ from __future__ import print_function
 import imp
 import os
 import time
-from constants import MACHINES_DIR, BOTO_CONFIG_FILE_USEAST
+
 
 directory = os.path.split(__file__)[0]
 
@@ -45,8 +45,8 @@ def get_launch_functions():
 launchers = None
 
 def launch(config_name, username, machine_name, publisher,
-           credentials_ec2 = BOTO_CONFIG_FILE_USEAST,
-           root_directory = MACHINES_DIR):
+           credentials_ec2,
+           root_directory):
     global launchers
     
     if not launchers:

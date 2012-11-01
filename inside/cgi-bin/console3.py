@@ -99,23 +99,19 @@ function get_selectected_machine_config()
 
 function launchSelectionChanged()
 {
-
     var machine_config =get_selectected_machine_config();
     var conf = machine_configurations[machine_config];
     
-    var str = "distro " + conf.distro + "<br>";
-    str += "instance_type " + conf.instance_type + "<br>";
-    str += "image_id " + conf.image_id + "<br>";
-    
+    var str = "<b>description:</b> " + conf.description + "<br>";
     document.getElementById("config_div").innerHTML = str;
 }
 
 function stream()
 {
-    div_name = "log_div";
-    var stream_url = '<b>stream url:</b> /cloudsim/inside/cgi-bin/console_stream.py';
+    var div_name = "machines_log_div";
+    var stream_url = '/cloudsim/inside/cgi-bin/console_stream.py';
     
-    log_to_div(div_name, stream_url);
+    log_to_div(div_name, '<b>stream url:</b>' + stream_url);
     
     var es = new EventSource(stream_url);
     
@@ -148,12 +144,27 @@ template = """
 </script>
 
 <body onload = "on_load_page()">
-<h1>Console 3</h1>
+<h1>Console</h1>
 
-<select id="config_select" onchange="launchSelectionChanged()";></select>
-<button type="button" onclick="launch(get_selectected_machine_config())">Launch</button>
-<div id="config_div"></div>
-<div id="machines_div"></div>
+<h2>Launcher</h2>
+
+<div id="launcher_div" style="border: 1px solid black;">
+    <select id="config_select" onchange="launchSelectionChanged()";></select>
+    <button type="button" onclick="launch(get_selectected_machine_config())">Launch</button>
+    <div id="config_div"></div>
+</div>
+
+<h2>Machines</h2>
+
+<div id="machines_div" style="border: 1px solid black;">
+    
+    <h3>Log</h3>
+    <div id="machines_log_div">
+    </div>
+    
+</div>
+
+
 <h2>Log</h2>
 <div id="log_div"></div>
 
