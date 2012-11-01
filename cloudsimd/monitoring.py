@@ -18,9 +18,10 @@ def monitor_machine(domain, machine):
     
     #print("Monitor machine.. domain  %s, machine %s" % (domain, machine.config.uid))
     #print("  Machine %s" % machine)
+    cloud = machine.get_aws_status()
     aws_status = {}
     aws_status['status'] = "cloud"
-    aws_status['machine'] = machine.config.uid
+    aws_status['success'] = cloud
     aws_status.update(status)
     
     str = dumps(aws_status)

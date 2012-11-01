@@ -42,6 +42,8 @@ function log_to_div(div_name, message)
 
 function on_load_page()
 {
+    machine_view_on_load_page("machines_div");
+
     var div_name = "log_div";
     log_to_div(div_name, "on_load_page");
     
@@ -118,7 +120,9 @@ function stream()
     es.addEventListener("cloudsim", function(event)
     {
          var str_data = event.data;
-         log_to_div(div_name, "<b>event</b> " + str_data);
+         
+         machine_view_status_event("machines_div", str_data );
+         
          
      }, false);
      
@@ -135,13 +139,14 @@ function stream()
 template = """ 
 
 <html>
+<head>
 <title>Console</title>
-
-
-
+<script src="/js/machine_view.js"></script>
 <script>
 %s
 </script>
+</head>
+
 
 <body onload = "on_load_page()">
 <h1>Console</h1>
@@ -158,9 +163,7 @@ template = """
 
 <div id="machines_div" style="border: 1px solid black;">
     
-    <h3>Log</h3>
-    <div id="machines_log_div">
-    </div>
+    
     
 </div>
 
