@@ -16,23 +16,33 @@ from monitoring import sweep_monitor
 username = "cloudsim_test@osrfoundation.org"
 
 class Testo(unittest.TestCase):
-    
-   
+
+    def test_launch_gazebo(self):
+        
+        machine_name = "gaz_" + str(uuid.uuid1())
+        publisher = RedisPublisher(username)
+        
+        config_name = "gazebo"
+        
+        root_directory = "launch_test"
+        ec2 = "/home/hugo/code/boto.ini"     
+        
+        launch(config_name, username, machine_name, publisher, ec2, root_directory)
     
     def atest_launch_micro(self):
         
         machine_name = str(uuid.uuid1())
         publisher = RedisPublisher(username)
         
-        config_name = "micro_vpn"
+        config_name = "gazebo"
         
         root_directory = "launch_test"
         ec2 = "/home/hugo/code/boto.ini"     
         
         launch(config_name, username, machine_name, publisher, ec2, root_directory)
         
-        
-    def test_monitor(self):
+            
+    def atest_monitor(self):
         root_directory = "launch_test"
         publisher = RedisPublisher(username)
         sweep_monitor(root_directory)

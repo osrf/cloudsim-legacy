@@ -5,6 +5,8 @@ import os
 import sys
 
 from common import Machine2, Machine_configuration
+import uuid
+from common import StdoutPublisher
 
 TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """#!/bin/bash
 
@@ -47,6 +49,9 @@ echo "apache2 installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
 # apt-get install -y libapache2-mod-python
 # echo "apache2 with mod-python installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
 
+apt-get install -y redis-server python-pip
+sudo pip install redis
+echo "redis installed" >> /home/ubuntu/STARTUP_SCRIPT_LOG
  
 apt-add-repository -y ppa:rye/ppa
 apt-get update
@@ -145,6 +150,9 @@ def generate_setup_script(distro):
 
 if __name__ == '__main__':
     
+    root_directory = "team_login_pem"
+    distro = "precise"
+
     print ("create_team_login_instance\n")
     
     if(len(sys.argv) < 3 ):
@@ -168,21 +176,34 @@ if __name__ == '__main__':
 #            username = "ubuntu", 
 #            distro = "precise")
     
-    config = Machine_configuration()
-            
-    config.initialize(  root_directory = "team_login_pem", 
-                        credentials_ec2 = credentials_ec2, 
-                        image_id ="ami-137bcf7a", 
+    startup_script = generate_setup_script(distro)
+    
+    config = Machine_configuration()        
+    config.initialize(  image_id ="ami-137bcf7a", 
                         instance_type= "t1.micro", # "m1.small"
                         security_groups = ["TeamLogin"],
-                        username = "ubuntu", 
-                        distro = "precise")
+                        username = "ubuntu",
+                        distro = distro,  
+                        startup_script = startup_script,
+                        ip_retries = 200,
+                        ssh_retries = 200
+                        )
     
     deploy_script_fname = "/home/%s/cloudsim/deploy.sh" % config.username 
     remote_fname = '/home/%s' % (config.username)
     
-    startup_script = generate_setup_script(config.distro, )
-    team_login  = Machine2(config, startup_script)
+    machine_name = "team_" + str(uuid.uuid1())
+    publisher = StdoutPublisher()
+    tags = {'type': 'team login machine',
+            'version': 'n/a',
+            'distribution' : website_distribution}
+    
+    team_login  = Machine2(machine_name, 
+                           config, 
+                           publisher.event, 
+                           tags, 
+                           credentials_ec2,
+                           root_directory =  root_directory)
     
     print("\n%s"%(team_login.config.hostname))
     print("%s\n\n"%(team_login.user_ssh_command()))
@@ -196,14 +217,14 @@ if __name__ == '__main__':
     #checking that the file is there
     short_file_name = os.path.split(website_distribution)[1] 
     remote_fname = "/home/%s/%s" % (team_login.config.username, short_file_name)
-    team_login.ssh_send_command(["ls", remote_fname ] )
+    team_login.ssh_send_command("ls " + remote_fname )
     
     print("unzip web app")
-    out = team_login.ssh_send_command(["unzip" , remote_fname] )
+    out = team_login.ssh_send_command("unzip " + remote_fname )
     print ("\t%s"% out)
     
     print("running deploy script '%s' remotely" % deploy_script_fname)
-    out = team_login.ssh_send_command(["bash", deploy_script_fname ] )
+    out = team_login.ssh_send_command("bash " + deploy_script_fname  )
     print ("\t%s"% out)
     print('setup complete')
     print("%s\n"%(team_login.user_ssh_command()))

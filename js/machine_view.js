@@ -45,7 +45,16 @@ function _update_machine_view(machine_div, data)
    if(data.status == "cloud")
    {
        var div = machine_div.childNodes["cloud"];
-       var str = "<h3>Cloud: " + data.success + "</h3>"; 
+       var str = "<h3>Cloud:</h3>"; 
+       if(data)
+       {
+            for (var key in data )
+            {
+                var value = data[key]; 
+                str += "<b>" + key + "</b>: " + value + "<br>";
+                
+            }
+       }
        div.innerHTML = str;
    }
 

@@ -317,14 +317,23 @@ class Machine2 (object):
             return False
 
     def get_aws_status(self, timeout=1):
-        self._event({"type":"test", "state":'aws'})
+        #self._event({"type":"test", "state":'aws'})
+
+        data = {}
+        data.update(self.config.tags)
+        data["type"] = "check"
+        data["state"] ='cloud'
+        
             
         for r in self.ec2.get_all_instances():
             for i in r.instances:
                 if i.id == self.config.aws_id:
-                    self._event({"type":"check", "state":'cloud', 'status':i.state}) 
-                    return i.state 
-        return None
+                    data[ 'status'] = str(i.state)
+                    self._event(data) 
+                    return data
+        data['status'] = 'does_not_exist'
+        return data
+    
 
 #    def reboot(self, timeout=1):
 #        cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'sudo', 'reboot']
@@ -388,35 +397,12 @@ class MachineDb(object):
     def get_launch_log_fname(self, machine_name):
         fname =  os.path.join(self.root_dir, machine_name, "launch.log")
         return fname
+    
+    def get_zip_fname(self, machine_name):
+        fname = os.path.join(self.root_dir, machine_name, machine_name + ".zip")
 
 #########################################################################
 
-
-INSTALL_VPN = """
-
-echo "Installing openvpn" >> /home/ubuntu/setup.log
-
-# Install and start openvpn.  Do this last, because we're going to 
-# infer that the machine is ready from the presence of the 
-# openvpn static key file.
-apt-get install -y openvpn
-
-echo "Generating openvpn key" >> /home/ubuntu/setup.log
-openvpn --genkey --secret static.key
-
-echo "Setting key permissions" >> /home/ubuntu/setup.log
-chmod 644 static.key
-
-echo "Set up for autostart by copying conf to /etc/openvpn" >> /home/ubuntu/setup.log 
-cp openvpn.config /etc/openvpn/openvpn.conf
-cp static.key /etc/openvpn/static.key
-
-echo "Start openvpn" >> /home/ubuntu/setup.log
-service openvpn start
-
-echo "Setup complete" >> /home/ubuntu/setup.log
-
-"""
 
 class PingTest(unittest.TestCase):
     

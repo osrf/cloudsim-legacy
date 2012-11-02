@@ -58,7 +58,7 @@ def launch(config_name, username, machine_name, publisher,
     tags['user'] = username
     tags['machine'] = machine_name
 # remove path and .py from the name of this file
-    tags['type'] = config_name
+    tags['configuration'] = config_name
     tags['GMT'] = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
     
     domain = username.split('@')[1]

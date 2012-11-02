@@ -9,6 +9,137 @@ import constants
 
 OPEN_VPN_KEY_FNAME = "openvpn.key"
 
+
+
+SOURCES_LIST_PRECISE = """
+##
+## cloudsim 
+##
+## Note, this file is written by cloud-init on first boot of an instance
+## modifications made here will not survive a re-bundle.
+## if you wish to make changes you can:
+## a.) add 'apt_preserve_sources_list: true' to /etc/cloud/cloud.cfg
+##     or do the same in user-data
+## b.) add sources in /etc/apt/sources.list.d
+## c.) make changes to template file /etc/cloud/templates/sources.list.tmpl
+#
+
+# See http://help.ubuntu.com/community/UpgradeNotes for how to upgrade to
+# newer versions of the distribution.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
+
+## Major bug fix updates produced after the final release of the
+## distribution.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+## team. Also, please note that software in universe WILL NOT receive any
+## review or updates from the Ubuntu security team.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
+
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
+## team, and may not be under a free licence. Please satisfy yourself as to
+## your rights to use the software. Also, please note that software in 
+## multiverse WILL NOT receive any review or updates from the Ubuntu
+## security team.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+
+## Uncomment the following two lines to add software from the 'backports'
+## repository.
+## N.B. software from this repository may not have been tested as
+## extensively as that contained in the main release, although it includes
+## newer versions of some applications which may provide useful features.
+## Also, please note that software in backports WILL NOT receive any review
+## or updates from the Ubuntu security team.
+# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+# deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+
+## Uncomment the following two lines to add software from Canonical's
+## 'partner' repository.
+## This software is not part of Ubuntu, but is offered by Canonical and the
+## respective vendors as a service to Ubuntu users.
+# deb http://archive.canonical.com/ubuntu precise partner
+# deb-src http://archive.canonical.com/ubuntu precise partner
+
+deb http://security.ubuntu.com/ubuntu precise-security main restricted
+deb-src http://security.ubuntu.com/ubuntu precise-security main restricted
+deb http://security.ubuntu.com/ubuntu precise-security universe
+deb-src http://security.ubuntu.com/ubuntu precise-security universe
+deb http://security.ubuntu.com/ubuntu precise-security multiverse
+deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
+
+"""
+
+
+INSTALL_VPN = """
+
+echo "Installing openvpn" >> /home/ubuntu/setup.log
+
+# Install and start openvpn.  Do this last, because we're going to 
+# infer that the machine is ready from the presence of the 
+# openvpn static key file.
+apt-get install -y openvpn
+
+echo "Generating openvpn key" >> /home/ubuntu/setup.log
+openvpn --genkey --secret static.key
+
+echo "Setting key permissions" >> /home/ubuntu/setup.log
+chmod 644 static.key
+
+echo "Set up for autostart by copying conf to /etc/openvpn" >> /home/ubuntu/setup.log 
+cp openvpn.config /etc/openvpn/openvpn.conf
+cp static.key /etc/openvpn/static.key
+
+echo "Start openvpn" >> /home/ubuntu/setup.log
+service openvpn start
+
+echo "vpn setup complete" >> /home/ubuntu/setup.log
+"""
+
+
+ROS_SETUP_STARTUP_SCRIPT = """
+
+# Install ROS.
+# For now, just pull Gazebo from Fuerte.  In the future, give 
+# options here.
+echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
+wget http://packages.ros.org/ros.key -O - | apt-key add -
+apt-get update
+apt-get -y install ros-fuerte-pr2-simulator ros-fuerte-arm-navigation ros-fuerte-pr2-teleop-app ros-fuerte-pr2-object-manipulation ros-fuerte-pr2-navigation
+
+
+"""
+
+XGL_STARTUP = """
+
+apt-get update
+
+# install X, with nvidia drivers
+apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
+
+# setup auto xsession login
+echo "
+[SeatDefaults]
+greeter-session=unity-greeter
+autologin-user=ubuntu
+autologin-user-timeout=0
+user-session=gnome-fallback
+" > /etc/lightdm/lightdm.conf
+initctl stop lightdm || true
+initctl start lightdm 
+
+
+""" 
+
+
 def create_openvpn_server_cfg_file(client_ip = constants.OV_CLIENT_IP,
                                    server_ip = constants.OV_SERVER_IP,
                                    key_file = constants.OPENVPN_STATIC_KEY_FNAME):
@@ -86,6 +217,37 @@ sudo openvpn --config openvpn.config"
 
 """
 
+def create_xorg_config_file():
+
+    return """
+Section "ServerLayout"
+    Identifier     "Layout0"
+    Screen      0  "Screen0"
+EndSection
+Section "Monitor"
+    Identifier     "Monitor0"
+    VendorName     "Unknown"
+    ModelName      "Unknown"
+    HorizSync       28.0 - 33.0
+    VertRefresh     43.0 - 72.0
+    Option         "DPMS"
+EndSection
+Section "Device"
+    Identifier     "Device0"
+    Driver         "nvidia"
+    BusID          "PCI:0:3:0"
+    VendorName     "NVIDIA Corporation"
+EndSection
+Section "Screen"
+    Identifier     "Screen0"
+    Device         "Device0"
+    Monitor        "Monitor0"
+    DefaultDepth    24
+    SubSection     "Display"
+        Depth       24
+    EndSubSection
+EndSection
+"""
     
 class ScriptTests(unittest.TestCase):
 

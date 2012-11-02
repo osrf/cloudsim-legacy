@@ -20,9 +20,11 @@ def monitor_machine(domain, machine):
     #print("  Machine %s" % machine)
     cloud = machine.get_aws_status()
     aws_status = {}
-    aws_status['status'] = "cloud"
-    aws_status['success'] = cloud
+    
     aws_status.update(status)
+    aws_status['success'] = cloud['status']
+    aws_status.update(cloud)
+    aws_status['status'] = "cloud"
     
     str = dumps(aws_status)
     red.publish(domain, str)
