@@ -12,7 +12,8 @@ redis_client = redis.Redis()
 
 
 def run():
-    channels = ["cloudsim_log", "cloudsim_cmds", "osrfoundation.org"]
+    channels = ["cloudsim_log", "cloudsim_cmds"] 
+    #channels.append("osrfoundation.org")
     
     ps = redis_client.pubsub()
     ps.subscribe(channels)

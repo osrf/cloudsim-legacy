@@ -321,6 +321,11 @@ class Machine2 (object):
 
         data = {}
         data.update(self.config.tags)
+        
+        data['hostname'] = self.config.hostname
+        data['ip'] = self.config.ip
+        data['aws_id'] = self.config.aws_id
+        
         data["type"] = "check"
         data["state"] ='cloud'
         
@@ -400,6 +405,7 @@ class MachineDb(object):
     
     def get_zip_fname(self, machine_name):
         fname = os.path.join(self.root_dir, machine_name, machine_name + ".zip")
+        return fname
 
 #########################################################################
 

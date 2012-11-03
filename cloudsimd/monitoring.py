@@ -7,11 +7,17 @@ import redis
 from json import dumps
 
 from common import Machine2
+import commands
+import shutil
 
+"""
+Returns True if the machine is alive
+"""
 def monitor_machine(domain, machine):
     
     status = {}
     status['machine'] = machine.config.uid
+    status['type'] = 'check'
     
     red = redis.Redis()
     
@@ -56,7 +62,12 @@ def monitor_machine(domain, machine):
     red.publish(domain, str)
     
     #print("    gazebo= %s" % g)
-            
+    r = True
+    if cloud['status'] == "terminated":
+        r = False
+    if cloud['status'] == "does_not_exist":
+        r = False
+    return r
 
 def get_machine_instance_paths_and_domains(root_directory):
     ret =[]
@@ -69,12 +80,22 @@ def get_machine_instance_paths_and_domains(root_directory):
             if os.path.exists(machine_fname):
                 ret.append( (machine_fname, domain) )
     return ret
+
+def remove_machine_data(root_directory, machine_data_fname):
+    machine_data_dir = os.path.split(machine_data_fname)[0]
+    rip_dir = os.path.join( root_directory,"..",  "rip") 
+    if not os.path.exists(rip_dir):
+        os.makedirs(rip_dir)    
+    shutil.move(machine_data_dir, rip_dir)
         
 def sweep_monitor (root_directory):
     
-    for machine_data, domain in get_machine_instance_paths_and_domains(root_directory):
-        machine = Machine2.from_file(machine_data)
-        monitor_machine(domain, machine)
+    for machine_data_fname, domain in get_machine_instance_paths_and_domains(root_directory):
+        machine = Machine2.from_file(machine_data_fname)
+        alive = monitor_machine(domain, machine)
+        if not alive:
+            remove_machine_data(root_directory, machine_data_fname)
+
 
 
 class TestCases(unittest.TestCase):

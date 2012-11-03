@@ -4,6 +4,8 @@ from __future__ import print_function
 import imp
 import os
 import time
+import common
+from common.machine import MachineDb
 
 
 directory = os.path.split(__file__)[0]
@@ -44,9 +46,13 @@ def get_launch_functions():
 
 launchers = None
 
-def launch(config_name, username, machine_name, publisher,
+def launch(config_name, 
+           username, 
+           machine_name, 
+           publisher,
            credentials_ec2,
            root_directory):
+    
     global launchers
     
     if not launchers:
@@ -65,6 +71,52 @@ def launch(config_name, username, machine_name, publisher,
     userdir = os.path.join(root_directory, domain)
         
     func(username, machine_name, tags, publisher, credentials_ec2, userdir)
+
+def start_simulator(username, 
+                      machine, 
+                      package_name, 
+                      launch_file_name,
+                      launch_args,
+                      credentials_ec2, 
+                      root_directory):
+    publisher.event({'msg':'About to start simulator'})
+    
+    machine = matches[0]
+   
+    script = '". /opt/ros/fuerte/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  >/dev/null 2>/dev/null </dev/null &"'%(common.OV_SERVER_IP, common.DISPLAY, package, launchfile, launchargs)
+    
+    cmd = ['echo', script, '>start_ros.sh']
+    cmd_str = ' '.join(cmd)
+    
+    ret, err = machine.ssh(cmd, args=['-f'])
+    # print ("ret: %s<p>err: %s<p>" % (ret, err) )
+    
+    cmd = ['at', 'NOW', '<start_ros.sh']
+    cmd_str = ' '.join(cmd)
+    
+        
+    
+def stop_simulator():
+    publisher.event({'msg':'About to stop simulator'})
+    mdb = MachineDb(username, machine_dir = root_directory)
+    machine = mdb.get_machine(machine_name)
+    
+    
+    
+    
+def terminate(username, 
+              machine_name, 
+              publisher, 
+              credentials_ec2, 
+              root_directory):
+    
+    publisher.event({'msg':'About to terminate'})
+    mdb = MachineDb(username, machine_dir = root_directory)
+    machine = mdb.get_machine(machine_name)
+    machine.terminate()
+    
+
+
 
 if __name__ == "__main__":
     x = get_launch_functions()
