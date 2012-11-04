@@ -46,8 +46,8 @@ def get_launch_functions():
 
 launchers = None
 
-def launch(config_name, 
-           username, 
+def launch(username, 
+           config_name, 
            machine_name, 
            publisher,
            credentials_ec2,
@@ -79,7 +79,7 @@ def start_simulator(username,
                       launch_args,
                       credentials_ec2, 
                       root_directory):
-    publisher.event({'msg':'About to start simulator'})
+    #publisher.event({'msg':'About to start simulator'})
     
     machine = matches[0]
    
@@ -94,16 +94,14 @@ def start_simulator(username,
     cmd = ['at', 'NOW', '<start_ros.sh']
     cmd_str = ' '.join(cmd)
     
-        
     
-def stop_simulator():
+    
+def stop_simulator(username, root_directory):
     publisher.event({'msg':'About to stop simulator'})
     mdb = MachineDb(username, machine_dir = root_directory)
     machine = mdb.get_machine(machine_name)
     
-    
-    
-    
+
 def terminate(username, 
               machine_name, 
               publisher, 

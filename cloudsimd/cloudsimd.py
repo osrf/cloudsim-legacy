@@ -28,10 +28,10 @@ from monitoring import sweep_monitor
 
 # jobs = []
 
-def log(msg):
+def log(msg, chan="cloudsim_log"):
     print ("LOG: %s" % msg)
     red = redis.Redis()
-    red.publish("cloudsim_log", msg)
+    red.publish(chan, msg)
 
 def launch( username, config_name, credentials_ec2 =  BOTO_CONFIG_FILE_USEAST, 
             root_directory =  MACHINES_DIR):
@@ -45,8 +45,8 @@ def launch( username, config_name, credentials_ec2 =  BOTO_CONFIG_FILE_USEAST,
         log("Launching machine %s, config '%s' for user '%s' from proc '%s'" % (machine_name, config_name,  username, proc))
 
         publisher = RedisPublisher(username) 
-        launchers.launch(config_name, 
-                         username, 
+        launchers.launch(username, 
+                         config_name, 
                          machine_name, 
                          publisher,
                          credentials_ec2,

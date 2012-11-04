@@ -3,7 +3,7 @@
 from __future__ import with_statement
 from __future__ import print_function
 
-import os
+import os, sys
 import redis
 from json import loads
 
@@ -12,7 +12,14 @@ redis_client = redis.Redis()
 
 
 def run():
-    channels = ["cloudsim_log", "cloudsim_cmds"] 
+    
+    channels = ["cloudsim_log", "cloudsim_cmds"]
+    for channel in sys.argv[1:]:
+        if channel == 'o':
+            channel = 'osrfoundation.org'
+        channels.append(channel)
+    
+    
     #channels.append("osrfoundation.org")
     
     ps = redis_client.pubsub()
@@ -22,8 +29,8 @@ def run():
         print(msg) 
         try:
             data = loads(msg['data'])
-            print ("\nDATA\n%s\n" % data)
+            print ("\nmsg['data'] in json \n=============\n%s\n===============\n" % data)
         except:
-            print("NO DATA")
+            print("-")
 
 run()
