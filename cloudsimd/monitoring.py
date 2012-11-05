@@ -17,7 +17,7 @@ def monitor_machine(domain, machine):
     
     status = {}
     status['machine'] = machine.config.uid
-    status['type'] = 'check'
+    status['type'] = 'test'
     
     red = redis.Redis()
     

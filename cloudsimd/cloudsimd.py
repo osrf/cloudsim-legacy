@@ -36,9 +36,9 @@ def log(msg, chan="cloudsim_log"):
 def launch( username, config_name, credentials_ec2 =  BOTO_CONFIG_FILE_USEAST, 
             root_directory =  MACHINES_DIR):
     
+    red = redis.Redis()
     machine_name = str(uuid.uuid1())
     try:
-        red = redis.Redis()
         proc = multiprocessing.current_process().name
         
          
@@ -61,12 +61,13 @@ def launch( username, config_name, credentials_ec2 =  BOTO_CONFIG_FILE_USEAST,
 Terminates the machine via the cloud interface. Files will be removed by the 
 monitoring process
 """
-def terminate(username, machine_name, 
-              credentials_ec2 =  BOTO_CONFIG_FILE_USEAST,
-              root_directory =  MACHINES_DIR):
+def terminate(username, 
+              machine_name, 
+              credentials_ec2,
+              root_directory):
     red = redis.Redis()
     proc = multiprocessing.current_process().name
-    log("terminate '%s' for '%s' from proc '%s'" % (config_name, username, proc))
+    log("terminate '%s' for '%s' from proc '%s'" % (machine_name, username, proc))
 
     try:
         publisher = RedisPublisher(username) 
@@ -102,29 +103,33 @@ def async_terminate(username, machine):
     credentials_ec2 =  BOTO_CONFIG_FILE_USEAST
     root_directory =  MACHINES_DIR
     try:
-        args=(username, machine)
-        p = multiprocessing.Process(target=terminate, args=args)
+        
+        p = multiprocessing.Process(target=terminate, args= (username, machine, credentials_ec2, root_directory,)  )
         # jobs.append(p)
         p.start()
     except Exception, e:
         log("Error %s" % e)
 
-def start_simulator(username, machine, package_name, launch_file_name,launch_args):
-    
-    credentials_ec2 =  BOTO_CONFIG_FILE_USEAST
-    root_directory =  MACHINES_DIR
-    
-    launchers.start_simulator(username, 
-                              machine, 
+def start_simulator(username, machine_name, package_name, launch_file_name,launch_args):
+
+    try:
+#        log("START_SIMU user %s", username )
+#        log("START_SIMU on machine %s", machine_name )
+        root_directory =  MACHINES_DIR
+        
+        launchers.start_simulator(username, 
+                              machine_name, 
                               package_name, 
                               launch_file_name,
                               launch_args,
-                              credentials_ec2, 
                               root_directory)
-    
+
+    except Exception, e:
+        log("start_simulator error: %s" % e )
                 
 def async_start_simulator(username, machine, package_name, launch_file_name,launch_args ):
-    log("async start simulator! user %s machine %s, pack %s" % (username, machine, package_name))
+    log("async start simulator! user %s machine %s, pack %s launch %s args '%s'" % (username, machine, package_name, 
+                                                                                    launch_file_name, launch_args ))
     try:
         p = multiprocessing.Process(target=start_simulator, args=(username, machine, package_name, launch_file_name,launch_args ) )
         # jobs.append(p)
@@ -132,6 +137,13 @@ def async_start_simulator(username, machine, package_name, launch_file_name,laun
     except Exception, e:
         log("Error %s" % e)
 
+def stop_simulator(username, machine):
+    try:
+        root_directory =  MACHINES_DIR
+        launchers.stop_simulator(username, machine, root_directory)
+    except Exception, e:
+        log("stop_simulator error: %s" % e )
+        
 def async_stop_simulator(username, machine):
     log("async stop simulator! user %s machine %s" % (username, machine))
     try:

@@ -5,6 +5,9 @@ import os
 import uuid
 import unittest
 import zipfile
+import redis
+redis_client = redis.Redis()
+
 
 from common import StdoutPublisher, INSTALL_VPN, Machine2,\
     clean_local_ssh_key_entry, MachineDb
@@ -16,28 +19,7 @@ import time
 import commands
 from common.startup_script_builder import SOURCES_LIST_PRECISE
 
-TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """#!/bin/bash
-
-echo "In the beginning was the Computer" > /home/ubuntu/setup.log
-
-# Exit on error
-set -e
-echo "config: exit on error" >> /home/ubuntu/setup.log
-
-#echo "waiting for network" >> /home/ubuntu/setup.log
-#while true; do if ping -w 1 security.ubuntu.com; then break; else sleep 1; fi; done
-#echo "security.ubuntu.com ping success" >> /home/ubuntu/setup.log
-
-
-# Overwrite the sources.list file with different content
-cat <<DELIM > /etc/apt/sources.list
-%s
-DELIM
-echo "sources.list overriden" >> /home/ubuntu/setup.log
-
-
-apt-get update
-echo "SYSTEM UPDATED" >> /home/ubuntu/setup.log
+TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """
 
 echo "Installing packages" >> /home/ubuntu/setup.log
 
@@ -85,18 +67,27 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
 
 
 """
+#old_print = print
+#print = log
 
+def log(msg):
+    print(msg)
+    redis_client.publish("launchers", msg)
+    
 
     
 def launch(username, machine_name, tags, publisher, credentials_ec2, root_directory):
 
-    print("create distribution")    
+    log("create distribution")    
     path = os.path.split(__file__)[0]
     cloudsim_path = path = os.path.join(path, '..','..')
     cmd_path = os.path.join(cloudsim_path,'distfiles', 'make_zip.bash')
-    website_distribution = os.path.join(cloudsim_path,'..', 'cloudsim.zip') # outside cloudsim
+    website_distribution =os.path.abspath( os.path.join(cloudsim_path,'..', 'cloudsim.zip') ) # outside cloudsim
     o = commands.getoutput(cmd_path)
-    print(o)
+    log(o)
+    
+    
+    
      
     startup_script = """#!/bin/bash
 # Exit on error
@@ -113,12 +104,13 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     startup_script += 'apt-get update\n'
 
     startup_script += TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE
-    print(startup_script)
+    log(startup_script)
 
     config = Machine_configuration()
     config.initialize(   image_id ="ami-137bcf7a", 
-                         instance_type = 't1.micro', # 'm1.small' , 
-                         security_groups = ['team_login'],
+                         # instance_type = 'm1.small',  
+                         instance_type = 't1.micro', 
+                         security_groups = ['TeamLogin'],
                          username = 'ubuntu', 
                          distro = 'precise',
                          startup_script = startup_script,
@@ -134,51 +126,79 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
                      
     
     machine.create_ssh_connect_script()
+    fname_ssh_key =  os.path.join(machine.config.cfg_dir, machine.config.kp_name + '.pem')
+    fname_ssh_sh =  os.path.join(machine.config.cfg_dir,'ssh.sh')
+    fname_zip = os.path.join(machine.config.cfg_dir, "%s.zip" % machine.config.uid)
+    
+    files_to_zip = [ fname_ssh_key, 
+                     fname_ssh_sh, 
+                   ]
+    
+    log("creating %s" % fname_zip)
+    with zipfile.ZipFile(fname_zip, 'w') as fzip:
+        for fname in files_to_zip:
+            short_fname = os.path.split(fname)[1]
+            zip_name = os.path.join(machine.config.uid, short_fname)
+            fzip.write(fname, zip_name)        
+    
+    
     clean_local_ssh_key_entry(machine.config.ip )
-    print("")
-    print("")
-    print("Waiting for ssh")
+
+    log("Waiting for /home/ubuntu")
     machine.ssh_wait_for_ready("/home/ubuntu")
     
-    print("Waiting for setup to complete")
+    log("Waiting for setup to complete")
     machine.ssh_wait_for_ready()
-
-    
-    print("uploading '%s' to the server to '%s'" % (website_distribution, remote_fname) )
-    machine.scp_send_file(website_distribution, remote_fname)
-    
+   
     #checking that the file is there
     short_file_name = os.path.split(website_distribution)[1] 
-    remote_fname = "/home/%s/%s" % (team_login.config.username, short_file_name)
-    machine.ssh_send_command("ls " + remote_fname )
+    remote_fname = "/home/%s/%s" % (machine.config.username, short_file_name)
+    # machine.ssh_send_command("ls " + remote_fname )
+
+    log("uploading '%s' to the server to '%s'" % (website_distribution, remote_fname) )
+    out = machine.scp_send_file(website_distribution, remote_fname)
+    log ("\t%s"% out)
+    machine.ssh_wait_for_ready(remote_fname)
     
-    print("unzip web app")
+    log("unzip web app")
     out = machine.ssh_send_command("unzip " + remote_fname )
-    print ("\t%s"% out)
+    log ("\t%s"% out)
     
-    print("running deploy script '%s' remotely" % deploy_script_fname)
+    log("add user to cloudsim")
+    out =machine.ssh_send_command("echo %s > cloudsim/distfiles/users" % username)
+    log ("\t%s"% out)
+    
+    deploy_script_fname = "/home/%s/cloudsim/deploy.sh" % machine.config.username 
+    log("running deploy script '%s' remotely" % deploy_script_fname)
     out = machine.ssh_send_command("bash " + deploy_script_fname  )
-    print ("\t%s"% out)
+    log ("\t%s"% out)
+    
+    
+    
+#    print("check that file is there")
+#    out = machine.ssh_wait_for_ready('/var/www-cloudsim-auth/users')
+#    print ("\t%s"% out)
+    
     print('setup complete')
     print("%s\n"%(machine.user_ssh_command()))
     print("http://%s"% team_login.config.hostname)
-            
+        
 
 class TestCases(unittest.TestCase):
     
    
     
-    def test_micro(self):
+    def test_launch(self):
         
-        username = "toto@toto.com"
+        username = "hugo@osrfoundation.org"
         machine_name = "microvpn_" + str(uuid.uuid1())
         publisher = StdoutPublisher()
-        ec2 = "../../../boto.ini"
+        ec2 = "/home/hugo/code/boto.ini"
         root_directory = '../launch_test'
         uid = uuid.uuid1()
         machine_name = "team_login_" + str( uid )
         tags = {}
-        tags['type'] = 'team_login'
+        tags['type'] = 'TeamLogin'
 #        
         launch(username, machine_name, tags, publisher, ec2, root_directory)
 #        

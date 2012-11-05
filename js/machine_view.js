@@ -16,11 +16,14 @@ function machine_view_status_event(div_name, str_data)
         return;
     }          
   
+//    if(data.type == "check")
+//    {
+//        log_to_div("log_div", "<b>event</b> " + str_data);
+//    }
+    
     var machines_div = document.getElementById(div_name);
     var machines_list_div =machines_div.getElementsByTagName("div")[0] 
 
-    // log_to_div("machines_log_div", "<b>event</b> " + str_data);
-    
     var machine_list_div = machines_div.childNodes['machines'];
     var machine_div = machine_list_div.childNodes[machine_name];
     if( machine_div == undefined)
@@ -42,7 +45,7 @@ function _terminate_machine(machine_name)
     var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=terminate&machine=' + machine_name;
     log_to_div("log_div", url);
     msg = httpGet(url);
-    log_to_div("log_div", "\\n");
+    log_to_div("log_div", "");
     log_to_div("log_div", msg);
 }
 
@@ -72,7 +75,7 @@ function _start_simulator(machine_name)
 
     log_to_div("log_div", url);
     msg = httpGet(url);
-    log_to_div("log_div", "\\n");
+    log_to_div("log_div", "");
     log_to_div("log_div", msg);
 
 }
@@ -88,14 +91,14 @@ function _stop_simulator(machine_name)
     var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=stop_simulator&machine=' + machine_name;
     log_to_div("log_div", url);
     msg = httpGet(url);
-    log_to_div("log_div", "\\n");
+    log_to_div("log_div", "");
     log_to_div("log_div", msg);
 
 }
 
 function _add_machine_div(machine_list_div, machine_name)
 {
-    var str = "<div id =" + machine_name + " style='border: 1px solid red;'> ";
+    var str = "<div id =" + machine_name + " style='border: 1px solid red; margin: 5px; padding: 5px; '> ";
     str +=  "<h3>name = " +machine_name + "</h3>";   
     str += "<div id='latency' ><div id='data'></div></div>";
     str += "<div id='graphics' ></div>";
@@ -120,7 +123,9 @@ function _add_machine_div(machine_list_div, machine_name)
     str += '<button type="button" onclick="_terminate_machine(\'';
     str += machine_name;    
     str += '\')">Terminate</button>';
+    str += "<div id='log'></div>";    
     str += "</div>";
+    
     machine_list_div.innerHTML += str;
     var machine_div = machine_list_div.childNodes[machine_name];
     return machine_div;
@@ -191,11 +196,11 @@ function _update_machine_view(machine_div, data)
         data_div.innerHTML = str;   
     }
    
-   if(data.type != "check")
+   if(data.state)
    {
         var div = machine_div.childNodes["state"];
         var str = "<h3>Machine state: " + data.state + "</h3>";
-        if(data.retries != undefined) str += "retries " + data['try'] + "<br>"; 
+        // if(data.retries != undefined) str += "retries " + data['try'] + "<br>"; 
         for (var key in data )
         {
             var value = data[key]; 
@@ -204,6 +209,7 @@ function _update_machine_view(machine_div, data)
         div.innerHTML = str;  
    }
 
+  
 }
 
 

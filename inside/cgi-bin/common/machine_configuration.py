@@ -5,6 +5,7 @@ import unittest
 import json
 import os
 from constants import MACHINES_DIR, BOTO_CONFIG_FILE_USEAST
+from constants import CONFIGS_DIR
 #import common    
 
 MACHINE_CONFIG_DIR = '/var/www-cloudsim-auth/configs'
@@ -62,17 +63,24 @@ class Machine_configuration(object):
         for item in self.__dict__:
             print ("%s: %s" % (item, self.__dict__[item]) )
     
+
  
 class ConfigsDb(object):
-    def __init__(self, email):
+    def __init__(self, email, configs_dir=CONFIGS_DIR):
         self.user = email
         self.domain = email.split('@')[1]
-        
+        self.configs_dir = configs_dir
         
     def get_configs(self):
         configs = {}
-        configs['gazebo'] = {'description': "ami-137bcf7a, cg1.4xlarge, security: ping_ssh"}
+
+        launcher_modules = list(set([x.split(".py")[0] for x in os.listdir(self.configs_dir)]))
+        launcher_modules.remove("__init__")
         
+        for module in launcher_modules:
+            configs[module] = {'description': 'n/a'}
+        
+        configs['gazebo'] = {'description': "ami-137bcf7a, cg1.4xlarge, security: ping_ssh"} 
         configs['micro_vpn'] = {'description': "ami-137bcf7a, t1.micro, security: ping_ssh"}
         
         return configs

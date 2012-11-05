@@ -18,10 +18,12 @@ cgitb.enable()
 from common import authorize, print_http_header
 cgitb.enable()
 
-VIEW_AS_HTML = False
+
 
 email = authorize()
 domain = email.split('@')[1]
+
+VIEW_AS_HTML = False
 
 form = cgi.FieldStorage()
 if form.has_key('html'):
@@ -58,18 +60,21 @@ else:
 red = redis.Redis()
 pubsub = red.pubsub()
 
+red.publish("cloudsim_log", "console_stream for user %s on domain %s" % (email, domain) )
 
 pubsub.subscribe([domain])
 
 for msg in pubsub.listen():
-    try:
+    #try:
+        # red.publish("cloudsim_log", msg)
         data = msg['data']
         print("event: cloudsim")
         print("data: %s\n\n" % data)
         sys.stdout.flush() 
-    except:
-        pass
+    #except Exception, e :
+    #    red.publish("cloudsim_log", "Error in console_stream: %s" % e) 
 
+red.publish("cloudsim_log", "console_stream for user %s DONE" % email )
 
 if VIEW_AS_HTML:
     print ("</pre></html>")     

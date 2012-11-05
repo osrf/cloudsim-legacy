@@ -118,6 +118,29 @@ apt-get -y install ros-fuerte-pr2-simulator ros-fuerte-arm-navigation ros-fuerte
 
 """
 
+DRC_SIM_SETUP_STARTUP_SCRIPT = """
+
+date >> /home/ubuntu/setup.log
+
+echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
+echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+
+date >> /home/ubuntu/setup.log
+echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
+wget http://packages.ros.org/ros.key -O - | apt-key add -
+wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
+
+echo 'package update' >> /home/ubuntu/setup.log
+apt-get update
+
+echo 'installing the packages' >> /home/ubuntu/setup.log
+date >> /home/ubuntu/setup.log
+apt-get install -y drcsim
+date >> /home/ubuntu/setup.log
+
+
+"""
+
 XGL_STARTUP = """
 
 apt-get update

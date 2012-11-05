@@ -42,7 +42,7 @@ function launch(machine_config)
     log_to_div("log_div", url);
     msg = httpGet(url);
     //alert(msg);
-    log_to_div("log_div", "\\n");
+    log_to_div("log_div", "");
     log_to_div("log_div", msg);
 }
 

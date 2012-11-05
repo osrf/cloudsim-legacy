@@ -26,11 +26,12 @@ def run():
     ps.subscribe(channels)
     
     for msg in ps.listen():
-        print(msg) 
-        try:
-            data = loads(msg['data'])
-            print ("\nmsg['data'] in json \n=============\n%s\n===============\n" % data)
-        except:
-            print("-")
+        print(msg)
+        if msg['channel'] == "cloudsim_cmds":
+            try:
+                data = loads(msg['data'])
+                print ("\nmsg['data'] in json \n=============\n%s\n===============\n" % data)
+            except:
+                print("-")
 
 run()

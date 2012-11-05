@@ -35,8 +35,7 @@ set -e
     file_content = create_openvpn_server_cfg_file()
     startup_script += inject_file_into_script("openvpn.config",file_content)
     startup_script += INSTALL_VPN
-    startup_script += 'echo "vpn setup complete" >> /home/ubuntu/setup.log\n'
-    
+ 
     startup_script += 'echo "setup ROS" >> /home/ubuntu/setup.log\n'
     startup_script += ROS_SETUP_STARTUP_SCRIPT
     
@@ -44,6 +43,7 @@ set -e
     file_content = create_xorg_config_file()
     startup_script += inject_file_into_script("/etc/X11/xorg.conf",file_content)
     startup_script += XGL_STARTUP
+    
     startup_script += 'echo "Setup complete" >> /home/ubuntu/setup.log\n'
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     return startup_script
@@ -124,12 +124,12 @@ def launch(username, machine_name, tags, publisher, credentials_ec2, root_direct
 class TestCases(unittest.TestCase):
     
    
-    def test_gazebo_script(self):
+    def test_script(self):
         script = get_launch_script()
         print (script)
         
     
-    def atest_gazebo_launch(self):
+    def atest_launch(self):
         
         username = "toto@toto.com"
         machine_name = "gazebo_" + str(uuid.uuid1())

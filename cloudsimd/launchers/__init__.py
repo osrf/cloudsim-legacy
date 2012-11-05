@@ -10,6 +10,13 @@ from common.machine import MachineDb
 
 directory = os.path.split(__file__)[0]
 
+
+def log(msg, chan = "cloudsim_log"):
+    import redis
+    r = redis.Redis()
+    r.publish(chan, msg)
+    
+
 """
 This module allows to run plugins (each file in the directory except this one)
 """
@@ -73,33 +80,42 @@ def launch(username,
     func(username, machine_name, tags, publisher, credentials_ec2, userdir)
 
 def start_simulator(username, 
-                      machine, 
+                      machine_name, 
                       package_name, 
                       launch_file_name,
                       launch_args,
-                      credentials_ec2, 
                       root_directory):
-    #publisher.event({'msg':'About to start simulator'})
     
-    machine = matches[0]
-   
-    script = '". /opt/ros/fuerte/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  >/dev/null 2>/dev/null </dev/null &"'%(common.OV_SERVER_IP, common.DISPLAY, package, launchfile, launchargs)
+
+    log( "start simulator LAUNCHERS. user %s machine %s" % (username, machine_name))
+    log("    package_name %s, launchfile %s, args %s" %  (package_name,launch_file_name, launch_args ))
+    
+    mdb = MachineDb(username, machine_dir = root_directory)
+    machine = mdb.get_machine(machine_name)
+    
+    display = common.DISPLAY
+    server_ip = common.OV_SERVER_IP
+    script = '". /opt/ros/fuerte/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  >/dev/null 2>/dev/null </dev/null &"'%(server_ip, display, package_name, launch_file_name, launch_args)
     
     cmd = ['echo', script, '>start_ros.sh']
     cmd_str = ' '.join(cmd)
     
-    ret, err = machine.ssh(cmd, args=['-f'])
-    # print ("ret: %s<p>err: %s<p>" % (ret, err) )
+    out = machine.ssh_send_command(cmd_str, ['-f'])
+    r.publish('cloudsim_log', "%s returned %s" % ( cmd_str, out) )
     
-    cmd = ['at', 'NOW', '<start_ros.sh']
-    cmd_str = ' '.join(cmd)
+    cmd_str = ". start_ros.sh"
+    out = machine.ssh_send_command(cmd_str)
+    r.publish('cloudsim_log', "%s returned %s" % ( cmd_str, out) )
     
+def stop_simulator(username, machine_name, root_directory):
+    log('stop simulator %s' % machine_name)
     
-    
-def stop_simulator(username, root_directory):
-    publisher.event({'msg':'About to stop simulator'})
     mdb = MachineDb(username, machine_dir = root_directory)
     machine = mdb.get_machine(machine_name)
+    
+    cmd_str = 'killall -INT roslaunch'
+    out = machine.ssh_send_command(cmd_str)
+    log("%s returned %s" % ( cmd_str, out) )
     
 
 def terminate(username, 

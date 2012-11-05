@@ -34,16 +34,15 @@ if d['command'] == 'terminate':
 
 if d['command'] == 'start_simulator':
     d['machine'] = form.getfirst('machine')
-    d['package_name'] = form.getfirst('package_name')
+    d['package_name'] = form.getfirst('package')
     d['launch_file_name'] = form.getfirst('launch_file_name')
-    
     d['launch_args'] = form.getfirst('launch_args', default = '')
 
 if d['command'] == 'stop_simulator':
     d['machine'] = form.getfirst('machine')
 
 str = dumps(d)
-#
+
 redis_client = redis.Redis()
 redis_client.publish('cloudsim_cmds', str)
 
