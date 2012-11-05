@@ -117,6 +117,7 @@ template = """
 <div id="log_div"></div>
 
 <br>
+<a href="/cloudsim/inside/cgi-bin/admin.py">Return</a><br>
 <a href="/cloudsim/inside/cgi-bin/logout.py">Logout</a>
 </body>
 </html>

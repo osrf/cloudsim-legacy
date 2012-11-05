@@ -99,7 +99,7 @@ def print_footer():
     print("<hr>")
     print("Logged in as: %s<br>"%(email))
     print("<a href=\"/cloudsim/inside/cgi-bin/admin.py\">Admin</a><br>")
-    print("<a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a><br>")
+    print("<a href=\"/cloudsim/inside/cgi-bin/console_old.py\">Console</a><br>")
     print("<a href=\"/cloudsim/inside/cgi-bin/logout.py\">Logout</a>")
  
 

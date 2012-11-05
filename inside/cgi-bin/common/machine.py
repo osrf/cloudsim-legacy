@@ -390,7 +390,7 @@ class MachineDb(object):
         for name, machine in machines.iteritems():
             l.append( '"%s":' % name)
             # str += machine.config.as_json()
-            l.append('{name:"hi"}')
+            l.append('{"hostname":"%s", "ip":"%s"}' % (machine.config.hostname, machine.config.ip))
             l.append(",")
         l.append("}")
         str = "".join(l)
