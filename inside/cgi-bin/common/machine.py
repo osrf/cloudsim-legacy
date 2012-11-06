@@ -376,17 +376,32 @@ class MachineDb(object):
     
     def get_machines_as_json(self):
         machines = self.get_machines()
-        l = []
-        l.append("{")
         
+        json_machines ={}
         for name, machine in machines.iteritems():
-            l.append( '"%s":' % name)
-            # str += machine.config.as_json()
-            l.append('{"hostname":"%s", "ip":"%s"}' % (machine.config.hostname, machine.config.ip))
-            l.append(",")
-        l.append("}")
-        str = "".join(l)
-        return str   
+            m = {}
+            m.update(machine.config.__dict__)
+            if (m.has_key("startup_script")):
+                m.pop("startup_script")
+            json_machines[name] = m
+            
+        str = json.dumps(json_machines)
+        return str
+    
+#        l = []
+#        l.append("{")
+#        
+#        for name, machine in machines.iteritems():
+#            l.append( '"%s":' % name)
+#            # str += machine.config.as_json()
+#            l.append('{"hostname":"%s", "ip":"%s"}' % (machine.config.hostname, machine.config.ip))
+#            l.append(",")
+#        l.append("}")
+#        str = "".join(l)
+
+        
+        
+           
 
     def get_launch_log_fname(self, machine_name):
         fname =  os.path.join(self.root_dir, machine_name, "launch.log")
