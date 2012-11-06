@@ -67,6 +67,7 @@ function stream()
      
     es.addEventListener("done", function(event)
     {
+        alert("Unexpected 'done' msg received");
         es.close();
     },false);
 }
@@ -117,7 +118,7 @@ template = """
 <div id="log_div"></div>
 
 <br>
-<a href="/cloudsim/inside/cgi-bin/admin.py">Return</a><br>
+<a href="/cloudsim/inside/cgi-bin/admin.py">Admin</a><br>
 <a href="/cloudsim/inside/cgi-bin/logout.py">Logout</a>
 </body>
 </html>

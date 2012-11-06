@@ -12,7 +12,6 @@ from common import  authorize, MachineDb
 email = authorize()
 
 
-
 print('Content-type: application/json')
 print("\n")
 

@@ -129,21 +129,10 @@ class Machine2 (object):
             data_dict['machine'] = self.config.uid
             self.event(data_dict)
         
-#    def _evento(self, event_name, event_data=None):
-#        
-#        if self.log:    
-#            event_str = "event: %s" % (event_name)
-#            self.log.write("%s\n" % event_str)
-#            if event_data:
-#                data_str = "data:%s\n" %  (event_data)
-#            self.log.write("%s\n\n" % data_str)
-#            self.log.flush()
-#        
-#        if self.event:
-#            self.event(event_name, event_data)    
-        
             
-
+    """
+    Called by the ctor when launch is True
+    """
     def _launch(self):
         
         self.config.startup_script += '\ntouch %s\n'%(self.startup_script_done_file)
@@ -293,7 +282,7 @@ class Machine2 (object):
     def get_X_status(self):
         #self._event({"type":"test", "state":'X, OpenGL'})
         try:
-            r = self.ssh_send_command('DISPLAY=localhost:0; glxinfo')
+            r = self.ssh_send_command('DISPLAY=localhost:0 glxinfo')
             return True
         except:
             return False
@@ -310,9 +299,12 @@ class Machine2 (object):
     def get_gazebo_status(self):
         
         d = self.config.distro
-        cmd = 'source /opt/ros/%s/setup.bash && rosrun gazebo gztopic list' % d 
+        #cmd = 'source /opt/ros/%s/setup.bash && rosrun gazebo gztopic list' % d
+        cmd = 'source /usr/share/drcsim-1.0/setup.sh && gztopic list' 
+        
         try:
             r = self.ssh_send_command(cmd)
+            
             return True
         except:
             return False

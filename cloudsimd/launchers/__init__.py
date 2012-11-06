@@ -86,7 +86,8 @@ def start_simulator(username,
                       launch_args,
                       root_directory):
     
-
+   
+    
     log( "start simulator LAUNCHERS. user %s machine %s" % (username, machine_name))
     log("    package_name %s, launchfile %s, args %s" %  (package_name,launch_file_name, launch_args ))
     
@@ -95,17 +96,18 @@ def start_simulator(username,
     
     display = common.DISPLAY
     server_ip = common.OV_SERVER_IP
-    script = '". /opt/ros/fuerte/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  >/dev/null 2>/dev/null </dev/null &"'%(server_ip, display, package_name, launch_file_name, launch_args)
+    #script = '". /opt/ros/fuerte/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  >/dev/null 2>/dev/null </dev/null &"'%(server_ip, display, package_name, launch_file_name, launch_args)
+    script = '". /usr/share/drcsim-1.0/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  &"'%(server_ip, display, package_name, launch_file_name, launch_args)
     
     cmd = ['echo', script, '>start_ros.sh']
     cmd_str = ' '.join(cmd)
     
     out = machine.ssh_send_command(cmd_str, ['-f'])
-    r.publish('cloudsim_log', "%s returned %s" % ( cmd_str, out) )
+    log("%s returned %s" % ( cmd_str, out) )
     
     cmd_str = ". start_ros.sh"
     out = machine.ssh_send_command(cmd_str)
-    r.publish('cloudsim_log', "%s returned %s" % ( cmd_str, out) )
+    log("%s returned %s" % ( cmd_str, out) )
     
 def stop_simulator(username, machine_name, root_directory):
     log('stop simulator %s' % machine_name)

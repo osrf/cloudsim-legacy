@@ -21,7 +21,6 @@ def monitor_machine(domain, machine):
     
     red = redis.Redis()
     
-    
     #print("Monitor machine.. domain  %s, machine %s" % (domain, machine.config.uid))
     #print("  Machine %s" % machine)
     cloud = machine.get_aws_status()
@@ -95,8 +94,6 @@ def sweep_monitor (root_directory):
         alive = monitor_machine(domain, machine)
         if not alive:
             remove_machine_data(root_directory, machine_data_fname)
-
-
 
 class TestCases(unittest.TestCase):
     

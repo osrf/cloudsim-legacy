@@ -100,8 +100,8 @@ function _add_machine_div(machine_list_div, machine_name)
 {
     var str = "<div id =" + machine_name + " style='border: 1px solid red; margin: 5px; padding: 5px; '> ";
     str +=  "<h3>name = " +machine_name + "</h3>";   
-    str += "<div id='latency' ><div id='data'></div></div>";
-    str += "<div id='graphics' ></div>";
+    str += "<div id='latency' ><div id='data'><h3>Latency:</h3></div></div>";
+    str += "<div id='graphics' ><h3>Graphics:</h3></div>";
 
     str += "<div id='simulator'><div id='data'></div>";
 
@@ -114,11 +114,11 @@ function _add_machine_div(machine_list_div, machine_name)
     
     str += "</div>";
 
-    str += "<div id='cloud'></div>";
-    str += "<div id='state'></div>";
-    str += '<a href="/cloudsim/inside/cgi-bin/machine_zip_download.py?machine=';
+    str += "<div id='cloud'><h3>Cloud:</h3></div>";
+    str += "<div id='state'><h3>State:</h3></div>";
+    str += '<div id="zip_link" style="visibility:hidden;"><a href="/cloudsim/inside/cgi-bin/machine_zip_download.py?machine=';
     str += machine_name;
-    str += '">Download keys</a>';
+    str += '">Download keys</a></div>';
     str += '<br>';
     str += '<button type="button" onclick="_terminate_machine(\'';
     str += machine_name;    
@@ -136,7 +136,7 @@ function _update_machine_view(machine_div, data)
    if(data.status == "latency")
    {
         var latency_div = machine_div.childNodes["latency"].childNodes["data"];
-        var str = "<h3>Latency</h3>";
+        var str = "<h3>Latency:</h3>";
         str += "<b>count:</b> " + data.count + "<br>";  
         str += "<b>min:</b> " + data.min + "<br>";
         str += "<b>max:</b> " + data.max + "<br>";
@@ -208,6 +208,16 @@ function _update_machine_view(machine_div, data)
         }
         div.innerHTML = str;  
    }
+
+   if(data.state == "ssh_wait_for_ready")
+   {    
+        // we know the zip is done at this point
+        if(data.file == "/tmp/startup_script_done")
+        {
+            var div = machine_div.childNodes["zip_link"];
+        }
+   }    
+
 
   
 }

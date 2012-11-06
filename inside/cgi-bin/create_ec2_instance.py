@@ -115,6 +115,10 @@ def load_startup_script(distro, username, server_ip, client_ip):
     sources_list = open('data/sources.list-%s'%(distro)).read()
     key = common.OPENVPN_STATIC_KEY_FNAME
     startup_script = STARTUP_SCRIPT%(sources_list, username, key, server_ip, client_ip, key, key, key, key)
+#    f= open("good_start.txt", 'w')
+#    f.write(startup_script)
+#    f.close()
+    
     return startup_script
 
 

@@ -13,8 +13,9 @@ from common import create_openvpn_server_cfg_file,\
     inject_file_into_script, create_openvpn_client_cfg_file,\
     create_ros_connect_file, create_vpn_connect_file
 from common import Machine_configuration
-from common.startup_script_builder import XGL_STARTUP, ROS_SETUP_STARTUP_SCRIPT,\
-    create_xorg_config_file, SOURCES_LIST_PRECISE
+from common.startup_script_builder import ROS_SETUP_STARTUP_SCRIPT,\
+    create_xorg_config_file, SOURCES_LIST_PRECISE, XGL_STARTUP_BEFORE,\
+    XGL_STARTUP_AFTER
 
 
 def get_launch_script():
@@ -35,14 +36,26 @@ set -e
     file_content = create_openvpn_server_cfg_file()
     startup_script += inject_file_into_script("openvpn.config",file_content)
     startup_script += INSTALL_VPN
- 
+    
     startup_script += 'echo "setup ROS" >> /home/ubuntu/setup.log\n'
     startup_script += ROS_SETUP_STARTUP_SCRIPT
     
+#    startup_script += 'echo "setup X and gl" >> /home/ubuntu/setup.log\n'
+#    startup_script += inject_file_into_script("/etc/X11/xorg.conf",file_content)
+#    startup_script += XGL_STARTUP
+#    file_content = create_xorg_config_file()
+#    
+    
     startup_script += 'echo "setup X and gl" >> /home/ubuntu/setup.log\n'
+    startup_script += XGL_STARTUP_BEFORE
+    
+    startup_script += 'echo "create xorg.conf" >> /home/ubuntu/setup.log\n
     file_content = create_xorg_config_file()
     startup_script += inject_file_into_script("/etc/X11/xorg.conf",file_content)
-    startup_script += XGL_STARTUP
+    
+    startup_script += XGL_STARTUP_AFTER
+    
+    
     
     startup_script += 'echo "Setup complete" >> /home/ubuntu/setup.log\n'
     startup_script += 'date >> /home/ubuntu/setup.log\n'

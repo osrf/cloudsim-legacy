@@ -141,12 +141,16 @@ date >> /home/ubuntu/setup.log
 
 """
 
-XGL_STARTUP = """
+XGL_STARTUP_BEFORE = """
 
 apt-get update
 
 # install X, with nvidia drivers
 apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
+
+"""
+
+XGL_STARTUP_AFTER = """
 
 # setup auto xsession login
 echo "
