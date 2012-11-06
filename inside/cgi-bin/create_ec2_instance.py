@@ -105,15 +105,20 @@ chmod 644 %s
 cp openvpn.config /etc/openvpn/openvpn.conf
 cp %s /etc/openvpn/%s
 service openvpn start
+
 """
 
 
 
-def load_startup_script(distro, username, machine_id, server_ip, client_ip):
+def load_startup_script(distro, username, server_ip, client_ip):
     # TODO: Make this less fragile with a proper templating language (e.g, empy)
     sources_list = open('data/sources.list-%s'%(distro)).read()
     key = common.OPENVPN_STATIC_KEY_FNAME
     startup_script = STARTUP_SCRIPT%(sources_list, username, key, server_ip, client_ip, key, key, key, key)
+#    f= open("good_start.txt", 'w')
+#    f.write(startup_script)
+#    f.close()
+    
     return startup_script
 
 
@@ -142,7 +147,7 @@ def create_ec2_instance(boto_config_file,
     try:
         # Start it up
         print("Load startup script: image_id %s, security_groups %s" % (image_id, security_groups ) )
-        startup_script = load_startup_script(distro, username, uid, common.OV_SERVER_IP, common.OV_CLIENT_IP)
+        startup_script = load_startup_script(distro, username, common.OV_SERVER_IP, common.OV_CLIENT_IP)
         res = ec2.run_instances(image_id=image_id, key_name=kp_name, instance_type=instance_type, security_groups=security_groups, user_data=startup_script)
         print('Creating instance %s...'%(res.id))
 
@@ -168,8 +173,8 @@ def create_ec2_instance(boto_config_file,
         print('Waiting for sshd to respond...')
         # Wait for sshd to respond.  We check for readability of the static
         # key file because that's what we're going to scp next.
-        #TODO: put a timeout in this loop
-        #TODO: use Machine.test_ssh() instead of calling ssh directly
+        # TODO: put a timeout in this loop
+        # TODO: use Machine.test_ssh() instead of calling ssh directly
         
         cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-i', kp_fname, '%s@%s'%(USERNAME, hostname), 'ls', '/%s'%(common.OPENVPN_STATIC_KEY_FNAME)]
         print(cmd)
@@ -260,11 +265,7 @@ class Simputer_test(unittest.TestCase):
             server_ip = common.OV_SERVER_IP
             client_ip = common.OV_CLIENT_IP
             
-            
-            # used for openvpn
-            uid = str(uuid.uuid1())
-            print("uid %s" % uid)
-            
+             
             package_sources_dir = os.path.dirname(__file__)+"/data"
             sources_list = open('%s/sources.list-%s'% (package_sources_dir, distro)).read()
             key = common.OPENVPN_STATIC_KEY_FNAME
@@ -276,7 +277,7 @@ class Simputer_test(unittest.TestCase):
             
             config = Machine_configuration()
             
-            config.initialize(   pem_key_directory = data_dir, 
+            config.initialize(   root_directory = data_dir, 
                                  credentials_ec2 = '../../../boto.ini', 
                                  image_id ="ami-98fa58f1", 
                                  instance_type = 'cg1.4xlarge' , 
@@ -285,8 +286,7 @@ class Simputer_test(unittest.TestCase):
                                  distro = 'precise')
             config.print_cfg()
             
-            
-            # launches the machine
+                        # launches the machine
             simulator  = Machine2(config, startup_script)
             fname = '%s/machine.instance' % data_dir
             print('saving machine instance info to "%s"'%fname)
@@ -298,7 +298,11 @@ class Simputer_test(unittest.TestCase):
             print("Waiting for ssh")
             simulator.ssh_wait_for_ready(retries = 800)
             print("Good to go.")            
+            
+            
+            cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-i', kp_fname, '%s@%s'%(USERNAME, hostname), 'ls', '/%s'%(common.OPENVPN_STATIC_KEY_FNAME)]
 
+            
             simulator.terminate()
             commands.getoutput('rm -rf %s' % data_dir)
             

@@ -10,9 +10,8 @@ import sys
 import common
 
 cgitb.enable()
-
-if not common.check_auth_and_generate_response():
-    sys.exit(0)
+ 
+email = common.authorize()
 
 common.print_http_header()
 
@@ -59,5 +58,10 @@ page = page_template.format(list_of_users = htlm_list_of_users)
 
 print(page)
 
-common.print_footer()
-
+#common.print_footer()
+#email = session_id_to_email()
+print("<hr>")
+print("Logged in as: %s<br>"%(email))
+print("<a href=\"/cloudsim/inside/cgi-bin/admin.py\">Admin</a><br>")
+print("<a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a><br>")
+print("<a href=\"/cloudsim/inside/cgi-bin/logout.py\">Logout</a>")

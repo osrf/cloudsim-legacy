@@ -3,25 +3,26 @@ from __future__ import with_statement
 from __future__ import print_function
 
 import sys
+import os
 import time
 import cgi
 import cgitb
 
-f = open("/var/www-cloudsim-auth/stream.txt", 'w')
+from common import tail, MachineDb
+
+cgitb.enable()
  
 
-from common import check_auth_and_generate_response, print_http_header
-
+from common import authorize, print_http_header
 cgitb.enable()
 
 VIEW_AS_HTML = False
 
 
-check_auth_and_generate_response()
- 
-form = cgi.FieldStorage()
+email = authorize()
 
-machine_config_id = form.getfirst('machine_config')
+form = cgi.FieldStorage()
+machine_name = form.getfirst('machine_name')
 
 if form.has_key('html'):
     if form.getfirst('html') == 'true':
@@ -56,19 +57,27 @@ def event(name,data,log = None):
         log.write("\n")
         log.write("data: %s\n" % data )
         log.write("\n")
+
+
+
+
+mdb = MachineDb(email)
+launch_log_fname = mdb.get_launch_log_fname(machine_name)
+event("action", "{log:'%s'}" % launch_log_fname)
+tail(launch_log_fname)
+
+
     
-for i in range(20):
-    name = "action"
-    data = "{count : %s}" % i
-    event(name, data, f)
-    if VIEW_AS_HTML:
-        print("<p>")
-        
-    
-    
-    time.sleep(0.1)
-    
+#for i in range(5):
+#    name = "action"
+#    data = "{count : %s, name:'%s'}" % (i, machine_name)
+#    event(name, data)
+#    if VIEW_AS_HTML:
+#        print("<p>")
+#        
+#    time.sleep(0.1)
+#
+#event("machine", "%s" % machine_name)    
     
 event("done","{}")
 
-f.close()

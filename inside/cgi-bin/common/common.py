@@ -9,8 +9,8 @@ import stat
 import cgitb
 import unittest
 
-from machine import *
-
+from constants import *
+from web import UserDatabase
 # TODO: turn this back on 
 # cgitb.enable()
 
@@ -18,37 +18,8 @@ from machine import *
 DISABLE_AUTHENTICATION_FOR_DEBUG_PURPOSES_ONLY = False
 
 
-PACKAGE_VARNAME = 'package'
-LAUNCHFILE_VARNAME = 'launchfile'
-LAUNCHARGS_VARNAME = 'launchargs'
-EMAIL_VARNAME = 'openid.ext1.value.email'
-ADMIN_EMAIL = 'cloudsim-info@osrfoundation.org'
-USER_DATABASE = '/var/www-cloudsim-auth/users'
-SESSION_DATABASE = '/var/www-cloudsim-auth/sessions'
-BOTO_CONFIG_FILE_USEAST = '/var/www-cloudsim-auth/boto-useast'
-BOTO_CONFIG_FILE_USWEST_CA = '/var/www-cloudsim-auth/boto-uswest-ca'
-MACHINES_DIR = '/var/www-cloudsim-auth/machines'
-OPENID_SESSION_COOKIE_NAME = 'open_id_session_id'
-#CLOUDSIM_SESSION_COOKIE_NAME = 'cloudsim_session_id'
-HTTP_COOKIE = 'HTTP_COOKIE'
-MACHINE_ID_VARNAME = 'machine_id'
-ACTION_VARNAME = 'action'
-ATTRIB_VARNAME = 'attrib'
-FILENAME_VARNAME = 'filename'
-OPENVPN_CONFIG_FNAME = 'openvpn.config'
-OPENVPN_STATIC_KEY_FNAME = 'static.key'
-HOSTNAME_FNAME = 'hostname'
-USERNAME_FNAME = 'username'
-AWS_ID_FNAME = 'aws_id'
-BOTOFILE_FNAME = 'botofile'
-DISTRO='fuerte'
-DISPLAY=':0'
-# openvpn cloud IP
-OV_SERVER_IP = '10.8.0.1'
-# openvpn client IP
-OV_CLIENT_IP = '10.8.0.2'
 
-ROS_SH_FNAME = "ros.sh"
+
 
 def get_user_database():
     # Load user database
@@ -103,97 +74,6 @@ ec2_region_endpoint = %s
 
 
 
-#def acheck_auth(check_email=False):
-#    email = None
-#    if check_email:
-#        form = cgi.FieldStorage()
-#        email = form.getfirst(EMAIL_VARNAME)
-#    if email:
-#        save_session_id = True
-#    else:
-#        email = session_id_to_email()
-#        save_session_id = False
-#    if email:
-#        users = get_user_database()
-#        if email in users:
-#            in_cookies = Cookie.Cookie()
-#            in_cookies.load(os.environ[HTTP_COOKIE])
-#            if save_session_id and OPENID_SESSION_COOKIE_NAME in in_cookies:
-#                cloudsim_session_id = in_cookies[OPENID_SESSION_COOKIE_NAME].value
-#                sdb = SessionDatabase(SESSION_DATABASE)
-#                sdb.db[cloudsim_session_id] = email
-#                sdb.save()
-#            return True
-#    return None
-#
-#    
-#def acheck_auth_and_generate_response(check_email=False):
-##    if check_auth(check_email):
-##        return True
-# 
-#    # print_http_header()
-#    check_email = True
-#    user_checked = False
-#    str = "check_email = %s<p>" % check_email
-#
-#    for e in os.environ:
-#        str += "%s = %s <p>" % (e, os.environ[e])
-#            
-#    email = None
-#    if check_email:
-#        form = cgi.FieldStorage()
-#        email = form.getfirst(EMAIL_VARNAME)
-#        d = {}
-#        for k in form.keys():
-#            d[k] = form.getfirst(k)
-#        str += "available form keys: %s<p>" % form.keys() 
-#        str += "email = form.getfirst('openid.ext1.value.email') returns '%s'<p>" % email
-#        
-#    if email:
-#        save_session_id = True
-#    else:
-#        email = session_id_to_email()
-#        save_session_id = False
-#        str += "session_id_to_email() returns '%s' <p>" % email
-#    if email:
-#        users = get_user_database()
-#        str += "users %s <p>" % users
-#        if email in users:
-#            in_cookies = Cookie.Cookie()
-#            in_cookies.load(os.environ[HTTP_COOKIE])
-#            str += "OPENID_SESSION_COOKIE_NAME = %s<p>" % OPENID_SESSION_COOKIE_NAME
-#            str += "save_session_id = %s<p>" % save_session_id
-#            str += "in_cookies = %s<p>" % in_cookies
-#            if save_session_id and OPENID_SESSION_COOKIE_NAME in in_cookies:
-#                # str += "%s" % email
-#                cloudsim_session_id = in_cookies[OPENID_SESSION_COOKIE_NAME].value
-#                sdb = SessionDatabase(SESSION_DATABASE)
-#                sdb.db[cloudsim_session_id] = email
-#                sdb.save()
-#                str += "db[%s] = %s<p>" % (cloudsim_session_id, email)
-#            else:
-#                str += "???<p>"
-#            user_checked = True
-#    str += "check done!"    
-#    #return None
-#    
-#    if DISABLE_AUTHENTICATION_FOR_DEBUG_PURPOSES_ONLY:
-#        user_checked = True
-#    
-#    
-#    if user_checked:
-#        return True
-#    else:
-#        print_http_header()
-#        print("<title>Access Denied</title>")
-#        print("<h1>ze Access Denied</h1>")
-#        
-#        print("<h2>%s</h2>" % str)
-#           
-#        print("Try <a href=\"/cloudsim/inside/cgi-bin/logout.py\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(ADMIN_EMAIL, ADMIN_EMAIL))
-#        return False
-
-   
 
 
 class Machine:
