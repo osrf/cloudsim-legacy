@@ -20,24 +20,6 @@ print_http_header()
 
 javascript = """
 
-
-function httpGet(theUrl)
-{
-    var xmlHttp = null;
-
-    xmlHttp = new XMLHttpRequest();
-    xmlHttp.open( "GET", theUrl, false );
-    xmlHttp.send( null );
-    return xmlHttp.responseText;
-}
-
-
-function log_to_div(div_name, message)
-{
-   document.getElementById(div_name).innerHTML += message +"<br>"; 
-}
-
-
 function on_load_page()
 {
     machine_view_on_load_page("machines_div");
@@ -45,8 +27,6 @@ function on_load_page()
 
     stream();
 }
-
-
 
 
 function stream()
@@ -72,11 +52,6 @@ function stream()
     },false);
 }
 
-function clear_div(div_name)
-{
-   document.getElementById(div_name).innerHTML = "";  
-}
-
 """
 
 
@@ -87,6 +62,7 @@ template = """
 <title>Console</title>
 <script src="/js/machine_view.js"></script>
 <script src="/js/machine_launch.js"></script>
+<script src="/js/utils.js"></script>
 <script>
 %s
 </script>
@@ -97,15 +73,10 @@ template = """
 <h1>Console</h1>
 
 <h2>Launcher</h2>
-
 <div id="launcher_div" style="border: 1px solid black; margin: 2px; padding: 2px;">
-    <select id="config_select" onchange="launchSelectionChanged()";></select>
-    <button type="button" onclick="launch(get_selectected_machine_config())">Launch</button>
-    <div id="config_div"></div>
 </div>
 
 <h2>Machines</h2>
-
 <div id="machines_div" style="border: 1px solid black; margin: 5px; padding: 5px;">
     
     
