@@ -7,7 +7,7 @@ import redis
 import unittest
 
 import json
-
+from testing import get_test_runner 
 from machine import Machine2, StdoutPublisher
 import commands
 from machine_configuration import Machine_configuration
@@ -134,5 +134,5 @@ class TestMachinePub(unittest.TestCase):
         
 if __name__ == '__main__':
     print('Machine TESTS')
-    unittest.main()        
+    unittest.main(testRunner = get_runner())          
  

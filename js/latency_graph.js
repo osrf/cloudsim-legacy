@@ -14,7 +14,7 @@ var latency_data = {};
 
 var last_update = null;
 
-function add_latency_sample(plot, latency_plot_data, t, min_latency_sample, max_latency_sample, avg_sample, mdev_sample)
+function add_latency_sample(latency_plot_data, t, min_latency_sample, max_latency_sample, avg_sample, mdev_sample)
 {
     var elapsed = 0;
 
@@ -59,9 +59,7 @@ function add_latency_sample(plot, latency_plot_data, t, min_latency_sample, max_
 //  mdev = mdev.slice(first_fresh_data);   
 
     
-    plot.setData(latency_plot_data);
-    plot.setupGrid();
-    plot.draw();
+
       
     
 }

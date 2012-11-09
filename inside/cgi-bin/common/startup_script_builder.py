@@ -1,11 +1,12 @@
 from __future__ import with_statement
 from __future__ import print_function
 
-
 import unittest
-import commands
+from  testing import get_test_runner
 
+import commands
 import constants
+
 
 OPEN_VPN_KEY_FNAME = "openvpn.key"
 
@@ -326,5 +327,4 @@ class ScriptTests(unittest.TestCase):
         
 
 if __name__ == "__main__":
-    print('Startup script TESTS')
-    unittest.main()          
+    unittest.main(testRunner = get_test_runner())          

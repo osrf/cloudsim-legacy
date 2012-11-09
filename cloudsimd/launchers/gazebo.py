@@ -154,4 +154,4 @@ class TestCases(unittest.TestCase):
         
 
 if __name__ == "__main__":
-    unittest.main()            
+    unittest.main(testRunner = common.get_test_runner())               

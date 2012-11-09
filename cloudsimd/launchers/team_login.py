@@ -10,7 +10,7 @@ redis_client = redis.Redis()
 
 
 from common import StdoutPublisher, INSTALL_VPN, Machine2,\
-    clean_local_ssh_key_entry, MachineDb
+    clean_local_ssh_key_entry, MachineDb, get_test_runner
 from common import create_openvpn_server_cfg_file,\
     inject_file_into_script, create_openvpn_client_cfg_file,\
     create_ros_connect_file, create_vpn_connect_file
@@ -202,9 +202,10 @@ class TestCases(unittest.TestCase):
         tags['type'] = 'TeamLogin'
         tags['machine'] = machine_name
         tags['user'] = username
+        tags['origin'] = 'test_launch test case'
         launch(username, machine_name, tags, publisher, ec2, root_directory)
 #        
         
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(testRunner = get_runner()) 

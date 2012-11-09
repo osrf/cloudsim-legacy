@@ -15,11 +15,11 @@ import common
 import boto
 
 from machine_configuration import Machine_configuration
-from chardet import constants
 
 from constants import *
 from startup_script_builder import *
 import zipfile
+from  testing import get_test_runner
 
 """
 Removes the key for this ip, in case we connect to a different machine with the
@@ -569,5 +569,5 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
         
 if __name__ == '__main__':
     print('Machine TESTS')
-    unittest.main()        
+    unittest.main(testRunner = get_runner())        
  

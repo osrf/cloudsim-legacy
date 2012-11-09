@@ -7,6 +7,7 @@ import os
 from constants import MACHINES_DIR, BOTO_CONFIG_FILE_USEAST
 from constants import CONFIGS_DIR
 #import common    
+from  testing import get_test_runner
 
 MACHINE_CONFIG_DIR = '/var/www-cloudsim-auth/configs'
        
@@ -106,4 +107,4 @@ class ConfigsCase(unittest.TestCase):
         
 if __name__ == '__main__':
     print('Machine TESTS')
-    unittest.main()  
+    unittest.main(testRunner = get_runner())   
