@@ -4,9 +4,9 @@ var max_color  = "#CB4B4B"; // rgb(203,75,75); red
 var avg_color  = "#AFD8F8"; // rgb(175,216,248); blue 
 var mdev_color = "#EDC240"; // rgb(237,194,64); yellow
 
-var latency_plot_data = [  { label:"min", color: min_color, data:[] }, 
-              { label:"max", color: max_color, data:[]}, 
-              { label:"average", color:avg_color, data:[]} ];
+//var latency_plot_data = [  { label:"min", color: min_color, data:[] }, 
+//              { label:"max", color: max_color, data:[]}, 
+//              { label:"average", color:avg_color, data:[]} ];
            //   { label:"mean deviation", color:mdev_color, data:[]}  ];
 
 
@@ -14,7 +14,7 @@ var latency_data = {};
 
 var last_update = null;
 
-function add_latency_sample(plot, t, min_latency_sample, max_latency_sample, avg_sample, mdev_sample)
+function add_latency_sample(plot, latency_plot_data, t, min_latency_sample, max_latency_sample, avg_sample, mdev_sample)
 {
     var elapsed = 0;
 
@@ -28,7 +28,7 @@ function add_latency_sample(plot, t, min_latency_sample, max_latency_sample, avg
     var min_latency = latency_plot_data[0].data;
     var max_latency = latency_plot_data[1].data;
     var avg = latency_plot_data[2].data;
-//    var mdev = latency_plot_data[3].data;
+//   var mdev = latency_plot_data[3].data;
 
 
     min_latency.push( [0,min_latency_sample] ); 

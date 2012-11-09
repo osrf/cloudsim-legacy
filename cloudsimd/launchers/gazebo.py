@@ -49,7 +49,7 @@ set -e
     startup_script += 'echo "setup X and gl" >> /home/ubuntu/setup.log\n'
     startup_script += XGL_STARTUP_BEFORE
     
-    startup_script += 'echo "create xorg.conf" >> /home/ubuntu/setup.log\n
+    startup_script += 'echo "create xorg.conf" >> /home/ubuntu/setup.log\n'
     file_content = create_xorg_config_file()
     startup_script += inject_file_into_script("/etc/X11/xorg.conf",file_content)
     
@@ -61,6 +61,8 @@ set -e
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     return startup_script
     
+
+def start_simualation():
 
 def launch(username, machine_name, tags, publisher, credentials_ec2, root_directory):
 

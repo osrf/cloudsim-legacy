@@ -79,7 +79,7 @@ def launch(username,
         
     func(username, machine_name, tags, publisher, credentials_ec2, userdir)
 
-def start_simulator(username, 
+def start_simulator(  username, 
                       machine_name, 
                       package_name, 
                       launch_file_name,
@@ -96,8 +96,10 @@ def start_simulator(username,
     
     display = common.DISPLAY
     server_ip = common.OV_SERVER_IP
+    
+    
     #script = '". /opt/ros/fuerte/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  >/dev/null 2>/dev/null </dev/null &"'%(server_ip, display, package_name, launch_file_name, launch_args)
-    script = '". /usr/share/drcsim-1.0/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  &"'%(server_ip, display, package_name, launch_file_name, launch_args)
+    script = '". /usr/share/drcsim-1.0/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s gzname:=gzserver %s  &"'%(server_ip, display, package_name, launch_file_name, launch_args)
     
     cmd = ['echo', script, '>start_ros.sh']
     cmd_str = ' '.join(cmd)

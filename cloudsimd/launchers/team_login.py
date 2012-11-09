@@ -181,7 +181,8 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     
     print('setup complete')
     print("%s\n"%(machine.user_ssh_command()))
-    print("http://%s"% team_login.config.hostname)
+    print("http://%s"% machine.config.hostname)
+    
         
 
 class TestCases(unittest.TestCase):
@@ -199,10 +200,11 @@ class TestCases(unittest.TestCase):
         machine_name = "team_login_" + str( uid )
         tags = {}
         tags['type'] = 'TeamLogin'
-#        
+        tags['machine'] = machine_name
+        tags['user'] = username
         launch(username, machine_name, tags, publisher, ec2, root_directory)
 #        
         
 
 if __name__ == "__main__":
-    unittest.main()            
+    unittest.main()

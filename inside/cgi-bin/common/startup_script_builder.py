@@ -211,11 +211,21 @@ export ROS_MASTER_URI=http://%s:11311
 
 def create_ssh_connect_file(key_file, ip, username = "ubuntu"):
     s = """#!/bin/bash
-    
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-ssh -i $DIR/%s %s@%s 
-    """ % (key_file, username, ip)
+#
+# This command connects you to the simulation
+# It passes a keyfile to the ssh command and logs you in as the 
+# default user on the cloud machine
+
+# ssh -i %s %s@%s
+    
+#
+# This commands is similar, but it suppresses prompts and can be invoked 
+# from any directory
+#    
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s %s@%s 
+    """ % (key_file, username, ip, key_file, username, ip)
     return s
 
 def create_vpn_static_key():
@@ -282,13 +292,14 @@ class ScriptTests(unittest.TestCase):
         
         machine_name = "gazebo_1234556"
         hostname = "toto.aws.com" 
-       
-        script = "mkdir %s" % machine_name
+        
+        script = "#!/bin/bash\n\n"
+        script += "mkdir %s\n" % machine_name
         # lines = output.split("\n")
         zip_dir_name = machine_name
         file_content = create_vpn_static_key()
         script += inject_file_into_script( "%s/static.key"% zip_dir_name, file_content )
-        script += "chmod 644 testo/static.key\n"
+        script += "chmod 644 %s/static.key\n" % machine_name
 
         file_content = create_openvpn_client_cfg_file(hostname)
         script += inject_file_into_script( "%s/%s" % (zip_dir_name, constants.OPENVPN_CONFIG_FNAME), file_content)
@@ -296,16 +307,21 @@ class ScriptTests(unittest.TestCase):
         file_content = create_ros_connect_file()
         script += inject_file_into_script("%s/ros.sh" % zip_dir_name, file_content )
         
+        file_content = create_ssh_connect_file('key_file', 'ip', 'username')
+        script += inject_file_into_script("%s/ssh.sh" % zip_dir_name, file_content )
+        
         script += "zip -r %s.zip %s\n" %  (zip_dir_name, zip_dir_name)
         script += "rm -rf %s\n" %  (zip_dir_name)
         
-
         # print(script)
         with open("test.sh", 'w') as f:
             f.write(script)
         
-        s,o = commands.getstatusoutput("sh test.sh")
+        cmd = "bash test.sh"
+        print('Executing: %s'% cmd)
+        s,o = commands.getstatusoutput(cmd)
         print(s)
+        print('done')
             
         
 
