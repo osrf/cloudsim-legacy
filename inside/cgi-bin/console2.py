@@ -83,7 +83,7 @@ template = """
     <div id="launcher_div" style="width:100%; float:left; border: 1px solid black; margin: 2px; padding: 2px;">
     </div>
     <h2>Machines</h2>
-    <div id="machines_div" style="width:100%; float:left; border: 1px solid black; margin: 5px; padding: 5px;">
+    <div id="machines_div" style="width:100%; float:left; border: 1px solid black; padding: 10px; ">
     </div>
     
     <h2>Log</h2>
