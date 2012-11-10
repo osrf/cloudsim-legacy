@@ -3,4 +3,5 @@ body {
   font-size: 16px;
   margin: 50px;
   max-width: 800px;
+  background-color: transparent; // for round status images
 }
