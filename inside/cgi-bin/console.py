@@ -78,9 +78,6 @@ template = """
     
  </head>
     <body onload = "on_load_page()">
-    <img src="/js/images/DARPA_Logo.jpg" width="200px"/>
-    <img src="/js/images/osrf.png" width="200px"/>
-    
     
     <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; margin-top:20px; ">
     </div>
@@ -93,24 +90,30 @@ template = """
     <button type="button" onclick="clear_div('log_div')">clear</button>
     <div id="log_div"></div>
     </div>
-
-</script>
-
+    
 
 <br>
+
 """
 
 footer = """
 <hr>
-Logged in as: %s<br>
+    <div style="float:right;">
+        <img src="/js/images/osrf.png" width="200px"/>
+        <img src="/js/images/DARPA_Logo.jpg" width="200px"/>
+    </div>
+
+<div style="float:left;">
+
+Logged in as: %s <br>
 <a href="/cloudsim/inside/cgi-bin/admin.py">Admin</a><br>
 <a href="/cloudsim/inside/cgi-bin/logout.py">Logout</a>
+</div>    
     
 </body>
 </html>
 
 """ % email
-
 
 page = template + footer
 print(page )

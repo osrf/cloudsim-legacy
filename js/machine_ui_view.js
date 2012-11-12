@@ -5,7 +5,7 @@ function machine_view_on_load_page(div_name)
    var str = "<h2>Running machines</h2><div id='machines'></div>";
    machines_div.innerHTML = str;
 }
-
+/*
 function _refresh_plots(machines_list_div)
 {
 	
@@ -20,7 +20,7 @@ function _refresh_plots(machines_list_div)
 	}
 
 }
-
+*/
 function machine_view_status_event(div_name, str_data)
 {
     var data = eval( '(' + str_data + ')' );
@@ -31,20 +31,14 @@ function machine_view_status_event(div_name, str_data)
     }
    
     var machines_div = document.getElementById(div_name);
-    var machines_list_div =machines_div.getElementsByTagName("div")[0] 
-
-    var machine_list_div = machines_div.childNodes['machines'];
-    var machine_div = machine_list_div.childNodes[machine_name];
-    if( machine_div == undefined)
+    var machine_list_div = machines_div.querySelector("#machines");
+    var machine_div = machines_div.querySelector("#" + machine_name);
+    if( !machine_div)
     {
       machine_div = _add_machine_div(machine_list_div, machine_name);
     }
     
     _update_machine_view(machine_div, data);
-//    if(data.status == "latency")
-//    {
-//    	_refresh_plots(machines_list_div);
-//   }
 }
 
 function _status_color(div_name, color)
@@ -338,16 +332,6 @@ function _update_machine_view(machine_div, data)
    
    if(data.status == "latency")
    {
-        var latency_div = machine_div.childNodes["latency"].childNodes["data"];
-        var str = "<h3>Latency:</h3>";
-        str += "<b>count:</b> " + data.count + "<br>";  
-        str += "<b>min:</b> " + data.min + "<br>";
-        str += "<b>max:</b> " + data.max + "<br>";
-        str += "<b>avg:</b> " + data.avg + "<br>";
-        str += "<b>mdev:</b> " + data.mdev + "<br>";
-        latency_div.innerHTML = str;
-        
-        
         var t = Date.now() * 0.001;
         var latency_plot_data = latency_data[machine_name]['plot_data'];
         var plot_div_name = 'plot_div_' + machine_name;
@@ -356,16 +340,6 @@ function _update_machine_view(machine_div, data)
         var plot_options = latency_data[machine_name]['plot_options']
         document.getElementById(plot_div_name).innerHTML = "";
         latency_data[machine_name]['plot'] = $.plot($('#' + plot_div_name), latency_plot_data, plot_options);
-        
-        
-        //plot.setData(latency_plot_data);
-        //plot.setupGrid();
-        // plot.draw();
-        
-        
-//        var plot_div = machine_div.childNodes['latency_plot'];
-//        var latency_plot_data = latency_data[machine_name]['plot_data'];
-//        latency_data[machine_name]['plot'] = $.plot($(plot_div), latency_plot_data, plot_options);
         
    }
    
@@ -403,7 +377,6 @@ function _update_machine_view(machine_div, data)
 
 		   if(data.success == "terminated" || data.success == "does_not_exist")
 		   {
-			   // machine_div.style.visibility = "hidden";
 			   machine_div.style.display = 'none';
 		   }   
 	   }

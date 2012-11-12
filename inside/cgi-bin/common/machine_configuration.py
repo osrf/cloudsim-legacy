@@ -83,7 +83,7 @@ class ConfigsDb(object):
         
         configs['gazebo'] = {'description': "A GPU instance with ROS installed (and the ROS version of Gazebo, 1.0)"} 
         configs['micro_vpn'] = {'description': "A non gpu machine with VPN but no simulator"}
-        configs['drc_sim'] = {'description': "A GPU instance with the DRC simulator, ROS Fuerte and Gazebo 1.2 installed"}
+        configs['drc_sim12'] = {'description': "A GPU instance with the DRC simulator, ROS Fuerte and Gazebo 1.2 installed"}
         configs['team_login'] = {'description': "A micro instance that runs the Cloudsim web app"}
         return configs
 
