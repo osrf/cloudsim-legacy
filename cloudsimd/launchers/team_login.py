@@ -156,7 +156,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     
     log("Waiting for setup to complete")
     machine.ssh_wait_for_ready()
-   
+    log("   setup to complete")
     #checking that the file is there
     short_file_name = os.path.split(website_distribution)[1] 
     remote_fname = "/home/%s/%s" % (machine.config.username, short_file_name)

@@ -169,18 +169,11 @@ function _add_machine_div(machine_list_div, machine_name)
     var link = '/cloudsim/inside/cgi-bin/machine_zip_download.py';
     
     
-    str += '<div id="top" style="background-color:#44497a; width:100%; float:left;" ">' // background-color:#FFA500;
-//    str += '	<div style="width:20%; float:left;">';
-//    str += '		<form method="get" action=' + link +'>';
-//    str += '        <input type="text" ';
-//    str += 			' value="' + machine_name +'" >';
-//    str += '		</input>'	
-//    str += '		<button type="submit">Download keys</button></form>';
-//    str += 		"</div>"
-//    str += '	<div style="float:left;">';
+    str += '<div id="top" style="border-top-left-radius:10px; border-top-right-radius:10px; background-color:#44497a; width:100%; float:left;" ">' // background-color:#FFA500;
+
     str += "		<h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
     str += 			machine_name + "</center></h3>";    
-//    str += 		"</div>";
+
     str += '</div>' // top
     
     str += '<div id="left" style="width:50%;float:left;">';
@@ -243,7 +236,7 @@ function _add_machine_div(machine_list_div, machine_name)
     //
     //  PLOT
     //
-    str += '<div id="bottom" style="float:left; width:100%; background-color:#7a7c7e;">' // #FFA500
+    str += '<div id="bottom" style="border-bottom-right-radius:10px; border-bottom-left-radius:10px; float:left; width:100%; background-color:#7a7c7e;">' // #FFA500
     str += '<b><center>Latency</center></b>'
     str += "<div id='" + plot_div_name + "' style='width:100%; height:150px;' ></div>";
     str += '</div>'
