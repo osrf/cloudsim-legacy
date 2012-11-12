@@ -17,7 +17,7 @@ sudo mkdir -p /var/www-cloudsim-auth
 
 cd $DIR/..
 zip -r cloudsim.zip cloudsim
-mv -f cloudsim.zip /var/www-cloudsim-auth
+sudo mv -f cloudsim.zip /var/www-cloudsim-auth
 cd $DIR
 
 if [ ! -f /var/www-cloudsim-auth/users ]

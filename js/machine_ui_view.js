@@ -465,32 +465,21 @@ function _update_machine_view(machine_div, data)
    
    if(data.state)
    {
-        var div = machine_div.childNodes["state"];
-
+        
+        var status_div_name = _machine_name_to_cloud_div_name(machine_name);
         if(data.type == "retry")
         {   
             if(data['try'] % 2 ==0)
             {        
-                _status_color(status_div, "yellow");            
+                _status_color(status_div_name, "yellow");            
             }
             else
             {
-               _status_color(status_div, "orange"); 
+               _status_color(status_div_name, "orange"); 
             }
         }     
-
-        
-        var str = "<h3>Machine state: " + data.state + "</h3>";
-       // if(data.retries != undefined) str += "retries " + data['try'] + "<br>"; 
-        for (var key in data )
-        {
-            var value = data[key]; 
-            str += "<b>" + key + "</b>: " + value + "<br>";
-        }
-        div.innerHTML = str;  
    }
 
- 
 }
 
 
