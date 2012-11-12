@@ -41,6 +41,7 @@ function stream()
     es.addEventListener("cloudsim", function(event)
     {
          var str_data = event.data;
+         log_to_div("log_div", str_data);
          machine_view_status_event("machines_div", str_data );
      }, false);
      

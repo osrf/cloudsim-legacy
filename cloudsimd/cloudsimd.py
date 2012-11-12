@@ -17,7 +17,6 @@ import launchers
 from common import MACHINES_DIR
 from common import BOTO_CONFIG_FILE_USEAST
 from common import Machine2
-from monitoring import sweep_monitor
 
 
 # register the daemon
@@ -77,16 +76,6 @@ def terminate(username,
         red.publish("cloudsim_log", e)
     
 
-def monitor(root_directory):
-    proc = multiprocessing.current_process().name
-    log("monitoring '%s' from proc '%s'" % (root_directory, proc))
-    
-    while True:
-        try:
-            sweep_monitor(root_directory)
-        except Exception, e:
-            log("Error %s" % e) 
-    
     
 def async_launch(username, config):
     log("launch! %s for %s"% (config, username) )
@@ -153,18 +142,6 @@ def async_stop_simulator(username, machine):
     except Exception, e:
         log("Error %s" % e)
     
-def async_monitor():
-    
-    root_directory =  MACHINES_DIR
-    log("monitoring machines in '%s'"% (root_directory) )
-    
-    try:
-        
-        p = multiprocessing.Process(target=monitor, args=(root_directory, ) )
-        # jobs.append(p)
-        p.start()
-    except Exception, e:
-        log("Error %s" % e)    
     
 
 def run():
