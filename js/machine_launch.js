@@ -5,7 +5,10 @@ function machine_launch_on_load_page(launch_div_name)
 {
 
     var launch_div = document.getElementById(launch_div_name);
-    var str = '<select id="config_select" onchange="_launchSelectionChanged()";></select><button type="button" onclick="launch(_get_selectected_machine_config())">Launch</button><div id="config_div"></div>';
+    
+    var str  = '<h2>Launch a new machine</h2>'; 
+    str 	+= '<select id="config_select" onchange="_launchSelectionChanged()";></select><button type="button" onclick="launch(_get_selectected_machine_config())">Launch</button><div id="config_div"></div>';
+    
     launch_div.innerHTML = str;
 
     var div_name = "log_div";

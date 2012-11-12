@@ -32,3 +32,4 @@ OV_CLIENT_IP = '10.8.0.2'
 ROS_SH_FNAME = "ros.sh"
 MACHINES_DIR = '/var/www-cloudsim-auth/machines'
 CONFIGS_DIR = "/var/cloudsimd/launchers"
+TEAM_LOGIN_DISTRIBUTION= '/var/www-cloudsim-auth/cloudsim.zip'

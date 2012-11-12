@@ -14,13 +14,17 @@ sudo rm -rf /var/www/distfiles
 sudo chown -R www-data:www-data /var/www
 sudo mkdir -p /var/www-cloudsim-auth
 
-#if [ ! -f $DIR/distfiles/users ];
-#then
-#   echo creating a new users file
-#   sudo cp $DIR/distfiles/users /var/www-cloudsim-auth/users
-#else
-#   echo preserving existing users file
-#fi
+
+cd $DIR/..
+zip -r cloudsim.zip cloudsim
+mv -f cloudsim.zip /var/www-cloudsim-auth
+cd $DIR
+
+if [ ! -f /var/www-cloudsim-auth/users ]
+then
+   sudo cp $DIR/distfiles/users /var/www-cloudsim-auth/users
+fi
+
 
  
 

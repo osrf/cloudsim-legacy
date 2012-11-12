@@ -81,9 +81,10 @@ class ConfigsDb(object):
         for module in launcher_modules:
             configs[module] = {'description': 'n/a'}
         
-        configs['gazebo'] = {'description': "ami-137bcf7a, cg1.4xlarge, security: ping_ssh"} 
-        configs['micro_vpn'] = {'description': "ami-137bcf7a, t1.micro, security: ping_ssh"}
-        
+        configs['gazebo'] = {'description': "A GPU instance with ROS installed (and the ROS version of Gazebo, 1.0)"} 
+        configs['micro_vpn'] = {'description': "A non gpu machine with VPN but no simulator"}
+        configs['drc_sim'] = {'description': "A GPU instance with the DRC simulator, ROS Fuerte and Gazebo 1.2 installed"}
+        configs['team_login'] = {'description': "A micro instance that runs the Cloudsim web app"}
         return configs
 
     def get_configs_as_json(self):

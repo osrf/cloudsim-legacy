@@ -11,7 +11,7 @@ from common.machine import MachineDb
 directory = os.path.split(__file__)[0]
 
 
-def log(msg, chan = "cloudsim_log"):
+def log(msg, chan = "launchers"):
     import redis
     r = redis.Redis()
     r.publish(chan, msg)

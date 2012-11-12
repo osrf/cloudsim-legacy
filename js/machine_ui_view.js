@@ -2,7 +2,7 @@
 function machine_view_on_load_page(div_name)
 {
    var machines_div = document.getElementById(div_name);
-   var str = "<div id='machines'></div><h3>Log</h3><div id='machines_log_div'></div>";
+   var str = "<h2>Running machines</h2><div id='machines'></div>";
    machines_div.innerHTML = str;
 }
 
@@ -170,24 +170,38 @@ function _add_machine_div(machine_list_div, machine_name)
     
     
     str += '<div id="top" style="background-color:#44497a; width:100%; float:left;" ">' // background-color:#FFA500;
-    str += '	<div style="width:20%; float:left;">';
-    str += '		<form method="get" action=' + link +'>';
-    str += '        <input type="text" ';
-    str += 			' value="' + machine_name +'" >';
-    str += '		</input>'	
-    str += '		<button type="submit">Download keys</button></form>';
-    str += 		"</div>"
-    str += '	<div style="width:80%; float:left;">';
+//    str += '	<div style="width:20%; float:left;">';
+//    str += '		<form method="get" action=' + link +'>';
+//    str += '        <input type="text" ';
+//    str += 			' value="' + machine_name +'" >';
+//    str += '		</input>'	
+//    str += '		<button type="submit">Download keys</button></form>';
+//    str += 		"</div>"
+//    str += '	<div style="float:left;">';
     str += "		<h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
     str += 			machine_name + "</center></h3>";    
-    str += 		"</div>";
+//    str += 		"</div>";
     str += '</div>' // top
     
-    str += '<div id="left" style="width:50%;float:left;">'
-    str += '<div id=' + info_div_name+ '  style="float:left;">' // background-color:#FFD700;
+    str += '<div id="left" style="width:50%;float:left;">';
+    
+    str += '<div>';
+    	
+    str += '<div id=' + info_div_name+ '  style="width:100%; float:left;">' // background-color:#FFD700;
     str += '<br><br>    [Waiting for update]'
     str += '</div>' // info
+    
+    str += '<div id="zip_link" style="float:left;">';
+    str += '<a href="/cloudsim/inside/cgi-bin/machine_zip_download.py?machine=';
+    str += machine_name;
+    str += '">Download keys</a>';
+    str += '</div>'; 
+    		
+    str += '</div>';
+    
     str += '</div>' // left
+    
+    
     	
     str += '<div id="right" style=" width:50%;float:left;">';  
     str += ' '
@@ -362,45 +376,45 @@ function _update_machine_view(machine_div, data)
         
    }
    
-    if(data.status == "cloud")
-    {
-    	var status_div_name = _machine_name_to_cloud_div_name(machine_name);
-        if(data.success == "running")
-        {
-            _status_color(status_div_name, "blue");
-        } 
-        else if (data.success == "shutting-down") 
-        {
-            _status_color(status_div_name, "orange");
-        } 
-        else 
-        {      
-            _status_color(status_div_name, "red");         
-        }
-        
-        var info_div_name = _machine_name_to_info_div_name(machine_name);
-        var div = document.getElementById(info_div_name);
-        var str = ""; 
+   if(data.status == "cloud")
+   {
+	   var status_div_name = _machine_name_to_cloud_div_name(machine_name);
+	   if(data.success == "running")
+	   {
+		   _status_color(status_div_name, "blue");
+	   } 
+	   else if (data.success == "shutting-down") 
+	   {
+		   _status_color(status_div_name, "orange");
+	   } 
+	   else
+	   {      
+		   _status_color(status_div_name, "red");         
+	   }
 
-       if(data)
-       {	
-    	   	//str += "<br>";
-            for (var key in data )
-            {
-                var value = data[key]; 
-                if (key != "status" && key != "machine" && key != "hostname" && key != "type" && key != "success")
-                {
-                    str += "<b>" + key + "</b>: " + value + "<br>";
-                }
-            }
-            
-            if(data.success == "terminated" || data.success == "does_not_exist")
-            {
-                // machine_div.style.visibility = "hidden";
-                machine_div.style.display = 'none';
-            }   
-       }
-       div.innerHTML = str;
+	   var info_div_name = _machine_name_to_info_div_name(machine_name);
+	   var div = document.getElementById(info_div_name);
+	   var str = ""; 
+
+	   if(data)
+	   {	
+		   //str += "<br>";
+		   for (var key in data )
+		   {
+			   var value = data[key]; 
+			   if (key != "status" && key != "machine" && key != "hostname" && key != "type" && key != "success")
+			   {
+				   str += "<b>" + key + "</b>: " + value + "<br>";
+			   }
+		   }
+
+		   if(data.success == "terminated" || data.success == "does_not_exist")
+		   {
+			   // machine_div.style.visibility = "hidden";
+			   machine_div.style.display = 'none';
+		   }   
+	   }
+	   div.innerHTML = str;
    }
 
    if(data.status == "graphics")

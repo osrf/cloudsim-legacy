@@ -17,7 +17,9 @@ from common import create_openvpn_server_cfg_file,\
 from common import Machine_configuration
 import time
 import commands
-from common.startup_script_builder import SOURCES_LIST_PRECISE
+from common import SOURCES_LIST_PRECISE
+
+from common import TEAM_LOGIN_DISTRIBUTION
 
 TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """
 
@@ -42,6 +44,10 @@ echo "apache2 installed" >> /home/ubuntu/setup.log
 apt-get install -y redis-server python-pip
 sudo pip install redis
 echo "redis installed" >> /home/ubuntu/setup.log
+
+sudo pip install unittest-xml-reporting
+echo "XmlTestRunner installed" >> /home/ubuntu/setup.log
+
  
 apt-add-repository -y ppa:rye/ppa
 apt-get update
@@ -78,15 +84,15 @@ def log(msg):
     
 def launch(username, machine_name, tags, publisher, credentials_ec2, root_directory):
 
-    log("create distribution")    
-    path = os.path.split(__file__)[0]
-    cloudsim_path = path = os.path.join(path, '..','..')
-    cmd_path = os.path.join(cloudsim_path,'distfiles', 'make_zip.bash')
-    website_distribution =os.path.abspath( os.path.join(cloudsim_path,'..', 'cloudsim.zip') ) # outside cloudsim
-    o = commands.getoutput(cmd_path)
-    log(o)
+#    log("create distribution")    
+#    path = os.path.split(__file__)[0]
+#    cloudsim_path = path = os.path.join(path, '..','..')
+#    cmd_path = os.path.join(cloudsim_path,'distfiles', 'make_zip.bash')
+#    website_distribution =os.path.abspath( os.path.join(cloudsim_path,'..', 'cloudsim.zip') ) # outside cloudsim
+#    o = commands.getoutput(cmd_path)
+#    log(o)
     
-    
+    website_distribution = TEAM_LOGIN_DISTRIBUTION
     
      
     startup_script = """#!/bin/bash
@@ -105,6 +111,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
 
     startup_script += TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE
     log(startup_script)
+ 
 
     config = Machine_configuration()
     config.initialize(   image_id ="ami-137bcf7a", 
@@ -179,9 +186,9 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
 #    out = machine.ssh_wait_for_ready('/var/www-cloudsim-auth/users')
 #    print ("\t%s"% out)
     
-    print('setup complete')
-    print("%s\n"%(machine.user_ssh_command()))
-    print("http://%s"% machine.config.hostname)
+    log('setup complete')
+    log("%s\n"%(machine.user_ssh_command()))
+    log("http://%s"% machine.config.hostname)
     
         
 
