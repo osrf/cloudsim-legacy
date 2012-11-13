@@ -10,19 +10,13 @@ from common import Machine2
 import commands
 import shutil
 
-"""
-Returns True if the machine is alive
-"""
-def monitor_machine(domain, machine):
-    
+
+
+def monitor_cloud(red, domain, machine):
     status = {}
     status['machine'] = machine.config.uid
     status['type'] = 'test'
     
-    red = redis.Redis()
-    
-    #print("Monitor machine.. domain  %s, machine %s" % (domain, machine.config.uid))
-    #print("  Machine %s" % machine)
     cloud = machine.get_aws_status()
     aws_status = {}
     
@@ -30,11 +24,23 @@ def monitor_machine(domain, machine):
     aws_status['success'] = cloud['status']
     aws_status.update(cloud)
     aws_status['status'] = "cloud"
-    
+
     str = dumps(aws_status)
     red.publish(domain, str)
+    r = True
+    if cloud['status'] == "terminated":
+        r = False
+    if cloud['status'] == "does_not_exist":
+        r = False
+
+    return r
+
     
-    
+def monitor_latency(red, domain, machine):
+    status = {}
+    status['machine'] = machine.config.uid
+    status['type'] = 'test'
+
     ping_status = {}
     ping_status['status'] = "latency"
     ping_status.update(status)
@@ -45,28 +51,39 @@ def monitor_machine(domain, machine):
         ping_status['fail'] = "host unreacheable" 
     str = dumps(ping_status)
     red.publish(domain, str)
+
+def monitor_xgl(red, domain, machine):
+    x = machine.get_X_status()
     
+    status = {}
+    status['machine'] = machine.config.uid
+    status['type'] = 'test'
+
     x_status = {}
     x_status.update(status)
     x_status['status'] = "graphics"
-    x_status['success'] = machine.get_X_status()
+    x_status['success'] = x
     str = dumps(x_status)
     red.publish(domain, str)
-   # print("    X= %s" % x)
+    return x
+
+def monitor_simulator(red, domain, machine):
+    x = machine.get_gazebo_status()
+    
+    status = {}
+    status['machine'] = machine.config.uid
+    status['type'] = 'test'
+        
     g_status = {}
     g_status.update(status)
     g_status['status'] = "simulator"
-    g_status['success'] = machine.get_gazebo_status()
+    g_status['success'] = x
     str = dumps(g_status)
     red.publish(domain, str)
-    
-    #print("    gazebo= %s" % g)
-    r = True
-    if cloud['status'] == "terminated":
-        r = False
-    if cloud['status'] == "does_not_exist":
-        r = False
-    return r
+    return x
+
+
+
 
 def get_machine_instance_paths_and_domains(root_directory):
     ret =[]
@@ -87,13 +104,26 @@ def remove_machine_data(root_directory, machine_data_fname):
         os.makedirs(rip_dir)    
     shutil.move(machine_data_dir, rip_dir)
         
-def sweep_monitor (root_directory):
-    
+def latency_sweep(root_directory):
+    red = redis.Redis()
     for machine_data_fname, domain in get_machine_instance_paths_and_domains(root_directory):
         machine = Machine2.from_file(machine_data_fname)
-        alive = monitor_machine(domain, machine)
-        if not alive:
+        monitor_latency(red, domain, machine)
+        
+
+def sweep_monitor (root_directory):
+    red = redis.Redis()
+    for machine_data_fname, domain in get_machine_instance_paths_and_domains(root_directory):
+        machine = Machine2.from_file(machine_data_fname)
+        alive = monitor_cloud(red, domain, machine)
+        if alive:
+            #monitor_latency(red, domain, machine)
+            x = monitor_xgl(red, domain, machine)
+            if x:
+                monitor_simulator(red, domain, machine)
+        else:
             remove_machine_data(root_directory, machine_data_fname)
+
 
 class TestCases(unittest.TestCase):
     
@@ -108,5 +138,5 @@ class TestCases(unittest.TestCase):
         sweep_monitor(root_directory)
 
 if __name__ == "__main__":
-    print("CLOUDSIMD tests")
+    print("CLOUDSIM_MONITORD tests")
     unittest.main()

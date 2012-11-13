@@ -147,7 +147,7 @@ class TestCases(unittest.TestCase):
     def atest_launch(self):
         
         username = "toto@toto.com"
-        machine_name = "gazebo_" + str(uuid.uuid1())
+        machine_name = "ros_fuerte_" + str(uuid.uuid1())
         publisher = StdoutPublisher()
         launch(username, machine_name, publisher)
         

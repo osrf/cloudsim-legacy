@@ -35,7 +35,7 @@ page_template = """
 <p>These users are authorized to Launch simulation instances</p>
     {list_of_users}
 <p/>
-    
+
 <form action= "/cloudsim/inside/cgi-bin/admin_addremove_user.py" method="GET">
     email<input type="email" name="email"/>
     <input type="radio" name="action" value="add" checked>Add
