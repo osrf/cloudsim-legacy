@@ -9,7 +9,7 @@ import redis
 redis_client = redis.Redis()
 
 
-from common import StdoutPublisher, INSTALL_VPN, Machine2,\
+from common import StdoutPublisher, INSTALL_VPN, Machine,\
     clean_local_ssh_key_entry, MachineDb, get_test_runner
 from common import create_openvpn_server_cfg_file,\
     inject_file_into_script, create_openvpn_client_cfg_file,\
@@ -124,7 +124,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
                          ip_retries=100, 
                          ssh_retries=200)
 
-    machine = Machine2(machine_name,
+    machine = Machine(machine_name,
                      config,
                      publisher.event,
                      tags,

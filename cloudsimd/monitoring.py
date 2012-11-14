@@ -6,7 +6,7 @@ import os
 import redis
 from json import dumps
 
-from common import Machine2
+from common import Machine
 import commands
 import shutil
 
@@ -107,14 +107,14 @@ def remove_machine_data(root_directory, machine_data_fname):
 def latency_sweep(root_directory):
     red = redis.Redis()
     for machine_data_fname, domain in get_machine_instance_paths_and_domains(root_directory):
-        machine = Machine2.from_file(machine_data_fname)
+        machine = Machine.from_file(machine_data_fname)
         monitor_latency(red, domain, machine)
         
 
 def sweep_monitor (root_directory):
     red = redis.Redis()
     for machine_data_fname, domain in get_machine_instance_paths_and_domains(root_directory):
-        machine = Machine2.from_file(machine_data_fname)
+        machine = Machine.from_file(machine_data_fname)
         alive = monitor_cloud(red, domain, machine)
         if alive:
             #monitor_latency(red, domain, machine)

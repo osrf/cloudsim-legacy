@@ -1,10 +1,12 @@
 import os
 import sys
-import cgi
+
 import common
 import tempfile
 import Cookie
-import time
+
+import unittest
+
 
 class UserDatabase (object):
     def __init__(self, fname = common.USER_DATABASE):
@@ -152,7 +154,7 @@ def check_auth_and_generate_response():
  
  
         
-def authorize():
+def authorize(role = "user"):
     email = None
     try:        
         email = _check_auth()
@@ -168,24 +170,25 @@ def authorize():
         print("Try <a href=\"/cloudsim/inside/cgi-bin/logout.py\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(common.ADMIN_EMAIL, common.ADMIN_EMAIL))
         exit(0)     
         
-               
-def tail(fname):
-    file = open(fname,'r')
+
+#########################################################################
     
-    for l in file.readlines():
-        sys.stdout.write (l)
-        sys.stdout.flush()
+class AdminDb(unittest.TestCase):
+
+    def test_addremove_users(self):
+        db = UserDatabase('toto.txt')
+        users = db.get_users()
+        self.assert_(len(users) == 0, "not empty!")
+        db.add_user('toto@popo.com')
+        self.assert_(len(db.get_users()) == 1, "not added!")
+        db.remove_user('not_a_real_user@popo.com')
+        self.assert_(len(db.get_users()) == 1, "not not removed!")
+        db.remove_user('toto@popo.com')
+        self.assert_(len(db.get_users()) == 0, "not removed!")
     
-#    file.close()
-#    return
-    
-    while 1:
-        where = file.tell()
-        line = file.readline()
-        if not line:
-            time.sleep(1)
-            file.seek(where)
-        else:
-            print line    
-            sys.stdout.flush()
-    # todo: close file at some point
+
+         
+        
+if __name__ == '__main__':
+    print('COMMON TESTS')
+    unittest.main()    

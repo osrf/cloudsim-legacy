@@ -30,7 +30,7 @@ def run():
         if msg['channel'] == "cloudsim_cmds":
             try:
                 data = loads(msg['data'])
-                print ("\nmsg['data'] in json \n=============\n%s\n===============\n" % data)
+                print ("CMD SPY:msg['data'] \n=============\n%s\n===============\n" % data)
             except:
                 print("-")
 

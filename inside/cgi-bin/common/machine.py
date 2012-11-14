@@ -73,7 +73,7 @@ class StdoutPublisher(object):
         
        
         
-class Machine2 (object):
+class Machine (object):
     
     def __init__(   self,
                     unique_name,
@@ -121,7 +121,7 @@ class Machine2 (object):
             x = StdoutPublisher()
             event = x.event
         config = Machine_configuration.from_file(fname)
-        x = Machine2(config.uid, config, event, do_launch = False)
+        x = Machine(config.uid, config, event, do_launch = False)
         return x
 
     def _event(self, data_dict):
@@ -371,7 +371,7 @@ class MachineDb(object):
     
     def get_machine(self, name):
         fname =  os.path.join(self.root_dir, name, 'instance.json')
-        machine = Machine2.from_file(fname)
+        machine = Machine.from_file(fname)
         return machine
     
     def get_machines_as_json(self):
@@ -478,7 +478,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
                              ip_retries=100, 
                              ssh_retries=200)
 
-        micro = Machine2(machine_name,
+        micro = Machine(machine_name,
                          config,
                          publisher.event,
                          tags,
@@ -542,7 +542,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
         
         
         publisher = StdoutPublisher("toto@toto.com")
-        machine = Machine2.from_file(config_path, publisher.event)
+        machine = Machine.from_file(config_path, publisher.event)
         
         repeats = 5
         for i in range(repeats):

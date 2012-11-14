@@ -5,22 +5,7 @@ function machine_view_on_load_page(div_name)
    var str = "<h2>Running machines</h2><div id='machines'></div>";
    machines_div.innerHTML = str;
 }
-/*
-function _refresh_plots(machines_list_div)
-{
-	
-	for (var i=0; i < machines_list_div.childNodes.length; i++)
-	{
-		var machine_div = machines_list_div.childNodes[i];
-		var machine_name = machine_div.id;
-		var plot_div_name = _machine_name_to_plot_div_name(machine_name);
-		var latency_plot_data = latency_data[machine_name]['plot_data']
-		var plot_options = latency_data[machine_name]['plot_options']		                                              
-		latency_data[machine_name]['plot'] = $.plot($('#' + plot_div_name), latency_plot_data, plot_options);
-	}
 
-}
-*/
 function machine_view_status_event(div_name, str_data)
 {
     var data = eval( '(' + str_data + ')' );
@@ -32,7 +17,8 @@ function machine_view_status_event(div_name, str_data)
    
     var machines_div = document.getElementById(div_name);
     var machine_list_div = machines_div.querySelector("#machines");
-    var machine_div = machines_div.querySelector("#" + machine_name);
+    var selector = "#" +  _machine_name_to_machine_div_name(machine_name);
+    var machine_div = machines_div.querySelector(selector);
     if( !machine_div)
     {
       machine_div = _add_machine_div(machine_list_div, machine_name);
@@ -57,7 +43,6 @@ function _status_color(div_name, color)
     else if(color == "gray")
         div_element.innerHTML = "<img width='18' src='/js/images/gray_status.png'></img>";
 }
-
 
 
 function _terminate_machine(machine_name)
@@ -121,6 +106,12 @@ function _stop_simulator(machine_name)
     
 }
 
+function _machine_name_to_machine_div_name(machine_name)
+{
+	var plot_div_name = 'm_' + machine_name;
+	return plot_div_name;
+}
+
 function _machine_name_to_plot_div_name(machine_name)
 {
 	var plot_div_name = 'plot_div_' + machine_name;
@@ -153,7 +144,7 @@ function _add_machine_div(machine_list_div, machine_name)
 {
 	var plot_div_name = _machine_name_to_plot_div_name(machine_name);
 
-    var str = "<div id =" + machine_name + " style='background-color:#EEEEEE; width:100%;float:left;  margin-top: 10px;'> "; // border: 1px solid blue;
+    var str = "<div id =m_" + machine_name + " style='background-color:#EEEEEE; width:100%;float:left;  margin-top: 10px;'> "; // border: 1px solid blue;
 
     
     var cloud_stat_div_name =  _machine_name_to_cloud_div_name(machine_name);
@@ -189,7 +180,6 @@ function _add_machine_div(machine_list_div, machine_name)
     str += '</div>' // left
     
     
-    	
     str += '<div id="right" style=" width:50%;float:left;">';  
     str += ' '
     
@@ -394,11 +384,6 @@ function _update_machine_view(machine_div, data)
         {      
             _status_color(status_div_name, "red");         
         }
-
-        var str = "<h3>graphics: " + data.success + "</h3>";
-        var div = machine_div.childNodes["graphics"];
-        for (var key in data ) { str += "<b>" + key + "</b>: " + data[key] + "<br>";}
-        div.innerHTML = str;
    }
 
    if(data.status == "simulator")
@@ -416,9 +401,6 @@ function _update_machine_view(machine_div, data)
         var sim_div = machine_div.childNodes["simulator"];
         var data_div = sim_div.childNodes["data"];
 
-        // var start_sim_button = sim_div.childNodes["start_sim_btn"];
-        // var stop_sim_button  = sim_div.childNodes["stop_sim_btn"];
-        // if(data.success == true) toggle_button.textContent = "Stop";
    
         var str = "<h3>simulator: "+ data.success + "</h3>"; 
         for (var key in data )

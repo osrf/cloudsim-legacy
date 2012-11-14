@@ -62,7 +62,7 @@ pubsub = red.pubsub()
 
 red.publish("cloudsim_log", "console_stream for user %s on domain %s" % (email, domain) )
 
-pubsub.subscribe([domain])
+pubsub.subscribe([domain,"cloudsim_admin"])
 
 for msg in pubsub.listen():
     #try:

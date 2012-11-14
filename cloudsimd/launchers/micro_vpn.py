@@ -6,7 +6,7 @@ import uuid
 import unittest
 import zipfile
 
-from common import StdoutPublisher, INSTALL_VPN, Machine2,\
+from common import StdoutPublisher, INSTALL_VPN, Machine,\
     clean_local_ssh_key_entry, MachineDb
 from common import create_openvpn_server_cfg_file,\
     inject_file_into_script, create_openvpn_client_cfg_file,\
@@ -22,8 +22,6 @@ import time
     
 def launch(username, machine_name, tags, publisher, credentials_ec2, root_directory):
 
-
-     
     startup_script = """#!/bin/bash
 # Exit on error
 set -e
@@ -31,8 +29,6 @@ set -e
 echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
 
 """
-    
-    
     
     file_content = create_openvpn_server_cfg_file()
     startup_script += inject_file_into_script("openvpn.config",file_content)
@@ -50,7 +46,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
                          ip_retries=100, 
                          ssh_retries=200)
 
-    machine = Machine2(machine_name,
+    machine = Machine(machine_name,
                      config,
                      publisher.event,
                      tags,
@@ -109,7 +105,6 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
 
 class TestCases(unittest.TestCase):
     
-   
     
     def test_micro(self):
         

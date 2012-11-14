@@ -7,7 +7,7 @@ import unittest
 import zipfile
 import time
 
-from common import StdoutPublisher, INSTALL_VPN, Machine2,\
+from common import StdoutPublisher, INSTALL_VPN, Machine,\
     clean_local_ssh_key_entry, MachineDb
 from common import create_openvpn_server_cfg_file,\
     inject_file_into_script, create_openvpn_client_cfg_file,\
@@ -78,7 +78,7 @@ def launch(username, machine_name, tags, publisher, credentials_ec2, root_direct
                          ip_retries=100, 
                          ssh_retries=1000)
 
-    machine = Machine2(machine_name,
+    machine = Machine(machine_name,
                      config,
                      publisher.event,
                      tags,

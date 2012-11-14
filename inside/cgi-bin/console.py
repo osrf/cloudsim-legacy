@@ -19,23 +19,29 @@ print("Content-Type: text/html")
 print("\n")
 
 
+# <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
 template = """ 
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE html>
 <html>
  <head>
  
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Cloudsim console</title>
     <link href="/js/layout.css" rel="stylesheet" type="text/css">
-
+    
+    <script language="javascript" type="text/javascript" src="/js/graph/jquery.js"></script>
+    <script language="javascript" type="text/javascript" src="/js/graph/jquery.flot.js"></script>
+    
+    
+    <script src="/js/utils.js"></script>
 
     <script src="/js/machine_ui_view.js"></script>
     <script src="/js/machine_launch.js"></script>
-    <script src="/js/utils.js"></script>
-  
-    <script language="javascript" type="text/javascript" src="/js/graph/jquery.js"></script>
-    <script language="javascript" type="text/javascript" src="/js/graph/jquery.flot.js"></script>
+    <script src="/js/cloud_credentials.js"></script>
+    <script src="/js/users_admin.js"></script>
+    
+    
     
     <script language="javascript" type="text/javascript" src="/js/latency_graph.js"></script>
     
@@ -45,6 +51,8 @@ template = """
     {
         machine_view_on_load_page("machines_div");
         machine_launch_on_load_page("launcher_div");
+        cloud_credentials_on_load_page("credentials_div");
+        users_admin_on_load_page("users_div");
         stream();
     }
     
@@ -62,6 +70,7 @@ template = """
         {
              var str_data = event.data;
              machine_view_status_event("machines_div", str_data );
+             users_admin_event(str_data);
          }, false);
          
          
@@ -79,11 +88,20 @@ template = """
  </head>
     <body onload = "on_load_page()">
     
+    <div id="admin_div">
+        <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; margin-top:20px; ">
+        </div>
+        <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; margin-top:20px; ">
+        </div>
+    </div>
+    
     <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; margin-top:20px; ">
     </div>
-   
+    
     <div id="machines_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
     </div>
+    
+    
     
     <div style="display:none;">
     <h2 >Log</h2>

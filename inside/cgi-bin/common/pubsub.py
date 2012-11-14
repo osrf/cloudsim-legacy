@@ -8,7 +8,7 @@ import unittest
 
 import json
 from testing import get_test_runner 
-from machine import Machine2, StdoutPublisher
+from machine import Machine, StdoutPublisher
 import commands
 from machine_configuration import Machine_configuration
 
@@ -81,7 +81,7 @@ class TestMachinePub(unittest.TestCase):
                              ip_retries=100, 
                              ssh_retries=200)
 
-        machine = Machine2(machine_name,
+        machine = Machine(machine_name,
                          config,
                          publisher.event,
                          tags,
@@ -107,7 +107,7 @@ class TestMachinePub(unittest.TestCase):
         
         
         publisher = RedisPublisher("toto@toto.com")# StdoutPublisher("toto@toto.com")
-        machine = Machine2.from_file(config_path, publisher.event)
+        machine = Machine.from_file(config_path, publisher.event)
 
                 
         repeats = 3

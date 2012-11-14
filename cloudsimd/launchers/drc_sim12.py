@@ -7,7 +7,7 @@ import unittest
 import zipfile
 import time
 
-from common import StdoutPublisher, INSTALL_VPN, Machine2,\
+from common import StdoutPublisher, INSTALL_VPN, Machine,\
     clean_local_ssh_key_entry, MachineDb, get_test_runner
 from common import create_openvpn_server_cfg_file,\
     inject_file_into_script, create_openvpn_client_cfg_file,\
@@ -33,7 +33,7 @@ echo "install drc" >> /home/ubuntu/setup.log
 apt-get install -y drcsim
 
 echo "source drc setup from bashrc" >> /home/ubuntu/setup.log
-echo ". /usr/share/drcsim-1.0/setup.sh" > ~/.bashrc
+
 
 """
 
@@ -57,7 +57,6 @@ set -e
     startup_script += inject_file_into_script("openvpn.config",file_content)
     startup_script += INSTALL_VPN
     
-        
     startup_script += 'echo "setup X and gl" >> /home/ubuntu/setup.log\n'
     startup_script += XGL_STARTUP_BEFORE
     
@@ -92,7 +91,7 @@ def launch(username, machine_name, tags, publisher, credentials_ec2, root_direct
                          ip_retries=100, 
                          ssh_retries=1000)
 
-    machine = Machine2(machine_name,
+    machine = Machine(machine_name,
                      config,
                      publisher.event,
                      tags,

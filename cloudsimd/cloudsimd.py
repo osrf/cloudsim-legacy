@@ -16,7 +16,7 @@ import uuid
 import launchers
 from common import MACHINES_DIR
 from common import BOTO_CONFIG_FILE_USEAST
-from common import Machine2
+from common import Machine
 
 
 # register the daemon
@@ -150,10 +150,10 @@ def run():
     ps = red.pubsub()
     ps.subscribe("cloudsim_cmds")
     
-    async_monitor()
     
+    log("CLOUDSIMD STARTED")
     for msg in ps.listen():
-        log("CLOUDSIM COMMAND") 
+        log("CLOUDSIMD EVENT") 
         try:
             data = loads(msg['data'])
             cmd = data['command']
