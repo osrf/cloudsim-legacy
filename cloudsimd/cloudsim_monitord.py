@@ -28,6 +28,7 @@ def monitor(root_directory):
     while True:
         try:
             sweep_monitor(root_directory)
+            time.sleep(0.1)
         except Exception, e:
             log("Error %s" % e) 
 
@@ -38,6 +39,7 @@ def monitor_latency(root_directory):
     while True:
         try:
             latency_sweep(root_directory)
+            time.sleep(0.1)
         except Exception, e:
             log("Error %s" % e)
     

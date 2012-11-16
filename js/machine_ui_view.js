@@ -62,8 +62,8 @@ function _terminate_machine(machine_name)
 function _start_simulator(machine_name)
 {
 
-    var package_name = prompt("Enter the package: ", "pr2_gazebo");
-    var launch_file_name = prompt("Enter the launch file name: ", "empty_world.launch");
+    var package_name = prompt("Enter the package: ", "drc_robot_utils"); // pr2_gazebo
+    var launch_file_name = prompt("Enter the launch file name: ", "drc_robot.launch"); //empty_world.launch
     var launch_args = prompt("Enter the launch file arguments (optional): ", "");
 
     var r=confirm("Start simulator on machine" + machine_name + "?");
