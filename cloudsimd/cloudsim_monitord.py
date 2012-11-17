@@ -64,7 +64,7 @@ def async_monitor(root_directory, proc_count):
         log("Error %s" % e)    
 
 if __name__ == "__main__":
-    proc_count = 10
+    proc_count = 3
     if len(sys.argv) > 1:
         root_directory = sys.argv[1]
     if len(sys.argv) > 2:

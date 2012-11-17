@@ -28,12 +28,13 @@ secret_access = None
 
 
 try:
-    aws_access_key_id = form.getfirst("access_key", None)
-    aws_secret_access_key = form.getfirst("secret_access_key", None)
+    aws_access_key_id = form.getfirst("access_key")
+    aws_secret_access_key = form.getfirst("secret_access_key")
 except Exception, e:
     # bug? cgi.FieldStorage() does not work for http delete
-    q_string= os.environ['QUERY_STRING']
-    red.publish("cloudsim_log", "cloud_credentials.py error '%s' query string %s" % (e,q_string) )
+    pass
+q_string= os.environ['QUERY_STRING']
+red.publish("cloudsim_log", "cloud_credentials.py query string %s" % (q_string) )
 
 red.publish("cloudsim_log", "cloud_credentials.py [%s] (%s) (%s)" % (method, aws_access_key_id, aws_secret_access_key ) )
 
@@ -41,8 +42,10 @@ db = UserDatabase()
 
 r = {}
 r['success'] = False
+r['msg']="Undefined"
+r['aws_access_key_id'] = aws_access_key_id
+r['aws_secret_access_key'] = aws_secret_access_key
 
-    
 print('Content-type: application/json')
 print("\n")
 
@@ -52,8 +55,12 @@ if method == 'POST':
     if cloud.validate():
         cloud.save()
         r['success'] = True
-    # DO it!
-    
+        r['msg'] = 'The credentials have been changed.'
+        red.publish("cloudsim_log","yes")
+    else:
+        r['msg'] = "The credentials are not valid."
+        
+
 if method == 'DELETE':
     # not supported
     pass
@@ -63,4 +70,4 @@ if method == 'GET':
     pass
 
 jr = json.dumps(r)
-print(r)
+print(jr)
