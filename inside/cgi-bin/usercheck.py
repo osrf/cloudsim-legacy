@@ -10,6 +10,10 @@ import common
 import cgitb
 cgitb.enable()
 
+
+
+
+
 # Get form and cookie data
 form = cgi.FieldStorage()
 email = form.getfirst(common.EMAIL_VARNAME)
@@ -58,21 +62,35 @@ sdb.db[openid_session] = email
 sdb.save()
 common.print_http_header()
 
+version_info = common.get_cloudsim_verion_txt()
+
 page = """
 <!DOCTYPE html>
 <html>
 <head>
+<link href="/js/layout.css" rel="stylesheet" type="text/css">
 </head>
 <body>
-<img src="/js/images/osrf.png" width="200px"/>
+<img src="/js/images/osrf.png" width="400px"/>
 <div>
-Welcome to cloudsim
+
+<h1>Welcome to cloudsim</h1>
+
 </div>
+
+<div style="padding: 10px; margin-bottom:20px; margin-top:20px;" more="border-radius: 15px; border: 1px solid black; "> 
+<pre>
+<a href="https://bitbucket.org/osrf/cloudsim">Source</a>
+
+%s
+</pre>
+</div>
+
 <a href="/cloudsim/inside/cgi-bin/console">Console</a><br>
 <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
 </body>
 </html>
-"""
+""" % version_info
 print(page)
 #print("Location: /cloudsim/inside/cgi-bin/console\n")
 

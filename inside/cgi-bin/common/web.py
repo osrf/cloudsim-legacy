@@ -181,19 +181,39 @@ def authorize(role = "user"):
         exit(0)     
         
 
-
+def get_cloudsim_verion_txt():
+    d = os.path.split(__file__)[0]
+    hg_log_path = os.path.join(d,'..','..', '..','hg_log.txt')
+    if(os.path.exists(hg_log_path)):
+        with  open(hg_log_path, 'r') as f:
+                version = f.read()
+                return version 
+    return "No version information available" 
 
 #########################################################################
     
+   
+class CloudsimTest(unittest.TestCase):
+    
+    def test_version_str(self):
+        s = get_cloudsim_verion_txt()
+        print(s)
+        self.assert_(s != "No version information available", "versions")
+        
+
+
 class AdminDbTest(unittest.TestCase):
 
     def test_addremove_users(self):
         db_fname = common.get_test_path('userdbtest.txt')
+        if(os.path.exists(db_fname)):
+            os.remove(db_fname)
+        
         db = UserDatabase(db_fname)
         users = db.get_users()
         
         # If test failed previously, the db may not be empty
-        self.assert_(len(users) == 0, "not empty!")
+        
         db.add_user('toto@popo.com', 'admin')
         self.assert_(len(db.get_users()) == 1, "not added!")
         self.assert_(db.get_users().keys()[0] == 'toto@popo.com', "wrong guy!")
@@ -202,7 +222,7 @@ class AdminDbTest(unittest.TestCase):
         self.assert_(len(db.get_users()) == 1, "not not removed!")
         db.remove_user('toto@popo.com')
         self.assert_(len(db.get_users()) == 0, "not removed!")
-    
+        
 
          
         
