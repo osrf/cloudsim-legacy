@@ -102,8 +102,7 @@ function _stop_simulator(machine_name)
     msg = httpGet(url);
     log_to_div("log_div", "");
     log_to_div("log_div", msg);
-    
-    
+
 }
 
 function _machine_name_to_machine_div_name(machine_name)
@@ -139,7 +138,9 @@ function _machine_name_to_info_div_name(machine_name)
 	return info_div_name;
 }
 
-
+// osrf blue 44497a
+// osrf gray EEEEEE
+// osrf dark 7a7c7e
 function _add_machine_div(machine_list_div, machine_name)
 {
 	var plot_div_name = _machine_name_to_plot_div_name(machine_name);
@@ -209,9 +210,9 @@ function _add_machine_div(machine_list_div, machine_name)
     str += "	</div>";
     str += "</div>";
     
-//    str += '<div style="width:100%;float:left;">'
-//    
-//      str += "</div>";
+    //    str += '<div style="width:100%;float:left;">'
+    //    
+    //      str += "</div>";
 
     
     
@@ -220,7 +221,7 @@ function _add_machine_div(machine_list_div, machine_name)
     //
     //  PLOT
     //
-    str += '<div id="bottom" style="border-bottom-right-radius:10px; border-bottom-left-radius:10px; float:left; width:100%; background-color:#7a7c7e;">' // #FFA500
+    str += '<div id="bottom" style="border-bottom-right-radius:10px; border-bottom-left-radius:10px; float:left; width:100%; background-color:#EEEEEE;">' // #FFA500
     str += '<b><center>Latency</center></b>'
     str += "<div id='" + plot_div_name + "' style='width:100%; height:150px;' ></div>";
     str += '</div>'

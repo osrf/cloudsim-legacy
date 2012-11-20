@@ -94,7 +94,7 @@ def start_simulator(  username,
     mdb = MachineDb(username, machine_dir = root_directory)
     machine = mdb.get_machine(machine_name)
     
-    display = common.DISPLAY
+    display = ':0'
     server_ip = common.OV_SERVER_IP
     
     

@@ -56,11 +56,23 @@ if email not in users:
 
 sdb.db[openid_session] = email
 sdb.save()
+common.print_http_header()
 
-# Set a session cookie with our name.
-#out_cookies = Cookie.SmartCookie()
-#out_cookies[common.CLOUDSIM_SESSION_COOKIE_NAME] = openid_session
-#out_cookies[common.CLOUDSIM_SESSION_COOKIE_NAME]['path'] = '/cloudsim/inside/cgi-bin/'
-#print(out_cookies)
-print("Location: /cloudsim/inside/cgi-bin/console\n")
+page = """
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+<img src="/js/images/osrf.png" width="200px"/>
+<div>
+Welcome to cloudsim
+</div>
+<a href="/cloudsim/inside/cgi-bin/console">Console</a><br>
+<a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
+</body>
+</html>
+"""
+print(page)
+#print("Location: /cloudsim/inside/cgi-bin/console\n")
 

@@ -170,19 +170,19 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     out = machine.ssh_send_command("unzip " + remote_fname )
     log ("\t%s"% out)
     
-    
+    log("Setup admin user %s" % username)
     add_user_cmd = 'echo \'{"%s":"admin"}\' > cloudsim/distfiles/users' % username 
     log("add user to cloudsim: %s" % add_user_cmd)
     out =machine.ssh_send_command(add_user_cmd)
     log ("\t%s"% out)
     
-    
+    log("Uploading the key file to the server")
     remote_fname = "/home/%s/cloudsim/team_login_ssh.zip" % (machine.config.username)
     log("uploading '%s' to the server to '%s'" % (fname_zip, remote_fname) )
     out = machine.scp_send_file(fname_zip , remote_fname)
     log ("\t%s"% out)
     #out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)
-    
+    log("Deploying the cloudsim web app")
     deploy_script_fname = "/home/%s/cloudsim/deploy.sh" % machine.config.username 
     log("running deploy script '%s' remotely" % deploy_script_fname)
     out = machine.ssh_send_command("bash " + deploy_script_fname  )

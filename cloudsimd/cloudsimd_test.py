@@ -56,11 +56,10 @@ class Testo(unittest.TestCase):
     
     def test_start_simulator(self):
         machine = "machine"
-        OV_SERVER_IP = "10.1.1.1"
-        DISPLAY = "0"
+        ovip = "10.1.1.1"
         
-        server_ip = OV_SERVER_IP
-        display = DISPLAY 
+        server_ip = ovip
+        display =':0' 
         package= "ROSPACK"
         launchfile= "launch"
         launchargs= "args"
