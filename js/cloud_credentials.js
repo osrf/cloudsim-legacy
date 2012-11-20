@@ -17,8 +17,6 @@ function cloud_credentials_on_load_page(place_holder_div_name)
     str += '\');">Override</button>';
     
     launch_div.innerHTML = str;
-
-    var div_name = "log_div";
     console.log(cloud_credentials_on_load_page + ": " + place_holder_div_name);
 }
 
@@ -30,7 +28,7 @@ function change_credentials(access_key, secret_access_key)
     var url = '/cloudsim/inside/cgi-bin/cloud_credentials?access_key=';
     url += key+'&secret_access_key=' + secret;
     console.log(url);
-    var msg = httpPost(url);
+    var msg = httpPut(url);
     
     var jmsg = eval('(' + msg + ')');
     console.log("change_credentials: " + msg);

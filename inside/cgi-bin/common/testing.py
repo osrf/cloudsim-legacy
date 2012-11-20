@@ -2,7 +2,7 @@ from __future__ import with_statement
 from __future__ import print_function
 
 
-import xmlrunner
+
 import os
 
 def get_test_dir():
@@ -11,11 +11,20 @@ def get_test_dir():
     r = os.path.abspath(test_dir)
     return r
 
+def get_test_path(fname):
+    d = get_test_dir()
+    p = os.path.join(d,fname)
+    abs_path = os.path.abspath(p)
+    return abs_path
 
 def get_test_runner():
-    path = get_test_dir()
-    runner = xmlrunner.XMLTestRunner(output=path)
-    return runner
+    try:
+        import xmlrunner
+        path = get_test_dir()
+        runner = xmlrunner.XMLTestRunner(output=path)
+        return runner
+    except:
+        return None
     
 if __name__ == "__main__":   
     print(get_test_dir())

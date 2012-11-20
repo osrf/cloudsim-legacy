@@ -4,6 +4,8 @@ import sys
 import common
 import tempfile
 import Cookie
+import json
+
 
 import unittest
 
@@ -12,36 +14,44 @@ class UserDatabase (object):
     def __init__(self, fname = common.USER_DATABASE):
         self.fname = fname
         if not os.path.exists(self.fname):
-            self._write_users([])
+            self._write_users({})
         
     def get_users(self):    
         
-        users = []
+        users = {}
         if os.path.exists(self.fname):
             with open(self.fname, 'r') as f:
-                for u in f.readlines():
-                    users.append(u.strip())
-                f.close()
+                users = json.load(f)
+                
+#            with open(self.fname, 'r') as f:
+#                for u in f.readlines():
+#                    users.append(u.strip())
+#                f.close()
         return users    
     
-    def add_user(self, email_address):
+    def get_role(self, email):
+        role = self.get_users()[email]
+        return role
+    
+    def add_user(self, email_address, role):
         users = self.get_users()
         new_guy = email_address.strip()
         if not new_guy in users:
-            users.append(new_guy)
+            users[new_guy] = role
             self._write_users(users)
             
     def _write_users(self, users):
-        with open(self.fname, 'w') as f:
-            for u in users:
-                f.write("%s\n" % u)
-            f.close()
+        with open(self.fname, 'w') as fp:
+            json.dump(users, fp)
+#            for u in users:
+#                f.write("%s\n" % u)
+            
                 
     def remove_user(self, email_address):
         old_guy = email_address.strip()
         users = self.get_users()
         if old_guy in users:
-            users.remove(old_guy)
+            del users[old_guy]
             self._write_users(users)
 
 
@@ -171,16 +181,23 @@ def authorize(role = "user"):
         exit(0)     
         
 
+
+
 #########################################################################
     
-class AdminDb(unittest.TestCase):
+class AdminDbTest(unittest.TestCase):
 
     def test_addremove_users(self):
-        db = UserDatabase('toto.txt')
+        db_fname = common.get_test_path('userdbtest.txt')
+        db = UserDatabase(db_fname)
         users = db.get_users()
+        
+        # If test failed previously, the db may not be empty
         self.assert_(len(users) == 0, "not empty!")
-        db.add_user('toto@popo.com')
+        db.add_user('toto@popo.com', 'admin')
         self.assert_(len(db.get_users()) == 1, "not added!")
+        self.assert_(db.get_users().keys()[0] == 'toto@popo.com', "wrong guy!")
+        self.assert_(db.get_users()['toto@popo.com'] == 'admin', "wrong type o guy!")
         db.remove_user('not_a_real_user@popo.com')
         self.assert_(len(db.get_users()) == 1, "not not removed!")
         db.remove_user('toto@popo.com')
@@ -190,5 +207,5 @@ class AdminDb(unittest.TestCase):
          
         
 if __name__ == '__main__':
-    print('COMMON TESTS')
+    print('web TESTS')
     unittest.main()    

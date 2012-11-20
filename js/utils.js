@@ -8,6 +8,16 @@ function httpGet(theUrl)
     return xmlHttp.responseText;
 }
 
+function httpPut(theUrl)
+{
+    var xmlHttp = null;
+
+    xmlHttp = new XMLHttpRequest();
+    xmlHttp.open( "PUT", theUrl, false );
+    xmlHttp.send( null );
+    return xmlHttp.responseText;
+}
+
 function httpPost(theUrl)
 {
     var xmlHttp = null;

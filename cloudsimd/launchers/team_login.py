@@ -105,12 +105,12 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     
     file_content = SOURCES_LIST_PRECISE
     startup_script += 'echo "creating sources.list" >> /home/ubuntu/setup.log\n'
-    startup_script += inject_file_into_script("/etc/apt/sources.list",file_content)
+    startup_script += inject_file_into_script("/etc/apt/sources.list", file_content)
     startup_script += 'echo "package update" >> /home/ubuntu/setup.log\n'
     startup_script += 'apt-get update\n'
 
     startup_script += TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE
-    log(startup_script)
+    # log(startup_script)
  
 
     config = Machine_configuration()
@@ -157,23 +157,31 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     log("Waiting for setup to complete")
     machine.ssh_wait_for_ready()
     log("   setup to complete")
-    #checking that the file is there
+
     short_file_name = os.path.split(website_distribution)[1] 
     remote_fname = "/home/%s/%s" % (machine.config.username, short_file_name)
-    # machine.ssh_send_command("ls " + remote_fname )
-
     log("uploading '%s' to the server to '%s'" % (website_distribution, remote_fname) )
     out = machine.scp_send_file(website_distribution, remote_fname)
     log ("\t%s"% out)
     machine.ssh_wait_for_ready(remote_fname)
     
+    
     log("unzip web app")
     out = machine.ssh_send_command("unzip " + remote_fname )
     log ("\t%s"% out)
     
-    log("add user to cloudsim")
-    out =machine.ssh_send_command("echo %s > cloudsim/distfiles/users" % username)
+    
+    add_user_cmd = 'echo \'{"%s":"admin"}\' > cloudsim/distfiles/users' % username 
+    log("add user to cloudsim: %s" % add_user_cmd)
+    out =machine.ssh_send_command(add_user_cmd)
     log ("\t%s"% out)
+    
+    
+    remote_fname = "/home/%s/cloudsim/team_login_ssh.zip" % (machine.config.username)
+    log("uploading '%s' to the server to '%s'" % (fname_zip, remote_fname) )
+    out = machine.scp_send_file(fname_zip , remote_fname)
+    log ("\t%s"% out)
+    #out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)
     
     deploy_script_fname = "/home/%s/cloudsim/deploy.sh" % machine.config.username 
     log("running deploy script '%s' remotely" % deploy_script_fname)
@@ -211,8 +219,7 @@ class TestCases(unittest.TestCase):
         tags['user'] = username
         tags['origin'] = 'test_launch test case'
         launch(username, machine_name, tags, publisher, ec2, root_directory)
-#        
-        
+
 
 if __name__ == "__main__":
     unittest.main(testRunner = get_runner()) 

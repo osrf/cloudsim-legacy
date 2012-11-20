@@ -23,8 +23,8 @@ method = os.environ['REQUEST_METHOD']
 red = redis.Redis()
 
 
-access = None
-secret_access = None
+aws_access_key_id = None
+aws_secret_access_key = None
 
 
 try:
@@ -49,7 +49,7 @@ r['aws_secret_access_key'] = aws_secret_access_key
 print('Content-type: application/json')
 print("\n")
 
-if method == 'POST':
+if method == 'PUT':
     red.publish("cloudsim_admin", "new credentials")
     cloud = CloudCredentials(aws_access_key_id, aws_secret_access_key)
     if cloud.validate():
@@ -60,6 +60,10 @@ if method == 'POST':
     else:
         r['msg'] = "The credentials are not valid."
         
+
+if method == 'POST':
+    # not supported
+    pass
 
 if method == 'DELETE':
     # not supported

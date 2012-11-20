@@ -33,3 +33,4 @@ ROS_SH_FNAME = "ros.sh"
 MACHINES_DIR = '/var/www-cloudsim-auth/machines'
 CONFIGS_DIR = "/var/cloudsimd/launchers"
 TEAM_LOGIN_DISTRIBUTION= '/var/www-cloudsim-auth/cloudsim.zip'
+TEAM_LOGIN_SSH_FNAME= '/var/www/team_login_ssh.zip'

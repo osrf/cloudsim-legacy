@@ -8,12 +8,17 @@ import time
 
 import cgi
 import cgitb
+import json
 cgitb.enable()
 
 import common
-from common import  authorize, ConfigsDb, MachineDb
+from common import  authorize
 
 email = authorize()
+udb = common.UserDatabase()
+role = udb.get_role(email)
+
+user_info = json.dumps({'user':email, 'role':role})
 
 print("Content-Type: text/html")
 print("\n")
@@ -37,18 +42,27 @@ template = """
     <script src="/js/utils.js"></script>
 
     <script src="/js/machine_ui_view.js"></script>
-    <script src="/js/machine_launch.js"></script>
-    <script src="/js/cloud_credentials.js"></script>
-    <script src="/js/users_admin.js"></script>
-    
+    <script src="/js/machine_launch.js"></script>\
+    <div class="admin_only">
+        <script src="/js/cloud_credentials.js"></script>
+        <script src="/js/users_admin.js"></script>
+    </div>
     
     
     <script language="javascript" type="text/javascript" src="/js/latency_graph.js"></script>
     
     <script language="javascript">
-    
+
     function on_load_page()
     {
+"""
+template += "  var user_info = %s;" %  user_info
+
+template +="""     
+        if(user_info.role == "admin")
+        {
+            $('.admin_only').show();
+        }
         machine_view_on_load_page("machines_div");
         machine_launch_on_load_page("launcher_div");
         cloud_credentials_on_load_page("credentials_div");
@@ -56,13 +70,12 @@ template = """
         stream();
     }
     
-    
     function stream()
     {
         var div_name = "log_div";
         var stream_url = '/cloudsim/inside/cgi-bin/console_stream.py';
         
-        log_to_div(div_name, '<b>stream url:</b>' + stream_url);
+        console.log(stream_url);
         
         var es = new EventSource(stream_url);
         
@@ -88,7 +101,7 @@ template = """
  </head>
     <body onload = "on_load_page()">
     
-    <div id="admin_div">
+    <div class="admin_only" style="display:none;">
         <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; margin-top:20px; ">
         </div>
         <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; margin-top:20px; ">
@@ -110,11 +123,9 @@ template = """
     </div>
     
 
-<br>
+<br>  """
 
-"""
-
-footer = """
+template += """
 <hr>
     <div style="float:right;">
         <img src="/js/images/osrf.png" width="200px"/>
@@ -124,8 +135,10 @@ footer = """
 <div style="float:left;">
 
 Logged in as: %s <br>
-<a href="/cloudsim/inside/cgi-bin/admin.py">Admin</a><br>
-<a href="/cloudsim/inside/cgi-bin/logout.py">Logout</a>
+<a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
+<div class="admin_only" style="display:none;">
+    <a href="/cloudsim/inside/cgi-bin/admin_download">SSH key download</a><br>
+</div>
 </div>    
     
 </body>
@@ -133,5 +146,5 @@ Logged in as: %s <br>
 
 """ % email
 
-page = template + footer
+page = template 
 print(page )

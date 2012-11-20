@@ -43,7 +43,6 @@ if os.path.exists(filename):
 else:
     print ("Status: 404 Not Found")
     print ("Content-Type: text/html\n\n")
-    
     print ("<h1>404 File not found!</h1>" )
     
     

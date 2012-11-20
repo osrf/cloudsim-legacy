@@ -47,7 +47,9 @@ print('Content-type: application/json')
 print("\n")
 
 if method == 'POST':
-    db.add_user(user_name)
+    role = form.getfirst("role", None)
+    red.publish("cloudsim_log","role is %s" % role)
+    db.add_user(user_name, role)
     user['action'] = "added"
         
 if method == 'DELETE':
