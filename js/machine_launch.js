@@ -1,13 +1,14 @@
 
 var machine_configurations = null;
 
-function machine_launch_on_load_page(launch_div_name)
+function machine_launch_on_load_page(div_name)
 {
-
-	var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs.py");
+	console.log('machine_launch_on_load_page div=' + div_name);
+	
+    var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs.py");
     machine_configurations = eval( '(' + x + ')' );
     
-	var launch_div = document.getElementById(launch_div_name);
+	var launch_div = document.getElementById(div_name);
 	var str  = '<h2>Launch a new machine</h2>'; 
     str += '<select id="config_select" onchange="_launchSelectionChanged()";>'
 
@@ -19,10 +20,6 @@ function machine_launch_on_load_page(launch_div_name)
     str += '</select><button type="button" onclick="launch(_get_selectected_machine_config())">Launch</button><div id="config_div"></div>';
     
     launch_div.innerHTML = str;
-
-    var div_name = "log_div";
-    log_to_div(div_name, "on_load_page");
-    
 
     _launchSelectionChanged()
 }

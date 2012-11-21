@@ -42,11 +42,11 @@ template = """
     <script src="/js/utils.js"></script>
 
     <script src="/js/machine_ui_view.js"></script>
-    <script src="/js/machine_launch.js"></script>\
-    <div class="admin_only">
-        <script src="/js/cloud_credentials.js"></script>
-        <script src="/js/users_admin.js"></script>
-    </div>
+    <script src="/js/machine_launch.js"></script>
+    <script src="/js/constellations.js"></script>
+    <script src="/js/cloud_credentials.js"></script>
+    <script src="/js/users_admin.js"></script>
+
     
     
     <script language="javascript" type="text/javascript" src="/js/latency_graph.js"></script>
@@ -67,6 +67,7 @@ template +="""
         machine_launch_on_load_page("launcher_div");
         cloud_credentials_on_load_page("credentials_div");
         users_admin_on_load_page("users_div");
+        constellations_on_load_page("constellations_div");
         stream();
     }
     
@@ -74,7 +75,6 @@ template +="""
     {
         var div_name = "log_div";
         var stream_url = '/cloudsim/inside/cgi-bin/console_stream.py';
-        
         console.log(stream_url);
         
         var es = new EventSource(stream_url);
@@ -94,6 +94,22 @@ template +="""
         },false);
     }
     
+    var const_count = 0;
+    function constellation_add_click(div_name)
+    {
+        const_count += 1;
+        var constellation_name="const_"+const_count;
+        constellation_add(div_name, constellation_name);
+    }
+    
+    function constellation_remove_click(div_name)
+    {
+        var div = document.getElementById(div_name);
+        var last_id = div.lastElementChild.id;
+        // div.removeChild(last);
+        constellation_remove(div_name, last_id);
+        
+    }
     </script>
     
     
@@ -101,7 +117,7 @@ template +="""
  </head>
     <body onload = "on_load_page()">
     
-    <div class="admin_only" style="display:none;">
+    <div class="admin_only" style="display:none;" >
         <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; margin-top:20px; ">
         </div>
         <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; margin-top:20px; ">
@@ -114,13 +130,13 @@ template +="""
     <div id="machines_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
     </div>
     
+    <button onclick="constellation_add_click('constellations_div');">Add</button>
+    <button onclick="constellation_remove_click('constellations_div');">Remove</button>
     
-    
-    <div style="display:none;">
-    <h2 >Log</h2>
-    <button type="button" onclick="clear_div('log_div')">clear</button>
-    <div id="log_div"></div>
+    <div id="constellations_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
     </div>
+    
+
     
 
 <br>  """
