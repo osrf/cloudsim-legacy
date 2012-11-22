@@ -1,30 +1,44 @@
 #!/usr/bin/env python
 from __future__ import with_statement
 from __future__ import print_function
-import sys
-import os
-import Cookie
-import time
 
-import cgi
 import cgitb
 import json
+import os
 cgitb.enable()
 
 import common
 from common import  authorize
 
+
+
+def get_javascripts():
+    
+    current = os.path.split(__file__)[0]
+    script_dir = os.path.join(current,'..','..','js')
+    script_dir = os.path.abspath(script_dir)
+    files = os.listdir(script_dir)
+    scripts = []
+    s = '<script language="javascript" type="text/javascript" src="/js/'
+    for f in files:
+        if f.endswith('.js'):
+            scripts.append(s + f + '"></script>')
+    return '\n'.join(scripts)
+
 email = authorize()
 udb = common.UserDatabase()
 role = udb.get_role(email)
-
 user_info = json.dumps({'user':email, 'role':role})
+
+scripts = get_javascripts()
 
 print("Content-Type: text/html")
 print("\n")
 
 
 # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+
 
 template = """ 
 <!DOCTYPE html>
@@ -35,19 +49,7 @@ template = """
     <title>Cloudsim console</title>
     <link href="/js/layout.css" rel="stylesheet" type="text/css">
     
-    <script language="javascript" type="text/javascript" src="/js/graph/jquery.js"></script>
-    <script language="javascript" type="text/javascript" src="/js/graph/jquery.flot.js"></script>
-    
-    
-    <script src="/js/utils.js"></script>
-
-    <script src="/js/machine_ui_view.js"></script>
-    <script src="/js/machine_launch.js"></script>
-    <script src="/js/constellations.js"></script>
-    <script src="/js/cloud_credentials.js"></script>
-    <script src="/js/users_admin.js"></script>
-
-    
+""" + scripts +"""
     
     <script language="javascript" type="text/javascript" src="/js/latency_graph.js"></script>
     
@@ -55,10 +57,7 @@ template = """
 
     function on_load_page()
     {
-"""
-template += "  var user_info = %s;" %  user_info
-
-template +="""     
+        var user_info = """ + user_info + """;
         if(user_info.role == "admin")
         {
             $('.admin_only').show();
@@ -73,7 +72,7 @@ template +="""
     
     function stream()
     {
-        var div_name = "log_div";
+        
         var stream_url = '/cloudsim/inside/cgi-bin/console_stream.py';
         console.log(stream_url);
         
@@ -110,6 +109,18 @@ template +="""
         constellation_remove(div_name, last_id);
         
     }
+    
+    var machine_count = 0;
+    function machine_add_click(div_name)
+    {
+        machine_count +=1;
+        var div = document.getElementById('add_machine');
+        var constellation = div.querySelectorAll("input")[0].value;
+        
+        var machine_name = "mach_" + machine_count;
+        machine_add(div_name, constellation, machine_name);
+    }
+    
     </script>
     
     
@@ -118,13 +129,13 @@ template +="""
     <body onload = "on_load_page()">
     
     <div class="admin_only" style="display:none;" >
-        <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; margin-top:20px; ">
+        <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; ">
         </div>
-        <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; margin-top:20px; ">
+        <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; ">
         </div>
     </div>
     
-    <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; margin-top:20px; ">
+    <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  ">
     </div>
     
     <div id="machines_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
@@ -132,16 +143,17 @@ template +="""
     
     <button onclick="constellation_add_click('constellations_div');">Add</button>
     <button onclick="constellation_remove_click('constellations_div');">Remove</button>
+    <div id="add_machine">
+        Constellation<input type="text" name="constellation"/>
+        <button onclick="machine_add_click('constellations_div');">Add machine</button>
+        <button onclick="machine_remove_click('constellations_div');">Remove machine</button>
+    </div>
     
     <div id="constellations_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
     </div>
-    
 
-    
 
-<br>  """
-
-template += """
+<br>
 <hr>
     <div style="float:right;">
         <img src="/js/images/osrf.png" width="200px"/>
@@ -150,7 +162,7 @@ template += """
 
 <div style="float:left;">
 
-Logged in as: %s <br>
+Logged in as: """ + email + """<br>
 <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
 <div class="admin_only" style="display:none;">
     <a href="/cloudsim/inside/cgi-bin/admin_download">SSH key download</a><br>
@@ -160,7 +172,7 @@ Logged in as: %s <br>
 </body>
 </html>
 
-""" % email
+"""
 
 page = template 
 print(page )

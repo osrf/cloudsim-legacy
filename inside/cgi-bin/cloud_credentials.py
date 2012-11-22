@@ -15,50 +15,59 @@ from common import  authorize, UserDatabase, CloudCredentials
 cgitb.enable()
 
 
-email = authorize()
-form = cgi.FieldStorage()
+email = authorize("admin")
 method = os.environ['REQUEST_METHOD']
 
 
-red = redis.Redis()
+def parse_query_string(str):
+    x = str.replace('&secret_access_key=',' ')
+    x2 = x.replace('access_key', '')
+    x3 = urllib2.unquote(x2)
+    access, secret =  x3.split(' ')
+    log("access=%s secret=%s" %(access, secret) )
+    return access, secret
 
+aws_access_key_id, aws_secret_access_key = parse_query_string(os.environ['QUERY_STRING'])
 
-aws_access_key_id = None
-aws_secret_access_key = None
-
+def log(msg):
+    red = redis.Redis()
+    red.publish("cloudsim_log", "cloud_credentials.py > %s" % msg )
 
 try:
+    log("FORMIDABLE")
+    log("FORM keys: %s" % form.keys() )
     aws_access_key_id = form.getfirst("access_key")
     aws_secret_access_key = form.getfirst("secret_access_key")
+    
 except Exception, e:
-    # bug? cgi.FieldStorage() does not work for http delete
+    log(e)
     pass
 q_string= os.environ['QUERY_STRING']
-red.publish("cloudsim_log", "cloud_credentials.py query string %s" % (q_string) )
+log("query string %s" % (q_string) )
 
-red.publish("cloudsim_log", "cloud_credentials.py [%s] (%s) (%s)" % (method, aws_access_key_id, aws_secret_access_key ) )
-
-db = UserDatabase()
-
-r = {}
-r['success'] = False
-r['msg']="Undefined"
-r['aws_access_key_id'] = aws_access_key_id
-r['aws_secret_access_key'] = aws_secret_access_key
-
-print('Content-type: application/json')
-print("\n")
-
-if method == 'PUT':
-    red.publish("cloudsim_admin", "new credentials")
-    cloud = CloudCredentials(aws_access_key_id, aws_secret_access_key)
-    if cloud.validate():
-        cloud.save()
-        r['success'] = True
-        r['msg'] = 'The credentials have been changed.'
-        red.publish("cloudsim_log","yes")
-    else:
-        r['msg'] = "The credentials are not valid."
+#log("[%s] (%s) (%s)" % (method, aws_access_key_id, aws_secret_access_key ) )
+#
+#db = UserDatabase()
+#
+#r = {}
+#r['success'] = False
+#r['msg']="Undefined"
+#r['aws_access_key_id'] = aws_access_key_id
+#r['aws_secret_access_key'] = aws_secret_access_key
+#
+#print('Content-type: application/json')
+#print("\n")
+#
+#if method == 'PUT':
+#    log("new credentials")
+#    cloud = CloudCredentials(aws_access_key_id, aws_secret_access_key)
+#    if cloud.validate():
+#        cloud.save()
+#        r['success'] = True
+#        r['msg'] = 'The credentials have been changed.'
+#        
+#    else:
+#        r['msg'] = "The credentials are not valid."
         
 
 if method == 'POST':
@@ -74,4 +83,5 @@ if method == 'GET':
     pass
 
 jr = json.dumps(r)
+log(jr)
 print(jr)

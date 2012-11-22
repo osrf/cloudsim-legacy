@@ -12,7 +12,7 @@ sudo cp $DIR/distfiles/apache2.conf /etc/apache2/apache2.conf
 sudo cp -a $DIR/* /var/www/
 sudo rm -rf /var/www/distfiles
 sudo chown -R www-data:www-data /var/www
-sudo mkdir -p /var/www-cloudsim-auth
+sudo mkdir -p /var/www-cloudsim-auth/machines
 
 
 cd $DIR/..

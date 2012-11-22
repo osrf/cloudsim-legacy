@@ -9,12 +9,21 @@ function constellations_on_load_page(div_name)
     
 }
 
+function _get_const_style()
+{
+	var str = "";
+	str += ' style="width:100%; float:left; border-radius: 15px;';
+	str += ' padding:10px;' ;// ' margin:10px;'; //  
+	str += ' border: 1px solid black;"'; // margin-bottom:20px;
+	return str;
+}
 
 function constellation_add(div_name, constellation_name)
 {
 	var str = "<div id='" + constellation_name + "'";
-	str += ' style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; margin-bottom:20px;"'; 
+	str += _get_const_style();
 	str += "> ";
+	
 	str += constellation_name;
 	str += "</div> ";
 	

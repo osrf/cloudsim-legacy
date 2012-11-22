@@ -2,9 +2,8 @@
 var machine_configurations = null;
 
 function machine_launch_on_load_page(div_name)
-{
-	console.log('machine_launch_on_load_page div=' + div_name);
-	
+{   
+    console.log('machine_launch_on_load_page div=' + div_name);
     var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs.py");
     machine_configurations = eval( '(' + x + ')' );
     
@@ -37,11 +36,9 @@ function launch(machine_config)
     }
 
     var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=launch&machine_config=' + _get_selectected_machine_config();
-    log_to_div("log_div", url);
+    console.log(url);
     msg = httpGet(url);
-    //alert(msg);
-    log_to_div("log_div", "");
-    log_to_div("log_div", msg);
+    console.log(msg);
 }
 
 function _get_selectected_machine_index()
