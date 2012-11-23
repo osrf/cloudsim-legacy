@@ -31,7 +31,7 @@ function constellation_add(div_name, constellation_name)
     
     //str += '<div style="clear:left; width=100%">Terminate';
     //str += "</div> ";
-    str += "<button>Terminate</button>"	
+    str += "<button>Terminate</button>";
 	str += "<div id='machines' ";
 	str += 'style="clear:left; width=100%"';
 	str += '></div>';

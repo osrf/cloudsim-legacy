@@ -16,14 +16,16 @@ function machine_add(div_name, constellation_name, machine_name)
 	str +=    "<h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
 	str +=    machine_name + "</center></h3>";    
     str += '</div>' // top
-
-	
+    
+    str += "<button>Reboot</button>";
+    str += "<b>IP</b>xxx.xxx.xxx<br>"
+    
 	str += '<div id="widgets"';
 	
 	str += _get_mach_style();
-	str +='></div>';
+	str +='></div>'; // widgets
 	
-	str += "</div> ";
+	str += "</div> "; // machine
 	
 	var machines_div = constellation_get_machines_div(div_name, constellation_name);
 	machines_div.innerHTML += str;
