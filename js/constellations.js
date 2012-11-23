@@ -9,25 +9,42 @@ function constellations_on_load_page(div_name)
     
 }
 
-function _get_const_style()
-{
-	var str = "";
-	str += ' style="width:100%; float:left; border-radius: 15px;';
-	str += ' padding:10px;' ;// ' margin:10px;'; //  
-	str += ' border: 1px solid black;"'; // margin-bottom:20px;
-	return str;
-}
+
 
 function constellation_add(div_name, constellation_name)
-{
-	var str = "<div id='" + constellation_name + "'";
+{    
+    var str = "<div id='" + constellation_name + "'";
 	str += _get_const_style();
 	str += "> ";
 	
-	str += constellation_name;
-	str += "</div> ";
+	// str += "<h3>" + constellation_name + "</h3>";
 	
-    $("#"+div_name).append(str);
+	//str += "<div>"
+    str += '<div id="top" style="width = 100%; float:left; border-top-left-radius:10px; border-top-right-radius:15px; background-color:#44497a; width:100%; float:left;" ">' // background-color:#FFA500;
+	
+	
+	
+    str +=    "<h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
+    str +=    constellation_name + "</center></h3>";    
+
+    str += '</div>' // top
+    
+    //str += '<div style="clear:left; width=100%">Terminate';
+    //str += "</div> ";
+    str += "<button>Terminate</button>"	
+	str += "<div id='machines' ";
+	str += 'style="clear:left; width=100%"';
+	str += '></div>';
+	
+	//str += "</div>";
+    
+    
+	
+
+	
+	str += "</div> "; // constellation
+	
+	$("#"+div_name).append(str);
     
 }
 
@@ -36,6 +53,13 @@ function constellation_remove(div_name, constellation_name)
     // alert('remove from [' + div_name +']');
 	var div = document.getElementById(div_name);
     var constellation = div.querySelector("#"+constellation_name);
-    div.removeChild(constellation);
-    
+    div.removeChild(constellation);   
+}
+
+function constellation_get_machines_div(div_name, constellation_name)
+{
+	var div = document.getElementById(div_name);
+    var constellation = div.querySelector("#"+constellation_name);
+    var machines = constellation.querySelector("#machines" );
+    return machines;
 }

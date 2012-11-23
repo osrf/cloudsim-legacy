@@ -5,6 +5,7 @@ from __future__ import print_function
 import cgitb
 import json
 import os
+from common import get_javascripts
 cgitb.enable()
 
 import common
@@ -12,18 +13,7 @@ from common import  authorize
 
 
 
-def get_javascripts():
-    
-    current = os.path.split(__file__)[0]
-    script_dir = os.path.join(current,'..','..','js')
-    script_dir = os.path.abspath(script_dir)
-    files = os.listdir(script_dir)
-    scripts = []
-    s = '<script language="javascript" type="text/javascript" src="/js/'
-    for f in files:
-        if f.endswith('.js'):
-            scripts.append(s + f + '"></script>')
-    return '\n'.join(scripts)
+
 
 email = authorize()
 udb = common.UserDatabase()
@@ -93,33 +83,7 @@ template = """
         },false);
     }
     
-    var const_count = 0;
-    function constellation_add_click(div_name)
-    {
-        const_count += 1;
-        var constellation_name="const_"+const_count;
-        constellation_add(div_name, constellation_name);
-    }
-    
-    function constellation_remove_click(div_name)
-    {
-        var div = document.getElementById(div_name);
-        var last_id = div.lastElementChild.id;
-        // div.removeChild(last);
-        constellation_remove(div_name, last_id);
-        
-    }
-    
-    var machine_count = 0;
-    function machine_add_click(div_name)
-    {
-        machine_count +=1;
-        var div = document.getElementById('add_machine');
-        var constellation = div.querySelectorAll("input")[0].value;
-        
-        var machine_name = "mach_" + machine_count;
-        machine_add(div_name, constellation, machine_name);
-    }
+
     
     </script>
     
@@ -141,16 +105,7 @@ template = """
     <div id="machines_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
     </div>
     
-    <button onclick="constellation_add_click('constellations_div');">Add</button>
-    <button onclick="constellation_remove_click('constellations_div');">Remove</button>
-    <div id="add_machine">
-        Constellation<input type="text" name="constellation"/>
-        <button onclick="machine_add_click('constellations_div');">Add machine</button>
-        <button onclick="machine_remove_click('constellations_div');">Remove machine</button>
-    </div>
-    
-    <div id="constellations_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
-    </div>
+
 
 
 <br>

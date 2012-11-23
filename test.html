@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+
+<html>
+
+
+<head>
+
+<script language="javascript" type="text/javascript" src="/js/jquery-1.8.3.min.js"></script>
+<script language="javascript" type="text/javascript" src="/js/latency_graph.js"></script>
+<script language="javascript" type="text/javascript" src="/js/utils.js"></script>
+<script language="javascript" type="text/javascript" src="/js/machine.js"></script>
+<script language="javascript" type="text/javascript" src="/js/machine_ui_view.js"></script>
+<script language="javascript" type="text/javascript" src="/js/machine_launch.js"></script>
+<script language="javascript" type="text/javascript" src="/js/cloud_credentials.js"></script>
+<script language="javascript" type="text/javascript" src="/js/constellations.js"></script>
+<script language="javascript" type="text/javascript" src="/js/widget.js"></script>
+<script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
+<script language="javascript" type="text/javascript" src="/js/users_admin.js"></script>
+<script language="javascript" type="text/javascript" src="/js/machine_view.js"></script>
+
+<script>
+
+function _get_const_style()
+{
+    var str = "";
+    str += ' style="width:98%; float:left; border-radius: 15px;';
+    str += ' border: 1px solid black;'; 
+    str += 'margin:1%;';
+    //str += 'margin-bottom:20px;';
+    str +=  '"';
+    return str;
+}
+
+function _get_mach_style()
+{
+    var str = "";
+    str += ' style="';
+    str += ' width:98%; float:left; border-radius: 15px;';
+    str += ' border: 1px solid black;';
+    str += 'margin:1%;';
+    //str += 'margin-bottom:10px;';
+    
+    str += '"'; 
+    return str;
+} 
+
+function _get_widget_style()
+{
+    var str = ' style="width:100%; float:left;  border: 1px solid black;';
+//    str += 'margin:%;';
+//    str += 'margin-bottom:1px;';
+    str += ' "'; 
+    return str;
+}
+
+
+
+
+function on_load_page()
+{
+    console.log("load_page");
+}
+
+    var const_count = 0;
+    function constellation_add_click(div_name)
+    {
+        const_count += 1;
+        var constellation_name="const_"+const_count;
+        constellation_add(div_name, constellation_name);
+    }
+    
+
+    
+    var machine_count = 0;
+    function machine_add_click(div_name)
+    {
+        machine_count +=1;
+        var div = document.getElementById('add_machine');
+        var constellation = div.querySelectorAll("input")[0].value;
+        
+        var machine_name = "mach_" + machine_count;
+        machine_add(div_name, constellation, machine_name);
+    }
+    
+    function constellation_remove_click(div_name)
+    {
+        var div = document.getElementById('add_machine');
+        var const_name = div.querySelectorAll("input")[0].value;
+        constellation_remove(div_name, const_name);
+    }
+    
+    var widget_count = 0;
+    function widgets_add_click(div_name)
+    {
+        widget_count +=1;
+        var div = document.getElementById('add_machine');
+        var const_name = div.querySelectorAll("input")[0].value;
+        var mach_name = div.querySelectorAll("input")[1].value;
+        
+        var widget_name = "widget_"+widget_count;
+        widget_add(div_name, const_name, mach_name, widget_name);
+    }
+    
+</script>
+    
+    
+    
+ </head>
+<body onload = "on_load_page()">
+
+testo
+    <button onclick="constellation_add_click('constellations_div');">Add</button>
+    
+    <div id="add_machine">
+        Constellation<input type="text" name="constellation"/>
+        <button onclick="machine_add_click('constellations_div');">Add machine</button>
+        <button onclick="constellation_remove_click('constellations_div');">Remove constellation</button>
+        machine<input type="text" name="machine"/>
+        <button onclick="widgets_add_click('constellations_div');">Add widget</button>
+
+    </div>
+    
+    <div id="constellations_div" style="width:98%; margin:1%; float:left; border-radius: 15px; border: 1px solid black;">
+    </div>
+</body>
+
+</html>

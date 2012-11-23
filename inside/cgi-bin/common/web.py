@@ -190,6 +190,19 @@ def get_cloudsim_verion_txt():
                 return version 
     return "No version information available" 
 
+def get_javascripts():
+    
+    current = os.path.split(__file__)[0]
+    script_dir = os.path.join(current,'..','..','..','js')
+    script_dir = os.path.abspath(script_dir)
+    files = os.listdir(script_dir)
+    scripts = []
+    s = '<script language="javascript" type="text/javascript" src="/js/'
+    for f in files:
+        if f.endswith('.js'):
+            scripts.append(s + f + '"></script>')
+    return '\n'.join(scripts)
+
 #########################################################################
     
    
@@ -199,7 +212,10 @@ class CloudsimTest(unittest.TestCase):
         s = get_cloudsim_verion_txt()
         print(s)
         self.assert_(s != "No version information available", "versions")
-        
+    
+    def test_javascripts(self):
+        includes = get_javascripts()
+        print(includes)
 
 
 class AdminDbTest(unittest.TestCase):
