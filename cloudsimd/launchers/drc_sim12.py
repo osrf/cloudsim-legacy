@@ -6,6 +6,7 @@ import uuid
 import unittest
 import zipfile
 import time
+import redis
 
 from common import StdoutPublisher, INSTALL_VPN, Machine,\
     clean_local_ssh_key_entry, MachineDb, get_test_runner
@@ -17,6 +18,11 @@ from common.startup_script_builder import  ROS_SETUP_STARTUP_SCRIPT,\
     create_xorg_config_file, SOURCES_LIST_PRECISE, XGL_STARTUP_BEFORE,\
     XGL_STARTUP_AFTER
 
+redis_client = redis.Redis()
+
+def log(msg):
+    print(msg)
+    redis_client.publish("launchers", msg)
 
 DRC_SETUP = """
 
@@ -77,7 +83,7 @@ set -e
     return startup_script
     
 
-def launch(username, machine_name, tags, publisher, credentials_ec2, root_directory):
+def launch(username, constellation_name, tags, publisher, credentials_ec2, root_directory):
 
     startup_script = get_launch_script()
     
@@ -90,7 +96,8 @@ def launch(username, machine_name, tags, publisher, credentials_ec2, root_direct
                          startup_script = startup_script,
                          ip_retries=100, 
                          ssh_retries=1000)
-
+    
+    machine_name = "simulator"
     machine = Machine(machine_name,
                      config,
                      publisher.event,
@@ -101,9 +108,8 @@ def launch(username, machine_name, tags, publisher, credentials_ec2, root_direct
     
     machine.create_ssh_connect_script()
     clean_local_ssh_key_entry(machine.config.ip )
-    print("")
-    print("")
-    print("Waiting for ssh")
+
+    log("Waiting for ssh")
     machine.ssh_wait_for_ready("/home/ubuntu")
     
     
@@ -127,7 +133,7 @@ def launch(username, machine_name, tags, publisher, credentials_ec2, root_direct
     
     fname_zip = os.path.join(machine.config.cfg_dir, "%s.zip" % machine.config.uid)
     
-    print("Downloading key")
+    log("Downloading key")
     remote_fname = "/etc/openvpn/static.key"
     machine.ssh_wait_for_ready(remote_fname)
     vpnkey_fname = os.path.join(machine.config.cfg_dir, "openvpn.key")
@@ -139,14 +145,14 @@ def launch(username, machine_name, tags, publisher, credentials_ec2, root_direct
                      vpnkey_fname,
                      fname_ros,]
     
-    print("creating %s" % fname_zip)
+    log("creating %s" % fname_zip)
     with zipfile.ZipFile(fname_zip, 'w') as fzip:
         for fname in files_to_zip:
             short_fname = os.path.split(fname)[1]
             zip_name = os.path.join(machine.config.uid, short_fname)
             fzip.write(fname, zip_name)
     
-    print("Waiting for setup to complete")
+    log("Waiting for setup to complete")
     machine.ssh_wait_for_ready()
 
 class TestCases(unittest.TestCase):

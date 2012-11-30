@@ -6,132 +6,139 @@ import os
 import redis
 from json import dumps
 
-from common import Machine
+from common import Machine, MachineDb
 import commands
 import shutil
+from common.machine import list_all_machines_accross_domains
 
+red = redis.Redis()
 
+def log(msg):
+    red.publish('cloudsim_monitor', msg)
 
-def monitor_cloud(red, domain, machine):
+def monitor_cloud(domain, constellation, machine):
+    log('cloud: %s/%s/%s' % (domain, constellation['name'], machine.config.uid) )
     status = {}
     status['machine'] = machine.config.uid
-    status['type'] = 'test'
+    status['constellation_name'] = constellation['name']
+    status['constellation_config'] = constellation['config']
+    status['type'] = 'cloud'
     
     cloud = machine.get_aws_status()
     aws_status = {}
-    
     aws_status.update(status)
-    aws_status['success'] = cloud['status']
     aws_status.update(cloud)
-    aws_status['status'] = "cloud"
-
+    
     str = dumps(aws_status)
     red.publish(domain, str)
     r = True
-    if cloud['status'] == "terminated":
+    if cloud['state'] == "terminated":
         r = False
-    if cloud['status'] == "does_not_exist":
+    if cloud['state'] == "does_not_exist":
         r = False
 
     return r
 
     
-def monitor_latency(red, domain, machine):
+def monitor_latency(domain, constellation, machine):
     status = {}
     status['machine'] = machine.config.uid
-    status['type'] = 'test'
+    status['constellation_name'] = constellation['name']
+    status['constellation_config'] = constellation['config']
+    status['domain'] = domain
+    status['type'] = 'latency'
 
     ping_status = {}
-    ping_status['status'] = "latency"
+    
     ping_status.update(status)
     ping_result = machine.ping()
     if ping_result:
         ping_status.update(ping_result)
+        ping_status['result'] ='success'
     else:
-        ping_status['fail'] = "host unreacheable" 
+        ping_status['result'] ='failure'
+
     str = dumps(ping_status)
     red.publish(domain, str)
+    return ping_status['result'] =='success'
 
-def monitor_xgl(red, domain, machine):
+def monitor_xgl(domain, constellation, machine):
     x = machine.get_X_status()
     
     status = {}
     status['machine'] = machine.config.uid
-    status['type'] = 'test'
-
+    status['constellation_name'] = constellation['name']
+    status['constellation_config'] = constellation['config']
+    status['type'] = 'graphics'
     x_status = {}
     x_status.update(status)
-    x_status['status'] = "graphics"
-    x_status['success'] = x
+    if x:
+        x_status['result'] = 'success'
+    else:
+        x_status['result'] = 'failure'
     str = dumps(x_status)
     red.publish(domain, str)
     return x
 
-def monitor_simulator(red, domain, machine):
+def monitor_simulator(domain, constellation, machine):
     x = machine.get_gazebo_status()
     
     status = {}
     status['machine'] = machine.config.uid
-    status['type'] = 'test'
+    status['constellation_name'] = constellation['name']
+    status['constellation_config'] = constellation['config']
+    status['type'] = 'simulator'
         
     g_status = {}
     g_status.update(status)
-    g_status['status'] = "simulator"
-    g_status['success'] = x
+
+    if x:
+        g_status['result'] = 'success'
+    else:
+        g_status['result'] = 'failure'
     str = dumps(g_status)
     red.publish(domain, str)
     return x
 
+def remove_constellation(root_directory, domain, constellation):
+    constellation_fname = os.path.join(root_directory, domain, constellation)
+    rip_dir = os.path.join( root_directory,"..",  "rip") 
+    if not os.path.exists(rip_dir):
+        os.makedirs(rip_dir)    
+    shutil.move(constellation_fname, rip_dir)
 
-
-
-def get_machine_instance_paths_and_domains(root_directory):
-    ret =[]
-    domains = os.listdir(root_directory)
-    for domain in domains:
-        path = os.path.join(root_directory,domain)
-        machines = os.listdir(path)
-        for machine_name in machines:
-            machine_fname = os.path.join(path, machine_name, "instance.json")
-            if os.path.exists(machine_fname):
-                ret.append( (machine_fname, domain) )
-    return ret
-
-def remove_machine_data(root_directory, machine_data_fname):
+def remove_machine_data(root_directory, domain, constellation, machine):
+    log("Removing machine %s/%s/%s/%s" % (root_directory, domain, constellation, machine))
+    machine_data_fname = machine.config.instance_fname
     machine_data_dir = os.path.split(machine_data_fname)[0]
     rip_dir = os.path.join( root_directory,"..",  "rip") 
     if not os.path.exists(rip_dir):
         os.makedirs(rip_dir)    
     shutil.move(machine_data_dir, rip_dir)
-        
+    
 def latency_sweep(root_directory):
-    red = redis.Redis()
-    for machine_data_fname, domain in get_machine_instance_paths_and_domains(root_directory):
-        machine = Machine.from_file(machine_data_fname)
-        monitor_latency(red, domain, machine)
-        
+    for domain, constellation, machine in list_all_machines_accross_domains(root_directory):
+        monitor_latency( domain, constellation, machine)
 
 def sweep_monitor (root_directory):
-    red = redis.Redis()
-    for machine_data_fname, domain in get_machine_instance_paths_and_domains(root_directory):
-        machine = Machine.from_file(machine_data_fname)
-        alive = monitor_cloud(red, domain, machine)
+    log('sweep "%s"' % root_directory)
+    for domain, constellation, machine in list_all_machines_accross_domains(root_directory):
+        #log('sweep: %s/%s/%s' % (domain, constellation, machine.config.uid) )
+        alive = monitor_cloud( domain, constellation, machine)
         if alive:
-            #monitor_latency(red, domain, machine)
-            x = monitor_xgl(red, domain, machine)
+            x = monitor_xgl(domain, constellation, machine)
             if x:
-                monitor_simulator(red, domain, machine)
+                monitor_simulator(domain, constellation, machine)
         else:
-            remove_machine_data(root_directory, machine_data_fname)
-
+            remove_machine_data(root_directory, domain, constellation, machine)
 
 class TestCases(unittest.TestCase):
     
-    def test_paths(self):
-        root_directory = "launch_test"
-        for machine_data, domain in get_machine_instance_paths_and_domains(root_directory):
-            self.assert_(os.path.exists(machine_data), '%s not a real instance data file' % machine_data)
-            print(domain, ": machine: ", machine_data)
+    #def test_paths(self):
+    #   root_directory = "launch_test"
+        #for machine_data, constellation, domain in list_all_machines_accross_domains(root_directory):
+        #    self.assert_(os.path.exists(machine_data), '%s not a real instance data file' % machine_data)
+        #    print(domain, ": machine: ", machine_data)
     
     def test_monitor(self):
         root_directory = "launch_test"

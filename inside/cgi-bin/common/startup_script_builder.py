@@ -327,4 +327,5 @@ class ScriptTests(unittest.TestCase):
         
 
 if __name__ == "__main__":
+    print("STARTUP SCRIPT TESTS")
     unittest.main(testRunner = get_test_runner())          

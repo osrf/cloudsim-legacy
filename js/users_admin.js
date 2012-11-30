@@ -34,23 +34,17 @@ function users_admin_on_load_page(users_div_name)
     
     users_div.innerHTML = str;
 
-    $.subscribe("/users/modify", function(event){
-    	console.log("users/modify");
-    	users_admin_on_load_page(users_div_name);
+    $.subscribe("/cloudsim", function(event, data){
+    	if(data.type == 'admin')
+    	{
+    		console.log("Admin action: " + data.action);
+    		users_admin_on_load_page(users_div_name);
+    	}
+        
     });
-   
+    
 }
 
-function users_admin_event(str_data)
-{
-
-	var data = eval( '(' + str_data + ')' );
-	if(data.type == 'admin')
-	{
-		console.log(str_data);
-		$.publish("/users/modify");
-	}
-}
 
 function _add_click(users_div_name)
 {

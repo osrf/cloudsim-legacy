@@ -37,15 +37,10 @@ sudo chmod 700 /var/www-cloudsim-auth
 sudo cp $DIR/cloudsimd/cloudsimd.conf /etc/init
 sudo cp $DIR/cloudsimd/cloudsim_monitord.conf /etc/init
 
+sudo rm -rf /var/cloudsimd
 sudo mkdir -p /var/cloudsimd
 sudo cp -a $DIR/cloudsimd/* /var/cloudsimd
 sudo cp -a $DIR/inside/cgi-bin/common /var/cloudsimd
-
-sudo initctl reload-configuration
-sudo stop cloudsimd
-sudo start cloudsimd
-
-
 
 sudo initctl reload-configuration
 sudo stop cloudsimd

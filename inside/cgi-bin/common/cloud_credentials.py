@@ -52,7 +52,14 @@ class Testotronics(unittest.TestCase):
         self.assert_(valid == False, "valid?")
         cloud.save()
         self.assert_(os.path.exists('toto.cfg'), 'no cred!')
-         
+    
+    def test_credentials2(self):
+        cloud = CloudCredentials('xxx', 'xxxx'
+                                 , 'us-east-1', 'ec2.amazonaws.com', 'toto.cfg' )
+        valid = cloud.validate()
+        self.assert_(valid, "valid?")
+        cloud.save()
+        self.assert_(os.path.exists('toto.cfg'), 'no cred!') 
         
 if __name__ == '__main__':
     print('cloudy TESTS')

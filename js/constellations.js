@@ -6,7 +6,13 @@ function constellations_on_load_page(div_name)
     
     $("#"+div_name).append("<h2>Constellations</h2>");
     
-    
+    $.subscribe("/cloudsim", function(event, data){
+    	if(data.constellation_name)
+    	{
+    		console.log("CONS " + data.constellation_name);
+    	}
+        
+    });
 }
 
 
@@ -62,4 +68,16 @@ function constellation_get_machines_div(div_name, constellation_name)
     var constellation = div.querySelector("#"+constellation_name);
     var machines = constellation.querySelector("#machines" );
     return machines;
+}
+
+
+function _get_const_style()
+{
+    var str = "";
+    str += ' style="width:98%; float:left; border-radius: 15px;';
+    str += ' border: 1px solid black;'; 
+    str += 'margin:1%;';
+    //str += 'margin-bottom:20px;';
+    str +=  '"';
+    return str;
 }

@@ -8,7 +8,7 @@ function machine_launch_on_load_page(div_name)
     machine_configurations = eval( '(' + x + ')' );
     
 	var launch_div = document.getElementById(div_name);
-	var str  = '<h2>Launch a new machine</h2>'; 
+	var str  = '<h2>Launch a machine constellation</h2>'; 
     str += '<select id="config_select" onchange="_launchSelectionChanged()";>'
 
     for(var configuration in machine_configurations)
@@ -19,7 +19,6 @@ function machine_launch_on_load_page(div_name)
     str += '</select><button type="button" onclick="launch(_get_selectected_machine_config())">Launch</button><div id="config_div"></div>';
     
     launch_div.innerHTML = str;
-
     _launchSelectionChanged()
 }
 
@@ -35,9 +34,11 @@ function launch(machine_config)
         return;
     }
 
-    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=launch&machine_config=' + _get_selectected_machine_config();
+    // var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=launch&machine_config=' + _get_selectected_machine_config();
+    var url = '/cloudsim/inside/cgi-bin/constellation?configuration=' + _get_selectected_machine_config();
+    
     console.log(url);
-    msg = httpGet(url);
+    msg = httpPost(url);
     console.log(msg);
 }
 

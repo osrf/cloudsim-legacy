@@ -53,10 +53,10 @@ function _terminate_machine(machine_name)
         return;
     }
     var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=terminate&machine=' + machine_name;
-    log_to_div("log_div", url);
+    console.log(url);
     msg = httpGet(url);
-    log_to_div("log_div", "");
-    log_to_div("log_div", msg);
+    
+    console.log( msg);
 }
 
 function _start_simulator(machine_name)
@@ -242,7 +242,7 @@ function _add_machine_div(machine_list_div, machine_name)
     
     machine_list_div.innerHTML += str;
 
-        
+    
     _status_color(cloud_stat_div_name, "gray");
     _status_color(gfx_stat_div_name, "gray");
     _status_color(sim_stat_div_name, "gray");
@@ -321,7 +321,7 @@ function _update_machine_view(machine_div, data)
 
    var machine_name = data.machine;
    
-   if(data.status == "latency")
+   if(data.type   == "latency")
    {
         var t = Date.now() * 0.001;
         var latency_plot_data = latency_data[machine_name]['plot_data'];
@@ -334,14 +334,14 @@ function _update_machine_view(machine_div, data)
         
    }
    
-   if(data.status == "cloud")
+   if(data.type == "cloud")
    {
 	   var status_div_name = _machine_name_to_cloud_div_name(machine_name);
-	   if(data.success == "running")
+	   if(data.state == "running")
 	   {
 		   _status_color(status_div_name, "blue");
 	   } 
-	   else if (data.success == "shutting-down") 
+	   else if (data.state == "shutting-down") 
 	   {
 		   _status_color(status_div_name, "orange");
 	   } 
@@ -374,7 +374,7 @@ function _update_machine_view(machine_div, data)
 	   div.innerHTML = str;
    }
 
-   if(data.status == "graphics")
+   if(data.type == "graphics")
    {
         var status_div_name = _machine_name_to_gfx_div_name(machine_name);
         if(data.success)
@@ -387,7 +387,7 @@ function _update_machine_view(machine_div, data)
         }
    }
 
-   if(data.status == "simulator")
+   if(data.type == "simulator")
    {
 	   var status_div_name = _machine_name_to_sim_div_name(machine_name);
         if(data.success)
@@ -395,13 +395,12 @@ function _update_machine_view(machine_div, data)
             _status_color(status_div_name, "blue");
         }   
         else
-        {      
+        {   
             _status_color(status_div_name, "red");         
         }
 
         var sim_div = machine_div.childNodes["simulator"];
         var data_div = sim_div.childNodes["data"];
-
    
         var str = "<h3>simulator: "+ data.success + "</h3>"; 
         for (var key in data )
@@ -414,7 +413,7 @@ function _update_machine_view(machine_div, data)
    
    if(data.state)
    {
-        
+    
         var status_div_name = _machine_name_to_cloud_div_name(machine_name);
         if(data.type == "retry")
         {   

@@ -20,7 +20,10 @@ import time
 
 
     
-def launch(username, machine_name, tags, publisher, credentials_ec2, root_directory):
+def launch(username, 
+           constellation_name, 
+           tags, publisher, credentials_ec2, 
+           constellation_directory):
 
     startup_script = """#!/bin/bash
 # Exit on error
@@ -45,13 +48,16 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
                          startup_script = startup_script,
                          ip_retries=100, 
                          ssh_retries=200)
-
+    
+    machine_name = "micro"
+    
+    
     machine = Machine(machine_name,
                      config,
                      publisher.event,
                      tags,
                      credentials_ec2,
-                     root_directory)
+                     constellation_directory)
                      
     
     machine.create_ssh_connect_script()

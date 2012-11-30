@@ -82,19 +82,11 @@ def log(msg):
     
 
     
-def launch(username, machine_name, tags, publisher, credentials_ec2, root_directory):
-
-#    log("create distribution")    
-#    path = os.path.split(__file__)[0]
-#    cloudsim_path = path = os.path.join(path, '..','..')
-#    cmd_path = os.path.join(cloudsim_path,'distfiles', 'make_zip.bash')
-#    website_distribution =os.path.abspath( os.path.join(cloudsim_path,'..', 'cloudsim.zip') ) # outside cloudsim
-#    o = commands.getoutput(cmd_path)
-#    log(o)
-    
+def launch(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory):
+    log("team_login launch in domain '%s'" % domain_directory)
+    machine_name = "cloudsim_" +constellation_name
+    constellation_directory = os.path.join(domain_directory, constellation_name)
     website_distribution = TEAM_LOGIN_DISTRIBUTION
-    
-     
     startup_script = """#!/bin/bash
 # Exit on error
 set -e
@@ -112,7 +104,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     startup_script += TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE
     # log(startup_script)
  
-
+    
     config = Machine_configuration()
     config.initialize(   image_id ="ami-137bcf7a", 
                          # instance_type = 'm1.small',  
@@ -129,7 +121,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
                      publisher.event,
                      tags,
                      credentials_ec2,
-                     root_directory)
+                     constellation_directory)
                      
     
     machine.create_ssh_connect_script()
@@ -151,7 +143,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     
     clean_local_ssh_key_entry(machine.config.ip )
 
-    log("Waiting for /home/ubuntu")
+    log("Waiting for ssh connection")
     machine.ssh_wait_for_ready("/home/ubuntu")
     
     log("Waiting for setup to complete")
@@ -177,7 +169,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     log ("\t%s"% out)
     
     log("Uploading the key file to the server")
-    remote_fname = "/home/%s/cloudsim/team_login_ssh.zip" % (machine.config.username)
+    remote_fname = "/home/%s/cloudsim/cloudsim_ssh.zip" % (machine.config.username)
     log("uploading '%s' to the server to '%s'" % (fname_zip, remote_fname) )
     out = machine.scp_send_file(fname_zip , remote_fname)
     log ("\t%s"% out)
@@ -212,7 +204,7 @@ class TestCases(unittest.TestCase):
         ec2 = "/home/hugo/code/boto.ini"
         root_directory = '../launch_test'
         uid = uuid.uuid1()
-        machine_name = "team_login_" + str( uid )
+        machine_name = "cloudsim_" + str( uid )
         tags = {}
         tags['type'] = 'TeamLogin'
         tags['machine'] = machine_name

@@ -30,7 +30,7 @@ scripts = """
 <script language="javascript" type="text/javascript" src="/js/simulator.js"></script>
 <script language="javascript" type="text/javascript" src="/js/machine.js"></script>
 <script language="javascript" type="text/javascript" src="/js/status_img.js"></script>
-<script language="javascript" type="text/javascript" src="/js/machine_ui_view.js"></script>
+
 <script language="javascript" type="text/javascript" src="/js/machine_launch.js"></script>
 <script language="javascript" type="text/javascript" src="/js/cloud_credentials.js"></script>
 <script language="javascript" type="text/javascript" src="/js/constellations.js"></script>
@@ -71,13 +71,15 @@ template = """
         {
             $('.admin_only').show();
         }
-        machine_view_on_load_page("machines_div");
+        
         machine_launch_on_load_page("launcher_div");
         cloud_credentials_on_load_page("credentials_div");
         users_admin_on_load_page("users_div");
         constellations_on_load_page("constellations_div");
         stream();
     }
+    
+    var log_events = true;
     
     function stream()
     {
@@ -87,18 +89,19 @@ template = """
         
         var es = new EventSource(stream_url);
         
+        
         es.addEventListener("cloudsim", function(event)
         {
              var str_data = event.data;
-             
-             
-             console.log(str_data);
+             if(log_events)
+                 console.log(str_data);
              var data = eval( '(' + str_data + ')' );
              $.publish("/cloudsim", data);
              
-             machine_view_status_event("machines_div", str_data );
          }, false);
          
+         
+
          
         es.addEventListener("done", function(event)
         {
@@ -107,7 +110,7 @@ template = """
         },false);
     }
     
-
+    
     
     </script>
     

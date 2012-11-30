@@ -33,6 +33,15 @@ class UserDatabase (object):
         role = self.get_users()[email]
         return role
     
+    def is_admin(self, email):
+        admin = self.get_role(email) == "admin"
+        return admin
+    
+    def get_domain(self, email):
+        d = email.split('@')[1]
+        return d
+    
+    
     def add_user(self, email_address, role):
         users = self.get_users()
         new_guy = email_address.strip()
@@ -190,7 +199,7 @@ def get_cloudsim_verion_txt():
                 return version 
     return "No version information available" 
 
-def get_javascripts():
+def get_javascripts(exclude_list=[]):
     
     current = os.path.split(__file__)[0]
     script_dir = os.path.join(current,'..','..','..','js')
@@ -200,7 +209,8 @@ def get_javascripts():
     s = '<script language="javascript" type="text/javascript" src="/js/'
     for f in files:
         if f.endswith('.js'):
-            scripts.append(s + f + '"></script>')
+            if f not in exclude_list:
+                scripts.append(s + f + '"></script>')
     return '\n'.join(scripts)
 
 #########################################################################

@@ -13,14 +13,14 @@ import cgitb
 cgitb.enable()
 
 
-from common import ConfigsDb, authorize
+from common import authorize
 
 email = authorize()
 
 
 
 form = cgi.FieldStorage()
-  
+
 
 d ={}
 d['command'] = form.getfirst('command')

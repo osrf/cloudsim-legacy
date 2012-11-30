@@ -10,7 +10,7 @@ import time
 import subprocess
 import json
 import shutil
-import common
+#import common
  
 import boto
 
@@ -71,8 +71,18 @@ class StdoutPublisher(object):
 
         sys.stdout.flush()
         
-       
         
+        
+
+class Constellation(object):
+    def __init__(self, type, name, root_directory):
+        pass
+    
+    def get_path(self):
+        pass
+    
+    
+
 class Machine (object):
     
     def __init__(   self,
@@ -93,6 +103,7 @@ class Machine (object):
             self.config.credentials_ec2 = credentials_ec2
             self.ec2 = create_ec2_proxy(self.config.credentials_ec2 )
             self.config.tags = tags
+            self.config.tags['machine_name'] = unique_name
             self.config.uid = unique_name
             self.config.root_directory = root_directory
             self.config.cfg_dir=os.path.join(self.config.root_directory, self.config.uid)
@@ -126,10 +137,17 @@ class Machine (object):
 
     def _event(self, data_dict):
         if self.event:
-            data_dict['machine'] = self.config.uid
+            data_dict.update(self.config.tags)
             self.event(data_dict)
         
-            
+    
+    def _get_instance(self, reservation_id):
+        for r in self.ec2.get_all_instances():
+            if r.id == reservation_id and r.instances[0].public_dns_name:
+                inst = r.instances[0]
+                return inst
+        return None
+    
     """
     Called by the ctor when launch is True
     """
@@ -143,13 +161,13 @@ class Machine (object):
             res = self.ec2.run_instances(   image_id=self.config.image_id, 
                                             min_count =1,
                                             max_count =1,
-                                            key_name=self.config.kp_name, 
-                                            instance_type=self.config.instance_type, 
-                                            security_groups = self.config.security_groups, 
+                                            key_name=self.config.kp_name,
+                                            instance_type=self.config.instance_type,
+                                            security_groups = self.config.security_groups,
                                             user_data=self.config.startup_script)
             #self.config.print_cfg()
             self.config.reservation = res.id
-            self._event({"type":"check", "state":"reserve", "reservation_id":'%s'% self.config.reservation } )
+            self._event({"type":"launch", "state":"reserve", "reservation_id":'%s'% self.config.reservation } )
             
             self._event({"type": "action", "state":"waiting_for_ip"})
             retries = self.config.ip_retries
@@ -203,9 +221,6 @@ class Machine (object):
         
         self.config.kp_name = kp_name
         self.config.kp_fname = os.path.join(self.config.cfg_dir, self.config.kp_name + '.pem')
-        
-        
-
 
     def ssh_send_command(self, cmd, extra_ssh_args=[]):
         ssh_cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', self.config.kp_fname] + extra_ssh_args + ['%s@%s'%(self.config.username, self.config.hostname)]
@@ -318,14 +333,15 @@ class Machine (object):
         data['hostname'] = self.config.hostname
         data['ip'] = self.config.ip
         data['aws_id'] = self.config.aws_id
-            
+        data['result'] = 'success'
         for r in self.ec2.get_all_instances():
             for i in r.instances:
                 if i.id == self.config.aws_id:
-                    data[ 'status'] = str(i.state)
+                    data[ 'state'] = str(i.state)
                     self._event(data) 
                     return data
-        data['status'] = 'does_not_exist'
+        data['state'] = 'does_not_exist'
+        data['result'] = 'failure'
         return data
     
 
@@ -353,6 +369,24 @@ class Machine (object):
 #            return False, str(e)
 #        return True, ''
 
+class DomainDb(object):
+    
+    def __init__(self,  root_dir = MACHINES_DIR):
+        print("")
+        self.root_dir = root_dir
+    
+    def get_domains(self):
+        domains = []
+        if os.path.exists(self.root_dir):
+            for domain in os.listdir(self.root_dir):
+                domains.append(domain)
+
+        return domains
+    
+    
+        
+                
+
 class MachineDb(object):
     
     def __init__(self, email, machine_dir = MACHINES_DIR):
@@ -364,43 +398,71 @@ class MachineDb(object):
     def get_machines(self):
         machines = {}
         if os.path.exists(self.root_dir):
-            for short_name in os.listdir(self.root_dir):
-                machine = self.get_machine(short_name)
-                machines[short_name] = machine 
+            for constellation in os.listdir(self.root_dir):
+                
+                constellation_path = os.path.join(self.root_dir, constellation)
+                constellation_info = self.get_constellation(constellation)
+                constellation_info['machines'] = {}
+                machine_list = os.listdir(constellation_path)
+                machine_list.remove('constellation.json')
+                machines[constellation] = constellation_info
+                for machine_name in machine_list:
+                    machine = self.get_machine(constellation, machine_name)
+                    if machine:
+                        machines[constellation]['machines'][machine_name] = machine 
         return machines
     
-    def get_machine(self, name):
-        fname =  os.path.join(self.root_dir, name, 'instance.json')
-        machine = Machine.from_file(fname)
-        return machine
+    def get_constellation(self, constellation):
+        fname =  os.path.join(self.root_dir, constellation, CONSTELLATION_JSONF_NAME)
+        constellation_info = None
+        with open(fname,'r') as fp:
+            str = fp.read()
+            constellation_info = json.loads(str)
+        return constellation_info
+        
+        
+    def get_machine(self, constellation, machine_name):
+        fname =  os.path.join(self.root_dir, constellation, machine_name, 'instance.json')
+        if os.path.exists(fname):
+            machine = Machine.from_file(fname)
+            return machine
+        return None
     
     def get_machines_as_json(self):
-        machines = self.get_machines()
-        
-        json_machines ={}
-        for name, machine in machines.iteritems():
-            m = {}
-            m.update(machine.config.__dict__)
-            if (m.has_key("startup_script")):
-                m.pop("startup_script")
-            json_machines[name] = m
-            
-        str = json.dumps(json_machines)
+        d = self.get_machines_as_dict()
+        str = json.dumps(d)
         return str
     
-#        l = []
-#        l.append("{")
-#        
+    def get_machines_as_dict(self):
+        jmachines = {}
+        machines = self.get_machines()
+        for constellation_name, constellation_info in machines.iteritems():
+            
+            jmachines[constellation_name] = {}
+            jmachines[constellation_name]['config'] = constellation_info['config']
+            c_machines = constellation_info['machines']
+            
+            jmachines[constellation_name] = constellation_info
+            for machine_name, machine  in c_machines.iteritems():
+                jmachine = {}
+                jmachine.update(machine.config.__dict__)
+                del(jmachine['startup_script'])
+                jmachines[constellation_name]['machines'][machine_name] = jmachine
+                
+        return jmachines
+    
+        
+#        json_machines ={}
 #        for name, machine in machines.iteritems():
-#            l.append( '"%s":' % name)
-#            # str += machine.config.as_json()
-#            l.append('{"hostname":"%s", "ip":"%s"}' % (machine.config.hostname, machine.config.ip))
-#            l.append(",")
-#        l.append("}")
-#        str = "".join(l)
-
-        
-        
+#            m = {}
+#            m.update(machine.config.__dict__)
+#            if (m.has_key("startup_script")):
+#                m.pop("startup_script")
+#            json_machines[name] = m
+#            
+#        str = json.dumps(json_machines)
+        return str
+    
            
 
     def get_launch_log_fname(self, machine_name):
@@ -410,6 +472,23 @@ class MachineDb(object):
     def get_zip_fname(self, machine_name):
         fname = os.path.join(self.root_dir, machine_name, machine_name + ".zip")
         return fname
+
+
+def list_all_machines_accross_domains(root_dir = MACHINES_DIR):
+    
+    ddb = DomainDb(root_dir)
+    domains = ddb.get_domains()
+    
+    all_machines = []
+    for domain in domains:
+        email = "user@" + domain
+        mdb = MachineDb(email, root_dir)
+        machines = mdb.get_machines()
+        
+        for constellation_name, constellation in machines.iteritems():
+            for machine_name, machine in constellation['machines'].iteritems():
+                all_machines.append( (domain, constellation, machine)  )
+    return all_machines
 
 #########################################################################
 
@@ -434,10 +513,10 @@ class PingTest(unittest.TestCase):
 #        self.assert_(caught)
         
              
-class MachineCaseVpn(unittest.TestCase): 
+class MachineCaseVpn(object): #(unittest.TestCase): 
 
     def get_boto_path(self):
-        return "/home/hugo/code/boto.ini"    
+        return "/home/hugo/code/boto.ini"
 
 
         
@@ -562,12 +641,22 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
         print("\n\n\n")
         sys.stdout.flush()
         
+        
+class MachineDbTest(unittest.TestCase):
     
-           
-         
+    def test_zip(self):
+        pass
+    
+    def test_list_machines(self):
+        dir = '/var/www-cloudsim-auth/machines'
+        print('listing machines in "%s":' % dir)
+        machines = list_all_machines_accross_domains(dir)
+        for domain, constellation, machine in machines:
+            print("   %s/%s/%s" % (domain, constellation['name'], machine.config.uid) )
+            # print("done")
         
         
 if __name__ == '__main__':
     print('Machine TESTS')
-    unittest.main(testRunner = get_runner())        
+    unittest.main(testRunner = get_test_runner())        
  

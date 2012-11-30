@@ -17,7 +17,7 @@ function cloud_credentials_on_load_page(place_holder_div_name)
     str += '\');">Override</button>';
     
     launch_div.innerHTML = str;
-    console.log(cloud_credentials_on_load_page + ": " + place_holder_div_name);
+    console.log('cloud_credentials_on_load_page:' +  place_holder_div_name);
 }
 
 

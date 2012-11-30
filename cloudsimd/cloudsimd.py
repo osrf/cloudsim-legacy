@@ -36,24 +36,22 @@ def launch( username, config_name, credentials_ec2 =  BOTO_CONFIG_FILE_USEAST,
             root_directory =  MACHINES_DIR):
     
     red = redis.Redis()
-    machine_name = str(uuid.uuid1())
+    constellation_name = str(uuid.uuid1())
+    
+    
     try:
         proc = multiprocessing.current_process().name
-        
-         
-        log("Launching machine %s, config '%s' for user '%s' from proc '%s'" % (machine_name, config_name,  username, proc))
-
+        #log("cloudsimd.py launch")
+        log("Launching constellation %s, config '%s' for user '%s' from proc '%s'" % (constellation_name, config_name,  username, proc))
         publisher = RedisPublisher(username) 
         launchers.launch(username, 
                          config_name, 
-                         machine_name, 
+                         constellation_name, 
                          publisher,
                          credentials_ec2,
                          root_directory)
-        
     except Exception, e:
-        red.publish("cloudsim_log", e)
-    
+        red.publish("cloudsim_log", "cloudsimd.py launch error: %s" % e)
     return
     
 """
@@ -78,14 +76,13 @@ def terminate(username,
 
     
 def async_launch(username, config):
-    log("launch! %s for %s"% (config, username) )
-    
+    log("cloudsimd async_launch [config %s for user %s]"% (config, username) )
     try:
         p = multiprocessing.Process(target=launch, args=(username, config, ))
         # jobs.append(p)
         p.start()
     except Exception, e:
-        log("Error %s" % e)
+        log("cloudsimd async_launch Error %s" % e)
 
 def async_terminate(username, machine):
     log("terminate! %s for %s"% (machine, username) )

@@ -15,13 +15,31 @@ from json import loads
 cgitb.enable()
  
 
-from common import authorize, print_http_header
+from common import authorize, UserDatabase
 cgitb.enable()
 
 
 
+def message_loop(channels):
+    red = redis.Redis()
+    pubsub = red.pubsub()
+    pubsub.subscribe(channels)
+    
+    tick_count = 0
+    for msg in pubsub.listen():
+        data = msg['data']
+        print("event: cloudsim")
+        print("data: %s\n\n" % data)
+        sys.stdout.flush()
+        if msg['channel'] == "cloudsim_tick":
+            tick_count +=1
+            if tick_count == 3:
+                # red.publish("cloudsim_log", "console_stream for user %s DONE" % email )
+                return
+
 email = authorize()
-domain = email.split('@')[1]
+udb = UserDatabase()
+domain =  udb.get_domain(email)
 
 VIEW_AS_HTML = False
 
@@ -46,35 +64,20 @@ else:
     print ("")
 
 
-#for i in range(100):# ps.listen() 
-#    print ("event: cloudsim")
-#    data = {}
-#    data['type'] = 'action'
-#    data['counter'] = i
-#    print ("data: %s\n\n" % data)
-#    sys.stdout.flush()
-#    # time.sleep(0.05)    
-#    
-#exit(0)
+channels = [domain, "cloudsim_tick"]
+if udb.is_admin(email):
+    channels.append('cloudsim_admin')
+    
+message_loop(channels)
 
-red = redis.Redis()
-pubsub = red.pubsub()
 
-red.publish("cloudsim_log", "console_stream for user %s on domain %s" % (email, domain) )
-
-pubsub.subscribe([domain,"cloudsim_admin"])
-
-for msg in pubsub.listen():
-    #try:
-        # red.publish("cloudsim_log", msg)
-        data = msg['data']
-        print("event: cloudsim")
-        print("data: %s\n\n" % data)
-        sys.stdout.flush() 
+        
+        
+        
     #except Exception, e :
     #    red.publish("cloudsim_log", "Error in console_stream: %s" % e) 
 
-red.publish("cloudsim_log", "console_stream for user %s DONE" % email )
+
 
 if VIEW_AS_HTML:
     print ("</pre></html>")     
