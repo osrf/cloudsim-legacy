@@ -21,7 +21,7 @@ function widget_add(div_name, constellation_name, machine_name, widget_type, wid
 
 
 
-function get_widget_div(div_name, constellation_name, machine_name, widget_id)
+function get_widget_div(div_name, constellation_name, machine_name, widget_name)
 {
 	var machine = machine_get_widget_div(div_name, constellation_name, machine_name);
 	widget = machine.querySelector("#" + widget_name);
@@ -38,3 +38,4 @@ function _get_widget_style()
     str += ' "'; 
     return str;
 }
+

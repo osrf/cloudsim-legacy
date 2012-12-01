@@ -1,5 +1,5 @@
 
-function users_admin_on_load_page(users_div_name)
+function add_users_admin_widget(users_div_name)
 {
 
 	var x = httpGet("/cloudsim/inside/cgi-bin/users.py");
@@ -19,8 +19,6 @@ function users_admin_on_load_page(users_div_name)
         str += '</li>';
     }
 	str +="</ul>";
-	
-
 
     str += '<input type="text" name="new_user"/>';
     str += '<select id="role_"' + user + ' />';

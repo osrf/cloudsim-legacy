@@ -1,10 +1,21 @@
 
 
-function simulator_on_load_page()
+function _update_simulator_widget(widget_div, package, launch_file, args)
 {
+
+    var status = status_img("gray");
+    
+    var str = "";
+	str += status;
+    str += "<button>Start</button>";
+    str += "<button>Stop</button>";
+    str += 'package<input type="text" name="package">' + package + '</input>' ;
+    str += 'launch file<input type="text" name="launch_file">'+launch_file+ '</input>';
+    str += 'arguments<input type="text" name="args">' + args + '</input>';
+    
+    widget_div.innerHTML = str;
     
 }
-
 
 function add_simulator_state_widget(div_name, constellation_name, machine_name, widget_type, widget_name)
 {
@@ -12,13 +23,8 @@ function add_simulator_state_widget(div_name, constellation_name, machine_name, 
 	str += _get_widget_style();
 	str += ">";
 	str += widget_name;
-	var status = status_img("gray");
-    str += status;
-    str += "<button>Start</button>";
-    str += "<button>Stop</button>";
-    str += 'package<input type="text" name="launch_file"/>';
-    str += 'launch file<input type="text" name="launch_file"/>';
-    str += 'arguments<input type="text" name="args"/>';
+
+    
     str += "</div>";
 
     var div = document.getElementById(div_name);
@@ -29,10 +35,10 @@ function add_simulator_state_widget(div_name, constellation_name, machine_name, 
 function add_glx_state_widget(div_name, constellation_name, machine_name, widget_type, widget_name)
 {
     var str = "<div id='" + widget_name + "'";
-	str += _get_widget_style();
-	str += ">";
-	str += widget_name;
-	var status = status_img("gray");
+    str += _get_widget_style();
+    str += ">";
+    str += widget_name;
+    var status = status_img("gray");
     str += status;
     str += "GL and X not running";
     str += "</div>";

@@ -72,10 +72,12 @@ template = """
             $('.admin_only').show();
         }
         
+        
+        add_cloud_credentials_widget("credentials_div");
+        add_users_admin_widget("users_div");
+        
         machine_launch_on_load_page("launcher_div");
-        cloud_credentials_on_load_page("credentials_div");
-        users_admin_on_load_page("users_div");
-        constellations_on_load_page("constellations_div");
+        add_constellations_widget("constellations_div");
         stream();
     }
     
@@ -129,7 +131,7 @@ template = """
     <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  ">
     </div>
     
-    <div id="machines_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
+    <div id="constellations_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
     </div>
     
 

@@ -16,10 +16,11 @@ from common import  authorize, MachineDb
 email = authorize()
 
 form = cgi.FieldStorage()
+constellation_name = form.getfirst('constellation')
 machine_name = form.getfirst('machine')
 
 mdb = MachineDb(email)
-filename = mdb.get_zip_fname(machine_name)
+filename = mdb.get_zip_fname(constellation_name, machine_name)
 
 
 def download(filename):

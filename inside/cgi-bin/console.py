@@ -73,9 +73,10 @@ template = """
         }
         machine_view_on_load_page("machines_div");
         machine_launch_on_load_page("launcher_div");
-        cloud_credentials_on_load_page("credentials_div");
-        users_admin_on_load_page("users_div");
-        constellations_on_load_page("constellations_div");
+        
+        add_cloud_credentials_widget("credentials_div");
+        add_users_admin_widget("users_div");
+        add_constellations_widget("constellations_div");
         stream();
     }
     

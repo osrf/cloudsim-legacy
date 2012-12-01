@@ -1,7 +1,7 @@
 
 var machine_configurations = null;
 
-function cloud_credentials_on_load_page(place_holder_div_name)
+function add_cloud_credentials_widget(place_holder_div_name)
 {
     var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs.py");
     machine_configurations = eval( '(' + x + ')' );

@@ -5,7 +5,8 @@ import imp
 import os
 import time
 import common
-from common.machine import MachineDb
+from common.machine import MachineDb, CONSTELLATION_JSONF_NAME
+import json
 
 
 directory = os.path.split(__file__)[0]
@@ -55,7 +56,7 @@ launchers = None
 
 def launch(username, 
            config_name, 
-           machine_name, 
+           constellation_name, 
            publisher,
            credentials_ec2,
            root_directory):
@@ -67,17 +68,30 @@ def launch(username,
     
     func = launchers[config_name]
     
+    domain = username.split('@')[1]
     tags = {}
     tags['user'] = username
-    tags['machine'] = machine_name
+    tags['constellation_name'] = constellation_name
 # remove path and .py from the name of this file
-    tags['configuration'] = config_name
+    tags['constellation_config'] = config_name
     tags['GMT'] = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
     
-    domain = username.split('@')[1]
-    userdir = os.path.join(root_directory, domain)
+    tags['domain'] = domain
+    
+    domain_dir = os.path.join(root_directory, domain)
+    constellation_directory = os.path.join(domain_dir, constellation_name)
+    
+    # save constellation config in a json file
+    os.makedirs(constellation_directory)
+    constellation_fname = os.path.join(constellation_directory, CONSTELLATION_JSONF_NAME)
+    constellation_info = {}
+    constellation_info['name'] = constellation_name
+    constellation_info['config'] = config_name
+    str = json.dumps(constellation_info)
+    with open(constellation_fname,'w') as fp:
+        fp.write(str)
         
-    func(username, machine_name, tags, publisher, credentials_ec2, userdir)
+    func(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory)
 
 def start_simulator(  username, 
                       machine_name, 
@@ -123,14 +137,14 @@ def stop_simulator(username, machine_name, root_directory):
     
 
 def terminate(username, 
-              machine_name, 
+              constellation_name, 
               publisher, 
               credentials_ec2, 
               root_directory):
     
     publisher.event({'msg':'About to terminate'})
     mdb = MachineDb(username, machine_dir = root_directory)
-    machine = mdb.get_machine(machine_name)
+    machine = mdb.get_machine(constellation_name, machine_name)
     machine.terminate()
     
 

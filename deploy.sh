@@ -3,6 +3,9 @@
 # DIR="/home/ubuntu/cloudsim"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+cd $DIR
+hg log -l5 > hg_log.txt
+
 echo
 echo copying data from $DIR to /var/www and /var/www-cloudsim-auth/users
 echo
@@ -19,6 +22,7 @@ cd $DIR/..
 zip -r cloudsim.zip cloudsim
 sudo mv -f cloudsim.zip /var/www-cloudsim-auth
 cd $DIR
+ 
 
 if [ ! -f /var/www-cloudsim-auth/users ]
 then

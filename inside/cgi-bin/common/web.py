@@ -1,17 +1,17 @@
 import os
 import sys
 
-import common
+
 import tempfile
 import Cookie
 import json
-
-
 import unittest
 
+from constants import SESSION_DATABASE, USER_DATABASE, \
+OPENID_SESSION_COOKIE_NAME, HTTP_COOKIE
 
 class UserDatabase (object):
-    def __init__(self, fname = common.USER_DATABASE):
+    def __init__(self, fname = USER_DATABASE):
         self.fname = fname
         if not os.path.exists(self.fname):
             self._write_users({})
@@ -65,7 +65,7 @@ class UserDatabase (object):
 
 
 class SessionDatabase(object):
-    def __init__(self, fname=common.SESSION_DATABASE):
+    def __init__(self, fname=SESSION_DATABASE):
         self.db = {}
         self.fname = fname
         self.load()
@@ -103,13 +103,13 @@ def print_http_filedownload_header(fname, newline=True):
 
 def session_id_to_email():
     in_cookies = Cookie.Cookie()
-    in_cookies.load(os.environ[common.HTTP_COOKIE])
+    in_cookies.load(os.environ[HTTP_COOKIE])
     # Check for a session cookie
     # print("in_cookies %s<p>" % in_cookies)
     
     if common.OPENID_SESSION_COOKIE_NAME in in_cookies:
-        session_id = in_cookies[common.OPENID_SESSION_COOKIE_NAME].value
-        sdb = SessionDatabase(common.SESSION_DATABASE)
+        session_id = in_cookies[OPENID_SESSION_COOKIE_NAME].value
+        sdb = SessionDatabase(SESSION_DATABASE)
         if session_id in sdb.db:
             email = sdb.db[session_id]
             return email
@@ -129,9 +129,9 @@ class AuthException(Exception): pass
 def _check_auth():
     # Get session ID from cookie
     in_cookies = Cookie.Cookie()
-    in_cookies.load(os.environ[common.HTTP_COOKIE])
-    if common.OPENID_SESSION_COOKIE_NAME in in_cookies:
-        openid_session = in_cookies[common.OPENID_SESSION_COOKIE_NAME].value
+    in_cookies.load(os.environ[HTTP_COOKIE])
+    if OPENID_SESSION_COOKIE_NAME in in_cookies:
+        openid_session = in_cookies[OPENID_SESSION_COOKIE_NAME].value
     else:
         raise  AuthException("Access denied (no session ID found in cookies)")
         sys.exit(0)

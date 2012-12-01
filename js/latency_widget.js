@@ -7,12 +7,6 @@ var latency_data = {};
 var last_update = null;
 
 
-function latency_on_load_page()
-{
-    
-}
-
-
 
 function add_latency_widget(div_name, constellation_name, machine_name, widget_type, widget_name)
 {
@@ -20,6 +14,8 @@ function add_latency_widget(div_name, constellation_name, machine_name, widget_t
 	str += _get_widget_style();
 	str += ">";
 	str += widget_name;
+	
+	str += 'latency goes here';
 	
 
     var div = document.getElementById(div_name);

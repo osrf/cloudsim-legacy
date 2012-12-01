@@ -469,7 +469,7 @@ class MachineDb(object):
         fname =  os.path.join(self.root_dir, machine_name, "launch.log")
         return fname
     
-    def get_zip_fname(self, machine_name):
+    def get_zip_fname(self, constellation_name, machine_name):
         fname = os.path.join(self.root_dir, machine_name, machine_name + ".zip")
         return fname
 
