@@ -36,7 +36,7 @@ set -e
     return startup_script
     
 
-def launch(username, machine_name, tags, publisher, credentials_ec2, root_directory):
+def launch(username, constellation_name, tags, publisher, credentials_ec2, root_directory):
 
     startup_script = get_launch_script()
     
@@ -50,6 +50,7 @@ def launch(username, machine_name, tags, publisher, credentials_ec2, root_direct
                          ip_retries=100, 
                          ssh_retries=1000)
 
+    machine_name = "simulator_" + constellation_name
     machine = Machine(machine_name,
                      config,
                      publisher.event,

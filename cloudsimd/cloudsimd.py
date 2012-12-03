@@ -36,7 +36,7 @@ def launch( username, config_name, credentials_ec2 =  BOTO_CONFIG_FILE_USEAST,
             root_directory =  MACHINES_DIR):
     
     red = redis.Redis()
-    constellation_name = str(uuid.uuid1())
+    constellation_name =  "c_"+str(uuid.uuid1()).split('-')[0]  #+str(uuid.uuid1())
     
     
     try:

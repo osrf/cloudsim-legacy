@@ -470,7 +470,7 @@ class MachineDb(object):
         return fname
     
     def get_zip_fname(self, constellation_name, machine_name):
-        fname = os.path.join(self.root_dir, machine_name, machine_name + ".zip")
+        fname = os.path.join(self.root_dir, constellation_name, machine_name, machine_name + ".zip")
         return fname
 
 

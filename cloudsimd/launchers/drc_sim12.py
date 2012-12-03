@@ -97,7 +97,7 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
                          ip_retries=100, 
                          ssh_retries=1000)
     
-    machine_name = "simulator"
+    machine_name = "simulator_" + constellation_name
     machine = Machine(machine_name,
                      config,
                      publisher.event,

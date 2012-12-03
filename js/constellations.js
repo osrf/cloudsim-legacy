@@ -11,7 +11,14 @@ function add_constellations_widget(div_name)
     $.subscribe("/cloudsim", function(event, data){
         if(data.constellation_name)
         {
-            console.log("CONS " + data.constellation_name);
+        	var constellation = data.constellation_name;
+        	var configuration = data.constellation_config;
+            // console.log("CONS " + data.constellation_name);
+            var constellation_div =  div.querySelector("#"+constellation);
+            if( constellation_div == null)
+            {
+                create_constellation(div_name, configuration, constellation);
+            }
         }
     });
 }
@@ -50,11 +57,13 @@ function _get_constellation_div_str(constellation_name)
     return str;
 }
 
-function find_or_create_constellation_div(div_name, constellation)
+
+
+function insert_constellation_div(div_name, constellation)
 {
     var div = document.getElementById(div_name);
     var nodes = div.childNodes;
-    var node = nodes[0];
+    var node = null;
     for(var i=0; i<nodes.length; i++) 
     {
         node = nodes[i];
@@ -62,33 +71,30 @@ function find_or_create_constellation_div(div_name, constellation)
         if(constellation_iter == undefined)
             continue;
         var cmp = constellation_iter.localeCompare(constellation);
-        console.log(constellation_iter+ " comp " + constellation + " = " + cmp);
+        // console.log(constellation_iter+ " comp " + constellation + " = " + cmp);
+
+        // Found it :-) 
+        if(cmp == 0)
+        	return node;
+        
+        // found where to create it :-)
         if(cmp > 0)
             break;
+        
+        // makes insertBefore at the end
+        node = null;
     }
     
     var const_div = document.createElement("div");
     const_div.id = constellation;
-    var style = _get_const_style();
-    const_div.style = style;
+    _set_const_style(const_div.style);
+
     const_div.innerHTML = _get_constellation_div_str(constellation);
     div.insertBefore(const_div, node);
     return const_div;
 }
 
-function constellation_add(div_name, constellation_name)
-{    
-    var str = "<div id='" + constellation_name + "'";
-    str += ' style="' + _get_const_style() + '"';
-	str += "> ";
-	
-	str += _get_constellation_div_str(constellation_name);
 
-	str += "</div> "; // constellation
-	
-	$("#"+div_name).append(str);
-
-}
 
 function constellation_remove(div_name, constellation_name)
 {
@@ -98,15 +104,15 @@ function constellation_remove(div_name, constellation_name)
     div.removeChild(constellation);   
 }
 
-function constellation_get_machines_div(div_name, constellation_name)
+
+function _set_const_style(style)
 {
-	var div = document.getElementById(div_name);
-    var constellation = div.querySelector("#"+constellation_name);
-    var machines = constellation.querySelector("#machines" );
-    return machines;
+    style.width = "98%";
+    style.float = "left";
+    style.border="1px solid black";
+    style.borderRadius = "15px";
+    style.margin = "1%";
 }
-
-
 
 function _get_const_style()
 {
@@ -117,16 +123,4 @@ function _get_const_style()
     //str += 'margin-bottom:20px;';
     return str;
 }
-/*
- function _get_const_style()
-{
-    var str = "";
-    str += ' style="width:98%; float:left; border-radius: 15px;';
-    str += ' border: 1px solid black;'; 
-    str += 'margin:1%;';
-    //str += 'margin-bottom:20px;';
-    str +=  '"';
-    return str;
-}
 
- */

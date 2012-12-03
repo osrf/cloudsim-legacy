@@ -49,7 +49,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
                          ip_retries=100, 
                          ssh_retries=200)
     
-    machine_name = "micro"
+    machine_name = "micro_" + constellation_name
     
     
     machine = Machine(machine_name,

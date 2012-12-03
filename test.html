@@ -21,6 +21,7 @@
 <script language="javascript" type="text/javascript" src="/js/status_img.js"></script>
 <script language="javascript" type="text/javascript" src="/js/simulator.js"></script>
 <script language="javascript" type="text/javascript" src="/js/latency_widget.js"></script>
+<script language="javascript" type="text/javascript" src="/js/cloudsim.js"></script>
 <script>
 
 
@@ -36,7 +37,8 @@ function on_load_page()
     {
         const_count += 1;
         var constellation_name="const_"+const_count;
-        constellation_add(div_name, constellation_name);
+        var constellation_div = find_or_create_constellation_div(div_name, constellation_name);
+        
     }
     
     
@@ -49,6 +51,7 @@ function on_load_page()
         
         var machine_name = "mach_" + machine_count;
         machine_add(div_name, constellation, machine_name);
+        
     }
     
     function constellation_remove_click(div_name)
@@ -135,16 +138,34 @@ function on_load_page()
     
     function insert_const_click(div_name)
     {
-        var div = document.getElementById('add_machine');
-        var constellation = div.querySelectorAll("input")[0].value;
+        var div_ui = document.getElementById('add_machine');
+        var constellation = div_ui.querySelectorAll("input")[0].value;
+        var select = div_ui.querySelectorAll("#config_select")[0];
         
-        find_or_create_constellation_div(div_name, constellation);
-         
+        var index = select.selectedIndex;
+        var configuration = select.options[index].text;
+        
+        var div = document.getElementById(div_name);
+        var constellation_div =  div.querySelector("#"+constellation);
+        if( constellation_div == null)
+        {
+            create_constellation(div_name, configuration, constellation);
+        }
+        
         
     }
     
     
-    
+    function insert_mach_click(div_name)
+    {
+        var div = document.getElementById('add_machine');
+        var constellation_name = div.querySelectorAll("input")[0].value;
+        var machine_name = div.querySelectorAll("input")[1].value;
+        
+        var machine_div = find_or_create_machine_div(div_name, constellation_name, machine_name);
+        
+        
+    }    
     
 </script>
     
@@ -153,10 +174,23 @@ function on_load_page()
  </head>
 <body onload = "on_load_page()">
 
-testo
-    <button onclick="constellation_add_click('constellations_div');">Add</button>
+    
+    <button onclick="constellation_add_click('constellations_div');">Add</button><br>
+
+        
+    </select>
     
     <div id="add_machine">
+    <select id="config_select">
+        <option value="cloudsim" selected="selected">cloudsim</option>
+         <option value="drc_sim_ami">drc_sim_ami</option>
+        <option value="drc_sim">drc_sim</option>
+        <option value="micro_vpn">micro_vpn</option>
+        <option value="ros_fuerte">ros_fuerte</option>
+        <option value="drc_sim_12">drc_sim_12</option>
+        
+    </select>
+    
         Constellation<input type="text" name="constellation"/>
         <button onclick="machine_add_click('constellations_div');">Add machine</button>
         <button onclick="constellation_remove_click('constellations_div');">Remove constellation</button>
@@ -166,6 +200,7 @@ testo
         <button onclick="enum_const_click('constellations_div');">list constellations</button>
         <button onclick="enum_mach_click('constellations_div');">list machines</button>
         <button onclick="insert_const_click('constellations_div');">insert constellation</button>
+        <button onclick="insert_mach_click('constellations_div');">insert machine</button>
     </div>
     
     <div id="constellations_div" style="width:98%; margin:1%; float:left; border-radius: 15px; border: 1px solid black;">

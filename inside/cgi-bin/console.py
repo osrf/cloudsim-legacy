@@ -76,7 +76,7 @@ template = """
         
         add_cloud_credentials_widget("credentials_div");
         add_users_admin_widget("users_div");
-        add_constellations_widget("constellations_div");
+        //add_constellations_widget("constellations_div");
         stream();
     }
     

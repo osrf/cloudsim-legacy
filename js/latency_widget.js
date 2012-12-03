@@ -4,25 +4,16 @@ var max_color  = "#CB4B4B"; // rgb(203,75,75); red
 var avg_color  = "#AFD8F8"; // rgb(175,216,248); blue 
 var mdev_color = "#EDC240"; // rgb(237,194,64); yellow
 var latency_data = {};
-var last_update = null;
 
 
 
-function add_latency_widget(div_name, constellation_name, machine_name, widget_type, widget_name)
+function create_latency_widget(machine_div, constellation_name, machine_name, widget_name)
 {
-    var str = "<div id='" + widget_name + "'";
-	str += _get_widget_style();
-	str += ">";
-	str += widget_name;
+	var unique_plot_id = "latency_"+machine_name;
 	
-	str += 'latency goes here';
+	var widget_div = _create_empty_widget(machine_div, unique_plot_id);
+	widget_div.style.height = "150px";
 	
-
-    var div = document.getElementById(div_name);
-    var machine = machine_get_widget_div(div_name, constellation_name, machine_name);
-    machine.innerHTML += str;
-    
-    
     var latency_plot_data = [   
                              { label:"min", color: min_color, data:[] }, 
                              { label:"max", color: max_color, data:[]}, 
@@ -83,33 +74,46 @@ function add_latency_widget(div_name, constellation_name, machine_name, widget_t
 
 
     // var j_plot = $.plot($('#' + plot_div_name), latency_plot_data, plot_options);
-
-    latency_data[machine_name] = { 'plot_data': latency_plot_data,
+    latency_data[unique_plot_id] = { 'plot_data': latency_plot_data,
     		// 'plot' : j_plot,
     		'plot_options' : plot_options,
     		'last_update' : null};
     
-    
+    $.subscribe("/cloudsim", function(event, data){
+    	if(data.constellation_name != constellation_name)
+    		return;
+    	if(data.machine_name != machine_name)
+    		return;
+    	if(data.type == 'latency')
+        {
+    		_update_graph(unique_plot_id, constellation_name, machine_name, data.min, data.max, data.avg, data.mdev)
+    		
+        }
+        
+    });
 }
+
+
  
-function _update_graph(plot_div_name, machine_name, min, max, avg, mdev)
+function _update_graph(plot_div_name, constellation_name, machine_name, min, max, avg, mdev)
 {
+	var unique_plot_id = "latency_"+machine_name;
     
-    var latency_plot_data = latency_data[machine_name]['plot_data'];
-    var last_update = latency_data[machine_name]['last_update'];
+    var latency_plot_data = latency_data[unique_plot_id]['plot_data'];
+    var last_update = latency_data[unique_plot_id]['last_update'];
     var t = Date.now() * 0.001;
-    latency_data[machine_name]['last_update'] = t;
+    latency_data[unique_plot_id]['last_update'] = t;
     
-    add_latency_sample(latency_plot_data, t, last_update , min, max, avg, mdev);
+    add_latency_widget_sample(latency_plot_data, t, last_update , min, max, avg, mdev);
      
-    var plot_options = latency_data[machine_name]['plot_options']
-    document.getElementById(plot_div_name).innerHTML = "";
-    latency_data[machine_name]['plot'] = $.plot($('#' + plot_div_name), latency_plot_data, plot_options);
+    var plot_options = latency_data[unique_plot_id]['plot_options']
+    document.getElementById(unique_plot_id).innerHTML = "";
+    latency_data[unique_plot_id]['plot'] = $.plot($('#' + plot_div_name), latency_plot_data, plot_options);
 
 }
 
 
-function add_latency_sample(latency_plot_data, t, last_update, min_latency_sample, max_latency_sample, avg_sample, mdev_sample)
+function add_latency_widget_sample(latency_plot_data, t, last_update, min_latency_sample, max_latency_sample, avg_sample, mdev_sample)
 {
     var elapsed = 0;
 
@@ -154,3 +158,4 @@ function add_latency_sample(latency_plot_data, t, last_update, min_latency_sampl
 //  mdev = mdev.slice(first_fresh_data);   
 
 }
+

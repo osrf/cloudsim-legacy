@@ -61,10 +61,9 @@ set -e
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     return startup_script
     
+ 
 
-def start_simualation():
-
-def launch(username, machine_name, tags, publisher, credentials_ec2, root_directory):
+def launch(username, constellation_name, tags, publisher, credentials_ec2, root_directory):
 
     startup_script = get_launch_script()
     
@@ -78,6 +77,7 @@ def launch(username, machine_name, tags, publisher, credentials_ec2, root_direct
                          ip_retries=100, 
                          ssh_retries=1000)
 
+    machine_name = "ros_"+constellation_name
     machine = Machine(machine_name,
                      config,
                      publisher.event,

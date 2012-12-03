@@ -42,7 +42,7 @@ def monitor_cloud(domain, constellation, machine):
     
 def monitor_latency(domain, constellation, machine):
     status = {}
-    status['machine'] = machine.config.uid
+    status['machine_name'] = machine.config.uid
     status['constellation_name'] = constellation['name']
     status['constellation_config'] = constellation['config']
     status['domain'] = domain

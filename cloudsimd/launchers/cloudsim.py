@@ -83,6 +83,7 @@ def log(msg):
 
     
 def launch(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory):
+    
     log("team_login launch in domain '%s'" % domain_directory)
     machine_name = "cloudsim_" +constellation_name
     constellation_directory = os.path.join(domain_directory, constellation_name)

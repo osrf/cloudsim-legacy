@@ -22,25 +22,6 @@ user_info = json.dumps({'user':email, 'role':role})
 
 scripts = get_javascripts(['machine_view.js'])
 
-scripts = """
-<script language="javascript" type="text/javascript" src="/js/latency_widget.js"></script>
-<script language="javascript" type="text/javascript" src="/js/jquery-1.8.3.min.js"></script>
-<script language="javascript" type="text/javascript" src="/js/latency_graph.js"></script>
-<script language="javascript" type="text/javascript" src="/js/utils.js"></script>
-<script language="javascript" type="text/javascript" src="/js/simulator.js"></script>
-<script language="javascript" type="text/javascript" src="/js/machine.js"></script>
-<script language="javascript" type="text/javascript" src="/js/status_img.js"></script>
-
-<script language="javascript" type="text/javascript" src="/js/machine_launch.js"></script>
-<script language="javascript" type="text/javascript" src="/js/cloud_credentials.js"></script>
-<script language="javascript" type="text/javascript" src="/js/constellations.js"></script>
-<script language="javascript" type="text/javascript" src="/js/widget.js"></script>
-<script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
-<script language="javascript" type="text/javascript" src="/js/users_admin.js"></script>
-<script language="javascript" type="text/javascript" src="/js/latency_graph.js"></script>
-
-"""
-
 print("Content-Type: text/html")
 print("\n")
 
