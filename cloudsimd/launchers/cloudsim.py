@@ -27,7 +27,7 @@ TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """
 
 echo "Installing packages" >> /home/ubuntu/setup.log
 
-apt-get install -y unzip
+apt-get install -y unzip zip
 echo "unzip installed" >> /home/ubuntu/setup.log
 
 # install mercurial and fetch latest version of the Team Login website

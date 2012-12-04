@@ -13,10 +13,10 @@ echo
 sudo cp $DIR/distfiles/apache2.conf /etc/apache2/apache2.conf
 
 sudo rm -rf /var/cloudsimd
-sudo mkdir -rf /var/cloudsimd
+sudo mkdir -p   /var/cloudsimd
 
 sudo rm -rf /var/www
-sudo mkdir /var/www
+sudo mkdir -p /var/www
 
 sudo cp -a $DIR/* /var/www/
 sudo rm -rf /var/www/distfiles
