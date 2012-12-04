@@ -132,7 +132,7 @@ function add_latency_widget_sample(latency_plot_data, t, last_update, min_latenc
 
     min_latency.push( [0,min_latency_sample] ); 
     max_latency.push( [0,max_latency_sample]);
-    avg.push ( [0, avg_sample ]);  
+    avg.push ( [0, avg_sample ]);
 //    mdev.push( [0, mdev_sample ]); 
 
     // adjust values by aging:

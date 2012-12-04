@@ -17,6 +17,7 @@ sudo rm -rf /var/www/distfiles
 sudo chown -R www-data:www-data /var/www
 sudo mkdir -p /var/www-cloudsim-auth/machines
 
+sudo mv -f $DIR/boto-useast /var/www-cloudsim-auth
 
 cd $DIR/..
 zip -r cloudsim.zip cloudsim

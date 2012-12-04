@@ -43,21 +43,53 @@ function get_constellation_names(div_name)
     return constellations;
 }
 
-function _get_constellation_div_str(constellation_name)
+function _get_constellation_div_str(div_name,constellation_name)
 {
     var str = "";
     str += '<div id="top" style="width = 100%; float:left; border-top-left-radius:10px; border-top-right-radius:15px; background-color:#44497a; width:100%; float:left;" ">' // background-color:#FFA500;
     str +=    "<h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
     str +=    constellation_name + "</center></h3>";    
     str += '</div>' // top
-    str += "<button>Terminate</button>";
+    str += "<button onclick=\"_constellation_terminate('"+div_name+"', '"+constellation_name+"');\">Terminate</button>";
     str += "<div id='machines' ";
     str += 'style="clear:left; width=100%"';
     str += '></div>'; // machines
     return str;
 }
 
+function _constellation_terminate(div_name, constellation_name)
+{
+    var r = confirm("terminate " + constellation_name + "?");
+    if (r==false)
+    {
+        return;
+    }
+    
+    machines = get_machine_names(div_name, constellation_name);
+    for(var i=0; i< machines.length; i++)
+    {
+        var machine = machines[i];
+        _terminate_constellation_machine(constellation_name, machine_name);
+    }
+}
 
+function _terminate_constellation_machine(constellation_name, machine_name)
+{
+    var r=confirm("terminate " + machine_name + "?");
+    if (r==false)
+    {
+        return;
+    }
+    
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=terminate';
+    url += '&constellation=' + constellation_name;
+    url += '&machine=' + machine_name;
+    
+    console.log(url);
+    msg = httpGet(url);
+    
+    console.log( msg);
+}
 
 function insert_constellation_div(div_name, constellation)
 {
@@ -75,8 +107,8 @@ function insert_constellation_div(div_name, constellation)
 
         // Found it :-) 
         if(cmp == 0)
-        	return node;
-        
+            return node;
+
         // found where to create it :-)
         if(cmp > 0)
             break;
@@ -88,18 +120,14 @@ function insert_constellation_div(div_name, constellation)
     var const_div = document.createElement("div");
     const_div.id = constellation;
     _set_const_style(const_div.style);
-
-    const_div.innerHTML = _get_constellation_div_str(constellation);
+    const_div.innerHTML = _get_constellation_div_str(div_name, constellation);
     div.insertBefore(const_div, node);
     return const_div;
 }
 
-
-
 function constellation_remove(div_name, constellation_name)
 {
-    // alert('remove from [' + div_name +']');
-	var div = document.getElementById(div_name);
+    var div = document.getElementById(div_name);
     var constellation = div.querySelector("#"+constellation_name);
     div.removeChild(constellation);   
 }

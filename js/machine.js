@@ -8,7 +8,8 @@ function machines_on_load_page()
 
 function get_machine_names(div_name, constellation)
 {
-	var constellation_div = find_or_create_constellation_div(div_name, constellation);
+	var div = document.getElementById(div_name);
+	var constellation_div =  div.querySelector("#"+constellation);
     var machines_div = constellation_div.querySelector("#machines" ); 
     
     var machines = [];
@@ -49,14 +50,14 @@ function create_machine(div, machine_name)
     return new_div;	
 }
 
-
+/*
 function machine_get_widget_div(div_name, constellation_name, machine_name)
 {
-	var machines_div = find_or_create_machine_div(div_name, constellation_name, machine_name);
-	var widgets_div = machine_div.querySelector("#widgets");
-	return widgets_div;
+    var machines_div = find_or_create_machine_div(div_name, constellation_name, machine_name);
+    var widgets_div = machine_div.querySelector("#widgets");
+    return widgets_div;
 }
-
+*/
 function _set_mach_style(style)
 {   
     style.border = "1px solid black";
@@ -78,7 +79,6 @@ function _get_machine_widgets_style()
     str += '"'; 
     return str;	
 }
-
 
 
 function _set_widget_style(style)
@@ -112,76 +112,6 @@ function create_machine_lifecycle_widget(machine_div, constellation_name, machin
     var widget_div = _create_empty_widget(machine_div, widget_name);
     widget_div.innerHTML = str;
 }
-
-
-
-function _update_machine_state(widget_div, color, text)
-{
-    var str = "Machine state: "; // widget_name;
-    var status = status_img(color);
-    str += status;
-    str += text;
-    widget_div.innerHTML = str;
-    
-}
-
-function create_machine_state_widget(machine_div, constellation_name, machine_name, widget_name)
-{
-
-    
-    var widget_div = _create_empty_widget(machine_div, widget_name);
-
-    // default behaviour
-    _update_machine_state(widget_div, "gray", "[waiting for update]");
-    
-    // reaction
-    $.subscribe("/cloudsim", function(event, data){
-        if(data.type == 'cloud')
-        {
-            var color = "red";
-            if(data.result == 'success')
-            	color = "blue";
-            _update_machine_state(widget_div, color, data.state);
-        }
-        
-    });
-}
-
-function _update_hostname_widget(widget_div, constellation_name, machine_name, ip, aws_id)
-{
-		
-    var str = "";
-    str += "<b>IP</b> " + ip + " ("
-    str += "<b>AWS id</b> " + aws_id +") ";
-    str += '<a href="/cloudsim/inside/cgi-bin/machine_zip_download.py';
-    str += '?constellation=' + constellation_name;
-    str += '&machine=' + machine_name;
-    str += '">Download keys</a>';
-    widget_div.innerHTML = str;
-}
-
-function create_hostname_widget(machine_div, constellation_name, machine_name, widget_name)
-{
-    
-    var widget_div = _create_empty_widget(machine_div, widget_name);
-    _update_hostname_widget(widget_div, constellation_name, machine_name, "xxx.xxx.xxx", "x-xxxxx");
-    
-    $.subscribe("/cloudsim", function(event, data){
-        if(data.constellation_name != constellation_name)
-            return;
-        if(data.machine_name != machine_name)
-            return
-            
-        if(data.type == 'cloud')
-        {
-        	_update_hostname_widget(widget_div, constellation_name, machine_name, data.ip, data.aws_id);
-        }
-        
-    });
-    
-}
-
-
 
 
 
