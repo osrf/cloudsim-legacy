@@ -122,7 +122,7 @@ template = """
 <hr>
     <div style="float:right;">
         <img src="/js/images/osrf.png" width="200px"/>
-        <img src="/js/images/DARPA_Logo.jpg" width="200px"/>
+        <!-- img src="/js/images/DARPA_Logo.jpg" width="200px"/ -->
     </div>
 
 <div style="float:left;">
