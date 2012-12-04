@@ -64,32 +64,9 @@ function _constellation_terminate(div_name, constellation_name)
     {
         return;
     }
-    
-    machines = get_machine_names(div_name, constellation_name);
-    for(var i=0; i< machines.length; i++)
-    {
-        var machine = machines[i];
-        _terminate_constellation_machine(constellation_name, machine_name);
-    }
+    terminate_constellation(constellation_name);
 }
 
-function _terminate_constellation_machine(constellation_name, machine_name)
-{
-    var r=confirm("terminate " + machine_name + "?");
-    if (r==false)
-    {
-        return;
-    }
-    
-    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=terminate';
-    url += '&constellation=' + constellation_name;
-    url += '&machine=' + machine_name;
-    
-    console.log(url);
-    msg = httpGet(url);
-    
-    console.log( msg);
-}
 
 function insert_constellation_div(div_name, constellation)
 {

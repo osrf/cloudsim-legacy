@@ -1,3 +1,55 @@
+
+function launch_constelaltion(configuration)
+{
+    var url = '/cloudsim/inside/cgi-bin/constellation?configuration=' + configuration;
+    
+    console.log(url);
+    msg = httpPost(url);
+    console.log(msg);
+}
+
+function terminate_constellation(constellation_name)
+{
+    var url = '/cloudsim/inside/cgi-bin/constellation';
+    url += '/' + constellation_name;
+        
+    console.log("[DELETE] " + url);
+    msg = httpDelete(url);
+    console.log( msg);
+}
+
+
+function add_user(user_name, role)
+{
+	var req = "/cloudsim/inside/cgi-bin/user?user=" + user_name;
+	req +="&role=" + role;
+	var x = httpPost("[POST] " + req);
+	console.log(x);
+	
+}
+
+function remove_user(user_name)
+{
+	var x = httpDelete("/cloudsim/inside/cgi-bin/user?user=" + user_name);
+	console.log(x);
+}
+
+function change_credentials(access_key, secret_access_key)
+{
+    var key = encodeURIComponent(access_key);
+    var secret = encodeURIComponent(secret_access_key);
+    var url = '/cloudsim/inside/cgi-bin/cloud_credentials?access_key=';
+    url += key+'&secret_access_key=' + secret;
+    console.log("[PUT] " + url);
+    var msg = httpPut(url);
+    
+    var jmsg = eval('(' + msg + ')');
+    console.log("change_credentials: " + msg);
+    alert(jmsg['msg']);
+}
+
+///////////////////////// AJAX
+
 function httpGet(theUrl)
 {
     var xmlHttp = null;
@@ -47,6 +99,8 @@ function clear_div(div_name)
 {
    document.getElementById(div_name).innerHTML = "";  
 }
+
+///////////////// pub sub 
 
 /*
  * jQuery Tiny Pub/Sub - v0.6 - 1/10/2011

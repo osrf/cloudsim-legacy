@@ -13,9 +13,12 @@ directory = os.path.split(__file__)[0]
 
 
 def log(msg, chan = "launchers"):
-    import redis
-    r = redis.Redis()
-    r.publish(chan, msg)
+    try:
+        import redis
+        r = redis.Redis()
+        r.publish(chan, msg)
+    except:
+        print("launchers> %s" % msg)
     
 
 """
@@ -141,11 +144,16 @@ def terminate(username,
               publisher, 
               credentials_ec2, 
               root_directory):
-    
+    log("terminate constellation %s" % constellation_name)
     publisher.event({'msg':'About to terminate'})
+
     mdb = MachineDb(username, machine_dir = root_directory)
-    machine = mdb.get_machine(constellation_name, machine_name)
-    machine.terminate()
+
+    machines = mdb.get_machines_in_constellation(constellation_name)
+    log("xxx")
+    for machine_name, machine  in machines.iteritems():
+        log("  - terminate machine %s" % machine.config.uid)
+        machine.terminate()
     
 
 

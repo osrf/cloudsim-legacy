@@ -398,7 +398,21 @@ class MachineDb(object):
         self.domain = email.split('@')[1]
         self.root_dir =  os.path.join(machine_dir, self.domain)
         
-        
+    def get_machines_in_constellation(self, constellation):
+        machines = {}
+        if os.path.exists(self.root_dir):
+            constellation_path = os.path.join(self.root_dir, constellation)
+            constellation_info = self.get_constellation(constellation)
+            constellation_info['machines'] = {}
+            machine_list = os.listdir(constellation_path)
+            machine_list.remove('constellation.json')
+            for machine_name in machine_list:
+                machine = self.get_machine(constellation, machine_name)
+                if machine:
+                    machines[machine_name] = machine 
+        return machines
+    
+    
     def get_machines(self):
         machines = {}
         if os.path.exists(self.root_dir):

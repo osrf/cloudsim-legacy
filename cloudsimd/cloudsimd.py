@@ -8,7 +8,7 @@ import time
 
 import multiprocessing
 from json import loads
-import redis
+
 
 import common
 from common import RedisPublisher
@@ -18,7 +18,7 @@ from common import MACHINES_DIR
 from common import BOTO_CONFIG_FILE_USEAST
 from common import Machine
 
-
+import redis
 # register the daemon
 # sudo initctl reload-configuration
 
@@ -28,9 +28,13 @@ from common import Machine
 # jobs = []
 
 def log(msg, chan="cloudsim_log"):
-    print ("LOG: %s" % msg)
-    red = redis.Redis()
-    red.publish(chan, msg)
+    try:
+        
+        print ("LOG: %s" % msg)
+        red = redis.Redis()
+        red.publish(chan, msg)
+    except Exception, e:
+        print("cloudsimd> %s" % msg)
 
 def launch( username, config_name, credentials_ec2 =  BOTO_CONFIG_FILE_USEAST, 
             root_directory =  MACHINES_DIR):
@@ -51,7 +55,7 @@ def launch( username, config_name, credentials_ec2 =  BOTO_CONFIG_FILE_USEAST,
                          credentials_ec2,
                          root_directory)
     except Exception, e:
-        red.publish("cloudsim_log", "cloudsimd.py launch error: %s" % e)
+        log("cloudsimd.py launch error: %s" % e)
     return
     
 """
@@ -59,19 +63,19 @@ Terminates the machine via the cloud interface. Files will be removed by the
 monitoring process
 """
 def terminate(username, 
-              machine_name, 
+              constellation, 
               credentials_ec2,
               root_directory):
     red = redis.Redis()
     proc = multiprocessing.current_process().name
-    log("terminate '%s' for '%s' from proc '%s'" % (machine_name, username, proc))
+    log("terminate '%s' for '%s' from proc '%s'" % (constellation, username, proc))
 
     try:
         publisher = RedisPublisher(username) 
-        launchers.terminate(username, machine_name, publisher, credentials_ec2,
+        launchers.terminate(username, constellation, publisher, credentials_ec2,
                             root_directory)
     except Exception, e:
-        red.publish("cloudsim_log", e)
+        log("Cloudsim daemon Error %s" % e)
     
 
     
@@ -84,17 +88,17 @@ def async_launch(username, config):
     except Exception, e:
         log("cloudsimd async_launch Error %s" % e)
 
-def async_terminate(username, machine):
-    log("terminate! %s for %s"% (machine, username) )
+def async_terminate(username, constellation):
+    log("terminate! %s for %s"% (constellation, username) )
     credentials_ec2 =  BOTO_CONFIG_FILE_USEAST
     root_directory =  MACHINES_DIR
     try:
         
-        p = multiprocessing.Process(target=terminate, args= (username, machine, credentials_ec2, root_directory,)  )
+        p = multiprocessing.Process(target=terminate, args= (username, constellation, credentials_ec2, root_directory,)  )
         # jobs.append(p)
         p.start()
     except Exception, e:
-        log("Error %s" % e)
+        log("Cloudsim daemon Error %s" % e)
 
 def start_simulator(username, machine_name, package_name, launch_file_name,launch_args):
 
@@ -121,7 +125,7 @@ def async_start_simulator(username, machine, package_name, launch_file_name,laun
         # jobs.append(p)
         p.start()
     except Exception, e:
-        log("Error %s" % e)
+        log("Cloudsim daemon Error %s" % e)
 
 def stop_simulator(username, machine):
     try:
@@ -137,7 +141,7 @@ def async_stop_simulator(username, machine):
         # jobs.append(p)
         p.start()
     except Exception, e:
-        log("Error %s" % e)
+        log("Cloudsim daemon Error %s" % e)
     
     
 
@@ -163,8 +167,8 @@ def run():
                 async_launch(username, config)
             
             if cmd == 'terminate':
-                machine = data['machine']
-                async_terminate(username, machine)
+                constellation = data['constellation']
+                async_terminate(username, constellation)
             
             if cmd == "start_simulator" :
                 machine = data['machine']

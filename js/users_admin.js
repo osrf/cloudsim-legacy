@@ -15,7 +15,7 @@ function add_users_admin_widget(users_div_name)
 		str += '<li>';
         str += user;
         str += " <b>" + role + "</b>"; 
-        str += '<button type="button" onclick="_remove_user(\'' + user + '\');">X</button>';
+        str += '<button type="button" onclick="remove_user(\'' + user + '\');">X</button>';
         str += '</li>';
     }
 	str +="</ul>";
@@ -51,24 +51,8 @@ function _add_click(users_div_name)
     var user = input.value;
     var select = users_div.querySelector("select");
     var role = select.value;
-    _add_user(user, role);
+    add_user(user, role);
 }
 
 
-function _add_user(user_name, role)
-{
-	var req = "/cloudsim/inside/cgi-bin/user?user=" + user_name;
-	req +="&role=" + role;
-	var x = httpPost(req);
-	console.log(x);
-	
-}
-
-function _remove_user(user_name)
-{
-	var x = httpDelete("/cloudsim/inside/cgi-bin/user?user=" + user_name);
-	console.log(x);
-	
-	
-}
 

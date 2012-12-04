@@ -22,6 +22,7 @@ function machine_launch_on_load_page(div_name)
     _launchSelectionChanged()
 }
 
+
 function launch(machine_config)
 {
     machine_index = 0;
@@ -33,13 +34,9 @@ function launch(machine_config)
         // x="You pressed Cancel!";
         return;
     }
-
-    // var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=launch&machine_config=' + _get_selectected_machine_config();
-    var url = '/cloudsim/inside/cgi-bin/constellation?configuration=' + _get_selectected_machine_config();
     
-    console.log(url);
-    msg = httpPost(url);
-    console.log(msg);
+    var config = _get_selectected_machine_config();
+    
 }
 
 function _get_selectected_machine_index()

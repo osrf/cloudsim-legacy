@@ -16,7 +16,6 @@ cgitb.enable()
 
 def get_constellation_from_path():
     constellation = os.environ['PATH_INFO'].split('/')[1]
-    # todo: check?
     return constellation
 
 def get_query_param(param):
@@ -50,9 +49,8 @@ d['username'] = email
 d['type'] = 'launchers'
 
 if method == 'DELETE':
-    
-    d['command'] == 'terminate'
-    d['constellation'] = constellation
+    d['command'] = 'terminate'
+    d['constellation'] = get_constellation_from_path()
     
   
 if method == 'POST':

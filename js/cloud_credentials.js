@@ -21,19 +21,7 @@ function add_cloud_credentials_widget(place_holder_div_name)
 }
 
 
-function change_credentials(access_key, secret_access_key)
-{
-    var key = encodeURIComponent(access_key);
-    var secret = encodeURIComponent(secret_access_key);
-    var url = '/cloudsim/inside/cgi-bin/cloud_credentials?access_key=';
-    url += key+'&secret_access_key=' + secret;
-    console.log(url);
-    var msg = httpPut(url);
-    
-    var jmsg = eval('(' + msg + ')');
-    console.log("change_credentials: " + msg);
-    alert(jmsg['msg']);
-}
+
 
 function _cred_click(div_name)
 {
