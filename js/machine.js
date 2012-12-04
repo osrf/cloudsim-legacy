@@ -50,14 +50,7 @@ function create_machine(div, machine_name)
     return new_div;	
 }
 
-/*
-function machine_get_widget_div(div_name, constellation_name, machine_name)
-{
-    var machines_div = find_or_create_machine_div(div_name, constellation_name, machine_name);
-    var widgets_div = machine_div.querySelector("#widgets");
-    return widgets_div;
-}
-*/
+
 function _set_mach_style(style)
 {   
     style.border = "1px solid black";

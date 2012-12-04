@@ -66,7 +66,7 @@ def monitor_xgl(domain, constellation, machine):
     x = machine.get_X_status()
     
     status = {}
-    status['machine'] = machine.config.uid
+    status['machine_name'] = machine.config.uid
     status['constellation_name'] = constellation['name']
     status['constellation_config'] = constellation['config']
     status['type'] = 'graphics'
@@ -84,7 +84,7 @@ def monitor_simulator(domain, constellation, machine):
     x = machine.get_gazebo_status()
     
     status = {}
-    status['machine'] = machine.config.uid
+    status['machine_name'] = machine.config.uid
     status['constellation_name'] = constellation['name']
     status['constellation_config'] = constellation['config']
     status['type'] = 'simulator'
