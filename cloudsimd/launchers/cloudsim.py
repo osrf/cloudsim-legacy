@@ -178,7 +178,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     log ("\t%s"% out)
     
     log("Uploading the ec2 credentials to the server")
-    remote_fname = "/home/ubuntu/cloudsim/boto-useast" % (machine.config.username)
+    remote_fname = "/home/%s/cloudsim/boto-useast" % (machine.config.username)
     log("uploading '%s' to the server to '%s'" % (credentials_ec2, remote_fname) )
     out = machine.scp_send_file(credentials_ec2 , remote_fname)
     log ("\t%s"% out)
@@ -219,10 +219,11 @@ def zip_cloudsim():
     
     tmp_dir = tempfile.mkdtemp("cloudsim")
     tmp_zip = os.path.join(tmp_dir, "cloudsim.zip")
-    cloudsim_parent_dir =os.path.dirname(os.path.dirname( os.path.dirname(os.path.dirname(__file__))))
+    full_path_of_cloudsim = os.path.dirname( os.path.dirname(os.path.dirname(__file__)))
+    cloudsim_short_name = os.path.basename(full_path_of_cloudsim)
+    cloudsim_parent_dir =os.path.dirname(full_path_of_cloudsim)
     os.chdir(cloudsim_parent_dir)
-    o = commands.getoutput('zip -r '+ tmp_zip +' cloudsim')
-    
+    o = commands.getoutput('zip -r '+ tmp_zip + cloudsim_short_name)
   
     return tmp_zip
     
