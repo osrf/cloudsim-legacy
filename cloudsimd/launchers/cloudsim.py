@@ -7,6 +7,7 @@ import unittest
 import zipfile
 import redis
 import tempfile
+import shutil
 redis_client = redis.Redis()
 
 
@@ -219,11 +220,12 @@ def zip_cloudsim():
     
     tmp_dir = tempfile.mkdtemp("cloudsim")
     tmp_zip = os.path.join(tmp_dir, "cloudsim.zip")
-    full_path_of_cloudsim = os.path.dirname( os.path.dirname(os.path.dirname(__file__)))
-    cloudsim_short_name = os.path.basename(full_path_of_cloudsim)
-    cloudsim_parent_dir =os.path.dirname(full_path_of_cloudsim)
-    os.chdir(cloudsim_parent_dir)
-    o = commands.getoutput('zip -r '+ tmp_zip + cloudsim_short_name)
+    full_path_of_cloudsim = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    # Account for having a version in the name of the directory, which we
+    # want to get rid of
+    shutil.copytree(full_path_of_cloudsim, os.path.join(tmp_dir, 'cloudsim'))
+    os.chdir(tmp_dir)
+    o = commands.getoutput('zip -r %s cloudsim'%(tmp_zip))
   
     return tmp_zip
     

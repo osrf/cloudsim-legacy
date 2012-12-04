@@ -26,13 +26,17 @@ Removes the key for this ip, in case we connect to a different machine with the
 same key in the future. This avoids ssh messages
 """
 def clean_local_ssh_key_entry( hostname):
-    cmd = 'sudo ssh-keygen -f "/var/www/.ssh/known_hosts" -R %s' % hostname
-    s,o = commands.getstatusoutput(cmd)
+    www_ssh_host_file = "/var/www/.ssh/known_hosts" 
+    if os.path.exists(www_ssh_host_file):
+        cmd = 'sudo ssh-keygen -f %s -R %s' % (www_ssh_host_file, hostname)
+        s,o = commands.getstatusoutput(cmd)
     
-    print("clean_local_ssh_key_entry for %s" % hostname)
-    print(o)
-    print
-    return s
+        print("clean_local_ssh_key_entry for %s" % hostname)
+        print(o)
+        print
+        return s
+    else:
+        return ""
 
 """
 Calls the ping command and returns statistics
