@@ -23,19 +23,16 @@ function machine_launch_on_load_page(div_name)
 }
 
 
-function launch(machine_config)
+function launch(config)
 {
-    machine_index = 0;
-    var machine_div_name =  "machine_div_" + machine_index;
-
-    var r=confirm("Launch?");
+    var r=confirm('Launch a new "' + config + '" constellation?' );
     if (r==false)
     {
         // x="You pressed Cancel!";
         return;
     }
     
-    var config = _get_selectected_machine_config();
+    launch_constelaltion(config);
     
 }
 

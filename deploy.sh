@@ -12,6 +12,12 @@ echo
 
 sudo cp $DIR/distfiles/apache2.conf /etc/apache2/apache2.conf
 
+sudo rm -rf /var/cloudsimd
+sudo mkdir -rf /var/cloudsimd
+
+sudo rm -rf /var/www
+sudo mkdir /var/www
+
 sudo cp -a $DIR/* /var/www/
 sudo rm -rf /var/www/distfiles
 sudo chown -R www-data:www-data /var/www
@@ -48,6 +54,7 @@ sudo cp $DIR/cloudsimd/cloudsim_monitord.conf /etc/init
 sudo rm -rf /var/cloudsimd
 sudo mkdir -p /var/cloudsimd
 sudo cp -a $DIR/cloudsimd/* /var/cloudsimd
+
 sudo cp -a $DIR/inside/cgi-bin/common /var/cloudsimd
 
 sudo initctl reload-configuration

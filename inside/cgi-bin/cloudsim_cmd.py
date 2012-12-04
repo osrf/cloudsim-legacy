@@ -26,11 +26,7 @@ d ={}
 d['command'] = form.getfirst('command')
 d['username'] = email
 
-if d['command'] == 'launch':
-    d['configuration'] = form.getfirst('machine_config')
 
-if d['command'] == 'terminate':
-    d['machine'] = form.getfirst('machine')
 
 if d['command'] == 'start_simulator':
     d['machine'] = form.getfirst('machine')

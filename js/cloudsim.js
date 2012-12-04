@@ -5,7 +5,7 @@ function create_constellation(div_name, configuration, constellation)
     
     if(configuration == "cloudsim") return create_cloudsim_constellation(constellation_div, constellation);
     if(configuration == "drc_sim_ami") return create_drc_sim_ami_constellation(constellation_div, constellation);
-    if(configuration == "drc_sim_12") return create_drc_sim_12_constellation(constellation_div, constellation);
+    if(configuration == "drc_sim_latest") return create_drc_sim_latest(constellation_div, constellation);
     if(configuration == "micro_vpn") return create_micro_vpn_constellation(constellation_div, constellation);
     if(configuration == "ros_fuerte") return create_ros_fuerte_constellation(constellation_div, constellation);
 }
@@ -48,7 +48,7 @@ function create_drc_sim_ami_constellation(constellation_div, constellation_name)
     _create_simulator_machine(constellation_div, constellation_name, machine_name);
 }
 
-function create_drc_sim_12_constellation(constellation_div, constellation_name)
+function create_drc_sim_latest(constellation_div, constellation_name)
 {   
     var machine_name = "simulator_" +constellation_name;
     _create_simulator_machine(constellation_div, constellation_name, machine_name);

@@ -6,25 +6,43 @@ import cgi
 import cgitb
 import json
 import redis
-
+from common import UserDatabase
 
 cgitb.enable()
+
+
+def log(msg):
+    red = redis.Redis()
+    red.publish("cloudsim_log",msg)
 
 
 from common import  authorize, ConfigsDb
 
 email = authorize()
 
-
+udb = UserDatabase()
+is_admin = udb.is_admin(email)
 
 print('Content-type: application/json')
 print('\n')
 
-
 cdb = ConfigsDb(email)
-configs = cdb.get_configs_as_json()
 
-red = redis.Redis()
-red.publish("cloudsim_log", "Launchers: %s" % cdb.get_config_dir())
+admin_configs = ['micro_vpn','ros_fuerte','cloudsim', 'gazebo', 'drc_sim_ami' ]
 
-print(configs)
+configs = cdb.get_configs()
+
+if not is_admin:
+    for bad_config in admin_configs:
+        if bad_config in configs:
+            del(configs[bad_config]) # remove it
+            log("configs removing %s =  %s" % (bad_config, len(configs) ) )
+            
+
+str = json.dumps(configs)
+    
+
+
+log("Launchers: %s" % cdb.get_config_dir())
+
+print(str)

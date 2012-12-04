@@ -161,7 +161,7 @@ class Machine (object):
         try:
             # Start it up
             
-            self._event({"type:":"action", "state":"reserve"})
+            self._event({"type:":"launch", "state":"reserve"})
             res = self.ec2.run_instances(   image_id=self.config.image_id, 
                                             min_count =1,
                                             max_count =1,
@@ -173,13 +173,13 @@ class Machine (object):
             self.config.reservation = res.id
             self._event({"type":"launch", "state":"reserve", "reservation_id":'%s'% self.config.reservation } )
             
-            self._event({"type": "action", "state":"waiting_for_ip"})
+            self._event({"type": "launch", "state":"waiting_for_ip"})
             retries = self.config.ip_retries
             tries = 0
             while tries< retries:
                 done = False
                 tries += 1
-                self._event({"type":"retry", "state":'ip_set', "try":tries, "retries":retries} )
+                self._event({"type":"launch", "state":'retry', "goal":"ip_set", "try":tries, "retries":retries} )
                 for r in self.ec2.get_all_instances():
                     if r.id == res.id and r.instances[0].public_dns_name:
                         done = True
@@ -187,19 +187,19 @@ class Machine (object):
                         self.config.hostname = inst.public_dns_name
                         self.config.ip = inst.ip_address
                         self.config.aws_id = inst.id
-                        self._event({"type":"ip_configured", "ip": self.config.ip, 'aws_id': self.config.aws_id})
+                        self._event({"type":"launch", "state":"ip_configured", "ip": self.config.ip, 'aws_id': self.config.aws_id})
                         break
                     time.sleep(0.1)
                 if done:
                     break 
                 
             if tries >= retries:
-                self._event({"type":"fail", "state":'ip_set'})
+                self._event({"type":"launch", "state":"fail", "action":'ip_set'})
                 raise MachineException("Can't get IP for machine reservation '%s'" % self.config.reservation)
             if len(self.config.tags):
-                self._event({"type": "action", "state":'tags_set'})
+                self._event({"type": "launch", "state":'tags_set'})
                 self.ec2.create_tags([self.config.aws_id], self.config.tags)
-                self._event({"type":"check", "state":'tags_set'})
+                self._event({"launch":"launch", "state":'tags_set'})
             
             
         except Exception as e:
@@ -272,11 +272,11 @@ class Machine (object):
         
         retries = self.config.ssh_retries
         tries = 0
-        self._event({"type" :"action", "state":'ssh_wait_for_ready', "file":file_to_look_for, "try": tries, "retries":retries })
+        self._event({"type" :"launch", "state":'ssh_wait_for_ready', "file":file_to_look_for, "try": tries, "retries":retries })
         while tries < retries:
             tries += 1
             # print ( "%s / %s" % (tries, retries))
-            self._event({"type":"retry", "state":'ssh_wait_for_ready', "file": file_to_look_for,  "try": tries, "retries": retries })
+            self._event({"type":"launch", "state":'retry', "goal":"file_ready", "file": file_to_look_for,  "try": tries, "retries": retries })
             sys.stdout.flush()
             try:
                 self.ssh_send_command(cmd)
@@ -286,11 +286,11 @@ class Machine (object):
             else:
                 self._event({"type" : "check", "state":'ssh_connected'})
                 return
-        self._event({"type":"fail", "state":'ssh_connected'})   
+        self._event({"type":"launch", "state": 'fail', 'action':'ssh_connect'})   
         raise MachineException("Maximum retry limit exceeded; ssh connection could not be established or file '%s' not found" % file_to_look_for)
     
     def terminate(self):
-        self._event({"type":"action", "state":'terminated'})
+        self._event({"type":"launch", "state":'terminated'})
         terminated_list = self.ec2.terminate_instances(instance_ids=[self.config.aws_id])
         if(len(terminated_list) == 0 ):
             self._event({"type":"fail", "state":'terminated', 'machine_id': self.config.aws_id})

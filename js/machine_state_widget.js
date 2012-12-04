@@ -9,13 +9,35 @@ function create_machine_state_widget(machine_div, constellation_name, machine_na
     _update_machine_state(widget_div, "gray", "[waiting for update]");
     
     // reaction
-    $.subscribe("/cloudsim", function(event, data){
+    $.subscribe("/cloudsim", function(event, data)
+    {
+        if(data.constellation_name != constellation_name) return;
+        if(data.machine_name != machine_name) return;
         if(data.type == 'cloud')
         {
+            
             var color = "red";
-            if(data.result == 'success')
-            	color = "blue";
+            if(data.result != 'success')
+                color = "red";
+            if(data.state == 'running' && data.result == 'success')
+            {
+                color = "blue";
+            }
+            
+            if(data.state == 'shutting-down' && data.result == 'success')
+            {
+                color = "orange";
+            }
+            if(data.state == 'terminated' && data.result == 'success')
+            {
+                color = "orange";
+            }
             _update_machine_state(widget_div, color, data.state);
+        }
+        
+        if ( data.type == "launch" )
+        {
+            
         }
         
     });

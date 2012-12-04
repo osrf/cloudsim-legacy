@@ -36,7 +36,7 @@ function add_users_admin_widget(users_div_name)
     	if(data.type == 'admin')
     	{
     		console.log("Admin action: " + data.action);
-    		users_admin_on_load_page(users_div_name);
+    		add_users_admin_widget(users_div_name);
     	}
         
     });

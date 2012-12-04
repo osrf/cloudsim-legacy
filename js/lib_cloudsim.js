@@ -3,7 +3,7 @@ function launch_constelaltion(configuration)
 {
     var url = '/cloudsim/inside/cgi-bin/constellation?configuration=' + configuration;
     
-    console.log(url);
+    console.log("[POST]" + url);
     msg = httpPost(url);
     console.log(msg);
 }
@@ -21,17 +21,20 @@ function terminate_constellation(constellation_name)
 
 function add_user(user_name, role)
 {
-	var req = "/cloudsim/inside/cgi-bin/user?user=" + user_name;
-	req +="&role=" + role;
-	var x = httpPost("[POST] " + req);
-	console.log(x);
+    var url = "/cloudsim/inside/cgi-bin/user?user=" + user_name;
+    url +="&role=" + role;
+    console.log("[POST] " + url);
+    var x = httpPost(url);
+    console.log(x);
 	
 }
 
 function remove_user(user_name)
 {
-	var x = httpDelete("/cloudsim/inside/cgi-bin/user?user=" + user_name);
-	console.log(x);
+    var url = "/cloudsim/inside/cgi-bin/user?user=" + user_name;
+    console.log("[DELETE] "+url);
+    var x = httpDelete(url);
+    console.log(x);
 }
 
 function change_credentials(access_key, secret_access_key)
@@ -102,17 +105,6 @@ function clear_div(div_name)
 
 ///////////////// pub sub 
 
-/*
- * jQuery Tiny Pub/Sub - v0.6 - 1/10/2011
- * http://benalman.com/
- *
- * Copyright (c) 2010 "Cowboy" Ben Alman
- * Dual licensed under the MIT and GPL licenses.
- * http://benalman.com/about/license/
- 
-(function($){var a=$("<b/>");$.subscribe=function(b,c){function d(){return c.apply(this,Array.prototype.slice.call(arguments,1))}d.guid=c.guid=c.guid||($.guid?$.guid++:$.event.guid++);a.bind(b,d)};$.unsubscribe=function(){a.unbind.apply(a,arguments)};$.publish=function(){a.trigger.apply(a,arguments)}})(jQuery);
-
-*/
 
 /* jQuery Tiny Pub/Sub - v0.7 - 10/27/2011
  * http://benalman.com/

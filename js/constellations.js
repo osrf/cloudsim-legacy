@@ -4,7 +4,6 @@ function add_constellations_widget(div_name)
 {
     console.log("constellations_on_load_page " + div_name);
     
-    // $("#"+div_name).append("<h2>Constellations</h2>");
     var div = document.getElementById(div_name);
     div.innerHTML = "<h2>Constellations</h2>";
     
@@ -46,11 +45,16 @@ function get_constellation_names(div_name)
 function _get_constellation_div_str(div_name,constellation_name)
 {
     var str = "";
-    str += '<div id="top" style="width = 100%; float:left; border-top-left-radius:10px; border-top-right-radius:15px; background-color:#44497a; width:100%; float:left;" ">' // background-color:#FFA500;
-    str +=    "<h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
-    str +=    constellation_name + "</center></h3>";    
-    str += '</div>' // top
-    str += "<button onclick=\"_constellation_terminate('"+div_name+"', '"+constellation_name+"');\">Terminate</button>";
+    str += '<div id="top" style="';
+    str += 'width = 100%; float:left; border-top-left-radius:10px; border-top-right-radius:15px;';
+    str += ' background-color:#44497a; ';
+    str += ' width:100%; float:left;" ">' // #44497a
+    str += " <h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
+    str +=   constellation_name + "</center></h3>";    
+    str += ' </div>' // top
+    str += "<button ";
+    str += ' style="border-radius: 5px;" ';
+    str += "onclick=\"_constellation_terminate('"+div_name+"', '"+constellation_name+"');\">Terminate</button>";
     str += "<div id='machines' ";
     str += 'style="clear:left; width=100%"';
     str += '></div>'; // machines
@@ -114,18 +118,10 @@ function _set_const_style(style)
 {
     style.width = "98%";
     style.float = "left";
-    style.border="1px solid black";
+    style.border="1px solid #535453";
     style.borderRadius = "15px";
     style.margin = "1%";
+    style.backgroundColor = "#F1F1F2";
 }
 
-function _get_const_style()
-{
-    var str = "";
-    str += 'width:98%; float:left; border-radius: 15px;';
-    str += ' border: 1px solid black;'; 
-    str += 'margin:1%;';
-    //str += 'margin-bottom:20px;';
-    return str;
-}
 

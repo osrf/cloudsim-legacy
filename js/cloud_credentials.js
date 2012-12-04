@@ -3,9 +3,9 @@ var machine_configurations = null;
 
 function add_cloud_credentials_widget(place_holder_div_name)
 {
-    var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs.py");
-    machine_configurations = eval( '(' + x + ')' );
-        
+
+    //var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs");
+    //machine_configurations = eval( '(' + x + ')' );
     var launch_div = document.getElementById(place_holder_div_name);
     var str  = '<h2>Amazon EC2 credentials</h2>'; 
     str += '';
