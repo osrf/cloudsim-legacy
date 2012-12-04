@@ -101,28 +101,6 @@ def print_http_filedownload_header(fname, newline=True):
         print("\n")
 
 
-def session_id_to_email():
-    in_cookies = Cookie.Cookie()
-    in_cookies.load(os.environ[HTTP_COOKIE])
-    # Check for a session cookie
-    # print("in_cookies %s<p>" % in_cookies)
-    
-    if common.OPENID_SESSION_COOKIE_NAME in in_cookies:
-        session_id = in_cookies[OPENID_SESSION_COOKIE_NAME].value
-        sdb = SessionDatabase(SESSION_DATABASE)
-        if session_id in sdb.db:
-            email = sdb.db[session_id]
-            return email
-    return None
-
-def print_footer():
-    email = session_id_to_email()
-    print("<hr>")
-    print("Logged in as: %s<br>"%(email))
-    print("<a href=\"/cloudsim/inside/cgi-bin/admin.py\">Admin</a><br>")
-    print("<a href=\"/cloudsim/inside/cgi-bin/console.py\">Console</a><br>")
-    print("<a href=\"/cloudsim/inside/cgi-bin/logout.py\">Logout</a>")
- 
 
 class AuthException(Exception): pass
 

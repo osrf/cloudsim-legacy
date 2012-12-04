@@ -6,11 +6,12 @@ import uuid
 import unittest
 import zipfile
 import redis
+import tempfile
 redis_client = redis.Redis()
 
 
 from common import StdoutPublisher, INSTALL_VPN, Machine,\
-    clean_local_ssh_key_entry, MachineDb, get_test_runner
+    clean_local_ssh_key_entry, MachineDb, get_test_runner, testing
 from common import create_openvpn_server_cfg_file,\
     inject_file_into_script, create_openvpn_client_cfg_file,\
     create_ros_connect_file, create_vpn_connect_file
@@ -82,12 +83,15 @@ def log(msg):
     
 
     
-def launch(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory):
+
     
-    log("team_login launch in domain '%s'" % domain_directory)
+def launch(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory, website_distribution = TEAM_LOGIN_DISTRIBUTION):
+    
+    
+    log("cloudsim launch constellation '%s'" % constellation_name)
     machine_name = "cloudsim_" +constellation_name
-    constellation_directory = os.path.join(domain_directory, constellation_name)
-    website_distribution = TEAM_LOGIN_DISTRIBUTION
+    
+    
     startup_script = """#!/bin/bash
 # Exit on error
 set -e
@@ -133,14 +137,12 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     files_to_zip = [ fname_ssh_key, 
                      fname_ssh_sh, 
                    ]
-    
     log("creating %s" % fname_zip)
     with zipfile.ZipFile(fname_zip, 'w') as fzip:
         for fname in files_to_zip:
             short_fname = os.path.split(fname)[1]
             zip_name = os.path.join(machine.config.uid, short_fname)
             fzip.write(fname, zip_name)        
-    
     
     clean_local_ssh_key_entry(machine.config.ip )
 
@@ -174,6 +176,15 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     log("uploading '%s' to the server to '%s'" % (fname_zip, remote_fname) )
     out = machine.scp_send_file(fname_zip , remote_fname)
     log ("\t%s"% out)
+    
+    log("Uploading the ec2 credentials to the server")
+    remote_fname = "/home/ubuntu/cloudsim/boto-useast" % (machine.config.username)
+    log("uploading '%s' to the server to '%s'" % (credentials_ec2, remote_fname) )
+    out = machine.scp_send_file(credentials_ec2 , remote_fname)
+    log ("\t%s"% out)
+
+
+    
     #out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)
     log("Deploying the cloudsim web app")
     deploy_script_fname = "/home/%s/cloudsim/deploy.sh" % machine.config.username 
@@ -191,28 +202,68 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     log("%s\n"%(machine.user_ssh_command()))
     log("http://%s"% machine.config.hostname)
     
+    return machine
+    
         
+def cloudsim_bootstrap(username, ec2):
+    print(__file__)
+    constellation_name = str(uuid.uuid1())
+    tags = {}
+    constellation_directory = tempfile.mkdtemp("cloudsim")
+    
+    zip_path = zip_cloudsim()
+    pub = StdoutPublisher()
+    launch(username, constellation_name, tags, pub, ec2, constellation_directory, zip_path)
 
+def zip_cloudsim():
+    
+    tmp_dir = tempfile.mkdtemp("cloudsim")
+    tmp_zip = os.path.join(tmp_dir, "cloudsim.zip")
+    cloudsim_parent_dir =os.path.dirname(os.path.dirname( os.path.dirname(os.path.dirname(__file__))))
+    os.chdir(cloudsim_parent_dir)
+    o = commands.getoutput('zip -r '+ tmp_zip +' cloudsim')
+    
+  
+    return tmp_zip
+    
+    
 class TestCases(unittest.TestCase):
     
    
     
-    def test_launch(self):
+#    def test_launch(self):
+#        
+#        username = "hugo@osrfoundation.org"
+#        machine_name = "microvpn_" + str(uuid.uuid1())
+#        publisher = StdoutPublisher()
+#        ec2 = "/home/hugo/code/boto.ini"
+#        root_directory = '../launch_test'
+#        uid = uuid.uuid1()
+#        machine_name = "cloudsim_" + str( uid )
+#        tags = {}
+#        tags['type'] = 'TeamLogin'
+#        tags['machine'] = machine_name
+#        tags['user'] = username
+#        tags['origin'] = 'test_launch test case'
+#        launch(username, machine_name, tags, publisher, ec2, root_directory)
+
+
+    def test_cloudsim_strap(self):
         
-        username = "hugo@osrfoundation.org"
-        machine_name = "microvpn_" + str(uuid.uuid1())
-        publisher = StdoutPublisher()
+        #    
+        zip_path = zip_cloudsim()
+        self.assert_(os.path.exists(zip_path), "no zip done!")
+        
+    def test_cloudsim(self):
         ec2 = "/home/hugo/code/boto.ini"
-        root_directory = '../launch_test'
-        uid = uuid.uuid1()
-        machine_name = "cloudsim_" + str( uid )
-        tags = {}
-        tags['type'] = 'TeamLogin'
-        tags['machine'] = machine_name
-        tags['user'] = username
-        tags['origin'] = 'test_launch test case'
-        launch(username, machine_name, tags, publisher, ec2, root_directory)
-
-
+        cloudsim_bootstrap("gerkey@osrfoundationp.org", ec2)
+        
+        
 if __name__ == "__main__":
-    unittest.main(testRunner = get_runner()) 
+    
+    unittest.main() #(testRunner = testing.get_test_runner())
+    
+    print(sys.argv)
+    
+    
+     

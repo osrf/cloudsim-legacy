@@ -183,7 +183,7 @@ class Machine (object):
                         self.config.hostname = inst.public_dns_name
                         self.config.ip = inst.ip_address
                         self.config.aws_id = inst.id
-                        self._event({"type":"check", "state":'ip_set', "ip": self.config.ip })
+                        self._event({"type":"ip_configured", "ip": self.config.ip, 'aws_id': self.config.aws_id})
                         break
                     time.sleep(0.1)
                 if done:

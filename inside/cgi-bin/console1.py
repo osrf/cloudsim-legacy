@@ -22,6 +22,25 @@ user_info = json.dumps({'user':email, 'role':role})
 
 scripts = get_javascripts(['machine_view.js'])
 
+scripts = """
+<script language="javascript" type="text/javascript" src="/js/latency_widget.js"></script>
+<script language="javascript" type="text/javascript" src="/js/jquery-1.8.3.min.js"></script>
+<script language="javascript" type="text/javascript" src="/js/latency_graph.js"></script>
+<script language="javascript" type="text/javascript" src="/js/utils.js"></script>
+<script language="javascript" type="text/javascript" src="/js/simulator.js"></script>
+<script language="javascript" type="text/javascript" src="/js/machine.js"></script>
+<script language="javascript" type="text/javascript" src="/js/status_img.js"></script>
+<script language="javascript" type="text/javascript" src="/js/machine_ui_view.js"></script>
+<script language="javascript" type="text/javascript" src="/js/machine_launch.js"></script>
+<script language="javascript" type="text/javascript" src="/js/cloud_credentials.js"></script>
+<script language="javascript" type="text/javascript" src="/js/constellations.js"></script>
+<script language="javascript" type="text/javascript" src="/js/widget.js"></script>
+<script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
+<script language="javascript" type="text/javascript" src="/js/users_admin.js"></script>
+<script language="javascript" type="text/javascript" src="/js/latency_graph.js"></script>
+
+"""
+
 print("Content-Type: text/html")
 print("\n")
 
@@ -52,17 +71,14 @@ template = """
         {
             $('.admin_only').show();
         }
-        
+        machine_view_on_load_page("machines_div");
+        machine_launch_on_load_page("launcher_div");
         
         add_cloud_credentials_widget("credentials_div");
         add_users_admin_widget("users_div");
-        
-        machine_launch_on_load_page("launcher_div");
-        add_constellations_widget("constellations_div");
+        //add_constellations_widget("constellations_div");
         stream();
     }
-    
-    var log_events = true;
     
     function stream()
     {
@@ -72,19 +88,18 @@ template = """
         
         var es = new EventSource(stream_url);
         
-        
         es.addEventListener("cloudsim", function(event)
         {
              var str_data = event.data;
-             if(log_events)
-                 console.log(str_data);
+             
+             
+             console.log(str_data);
              var data = eval( '(' + str_data + ')' );
              $.publish("/cloudsim", data);
              
+             machine_view_status_event("machines_div", str_data );
          }, false);
          
-         
-
          
         es.addEventListener("done", function(event)
         {
@@ -93,7 +108,7 @@ template = """
         },false);
     }
     
-    
+
     
     </script>
     
@@ -112,7 +127,7 @@ template = """
     <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  ">
     </div>
     
-    <div id="constellations_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
+    <div id="machines_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
     </div>
     
 
