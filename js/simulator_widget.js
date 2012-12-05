@@ -134,7 +134,7 @@ function _start_simulator(constellation_name, machine_name, package_name, launch
     {
         return;
     }    
-    start_simulator(constellation, machine_name, package_name, launch_file_name, launch_args)
+    start_simulator(constellation_name, machine_name, package_name, launch_file_name, launch_args)
 
 
 }
