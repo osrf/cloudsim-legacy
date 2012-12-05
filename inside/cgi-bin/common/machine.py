@@ -319,7 +319,7 @@ class Machine (object):
         
         d = self.config.distro
         #cmd = 'source /opt/ros/%s/setup.bash && rosrun gazebo gztopic list' % d
-        cmd = 'source /usr/share/drcsim-1.0/setup.sh && gztopic list' 
+        cmd = 'source /usr/share/gazebo-1.?/setup.sh && gztopic list' 
         
         try:
             r = self.ssh_send_command(cmd)
