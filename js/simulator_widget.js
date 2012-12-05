@@ -117,7 +117,7 @@ function create_glx_state_widget(machine_div, constellation_name, machine_name, 
             var color = "red";
 		    if(data.result == 'success')
 		    	color = "blue";
-		    var text = "text?";
+		    var text = "running";
 		    _update_glx_state(widget_div, color, text);
         }
         
@@ -129,28 +129,16 @@ function create_glx_state_widget(machine_div, constellation_name, machine_name, 
 function _start_simulator(constellation_name, machine_name, package_name, launch_file_name, launch_args)
 {
 
-    var r=confirm("Start simulator on machine" + machine_name + "?");
+    var r=confirm("Start simulator on machine " + machine_name + "?");
     if (r==false)
     {
         return;
     }    
+    start_simulator(constellation, machine_name, package_name, launch_file_name, launch_args)
 
-    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=start_simulator';
-    url += '&constellation=' + constellation_name;
-    url += '&machine=' + machine_name;
-    url += '&package=' + package_name;
-    url += '&launch_file_name=' + launch_file_name;
-
-    if(launch_args)
-    {
-        url += '&launch_args=' +  launch_args;
-    }
-
-    console.log(url);
-    msg = httpGet(url);
-    console.log(msg);
 
 }
+
 
 
 function _stop_simulator(constellation_name, machine_name)
@@ -160,12 +148,6 @@ function _stop_simulator(constellation_name, machine_name)
     {
         return;
     }    
-    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=stop_simulator'; 
-    url += '&constellation=' + constellation_name;
-    url += '&machine=' + machine_name;
-    
-    console.log(url);
-    msg = httpGet(url);
-    console.log(msg);
+    stop_simulator(constellation_name, machine_name);
 
 }

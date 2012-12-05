@@ -34,7 +34,7 @@ sudo mv -f cloudsim.zip /var/www-cloudsim-auth
 cd $DIR
  
 
-if [ ! -f /var/www-cloudsim-auth/users ]
+if sudo test ! -f /var/www-cloudsim-auth/users
 then
    sudo cp $DIR/distfiles/users /var/www-cloudsim-auth/users
 fi

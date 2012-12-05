@@ -100,14 +100,15 @@ def async_terminate(username, constellation):
     except Exception, e:
         log("Cloudsim daemon Error %s" % e)
 
-def start_simulator(username, machine_name, package_name, launch_file_name,launch_args):
+def start_simulator(username, constellation, machine_name, package_name, launch_file_name,launch_args):
 
     try:
 #        log("START_SIMU user %s", username )
 #        log("START_SIMU on machine %s", machine_name )
         root_directory =  MACHINES_DIR
         
-        launchers.start_simulator(username, 
+        launchers.start_simulator(username,
+                                  constellation, 
                               machine_name, 
                               package_name, 
                               launch_file_name,
@@ -117,27 +118,27 @@ def start_simulator(username, machine_name, package_name, launch_file_name,launc
     except Exception, e:
         log("start_simulator error: %s" % e )
                 
-def async_start_simulator(username, machine, package_name, launch_file_name,launch_args ):
+def async_start_simulator(username, constellation, machine, package_name, launch_file_name,launch_args ):
     log("async start simulator! user %s machine %s, pack %s launch %s args '%s'" % (username, machine, package_name, 
                                                                                     launch_file_name, launch_args ))
     try:
-        p = multiprocessing.Process(target=start_simulator, args=(username, machine, package_name, launch_file_name,launch_args ) )
+        p = multiprocessing.Process(target=start_simulator, args=(username, constellation, machine, package_name, launch_file_name,launch_args ) )
         # jobs.append(p)
         p.start()
     except Exception, e:
         log("Cloudsim daemon Error %s" % e)
 
-def stop_simulator(username, machine):
+def stop_simulator(username, constellation,  machine):
     try:
         root_directory =  MACHINES_DIR
-        launchers.stop_simulator(username, machine, root_directory)
+        launchers.stop_simulator(username, constellation, machine, root_directory)
     except Exception, e:
         log("stop_simulator error: %s" % e )
         
-def async_stop_simulator(username, machine):
+def async_stop_simulator(username, constellation, machine):
     log("async stop simulator! user %s machine %s" % (username, machine))
     try:
-        p = multiprocessing.Process(target=stop_simulator, args=(username, machine) )
+        p = multiprocessing.Process(target=stop_simulator, args=(username, constellation,  machine) )
         # jobs.append(p)
         p.start()
     except Exception, e:
@@ -172,14 +173,16 @@ def run():
             
             if cmd == "start_simulator" :
                 machine = data['machine']
+                constellation = data['constellation']
                 package_name = data['package_name']
                 launch_file_name = data['launch_file_name'] 
                 launch_args = data['launch_args']
-                async_start_simulator(username, machine, package_name, launch_file_name,launch_args ) 
+                async_start_simulator(username, constellation, machine, package_name, launch_file_name,launch_args ) 
             
             if cmd == "stop_simulator" :
                 machine = data['machine']
-                async_stop_simulator(username, machine)
+                constellation = data['constellation']
+                async_stop_simulator(username, constellation, machine)
                 
         except:
             log("not a valid message [%s]" % msg)

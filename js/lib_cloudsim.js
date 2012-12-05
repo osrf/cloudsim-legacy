@@ -51,6 +51,38 @@ function change_credentials(access_key, secret_access_key)
     alert(jmsg['msg']);
 }
 
+
+function start_simulator(constellation, machine_name, package_name, launch_file_name, launch_args)
+{
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=start_simulator';
+    url += '&constellation=' + constellation_name;
+    url += '&machine=' + machine_name;
+    url += '&package=' + package_name;
+    url += '&launch_file_name=' + launch_file_name;
+
+    if(launch_args)
+    {
+        url += '&launch_args=' +  launch_args;
+    }
+
+    console.log(url);
+    msg = httpGet(url);
+    console.log(msg);	
+}
+
+function stop_simulator(constellation_name, machine_name)
+{
+    
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=stop_simulator'; 
+    url += '&constellation=' + constellation_name;
+    url += '&machine=' + machine_name;
+    
+    console.log(url);
+    msg = httpGet(url);
+    console.log(msg);
+
+}
+
 ///////////////////////// AJAX
 
 function httpGet(theUrl)

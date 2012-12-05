@@ -97,6 +97,7 @@ def launch(username,
     func(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory)
 
 def start_simulator(  username, 
+                      constellation_name,
                       machine_name, 
                       package_name, 
                       launch_file_name,
@@ -109,7 +110,7 @@ def start_simulator(  username,
     log("    package_name %s, launchfile %s, args %s" %  (package_name,launch_file_name, launch_args ))
     
     mdb = MachineDb(username, machine_dir = root_directory)
-    machine = mdb.get_machine(machine_name)
+    machine = mdb.get_machine(constellation_name, machine_name)
     
     display = ':0'
     server_ip = common.OV_SERVER_IP
@@ -128,11 +129,11 @@ def start_simulator(  username,
     out = machine.ssh_send_command(cmd_str)
     log("%s returned %s" % ( cmd_str, out) )
     
-def stop_simulator(username, machine_name, root_directory):
+def stop_simulator(username, constellation_name, machine_name, root_directory):
     log('stop simulator %s' % machine_name)
     
     mdb = MachineDb(username, machine_dir = root_directory)
-    machine = mdb.get_machine(machine_name)
+    machine = mdb.get_machine(constellation_name, machine_name)
     
     cmd_str = 'killall -INT roslaunch'
     out = machine.ssh_send_command(cmd_str)
