@@ -106,7 +106,7 @@ def start_simulator(  username,
     
    
     
-    log( "start simulator LAUNCHERS. user %s machine %s" % (username, machine_name))
+    log( "start simulator LAUNCHERS. user %s constellation %s machine %s" % (username, constellation_name, machine_name))
     log("    package_name %s, launchfile %s, args %s" %  (package_name,launch_file_name, launch_args ))
     
     mdb = MachineDb(username, machine_dir = root_directory)
@@ -117,7 +117,7 @@ def start_simulator(  username,
     
     
     #script = '". /opt/ros/fuerte/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  >/dev/null 2>/dev/null </dev/null &"'%(server_ip, display, package_name, launch_file_name, launch_args)
-    script = '". /usr/share/drcsim-1.0/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s gzname:=gzserver %s  &"'%(server_ip, display, package_name, launch_file_name, launch_args)
+    script = '". /usr/share/drcsim-1.?/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s gzname:=gzserver %s  &"'%(server_ip, display, package_name, launch_file_name, launch_args)
     
     cmd = ['echo', script, '>start_ros.sh']
     cmd_str = ' '.join(cmd)
