@@ -52,7 +52,7 @@ function change_credentials(access_key, secret_access_key)
 }
 
 
-function start_simulator(constellation, machine_name, package_name, launch_file_name, launch_args)
+function start_simulator(constellation_name, machine_name, package_name, launch_file_name, launch_args)
 {
     var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=start_simulator';
     url += '&constellation=' + constellation_name;
