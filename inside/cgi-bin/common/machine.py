@@ -152,16 +152,10 @@ class Machine (object):
                 return inst
         return None
     
-    def user_ssh_command(self):
-        """
-        Returns an ssh command that the user can type to access the machine
-        """
-        return "ssh -i %s %s@%s"%(self.config.kp_fname, self.config.username, self.config.hostname)
-
     def _launch(self):
-    """
-    Called by the ctor when launch is True
-    """        
+        """
+        Called by the ctor when launch is True
+        """        
         self.config.startup_script += '\ntouch %s\n'%(self.startup_script_done_file)
         try:
             # Start it up
@@ -230,6 +224,12 @@ class Machine (object):
         
         self.config.kp_name = kp_name
         self.config.kp_fname = os.path.join(self.config.cfg_dir, self.config.kp_name + '.pem')
+    
+    def get_user_ssh_command_string(self):
+        """
+        Returns an ssh command that the user can type to access the machine
+        """
+        return "ssh -i %s %s@%s"%(self.config.kp_fname, self.config.username, self.config.hostname)
 
     def ssh_send_command(self, cmd, extra_ssh_args=[]):
         ssh_cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', self.config.kp_fname] + extra_ssh_args + ['%s@%s'%(self.config.username, self.config.hostname)]

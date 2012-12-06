@@ -202,7 +202,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
 #    print ("\t%s"% out)
     
     log('setup complete')
-    log("%s\n"%(machine.user_ssh_command()))
+    log("%s\n"%(machine.get_user_ssh_command_string()))
     log("http://%s"% machine.config.hostname)
     
     return machine
