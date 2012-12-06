@@ -152,11 +152,11 @@ class Machine (object):
                 return inst
         return None
     
-   def user_ssh_command(self):
-    """
-    Returns an ssh command that the user can type to access the machine
-    """
-    return "ssh -i %s %s@%s"%(self.config.kp_fname, self.config.username, self.config.hostname)he ctor when launch is True
+    def user_ssh_command(self):
+        """
+        Returns an ssh command that the user can type to access the machine
+        """
+        return "ssh -i %s %s@%s"%(self.config.kp_fname, self.config.username, self.config.hostname)he ctor when launch is True
     
 
     def _launch(self):
