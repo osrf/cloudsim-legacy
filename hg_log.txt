@@ -1,5 +1,10 @@
-changeset:   154:2ff358521d49
+changeset:   155:14389c82608f
 tag:         tip
+user:        Hugo Boyer <hugo@osrfoundation.org>
+date:        Wed Dec 05 22:23:35 2012 -0800
+summary:     widget refactor
+
+changeset:   154:2ff358521d49
 user:        Hugo Boyer <hugo@osrfoundation.org>
 date:        Wed Dec 05 18:40:16 2012 -0800
 summary:     Added tag cloudsim_0.9.3 for changeset 4ada473799d1
@@ -19,9 +24,4 @@ changeset:   151:27cf53a4ed76
 user:        Hugo Boyer <hugo@osrfoundation.org>
 date:        Wed Dec 05 18:24:41 2012 -0800
 summary:     fixing cloudsim bootstrap
-
-changeset:   150:671fab9c10ad
-user:        Hugo Boyer <hugo@osrfoundation.org>
-date:        Wed Dec 05 18:21:36 2012 -0800
-summary:     Added tag cloudsim_0.9.3 for changeset 13b7f643afb5
 
