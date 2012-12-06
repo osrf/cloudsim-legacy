@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import sys
 import os
-import redis
 import unittest
 
 import json
@@ -14,6 +13,7 @@ from machine_configuration import Machine_configuration
 
 class RedisPublisher(object):
     def __init__(self, username):
+        import redis
         self.username = username
         self.redis_cli = redis.Redis()
         self.channel_name = self.username.split("@")[1]
@@ -44,6 +44,7 @@ class PublishTest(unittest.TestCase):
         m2.publish( {'data':3})
 
 def subscribe(channels):
+    import redis
     redis_client = redis.Redis()
     ps = redis_client.pubsub()
     ps.subscribe(channels)
