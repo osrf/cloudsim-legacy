@@ -185,8 +185,6 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     log("uploading '%s' to the server to '%s'" % (credentials_ec2, remote_fname) )
     out = machine.scp_send_file(credentials_ec2 , remote_fname)
     log ("\t%s"% out)
-
-
     
     #out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)
     log("Deploying the cloudsim web app")
