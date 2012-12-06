@@ -47,7 +47,9 @@ def get_launch_script():
     startup_script = """#!/bin/bash
 # Exit on error
 set -e
-
+# Redirect everybody's output to a file
+logfile=/home/ubuntu/launch_stdout_stderr.log
+exec > $logfile 2>&1
 """
     startup_script += 'date > /home/ubuntu/setup.log\n'
     
@@ -154,6 +156,14 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
     
     log("Waiting for setup to complete")
     machine.ssh_wait_for_ready()
+    
+    log("rebooting machine")
+    machine.reboot()
+    
+    log("waiting for machine to be up again")
+    # machine.get_aws_status(timeout)['state'] == 'running'
+    machine.ssh_wait_for_ready("/home/ubuntu")
+    log("machine ready")
 
 class TestCases(unittest.TestCase):
     

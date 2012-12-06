@@ -5,10 +5,9 @@ import os
 import uuid
 import unittest
 import zipfile
-import redis
 import tempfile
 import shutil
-redis_client = redis.Redis()
+
 
 
 from common import StdoutPublisher, INSTALL_VPN, Machine,\
@@ -79,6 +78,8 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
 #print = log
 
 def log(msg):
+    import redis
+    redis_client = redis.Redis()
     print(msg)
     redis_client.publish("launchers", msg)
     

@@ -260,9 +260,7 @@ class Machine (object):
         else:
             return output
 
-    def user_ssh_command(self):
-        return "ssh -i %s %s@%s"%(self.config.kp_fname, self.config.username, self.config.hostname)
-
+  
     def ssh_wait_for_ready(self, the_file_to_look_for=None):
         delay = 0.5
         file_to_look_for = the_file_to_look_for
@@ -297,6 +295,9 @@ class Machine (object):
             raise MachineException("Could not terminate instance %s" % self.config.aws_id)
         self.ec2.delete_key_pair(self.config.kp_name)
         self._event({"type":"check", "state":'terminated', "machine_id":self.config.aws_id})
+        
+    
+ 
     
     def get_X_status(self):
         #self._event({"type":"test", "state":'X, OpenGL'})
@@ -348,6 +349,18 @@ class Machine (object):
         data['result'] = 'failure'
         return data
     
+    def reboot(self):
+        """
+        Reboots the machine and waits until it has gone down ()
+        """
+        #r = self.ec2.reboot_instances([self.config.aws_id])
+        r = self.ssh_send_command("sudo reboot")
+
+        while self.ping(1):
+            time.sleep(0.1)
+        
+        return r
+        
 
 #    def reboot(self, timeout=1):
 #        cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'sudo', 'reboot']

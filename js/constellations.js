@@ -42,7 +42,7 @@ function get_constellation_names(div_name)
     return constellations;
 }
 
-function _get_constellation_div_str(div_name,constellation_name)
+function _get_constellation_div_str(div_name, configuration_name, constellation_name)
 {
     var str = "";
     str += '<div id="top" style="';
@@ -50,7 +50,7 @@ function _get_constellation_div_str(div_name,constellation_name)
     str += ' background-color:#44497a; ';
     str += ' width:100%; float:left;" ">' // #44497a
     str += " <h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
-    str +=   constellation_name + "</center></h3>";    
+    str +=   constellation_name + " [" + configuration_name + "]</center></h3>";    
     str += ' </div>' // top
     str += "<button ";
     str += ' style="border-radius: 5px;" ';
@@ -72,7 +72,7 @@ function _constellation_terminate(div_name, constellation_name)
 }
 
 
-function insert_constellation_div(div_name, constellation)
+function insert_constellation_div(div_name, configuration, constellation)
 {
     var div = document.getElementById(div_name);
     var nodes = div.childNodes;
@@ -101,7 +101,7 @@ function insert_constellation_div(div_name, constellation)
     var const_div = document.createElement("div");
     const_div.id = constellation;
     _set_const_style(const_div.style);
-    const_div.innerHTML = _get_constellation_div_str(div_name, constellation);
+    const_div.innerHTML = _get_constellation_div_str(div_name, configuration, constellation);
     div.insertBefore(const_div, node);
     return const_div;
 }

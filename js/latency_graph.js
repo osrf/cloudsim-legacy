@@ -4,12 +4,6 @@ var max_color  = "#CB4B4B"; // rgb(203,75,75); red
 var avg_color  = "#AFD8F8"; // rgb(175,216,248); blue 
 var mdev_color = "#EDC240"; // rgb(237,194,64); yellow
 
-//var latency_plot_data = [  { label:"min", color: min_color, data:[] }, 
-//              { label:"max", color: max_color, data:[]}, 
-//              { label:"average", color:avg_color, data:[]} ];
-           //   { label:"mean deviation", color:mdev_color, data:[]}  ];
-
-
 var latency_data = {};
 
 var last_update = null;

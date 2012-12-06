@@ -13,13 +13,22 @@ from common import create_openvpn_server_cfg_file,\
     create_ros_connect_file, create_vpn_connect_file
 from common import Machine_configuration
 import time
+import boto
 
 #def launchx():
 #    print ("launch from micro_vpn")
     
 
+def log(msg):
+    try:
+        import redis
+        red = redis.Redis()
+        red.publish("launchers", msg)
+    except:
+        pass
+    print(msg)
+        
 
-    
 def launch(username, 
            constellation_name, 
            tags, publisher, credentials_ec2, 
@@ -37,7 +46,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     startup_script += inject_file_into_script("openvpn.config",file_content)
 
     startup_script += INSTALL_VPN
-    print(startup_script)
+    log(startup_script)
 
     config = Machine_configuration()
     config.initialize(   image_id ="ami-137bcf7a", 
@@ -62,15 +71,15 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     
     machine.create_ssh_connect_script()
     clean_local_ssh_key_entry(machine.config.ip )
-    print("")
-    print("")
-    print("Waiting for ssh")
+    log("")
+    log("")
+    log("Waiting for ssh")
     machine.ssh_wait_for_ready("/home/ubuntu")
     
-    print("Waiting for setup to complete")
+    log("Waiting for packages to be installed")
     machine.ssh_wait_for_ready()
     
-    print("Downloading key")
+    log("Downloading key")
     remote_fname = "/etc/openvpn/static.key"
     
     fname_vpn_cfg = os.path.join(machine.config.cfg_dir, "openvpn.config")
@@ -101,24 +110,40 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
                      vpnkey_fname,
                      fname_ros,]
     
-    print("creating %s" % fname_zip)
+    log("creating %s" % fname_zip)
     with zipfile.ZipFile(fname_zip, 'w') as fzip:
         for fname in files_to_zip:
             short_fname = os.path.split(fname)[1]
             zip_name = os.path.join(machine.config.uid, short_fname)
             fzip.write(fname, zip_name)
             
-
+    log("rebooting machine")
+    r = machine.reboot()
+    
+    log("waiting for machine to be up again")
+    # machine.get_aws_status(timeout)['state'] == 'running'
+    machine.ssh_wait_for_ready("/home/ubuntu")
+    
+    
 class TestCases(unittest.TestCase):
     
     
     def test_micro(self):
         
         username = "toto@toto.com"
-        machine_name = "microvpn_" + str(uuid.uuid1())
+        constellation_name = "test_microvpn_" + str(uuid.uuid1())
         publisher = StdoutPublisher()
-        launch(username, machine_name, publisher)
+       
+        credentials_ec2  = "/home/hugo/code/boto.ini"
+        constellation_directory = "../../test_dir"
+        tags = {'TestCases':'micro_vpn'}
         
+        launch("toto@toto.com", 
+         constellation_name, 
+         tags, 
+         publisher, 
+         credentials_ec2, 
+         constellation_directory)
         
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 
 function create_constellation(div_name, configuration, constellation)
 {
-    var constellation_div = insert_constellation_div(div_name, constellation);
+    var constellation_div = insert_constellation_div(div_name, configuration, constellation);
     
     if(configuration == "cloudsim") return create_cloudsim_constellation(constellation_div, constellation);
     if(configuration == "drc_sim_ami") return create_drc_sim_ami_constellation(constellation_div, constellation);
