@@ -78,10 +78,13 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
 #print = log
 
 def log(msg):
-    import redis
-    redis_client = redis.Redis()
+    try:
+        import redis
+        redis_client = redis.Redis()
+        redis_client.publish("launchers", msg)
+    except:
+        print("Warning: redis not installed.")
     print(msg)
-    redis_client.publish("launchers", msg)
     
 
     
