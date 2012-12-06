@@ -207,7 +207,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     
     return machine
     
-        
+    
 def cloudsim_bootstrap(username, ec2):
     print(__file__)
     constellation_name = str(uuid.uuid1())
