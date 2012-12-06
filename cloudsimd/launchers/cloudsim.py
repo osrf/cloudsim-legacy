@@ -84,10 +84,8 @@ def log(msg):
         redis_client.publish("launchers", msg)
     except:
         print("Warning: redis not installed.")
-    print(msg)
-    
+    print("cloudsim log> %s" % msg)
 
-    
 
     
 def launch(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory, website_distribution = TEAM_LOGIN_DISTRIBUTION):
