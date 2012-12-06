@@ -1,2 +1,27 @@
-CloudSim 0.9.3
+changeset:   154:2ff358521d49
+tag:         tip
+user:        Hugo Boyer <hugo@osrfoundation.org>
+date:        Wed Dec 05 18:40:16 2012 -0800
+summary:     Added tag cloudsim_0.9.3 for changeset 4ada473799d1
+
+changeset:   153:4ada473799d1
+tag:         cloudsim_0.9.3
+user:        Hugo Boyer <hugo@osrfoundation.org>
+date:        Wed Dec 05 18:40:04 2012 -0800
+summary:     fixing cloudsim bootstrap
+
+changeset:   152:efe253d55114
+user:        Hugo Boyer <hugo@osrfoundation.org>
+date:        Wed Dec 05 18:24:59 2012 -0800
+summary:     Added tag cloudsim_0.9.3 for changeset 27cf53a4ed76
+
+changeset:   151:27cf53a4ed76
+user:        Hugo Boyer <hugo@osrfoundation.org>
+date:        Wed Dec 05 18:24:41 2012 -0800
+summary:     fixing cloudsim bootstrap
+
+changeset:   150:671fab9c10ad
+user:        Hugo Boyer <hugo@osrfoundation.org>
+date:        Wed Dec 05 18:21:36 2012 -0800
+summary:     Added tag cloudsim_0.9.3 for changeset 13b7f643afb5
 
