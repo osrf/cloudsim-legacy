@@ -113,11 +113,14 @@ function create_glx_state_widget(machine_div, constellation_name, machine_name, 
             
         if(data.type == 'graphics')
         {
-            
+        	var text = "test failed";
             var color = "red";
 		    if(data.result == 'success')
-		    	color = "blue";
-		    var text = "running";
+		    {
+		        color = "blue";
+		        text = "running";	
+		    }
+		    
 		    _update_glx_state(widget_div, color, text);
         }
         

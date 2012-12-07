@@ -21,7 +21,7 @@ function create_machine_launch_monitor_widget(machine_div, constellation_name, m
         
         	if(data)
 		
-       var str "";
+       var str = "";
        for (var key in data )
        {
            var value = data[key]; 

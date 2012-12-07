@@ -74,20 +74,19 @@ page = """
 <img src="/js/images/osrf.png" width="400px"/>
 <div>
 
-<h1>Welcome to cloudsim</h1>
+<h1>CloudSim %s</h1>
 
 </div>
 
 <div style="padding: 10px; margin-bottom:20px; margin-top:20px;" more="border-radius: 15px; border: 1px solid black; "> 
 <pre>
-<a href="https://bitbucket.org/osrf/cloudsim">Source</a>
 
-%s
 </pre>
 </div>
 
 <a href="/cloudsim/inside/cgi-bin/console">Console</a><br>
 <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
+<a href="https://bitbucket.org/osrf/cloudsim">Source</a>
 </body>
 </html>
 """ % version_info
