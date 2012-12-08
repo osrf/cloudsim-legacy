@@ -11,6 +11,8 @@ set(VERSION_FULL ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION})
 
 message(STATUS "${PROJECT_NAME} version ${VERSION_FULL}")
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/VERSION.in ${CMAKE_CURRENT_SOURCE_DIR}/VERSION)
+
 ########################################
 # Package Creation: 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Infrastructure for launching robotics simulations in the cloud")

@@ -9,22 +9,30 @@ from json import dumps
 from common import Machine, MachineDb
 import commands
 import shutil
-from common.machine import list_all_machines_accross_domains
+from common.machine import list_all_machines_accross_domains, get_machine_tag
 
 red = redis.Redis()
 
 def log(msg):
     red.publish('cloudsim_monitor', msg)
 
+def _create_status(domain, constellation, machine, status_type):
+    status = {}
+    machine_name = machine.config.uid
+    constellation_name = constellation['name']
+    status['type'] = status_type
+    status['domain'] = domain
+    status['constellation_config'] = constellation['config']
+    status['constellation_name'] = constellation['name']
+    status['machine_name'] = machine_name
+    status['launch_state'] = get_machine_tag(domain, constellation_name, machine_name, "launch_state")
+    return status
+
 def monitor_cloud(domain, constellation, machine):
     log('cloud: %s/%s/%s' % (domain, constellation['name'], machine.config.uid) )
-    status = {}
-    status['machine'] = machine.config.uid
-    status['constellation_name'] = constellation['name']
-    status['constellation_config'] = constellation['config']
-    status['type'] = 'cloud'
-    
+    status = _create_status(domain, constellation, machine, 'cloud')
     cloud = machine.get_aws_status()
+    
     aws_status = {}
     aws_status.update(status)
     aws_status.update(cloud)
@@ -39,15 +47,8 @@ def monitor_cloud(domain, constellation, machine):
 
     return r
 
-    
 def monitor_latency(domain, constellation, machine):
-    status = {}
-    status['machine_name'] = machine.config.uid
-    status['constellation_name'] = constellation['name']
-    status['constellation_config'] = constellation['config']
-    status['domain'] = domain
-    status['type'] = 'latency'
-
+    status = _create_status(domain, constellation, machine, 'latency')
     ping_status = {}
     
     ping_status.update(status)
@@ -64,12 +65,7 @@ def monitor_latency(domain, constellation, machine):
 
 def monitor_xgl(domain, constellation, machine):
     x = machine.get_X_status()
-    
-    status = {}
-    status['machine_name'] = machine.config.uid
-    status['constellation_name'] = constellation['name']
-    status['constellation_config'] = constellation['config']
-    status['type'] = 'graphics'
+    status = _create_status(domain, constellation, machine, 'graphics')
     x_status = {}
     x_status.update(status)
     if x:
@@ -81,14 +77,9 @@ def monitor_xgl(domain, constellation, machine):
     return x
 
 def monitor_simulator(domain, constellation, machine):
-    x = machine.get_gazebo_status()
     
-    status = {}
-    status['machine_name'] = machine.config.uid
-    status['constellation_name'] = constellation['name']
-    status['constellation_config'] = constellation['config']
-    status['type'] = 'simulator'
-        
+    status = _create_status(domain, constellation, machine, 'simulator')
+    x = machine.get_gazebo_status()
     g_status = {}
     g_status.update(status)
 

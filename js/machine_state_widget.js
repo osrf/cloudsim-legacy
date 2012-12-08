@@ -32,13 +32,16 @@ function create_machine_state_widget(machine_div, constellation_name, machine_na
             {
                 color = "orange";
             }
-            _update_machine_state(widget_div, color, data.state);
+            var str = data.state;
+            if(data.launch_state != "running")
+            {
+            	color = "yellow";
+                str = " launching (" + data.launch_state + ")";
+            }
+            _update_machine_state(widget_div, color, str);
         }
         
-        if ( data.type == "launch" )
-        {
-            
-        }
+        
         
     });
 }

@@ -151,14 +151,14 @@ def authorize(role = "user"):
         
 
 def get_cloudsim_verion_txt():
-    return "1.0.0"
-#    d = os.path.split(__file__)[0]
-#    hg_log_path = os.path.join(d,'..','..', '..','hg_log.txt')
-#    if(os.path.exists(hg_log_path)):
-#        with  open(hg_log_path, 'r') as f:
-#                version = f.read()
-#                return version 
-#    return "No version information available" 
+    d = os.path.split(__file__)[0]
+    version_path = os.path.join(d,'..','..', '..','VERSION')
+    if(os.path.exists(version_path)):
+        with  open(version_path, 'r') as f:
+            version = f.readlines()[0]
+            return version 
+    else:
+        return "No version information available" 
 
 def get_javascripts(exclude_list=[]):
     

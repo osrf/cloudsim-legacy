@@ -78,12 +78,12 @@ class StdoutPublisher(object):
         
         
 
-class Constellation(object):
-    def __init__(self, type, name, root_directory):
-        pass
-    
-    def get_path(self):
-        pass
+#class Constellation(object):
+#    def __init__(self, type, name, root_directory):
+#        pass
+#    
+#    def get_path(self):
+#        pass
     
     
 
@@ -409,6 +409,37 @@ class DomainDb(object):
         
                 
 
+
+def set_machine_tag(domain, constellation, machine, key, value, expiration = None):
+    try:
+        import redis
+        red = redis.Redis()
+        redis_key = domain+"/"+constellation+"/" + machine
+        str = red.get(redis_key)
+        if not str:
+            str = "{}"
+        machine_info = json.loads(str)
+        machine_info[key] = value
+        str2 = json.dumps(machine_info)
+        red.set(redis_key, str2)
+        if expiration:
+            red.expire(redis_key, expiration)
+    except:
+        pass
+
+def get_machine_tag(domain, constellation, machine, key):
+    try:
+        import redis
+        red = redis.Redis()
+        redis_key = domain+"/"+constellation+"/" + machine
+        str = red.get(redis_key)
+        machine_info = json.loads(str)
+        value = machine_info[key]
+        return value
+    except:
+        return None
+   
+
 class MachineDb(object):
     
     def __init__(self, email, machine_dir = MACHINES_DIR):
@@ -430,8 +461,11 @@ class MachineDb(object):
                     machines[machine_name] = machine 
         return machines
     
+    def is_machine_up(self, constellation, machine_name):
+        r = get_machine_tag(self.domain, constellation, machine_name, "up")
+        return r == True # can be None
     
-    def get_machines(self):
+    def get_machines(self, get_all_machines = False):
         machines = {}
         if os.path.exists(self.root_dir):
             for constellation in os.listdir(self.root_dir):
@@ -445,7 +479,8 @@ class MachineDb(object):
                 for machine_name in machine_list:
                     machine = self.get_machine(constellation, machine_name)
                     if machine:
-                        machines[constellation]['machines'][machine_name] = machine 
+                        if get_all_machines or self.is_machine_up(constellation, machine_name ):
+                            machines[constellation]['machines'][machine_name] = machine 
         return machines
     
     def get_constellation(self, constellation):
@@ -520,7 +555,6 @@ def list_all_machines_accross_domains(root_dir = MACHINES_DIR):
         email = "user@" + domain
         mdb = MachineDb(email, root_dir)
         machines = mdb.get_machines()
-        
         for constellation_name, constellation in machines.iteritems():
             for machine_name, machine in constellation['machines'].iteritems():
                 all_machines.append( (domain, constellation, machine)  )
@@ -680,10 +714,16 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
         
 class MachineDbTest(unittest.TestCase):
     
-    def test_zip(self):
-        pass
+    def test_tags(self):
+        
+        set_machine_tag("a","b","c", "up", True, 10)
+        x = get_machine_tag("a","b","c", "down")
+        self.assert_(None == x, "")
+        x = get_machine_tag("a","b","c", "up")
+        self.assert_(True == x, "not found again")
+         
     
-    def test_list_machines(self):
+    def atest_list_machines(self):
         dir = '/var/www-cloudsim-auth/machines'
         print('listing machines in "%s":' % dir)
         machines = list_all_machines_accross_domains(dir)

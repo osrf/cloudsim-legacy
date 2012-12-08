@@ -17,6 +17,7 @@ from common import Machine_configuration
 from common.startup_script_builder import  ROS_SETUP_STARTUP_SCRIPT,\
     create_xorg_config_file, SOURCES_LIST_PRECISE, XGL_STARTUP_BEFORE,\
     XGL_STARTUP_AFTER
+from common.machine import set_machine_tag
 
 redis_client = redis.Redis()
 
@@ -100,21 +101,27 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
                          ssh_retries=1000)
     
     machine_name = "simulator_" + constellation_name
+    
+    domain = username.split("@")[1]
+    
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "waiting for ip")
+    set_machine_tag(domain, constellation_name, machine_name, "up", True)
+    
     machine = Machine(machine_name,
                      config,
                      publisher.event,
                      tags,
                      credentials_ec2,
                      root_directory)
-                     
-    
+
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "booting up")
     machine.create_ssh_connect_script()
     clean_local_ssh_key_entry(machine.config.ip )
 
     log("Waiting for ssh")
     machine.ssh_wait_for_ready("/home/ubuntu")
     
-    
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "preparing keys")
     fname_vpn_cfg = os.path.join(machine.config.cfg_dir, "openvpn.config")
     file_content = create_openvpn_client_cfg_file(machine.config.hostname)
     with open(fname_vpn_cfg, 'w') as f:
@@ -154,9 +161,11 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
             zip_name = os.path.join(machine.config.uid, short_fname)
             fzip.write(fname, zip_name)
     
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "installing packages")
     log("Waiting for setup to complete")
     machine.ssh_wait_for_ready()
     
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "rebooting")
     log("rebooting machine")
     machine.reboot()
     
@@ -164,6 +173,7 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
     # machine.get_aws_status(timeout)['state'] == 'running'
     machine.ssh_wait_for_ready("/home/ubuntu")
     log("machine ready")
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
 
 class TestCases(unittest.TestCase):
     

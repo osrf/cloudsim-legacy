@@ -140,6 +140,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     files_to_zip = [ fname_ssh_key, 
                      fname_ssh_sh, 
                    ]
+    
     log("creating %s" % fname_zip)
     with zipfile.ZipFile(fname_zip, 'w') as fzip:
         for fname in files_to_zip:

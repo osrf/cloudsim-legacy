@@ -30,6 +30,7 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
     start_button.setAttribute('type','button');
     start_button.setAttribute('name','start');
     start_button.setAttribute('value','Start');
+    start_button.disabled = true;
     
 	start_button.onclick =  function()
     {   
@@ -42,6 +43,7 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
     
     
     var stop_button= document.createElement('input');
+    stop_button.disabled = true;
     stop_button.setAttribute('type','button');
     stop_button.setAttribute('name','stop');
     stop_button.setAttribute('value','Stop');
@@ -82,7 +84,16 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
                 widget_div.querySelector("img").src = "/js/images/red_status.png";
             }
         }
-        
+        if(data.launch_state != "running")
+        {
+            stop_button.disabled = true;
+            start_button.disabled = true;
+        }
+        else
+        {
+            stop_button.disabled = false;
+            start_button.disabled = false;
+        }
     });
 }
 

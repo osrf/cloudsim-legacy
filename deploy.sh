@@ -3,8 +3,6 @@
 # DIR="/home/ubuntu/cloudsim"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-cd $DIR
-hg log -l5 > hg_log.txt
 
 echo
 echo copying data from $DIR to /var/www and /var/www-cloudsim-auth/users

@@ -55,13 +55,3 @@ function _reboot_machine(constellation_name, machine_name)
     terminate_constellation(constellation_name);
 }
 
-
-function _start_machine(constellation_name, machine_name)
-{
-	
-}
-
-function _stop_machine(constellation_name, machine_name)
-{
-	
-}
