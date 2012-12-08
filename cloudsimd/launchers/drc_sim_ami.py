@@ -16,6 +16,7 @@ from common import Machine_configuration
 from common.startup_script_builder import  ROS_SETUP_STARTUP_SCRIPT,\
     create_xorg_config_file, SOURCES_LIST_PRECISE, XGL_STARTUP_BEFORE,\
     XGL_STARTUP_AFTER
+from common.machine import set_machine_tag
 
 
 DRC_SETUP = """
@@ -41,7 +42,7 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
     startup_script = get_launch_script()
     
     config = Machine_configuration()
-    config.initialize(   image_id = "ami-0247c36b",  
+    config.initialize(   image_id = "ami-1579fa7c", #"ami-0247c36b",  
                          instance_type = 'cg1.4xlarge', # 'm1.small' , 
                          security_groups = ['openvpn'],
                          username = 'ubuntu', 
@@ -49,7 +50,10 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
                          startup_script = startup_script,
                          ip_retries=100, 
                          ssh_retries=1000)
-
+    
+    domain = username.split("@")[1]
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "waiting for ip")
+    set_machine_tag(domain, constellation_name, machine_name, "up", True)
     machine_name = "simulator_" + constellation_name
     machine = Machine(machine_name,
                      config,
@@ -64,9 +68,11 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
     print("")
     print("")
     print("Waiting for ssh")
+    
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "booting up")
     machine.ssh_wait_for_ready("/home/ubuntu")
     
-    
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "preparing keys")
     fname_vpn_cfg = os.path.join(machine.config.cfg_dir, "openvpn.config")
     file_content = create_openvpn_client_cfg_file(machine.config.hostname)
     with open(fname_vpn_cfg, 'w') as f:
@@ -105,9 +111,11 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
             short_fname = os.path.split(fname)[1]
             zip_name = os.path.join(machine.config.uid, short_fname)
             fzip.write(fname, zip_name)
-    
+            
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "installing packages")
     print("Waiting for setup to complete")
     machine.ssh_wait_for_ready()
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
 
 class TestCases(unittest.TestCase):
     

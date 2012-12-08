@@ -14,6 +14,7 @@ from common import create_openvpn_server_cfg_file,\
 from common import Machine_configuration
 import time
 import boto
+from common.machine import set_machine_tag
 
 #def launchx():
 #    print ("launch from micro_vpn")
@@ -60,6 +61,9 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     
     machine_name = "micro_" + constellation_name
     
+    domain = username.split("@")[1]
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "waiting for ip")
+    set_machine_tag(domain, constellation_name, machine_name, "up", True)
     
     machine = Machine(machine_name,
                      config,
@@ -68,17 +72,18 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
                      credentials_ec2,
                      constellation_directory)
                      
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "booting up")
     
     machine.create_ssh_connect_script()
     clean_local_ssh_key_entry(machine.config.ip )
-    log("")
-    log("")
+
     log("Waiting for ssh")
     machine.ssh_wait_for_ready("/home/ubuntu")
     
     log("Waiting for packages to be installed")
     machine.ssh_wait_for_ready()
     
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "preparing keys")
     log("Downloading key")
     remote_fname = "/etc/openvpn/static.key"
     
@@ -117,13 +122,14 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
             zip_name = os.path.join(machine.config.uid, short_fname)
             fzip.write(fname, zip_name)
             
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "rebooting")        
     log("rebooting machine")
     r = machine.reboot()
     
     log("waiting for machine to be up again")
     # machine.get_aws_status(timeout)['state'] == 'running'
     machine.ssh_wait_for_ready("/home/ubuntu")
-    
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
     
 class TestCases(unittest.TestCase):
     

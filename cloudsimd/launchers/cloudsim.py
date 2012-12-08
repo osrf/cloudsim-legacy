@@ -21,6 +21,7 @@ import commands
 from common import SOURCES_LIST_PRECISE
 
 from common import TEAM_LOGIN_DISTRIBUTION
+from common.machine import set_machine_tag
 
 TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """
 
@@ -131,6 +132,9 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
                      credentials_ec2,
                      constellation_directory)
                      
+    domain = username.split("@")[1]
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "waiting for ip")
+    set_machine_tag(domain, constellation_name, machine_name, "up", True)
     
     machine.create_ssh_connect_script()
     fname_ssh_key =  os.path.join(machine.config.cfg_dir, machine.config.kp_name + '.pem')
@@ -153,6 +157,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     log("Waiting for ssh connection")
     machine.ssh_wait_for_ready("/home/ubuntu")
     
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "installing packages")
     log("Waiting for setup to complete")
     machine.ssh_wait_for_ready()
     log("   setup to complete")
@@ -203,7 +208,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     log('setup complete')
     log("%s\n"%(machine.get_user_ssh_command_string()))
     log("http://%s"% machine.config.hostname)
-    
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
     return machine
     
     
