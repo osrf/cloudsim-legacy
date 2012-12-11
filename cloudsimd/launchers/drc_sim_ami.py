@@ -39,12 +39,15 @@ set -e
 
 def launch(username, constellation_name, tags, publisher, credentials_ec2, root_directory):
 
-    startup_script = get_launch_script()
+    security_group = "drc_sim_ami"
+    ec2 = create_ec2_proxy(credentials_ec2)
+    create_if_not_exists_vpn_ping_security_group(ec2, security_group, "DRC simulator: ssh and vpn")
     
+    startup_script = get_launch_script()
     config = Machine_configuration()
     config.initialize(   image_id = "ami-1579fa7c", #"ami-0247c36b",  
                          instance_type = 'cg1.4xlarge', # 'm1.small' , 
-                         security_groups = ['openvpn'],
+                         security_groups = [security_group],
                          username = 'ubuntu', 
                          distro = 'precise',
                          startup_script = startup_script,

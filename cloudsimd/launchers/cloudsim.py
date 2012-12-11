@@ -21,7 +21,8 @@ import commands
 from common import SOURCES_LIST_PRECISE
 
 from common import TEAM_LOGIN_DISTRIBUTION
-from common.machine import set_machine_tag
+from common.machine import set_machine_tag, create_ec2_proxy,\
+    create_if_not_exists_web_app_security_group
 
 TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """
 
@@ -75,6 +76,7 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
 
 
 """
+
 #old_print = print
 #print = log
 
@@ -112,13 +114,15 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
 
     startup_script += TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE
     # log(startup_script)
- 
+    security_group = "cloudsim"
+    ec2 = create_ec2_proxy(credentials_ec2)
+    create_if_not_exists_web_app_security_group(ec2, security_group, "web server and ssh")
     
-    config = Machine_configuration()
+        config = Machine_configuration()
     config.initialize(   image_id ="ami-137bcf7a", 
                          # instance_type = 'm1.small',  
                          instance_type = 't1.micro', 
-                         security_groups = ['TeamLogin'],
+                         security_groups = [security_group],
                          username = 'ubuntu', 
                          distro = 'precise',
                          startup_script = startup_script,

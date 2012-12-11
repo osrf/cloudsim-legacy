@@ -19,6 +19,7 @@ from common import BOTO_CONFIG_FILE_USEAST
 from common import Machine
 
 import redis
+from common.machine import get_unique_short_name
 # register the daemon
 # sudo initctl reload-configuration
 
@@ -40,7 +41,7 @@ def launch( username, config_name, credentials_ec2 =  BOTO_CONFIG_FILE_USEAST,
             root_directory =  MACHINES_DIR):
     
     red = redis.Redis()
-    constellation_name =  "c_"+str(uuid.uuid1()).split('-')[0]  #+str(uuid.uuid1())
+    constellation_name =  "c" + get_unique_short_name()
     
     
     try:

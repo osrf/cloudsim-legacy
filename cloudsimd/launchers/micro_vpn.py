@@ -34,7 +34,11 @@ def launch(username,
            constellation_name, 
            tags, publisher, credentials_ec2, 
            constellation_directory):
-
+    
+    security_group = "micro_vpn"
+    ec2 = create_ec2_proxy(credentials_ec2)
+    create_if_not_exists_vpn_ping_security_group(ec2, security_group, "Micro machine: ssh and vpn")
+    
     startup_script = """#!/bin/bash
 # Exit on error
 set -e
@@ -52,7 +56,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     config = Machine_configuration()
     config.initialize(   image_id ="ami-137bcf7a", 
                          instance_type = 't1.micro', # 'm1.small' , 
-                         security_groups = ['ping_ssh'],
+                         security_groups = [security_group],
                          username = 'ubuntu', 
                          distro = 'precise',
                          startup_script = startup_script,

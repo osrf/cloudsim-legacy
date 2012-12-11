@@ -12,6 +12,7 @@ import json
 directory = os.path.split(__file__)[0]
 
 
+
 def log(msg, chan = "launchers"):
     try:
         import redis

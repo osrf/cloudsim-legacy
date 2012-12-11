@@ -25,7 +25,16 @@ def get_test_runner():
         return runner
     except:
         return None
+
+def kill_all_ec2_instances(ec2):
+    #import boto
+    #ec2 = boto.connect_ec2(aws_access_key_id="foo", aws_secret_access_key="bar")
+    ec2.terminate_instances([reservation.instances[0].id for reservation in ec2.get_all_instances()])
     
+
 if __name__ == "__main__":   
     print(get_test_dir())
     
+    from machine import create_ec2_proxy
+    ec2 = create_ec2_proxy('../../../../boto.ini')
+    kill_all_ec2_instances(ec2)

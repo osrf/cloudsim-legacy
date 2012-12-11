@@ -20,6 +20,7 @@ from constants import *
 from startup_script_builder import *
 import zipfile
 from  testing import get_test_runner
+from uuid import UUID
 
 """
 Removes the key for this ip, in case we connect to a different machine with the
@@ -73,7 +74,10 @@ class StdoutPublisher(object):
         if event_data:
             print(data_str)
 
-        sys.stdout.flush()
+        try:
+            sys.stdout.flush()
+        except:
+            pass # test cases try to do something clever
         
         
         
@@ -161,14 +165,14 @@ class Machine (object):
             # Start it up
             
             self._event({"type:":"launch", "state":"reserve"})
-            res = self.ec2.run_instances(   image_id=self.config.image_id, 
+            res = self.ec2.run_instances(   image_id=self.config.image_id,
                                             min_count =1,
                                             max_count =1,
                                             key_name=self.config.kp_name,
                                             instance_type=self.config.instance_type,
                                             security_groups = self.config.security_groups,
                                             user_data=self.config.startup_script)
-            #self.config.print_cfg()
+            # self.config.print_cfg()
             self.config.reservation = res.id
             self._event({"type":"launch", "state":"reserve", "reservation_id":'%s'% self.config.reservation } )
             
@@ -188,7 +192,7 @@ class Machine (object):
                         self.config.aws_id = inst.id
                         self._event({"type":"launch", "state":"ip_configured", "ip": self.config.ip, 'aws_id': self.config.aws_id})
                         break
-                    time.sleep(0.1)
+                    time.sleep(0.5)
                 if done:
                     break 
                 
@@ -280,7 +284,7 @@ class Machine (object):
             tries += 1
             # print ( "%s / %s" % (tries, retries))
             self._event({"type":"launch", "state":'retry', "goal":"file_ready", "file": file_to_look_for,  "try": tries, "retries": retries })
-            sys.stdout.flush()
+            
             try:
                 self.ssh_send_command(cmd)
             except MachineException as ex:
@@ -709,12 +713,65 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
         print("Shuting down\n\n\n")      
         machine.terminate()
         print("\n\n\n")
-        sys.stdout.flush()
         
         
+        
+def get_security_groups(ec2):
+        rs = ec2.get_all_security_groups()
+        groups = [str(x).split("SecurityGroup:")[1] for x in rs] 
+        return groups
+
+def get_unique_short_name(prefix = 'x'):
+    s = str(uuid.uuid1()).split('-')[0]
+    return prefix + s
+
+def create_if_not_exists_web_app_security_group(ec2, group_name, description):
+    sec_groups = get_security_groups(ec2)
+    if group_name not in sec_groups:
+        # imcp all, 22 (ssh) 80 (http)
+        sec = ec2.create_security_group(group_name, description)
+        sec.authorize('tcp', 80, 80, '0.0.0.0/0')   # web
+        sec.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
+        sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
+
+def create_if_not_exists_vpn_ping_security_group(ec2, group_name, description):
+    sec_groups = get_security_groups(ec2)
+    if group_name not in sec_groups:
+        # imcp all, 22 (ssh) 80 (http)
+        sec = ec2.create_security_group(group_name, description)
+        sec.authorize('udp', 1194, 1194, '0.0.0.0/0')   # web
+        sec.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
+        sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
+
+
 class MachineDbTest(unittest.TestCase):
     
-    def test_tags(self):
+    def test_security_groups(self):
+        
+        name = "s_" + str(uuid.uuid1()).split('-')[0]
+        
+        
+        boto_config_file = '/home/hugo/code/boto.ini'
+        ec2 = create_ec2_proxy(boto_config_file)
+        groups = get_security_groups(ec2)
+        
+        self.assert_(name not in groups, "already there")
+        
+        # imcp all, 22 (ssh) 80 (http)
+        sec = ec2.create_security_group(name, 'Simulation machine secutrity for drc_sim_latest configuration')
+        sec.authorize('tcp', 80, 80, '0.0.0.0/0')   # web
+        sec.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
+        sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
+        
+        groups = get_security_groups(ec2)
+        print (groups)
+        self.assert_(name in groups, "not created")
+        
+        ec2.delete_security_group(name)
+        groups = get_security_groups(ec2)
+        self.assert_(name not in groups, "not deleted")
+        
+    def atest_tags(self):
         
         set_machine_tag("a","b","c", "up", True, 10)
         x = get_machine_tag("a","b","c", "down")

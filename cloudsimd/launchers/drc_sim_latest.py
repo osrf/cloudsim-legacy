@@ -17,7 +17,8 @@ from common import Machine_configuration
 from common.startup_script_builder import  ROS_SETUP_STARTUP_SCRIPT,\
     create_xorg_config_file, SOURCES_LIST_PRECISE, XGL_STARTUP_BEFORE,\
     XGL_STARTUP_AFTER
-from common.machine import set_machine_tag
+from common.machine import set_machine_tag, create_ec2_proxy,\
+    create_if_not_exists_vpn_ping_security_group, get_unique_short_name
 
 redis_client = redis.Redis()
 
@@ -87,13 +88,18 @@ exec > $logfile 2>&1
     
 
 def launch(username, constellation_name, tags, publisher, credentials_ec2, root_directory):
-
-    startup_script = get_launch_script()
     
+    
+    security_group = "drc_sim_latest"
+    ec2 = create_ec2_proxy(credentials_ec2)
+    create_if_not_exists_vpn_ping_security_group(ec2, security_group, "DRC simulator: ping, ssh and vpn")
+    
+    startup_script = get_launch_script()
+        
     config = Machine_configuration()
     config.initialize(   image_id = "ami-98fa58f1",  
                          instance_type = 'cg1.4xlarge', # 'm1.small' , 
-                         security_groups = ['openvpn'],
+                         security_groups = [security_group],
                          username = 'ubuntu', 
                          distro = 'precise',
                          startup_script = startup_script,
@@ -174,23 +180,36 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
     machine.ssh_wait_for_ready("/home/ubuntu")
     log("machine ready")
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
+    
+    return machine
 
-class TestCases(unittest.TestCase):
+class Test_launch_drcim_latest(unittest.TestCase):
     
    
-    def test_script(self):
+    def atest_script(self):
         script = get_launch_script()
         print (script)
         
     
-    def atest_launch(self):
+    def test_launch(self):
         
-        username = "toto@toto.com"
-        machine_name = "gazebo_" + str(uuid.uuid1())
-        publisher = StdoutPublisher()
-        launch(username, machine_name, publisher)
+        try:
+            username = "test@osrfoundation.org" 
+            constellation_name = "test_launch_drcim_latest_" + get_unique_short_name()
+            tags = {"test":"test_launch_drcim_latest"} 
+            publisher = StdoutPublisher()
+            credentials_ec2 = "/home/hugo/code/boto.ini"
+            
+            from common.testing import get_test_path
+            root_directory = get_test_path('Test_launch_drcim_latest')
+            
+            machine = launch(username, constellation_name, tags, publisher, credentials_ec2, root_directory)
+            
+            machine.terminate()
+        except Exception, e:
+            print(e)
+            self.assert_(1==0, "error %s" % e)
         
-        
-
 if __name__ == "__main__":
-    unittest.main(testRunner = get_runner())               
+    from common.testing import get_test_runner
+    unittest.main(testRunner =  get_test_runner())               

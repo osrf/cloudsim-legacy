@@ -130,7 +130,7 @@ class TestMachinePub(unittest.TestCase):
         print("Shuting down\n\n\n")      
         machine.terminate()
         print("\n\n\n")
-        sys.stdout.flush()
+         
              
         
 if __name__ == '__main__':
