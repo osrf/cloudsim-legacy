@@ -22,7 +22,7 @@ from common import SOURCES_LIST_PRECISE, get_boto_path
 
 from common import TEAM_LOGIN_DISTRIBUTION
 from common.machine import set_machine_tag, create_ec2_proxy,\
-    create_if_not_exists_web_app_security_group
+    create_if_not_exists_web_app_security_group, get_unique_short_name
 from common import kill_all_ec2_instances
 
 TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """
@@ -219,7 +219,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     
 def cloudsim_bootstrap(username, ec2):
     print(__file__)
-    constellation_name = str(uuid.uuid1())
+    constellation_name = get_unique_short_name('test_')
     tags = {}
     constellation_directory = tempfile.mkdtemp("cloudsim")
     
@@ -253,21 +253,20 @@ class TestCases(unittest.TestCase):
     def test_cloudsim(self):
         
         ec2 = get_boto_path()
-        machine = cloudsim_bootstrap("gerkey@osrfoundation.org", ec2)
+        machine = cloudsim_bootstrap("test@osrfoundation.org", ec2)
         
         machine.ssh_wait_for_ready("/home/ubuntu/cloudsim")
         self.assert_(1==1, "machine ready")
         
-        self.assert_(self.machine.ping(count), "can't reach")
+        self.assert_(machine.ping(10), "can't reach")
         machine.terminate()
         
         
 if __name__ == "__main__":
     
-    unittest.main() #(testRunner = testing.get_test_runner())
-    
-    print(sys.argv)
-    
+    unittest.main(testRunner = get_test_runner())
+    print("Killing all instances")
+    ec2 = create_ec2_proxy(get_boto_path())
     kill_all_ec2_instances(ec2)
     
     

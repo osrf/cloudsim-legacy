@@ -35,7 +35,7 @@ def kill_all_ec2_instances(ec2):
 
 def get_boto_path():
     d = get_test_dir()
-    r = os.path.abspath(d +'/../boto.ini' )
+    r = os.path.abspath(d +'/../../boto.ini' )
     return r
 
 if __name__ == "__main__":   

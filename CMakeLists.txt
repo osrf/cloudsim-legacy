@@ -32,13 +32,16 @@ include(CPack)
 # Testing
 enable_testing()
 set(TEST_SCRIPTS
-  inside/cgi-bin/common/startup_script_builder.py  
+  inside/cgi-bin/common/startup_script_builder.py
+  cloudsimd/launchers/cloudsim.py
+  #cloudsimd/launchers/drc_sim_latest.py
+    
 )
 foreach(script ${TEST_SCRIPTS})
   string(REGEX REPLACE "/" "_" test_name ${script})
   add_test(NAME ${test_name} 
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-           COMMAND python ${script})
+           COMMAND PYTHONPATH=$WORKSPACE/cloudsim/inside/cgi-bin python ${script})
   set_tests_properties(${test_name} PROPERTIES TIMEOUT 1200)
   # Check that the test produced a result and create a failure if it didn't.
   # Guards against crashed and timed out tests.
