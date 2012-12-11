@@ -27,3 +27,22 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME_LOWER}")
 set(CPACK_SOURCE_GENERATOR "TBZ2")
 list(APPEND CPACK_SOURCE_IGNORE_FILES ";Ogre.log;TODO;/.hg/;.swp$;/build/;.hgtags;.hgignore")
 include(CPack)
+
+########################################
+# Testing
+enable_testing()
+set(TEST_SCRIPTS
+  inside/cgi-bin/common/startup_script_builder.py  
+)
+foreach(script ${TEST_SCRIPTS})
+  string(REGEX REPLACE "/" "_" test_name ${script})
+  add_test(NAME ${test_name} 
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+           COMMAND python ${script})
+  set_tests_properties(${test_name} PROPERTIES TIMEOUT 1200)
+  # Check that the test produced a result and create a failure if it didn't.
+  # Guards against crashed and timed out tests.
+  # Diabled until we have predictable test result file names, #8
+  #add_test(check_${BINARY_NAME} ${PROJECT_SOURCE_DIR}/tools/check_test_ran.py ${CMAKE_BINARY_DIR}/test_results/${BINARY_NAME}.xml)
+endforeach()
+
