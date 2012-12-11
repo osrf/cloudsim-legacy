@@ -18,11 +18,12 @@ from common import create_openvpn_server_cfg_file,\
 from common import Machine_configuration
 import time
 import commands
-from common import SOURCES_LIST_PRECISE
+from common import SOURCES_LIST_PRECISE, get_boto_path
 
 from common import TEAM_LOGIN_DISTRIBUTION
 from common.machine import set_machine_tag, create_ec2_proxy,\
     create_if_not_exists_web_app_security_group
+from common import kill_all_ec2_instances
 
 TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """
 
@@ -224,7 +225,8 @@ def cloudsim_bootstrap(username, ec2):
     
     zip_path = zip_cloudsim()
     pub = StdoutPublisher()
-    launch(username, constellation_name, tags, pub, ec2, constellation_directory, zip_path)
+    machine = launch(username, constellation_name, tags, pub, ec2, constellation_directory, zip_path)
+    return machine
 
 def zip_cloudsim():
     
@@ -242,25 +244,6 @@ def zip_cloudsim():
     
 class TestCases(unittest.TestCase):
     
-   
-    
-#    def test_launch(self):
-#        
-#        username = "hugo@osrfoundation.org"
-#        machine_name = "microvpn_" + str(uuid.uuid1())
-#        publisher = StdoutPublisher()
-#        ec2 = "/home/hugo/code/boto.ini"
-#        root_directory = '../launch_test'
-#        uid = uuid.uuid1()
-#        machine_name = "cloudsim_" + str( uid )
-#        tags = {}
-#        tags['type'] = 'TeamLogin'
-#        tags['machine'] = machine_name
-#        tags['user'] = username
-#        tags['origin'] = 'test_launch test case'
-#        launch(username, machine_name, tags, publisher, ec2, root_directory)
-
-
     def test_cloudsim_strap(self):
         
         #    
@@ -268,8 +251,15 @@ class TestCases(unittest.TestCase):
         self.assert_(os.path.exists(zip_path), "no zip done!")
         
     def test_cloudsim(self):
-        ec2 = "/home/hugo/code/boto.ini"
-        cloudsim_bootstrap("gerkey@osrfoundation.org", ec2)
+        
+        ec2 = get_boto_path()
+        machine = cloudsim_bootstrap("gerkey@osrfoundation.org", ec2)
+        
+        machine.ssh_wait_for_ready("/home/ubuntu/cloudsim")
+        self.assert_(1==1, "machine ready")
+        
+        self.assert_(self.machine.ping(count), "can't reach")
+        machine.terminate()
         
         
 if __name__ == "__main__":
@@ -278,5 +268,6 @@ if __name__ == "__main__":
     
     print(sys.argv)
     
+    kill_all_ec2_instances(ec2)
     
-     
+    

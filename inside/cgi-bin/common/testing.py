@@ -33,9 +33,15 @@ def kill_all_ec2_instances(ec2):
     ec2.terminate_instances([reservation.instances[0].id for reservation in ec2.get_all_instances()])
     
 
+def get_boto_path():
+    d = get_test_dir()
+    r = os.path.abspath(d +'/../boto.ini' )
+    return r
+
 if __name__ == "__main__":   
     print(get_test_dir())
-    
+
     from machine import create_ec2_proxy
-    ec2 = create_ec2_proxy('../../../../boto.ini')
+    ec2 = create_ec2_proxy(get_boto_path())
+
     kill_all_ec2_instances(ec2)
