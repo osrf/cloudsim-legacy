@@ -1,6 +1,6 @@
 
 
-function add_constellations_widget(div_name)
+function create_constellations_widget(div_name)
 {
     console.log("constellations_on_load_page " + div_name);
     

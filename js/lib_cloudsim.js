@@ -48,7 +48,7 @@ function change_credentials(access_key, secret_access_key)
     
     var jmsg = eval('(' + msg + ')');
     console.log("change_credentials: " + msg);
-    alert(jmsg['msg']);
+    return jmsg;
 }
 
 
@@ -82,6 +82,7 @@ function stop_simulator(constellation_name, machine_name)
     console.log(msg);
 
 }
+
 
 ///////////////////////// AJAX
 

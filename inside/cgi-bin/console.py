@@ -37,10 +37,14 @@ template = """
  
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Cloudsim console</title>
-    <link href="/js/layout.css" rel="stylesheet" type="text/css">
+
+
     
-    <script language="javascript" type="text/javascript" src="/js/jquery-1.8.3.min.js"></script>
+    <link href="/js/layout.css" rel="stylesheet" type="text/css">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
     <script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
+
 
 """ + scripts +"""
     
@@ -60,8 +64,8 @@ template = """
         add_cloud_credentials_widget("credentials_div");
         add_users_admin_widget("users_div");
         
-        machine_launch_on_load_page("launcher_div");
-        add_constellations_widget("constellations_div");
+        create_constellation_launcher_widget("launcher_div");
+        create_constellations_widget("constellations_div");
         stream();
     }
     

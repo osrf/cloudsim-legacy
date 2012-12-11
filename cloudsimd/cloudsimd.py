@@ -37,8 +37,10 @@ def log(msg, chan="cloudsim_log"):
     except Exception, e:
         print("cloudsimd> %s" % msg)
 
-def launch( username, config_name, credentials_ec2 =  BOTO_CONFIG_FILE_USEAST, 
-            root_directory =  MACHINES_DIR):
+def launch( username, 
+            config_name, 
+            credentials_ec2, 
+            root_directory):
     
     red = redis.Redis()
     constellation_name =  "c" + get_unique_short_name()
@@ -80,10 +82,10 @@ def terminate(username,
     
 
     
-def async_launch(username, config):
+def async_launch(username, config, credentials_ec2, root_dir):
     log("cloudsimd async_launch [config %s for user %s]"% (config, username) )
     try:
-        p = multiprocessing.Process(target=launch, args=(username, config, ))
+        p = multiprocessing.Process(target=launch, args=(username, config, credentials_ec2, root_dir ))
         # jobs.append(p)
         p.start()
     except Exception, e:
@@ -166,7 +168,7 @@ def run():
             if cmd == 'launch':
                 config = data['configuration']
                 # log("CLOUDSIM Launch %s" % config)
-                async_launch(username, config)
+                async_launch(username, config, BOTO_CONFIG_FILE_USEAST, MACHINES_DIR)
             
             if cmd == 'terminate':
                 constellation = data['constellation']

@@ -6,8 +6,9 @@ from __future__ import print_function
 import os
 
 def get_test_dir():
-    d = os.path.split(__file__)[0]
-    test_dir = os.path.join('..','..','..', 'test-reports')
+    
+    d = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    test_dir = os.path.join(d,'test-reports')
     r = os.path.abspath(test_dir)
     return r
 

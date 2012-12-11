@@ -1,7 +1,7 @@
 
 var machine_configurations = null;
 
-function machine_launch_on_load_page(div_name)
+function create_constellation_launcher_widget(div_name)
 {   
     console.log('machine_launch_on_load_page div=' + div_name);
     var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs.py");
@@ -28,7 +28,6 @@ function launch(config)
     var r=confirm('Launch a new "' + config + '" constellation?' );
     if (r==false)
     {
-        // x="You pressed Cancel!";
         return;
     }
     

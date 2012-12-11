@@ -269,7 +269,7 @@ class TestCases(unittest.TestCase):
         
     def test_cloudsim(self):
         ec2 = "/home/hugo/code/boto.ini"
-        cloudsim_bootstrap("gerkey@osrfoundationp.org", ec2)
+        cloudsim_bootstrap("gerkey@osrfoundation.org", ec2)
         
         
 if __name__ == "__main__":

@@ -30,6 +30,8 @@ function _cred_click(div_name)
     
     var access = div.querySelectorAll("input")[0].value;
     var secret_access = div.querySelectorAll("input")[1].value;
-    change_credentials(access, secret_access);
+    var r = change_credentials(access, secret_access);
+    
+    alert(r['msg']);
 }
 
