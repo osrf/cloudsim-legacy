@@ -118,7 +118,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     ec2 = create_ec2_proxy(credentials_ec2)
     create_if_not_exists_web_app_security_group(ec2, security_group, "web server and ssh")
     
-        config = Machine_configuration()
+    config = Machine_configuration()
     config.initialize(   image_id ="ami-137bcf7a", 
                          # instance_type = 'm1.small',  
                          instance_type = 't1.micro', 
