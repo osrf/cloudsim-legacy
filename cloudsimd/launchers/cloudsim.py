@@ -244,6 +244,11 @@ def zip_cloudsim():
     
 class TestCases(unittest.TestCase):
     
+    def tearDown(self):
+        print("Killing all instances")
+        ec2 = create_ec2_proxy(get_boto_path())
+        kill_all_ec2_instances(ec2)
+
     def test_cloudsim_strap(self):
         
         #    
@@ -265,8 +270,5 @@ class TestCases(unittest.TestCase):
 if __name__ == "__main__":
     
     unittest.main(testRunner = get_test_runner())
-    print("Killing all instances")
-    ec2 = create_ec2_proxy(get_boto_path())
-    kill_all_ec2_instances(ec2)
     
     

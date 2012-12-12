@@ -41,7 +41,7 @@ foreach(script ${TEST_SCRIPTS})
   string(REGEX REPLACE "/" "_" test_name ${script})
   add_test(NAME ${test_name} 
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-           COMMAND PYTHONPATH=$WORKSPACE/cloudsim/inside/cgi-bin python ${script})
+           COMMAND python ${script})
   set_tests_properties(${test_name} PROPERTIES TIMEOUT 1200)
   # Check that the test produced a result and create a failure if it didn't.
   # Guards against crashed and timed out tests.
