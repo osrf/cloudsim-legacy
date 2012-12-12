@@ -16,6 +16,7 @@ function _create_basic_machine(constellation_div, constellation_name, machine_na
     var div =  constellation_div.querySelector("#machines" );
     var machine_div = create_machine(div, machine_name);
     
+    create_machine_launch_monitor_widget(machine_div, constellation_name, machine_name,"launch_state");
     create_machine_state_widget(machine_div,constellation_name, machine_name, "cloud_state");
     create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
     create_hostname_widget(machine_div, constellation_name, machine_name, "hostname");	
@@ -28,6 +29,7 @@ function _create_simulator_machine(constellation_div, constellation_name, machin
     var div =  constellation_div.querySelector("#machines" );
     var machine_div = create_machine(div, machine_name);
     
+    create_machine_launch_monitor_widget(machine_div, constellation_name, machine_name,"launch_state");
     create_machine_state_widget(machine_div, constellation_name, machine_name,"cloud_state");
     create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
     create_hostname_widget (machine_div, constellation_name, machine_name, "hostname");	

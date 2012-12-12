@@ -163,7 +163,7 @@ class Machine (object):
         try:
             # Start it up
             
-            self._event({"type:":"launch", "state":"reserve"})
+            self._event({"type:":"launch", "goal" : "acquiring computing resource", "state":"reserve"})
             res = self.ec2.run_instances(   image_id=self.config.image_id,
                                             min_count =1,
                                             max_count =1,
@@ -173,15 +173,14 @@ class Machine (object):
                                             user_data=self.config.startup_script)
             # self.config.print_cfg()
             self.config.reservation = res.id
-            self._event({"type":"launch", "state":"reserve", "reservation_id":'%s'% self.config.reservation } )
+             
             
-            self._event({"type": "launch", "state":"waiting_for_ip"})
             retries = self.config.ip_retries
             tries = 0
             while tries< retries:
                 done = False
                 tries += 1
-                self._event({"type":"launch", "state":'retry', "goal":"ip_set", "try":tries, "retries":retries} )
+                self._event({"type":"launch", "state":'retry', "goal":"waiting for IP address", "try":tries, "retries":retries} )
                 for r in self.ec2.get_all_instances():
                     if r.id == res.id and r.instances[0].public_dns_name:
                         done = True
@@ -189,7 +188,7 @@ class Machine (object):
                         self.config.hostname = inst.public_dns_name
                         self.config.ip = inst.ip_address
                         self.config.aws_id = inst.id
-                        self._event({"type":"launch", "state":"ip_configured", "ip": self.config.ip, 'aws_id': self.config.aws_id})
+                        self._event({"type":"launch", "goal":"network configured", "ip": self.config.ip, 'aws_id': self.config.aws_id})
                         break
                     time.sleep(0.5)
                 if done:
@@ -278,11 +277,11 @@ class Machine (object):
         
         retries = self.config.ssh_retries
         tries = 0
-        self._event({"type" :"launch", "state":'ssh_wait_for_ready', "file":file_to_look_for, "try": tries, "retries":retries })
+        self._event({"type" :"launch", "goal":'SSH: waiting for ' + file_to_look_for, "file":file_to_look_for, "try": tries, "retries":retries })
         while tries < retries:
             tries += 1
             # print ( "%s / %s" % (tries, retries))
-            self._event({"type":"launch", "state":'retry', "goal":"file_ready", "file": file_to_look_for,  "try": tries, "retries": retries })
+            self._event({"type":"launch", "state":'retry', "goal":'SSH: waiting for ' + file_to_look_for, "file": file_to_look_for,  "try": tries, "retries": retries })
             
             try:
                 self.ssh_send_command(cmd)
@@ -292,17 +291,17 @@ class Machine (object):
             else:
                 self._event({"type" : "check", "state":'ssh_connected'})
                 return
-        self._event({"type":"launch", "state": 'fail', 'action':'ssh_connect'})   
+        self._event({"type":"launch","goal": "failed to get " + file_to_look_for, "state": 'fail', 'action':'ssh_connect'})   
         raise MachineException("Maximum retry limit exceeded; ssh connection could not be established or file '%s' not found" % file_to_look_for)
     
     def terminate(self):
-        self._event({"type":"launch", "state":'terminated'})
+        self._event({"type":"launch", "goal": "terminating", "state":'terminated'})
         terminated_list = self.ec2.terminate_instances(instance_ids=[self.config.aws_id])
         if(len(terminated_list) == 0 ):
             self._event({"type":"fail", "state":'terminated', 'machine_id': self.config.aws_id})
             raise MachineException("Could not terminate instance %s" % self.config.aws_id)
         self.ec2.delete_key_pair(self.config.kp_name)
-        self._event({"type":"check", "state":'terminated', "machine_id":self.config.aws_id})
+        self._event({"type":"launch", "goal":'terminated', "machine_id":self.config.aws_id})
         
     
  

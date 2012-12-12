@@ -42,7 +42,7 @@ foreach(script ${TEST_SCRIPTS})
   add_test(NAME ${test_name} 
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
            COMMAND python ${script})
-  set_tests_properties(${test_name} PROPERTIES TIMEOUT 1200)
+  set_tests_properties(${test_name} PROPERTIES TIMEOUT 1800)
   # Check that the test produced a result and create a failure if it didn't.
   # Guards against crashed and timed out tests.
   # Diabled until we have predictable test result file names, #8

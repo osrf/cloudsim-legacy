@@ -1,6 +1,6 @@
 
 
-function _update_hostname_widget(widget_div, constellation_name, machine_name, ip, aws_id, user, is_download_ready)
+function _update_hostname_widget(widget_div, constellation_name, machine_name, ip, aws_id, user, launch_date, is_download_ready)
 {
 		
     var str = "";
@@ -14,7 +14,7 @@ function _update_hostname_widget(widget_div, constellation_name, machine_name, i
         str += '&machine=' + machine_name;
         str += '">Download keys</a><br>';
 	}
-    str += '<b>Launched by: </b>' + user;
+    str += '<b>Launched by: </b>' + user + " ( at GMT " + launch_date+ ")";
     widget_div.innerHTML = str;
 }
 
@@ -22,7 +22,7 @@ function create_hostname_widget(machine_div, constellation_name, machine_name, w
 {
     
     var widget_div = _create_empty_widget(machine_div, widget_name);
-    _update_hostname_widget(widget_div, constellation_name, machine_name, "xxx.xxx.xxx", "x-xxxxx");
+    _update_hostname_widget(widget_div, constellation_name, machine_name, "xxx.xxx.xxx", "x-xxxxx", "xx@xx.xxx", "xxxx-xx-xx xx:xx:xx");
     
     $.subscribe("/cloudsim", function(event, data){
         if(data.constellation_name != constellation_name)
@@ -38,7 +38,7 @@ function create_hostname_widget(machine_div, constellation_name, machine_name, w
         		is_download_ready = true;
         	}
         	_update_hostname_widget(widget_div, constellation_name, machine_name, 
-        		data.ip, data.aws_id, data.user,is_download_ready );
+        		data.ip, data.aws_id, data.user, data.GMT,is_download_ready );
         }
         
         

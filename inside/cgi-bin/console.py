@@ -40,17 +40,20 @@ template = """
 
 
     
-    <link href="/js/layout.css" rel="stylesheet" type="text/css">
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
-    <script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
+<link href="/js/layout.css" rel="stylesheet" type="text/css">
+<link rel="stylesheet" href="/js/jquery-ui.css" />
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+
+<script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
 
 
 """ + scripts +"""
     
-    <script language="javascript" type="text/javascript" src="/js/latency_graph.js"></script>
     
-    <script language="javascript">
+<script language="javascript">
 
     function on_load_page()
     {
