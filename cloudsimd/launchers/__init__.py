@@ -95,7 +95,8 @@ def launch(username,
     with open(constellation_fname,'w') as fp:
         fp.write(str)
         
-    func(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory)
+    r = func(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory)
+    return r
 
 def start_simulator(  username, 
                       constellation_name,

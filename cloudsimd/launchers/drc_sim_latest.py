@@ -185,30 +185,17 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
 
 class Test_launch_drcim_latest(unittest.TestCase):
     
-   
-    def atest_script(self):
-        script = get_launch_script()
-        print (script)
+    def atest_launch(self):
+        from common.testing import get_test_path, get_boto_path
+        username = "test@osrfoundation.org" 
+        constellation_name = "test_launch_drcim_latest_" + get_unique_short_name('test')
+        tags = {"test":"test_launch_drcim_latest"} 
         
-    
-    def test_launch(self):
+        publisher = StdoutPublisher()
+        root_directory = get_test_path('Test_launch_drcim_latest')
+        machine = launch(username, constellation_name, tags, publisher, get_boto_path(), root_directory)
         
-        try:
-            username = "test@osrfoundation.org" 
-            constellation_name = "test_launch_drcim_latest_" + get_unique_short_name()
-            tags = {"test":"test_launch_drcim_latest"} 
-            publisher = StdoutPublisher()
-            credentials_ec2 = "/home/hugo/code/boto.ini"
-            
-            from common.testing import get_test_path
-            root_directory = get_test_path('Test_launch_drcim_latest')
-            
-            machine = launch(username, constellation_name, tags, publisher, credentials_ec2, root_directory)
-            
-            machine.terminate()
-        except Exception, e:
-            print(e)
-            self.assert_(1==0, "error %s" % e)
+        machine.terminate()
         
 if __name__ == "__main__":
     from common.testing import get_test_runner

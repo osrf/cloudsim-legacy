@@ -2,72 +2,90 @@ from __future__ import with_statement
 from __future__ import print_function
 
 
-from launchers import launch, terminate
+from launchers import launch, terminate, start_simulator, stop_simulator
 import os
 import unittest
 import uuid
-from common import RedisPublisher
+
+
 from common import StdoutPublisher
 from common import MACHINES_DIR
 
 
 from monitoring import sweep_monitor
+import time
+from common.testing import kill_all_ec2_instances, get_boto_path, get_test_path
+from common.machine import create_ec2_proxy, get_unique_short_name
+
 
 username = "cloudsim_test@osrfoundation.org"
 
-class Testo(unittest.TestCase):
+class TestDrcSimLatest(unittest.TestCase):
 
-    def atest_launch_gazebo(self):
-        
-        machine_name = "gaz_" + str(uuid.uuid1())
-        publisher = RedisPublisher(username)
-        
-        config_name = "gazebo"
-        
-        root_directory = "launch_test"
-        ec2 = "/home/hugo/code/boto.ini"     
-        
-        launch(config_name, username, machine_name, publisher, ec2, root_directory)
-    
-    def test_launch_micro(self):
-        
-        machine_name = str(uuid.uuid1())
-        publisher = RedisPublisher(username)
-        
-        config_name = "micro_vpn"
-        
-        root_directory = "launch_test"
-        ec2 = "/home/hugo/code/boto.ini"     
+    def setUp(self):
+        unittest.TestCase.setUp(self)
 
+    def test_start_stop_simulation(self):
         
-        launch( username, config_name, machine_name, publisher, ec2, root_directory)
+        self.package_name = "drc_robot_utils"
+        self.launch_file_name = "drc_robot.launch"
+        self.launch_args= ""
+                      
+        self.username = "test@osrfoundation.org" 
+        self.constellation_name = "test_launch_drcim_latest_" + get_unique_short_name()
+        self.ec2 = get_boto_path()
         
-        terminate( username, machine_name, publisher, ec2, root_directory)
+        tags = {"test":"test_launch_drcim_latest"} 
         
-    def atest_monitor(self):
-        root_directory = "launch_test"
-        publisher = RedisPublisher(username)
-        sweep_monitor(root_directory)
         
-    def ztest_terminate(self):
-        print("TERMINATE? " )
-        publisher = RedisPublisher(username)
-        terminate( 'username@bobo.com', 'machine_name', publisher, 'ec2', 'root_directory')
-    
-    def test_start_simulator(self):
-        machine = "machine"
-        ovip = "10.1.1.1"
+        self.root_directory = get_test_path('Test_launch_drcim_latest')
         
-        server_ip = ovip
-        display =':0' 
-        package= "ROSPACK"
-        launchfile= "launch"
-        launchargs= "args"
-        script = '". /opt/ros/fuerte/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  >/dev/null 2>/dev/null </dev/null &"'%(server_ip, display, package, launchfile, launchargs)
+        self.publisher = StdoutPublisher()
         
-        print (script)
+        
+        self.machine = launch(self.username, 
+                              "drc_sim_latest", 
+                              self.constellation_name, 
+                              self.publisher, 
+                              self.ec2, 
+                              self.root_directory)
+        
+        self.machine_name  = self.machine.config.uid
+        
+        time.sleep(20)
+        x = self.machine.get_X_status()
+        self.assert_(x, "no openGL")
+        start_simulator(self.username, 
+                       self.constellation_name,
+                       self.machine_name, 
+                       self.package_name, 
+                       self.launch_file_name,
+                       self.launch_args,
+                       self.root_directory)
+        
+        time.sleep(20)
+        s = self.machine.get_gazebo_status()
+        self.assert_(s, "no simulator")
+        
+        stop_simulator(self.username, self.constellation_name, self.machine_name, self.root_directory)
+        time.sleep(10)
+        s = self.machine.get_gazebo_status()
+        self.assert_(s==False, "simulator did not stop")
+        
+        terminate(self.username, self.constellation_name, self.publisher, self.ec2, self.root_directory)
+        time.sleep(10)
+        c = self.machine.get_aws_status()
+        self.assert_(d['state'] == "shutting-down", "Not shutting down")
+        
+    def tearDown(self):
+        unittest.TestCase.tearDown(self)
+        #self.machine.terminate()
+        
+        ec2 = create_ec2_proxy(get_boto_path())
+        kill_all_ec2_instances(ec2)
     
     
 if __name__ == "__main__":
     print("CLOUDSIMD tests")
-    unittest.main()
+    from common.testing import get_test_runner
+    unittest.main(testRunner =  get_test_runner()) 

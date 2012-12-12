@@ -34,9 +34,9 @@ enable_testing()
 set(TEST_SCRIPTS
   inside/cgi-bin/common/startup_script_builder.py
   cloudsimd/launchers/cloudsim.py
-  #cloudsimd/launchers/drc_sim_latest.py
-    
+  cloudsimd/cloudsimd_test.py
 )
+
 foreach(script ${TEST_SCRIPTS})
   string(REGEX REPLACE "/" "_" test_name ${script})
   add_test(NAME ${test_name} 

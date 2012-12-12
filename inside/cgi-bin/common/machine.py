@@ -10,7 +10,7 @@ import time
 import subprocess
 import json
 import shutil
-#import common
+import re
  
 import boto
 
@@ -43,7 +43,6 @@ def clean_local_ssh_key_entry( hostname):
 Calls the ping command and returns statistics
 """
 def ping(hostname, count=3):
-    import re
     s,out = commands.getstatusoutput("ping -c%s %s" % (count, hostname) )
     if s == 0:
         min, avg, max, mdev  =  [float(x) for x in out.split()[-2].split('/')]
