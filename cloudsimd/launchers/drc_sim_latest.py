@@ -6,7 +6,7 @@ import uuid
 import unittest
 import zipfile
 import time
-import redis
+
 
 from common import StdoutPublisher, INSTALL_VPN, Machine,\
     clean_local_ssh_key_entry, MachineDb, get_test_runner
@@ -20,11 +20,16 @@ from common.startup_script_builder import  ROS_SETUP_STARTUP_SCRIPT,\
 from common.machine import set_machine_tag, create_ec2_proxy,\
     create_if_not_exists_vpn_ping_security_group, get_unique_short_name
 
-redis_client = redis.Redis()
+
 
 def log(msg):
-    print(msg)
-    redis_client.publish("launchers", msg)
+    try:
+        import redis
+        redis_client = redis.Redis()
+        redis_client.publish("launchers", msg)
+    except:
+        print("Warning: redis not installed.")
+    print("cloudsim log> %s" % msg)
 
 DRC_SETUP = """
 
