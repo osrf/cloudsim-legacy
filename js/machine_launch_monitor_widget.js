@@ -20,34 +20,13 @@ function create_machine_launch_monitor_widget(machine_div, constellation_name, m
         
         if(data.launch_state == "running")
         {
-        	widget_div.innerHTML = "setup complete";
-        	return;
-        }
-        
-        if (data.type == "cloud")
-        {
-            if(data.state != "running")
-            {
-                widget_div.innerHTML = "";
-            }
+            widget_div.innerHTML = "Setup: " + status_img("blue") + " complete";
             return;
         }
-        
+
         if(data.type != 'launch')
         	return;
-       /* 
-       var str = "";
-       for (var key in data )
-       {
-           var value = data[key]; 
-           if (key != "status" && key != "machine" && key != "hostname" && key != "type" && key != "success")
-           {
-        	   str += "<b>" + key + "</b>: " + value + "<br>";
-           }
-       }
-       widget_div.innerHTML = str;
-       */
-	
+
        var goal = data.goal;
        var colors = ["yellow", "orange", "green"];
        count ++;
@@ -56,7 +35,7 @@ function create_machine_launch_monitor_widget(machine_div, constellation_name, m
            count =0;
        }
        var color = colors[count];
-       widget_div.innerHTML = "setup " + status_img(color) + " " + goal;
+       widget_div.innerHTML = "Setup: " + status_img(color) + " " + goal;
 
     });
 }

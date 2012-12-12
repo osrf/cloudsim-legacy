@@ -18,8 +18,9 @@ from common import  authorize
 email = authorize()
 udb = common.UserDatabase()
 role = udb.get_role(email)
-user_info = json.dumps({'user':email, 'role':role})
+version = common.get_cloudsim_verion_txt()
 
+user_info = json.dumps({'user':email, 'role':role})
 scripts = get_javascripts(['machine_view.js', 'jquery-1.8.3.min.js', 'jquery.flot.js' ])
 
 print("Content-Type: text/html")
@@ -63,7 +64,8 @@ template = """
             $('.admin_only').show();
         }
         
-        
+        create_server_monitor_widget("server_monitor_div");
+    
         add_cloud_credentials_widget("credentials_div");
         add_users_admin_widget("users_div");
         
@@ -106,8 +108,28 @@ template = """
     
     
     
- </head>
-    <body onload = "on_load_page()">
+</head>
+<body onload = "on_load_page()">
+
+
+    <div id="server_monitor_div"></div>
+    <div style="float:left;">
+        <img src="/js/images/osrf.png" width="200px"/>
+        <!-- img src="/js/images/DARPA_Logo.jpg" width="200px"/ -->
+        
+    </div>
+
+<div style="float:right;">
+
+Welcome, """ + email + """<br>
+<a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
+<div class="admin_only" style="display:none;">
+    <a href="/cloudsim/inside/cgi-bin/admin_download">SSH key download</a><br>
+</div>
+</div>    
+
+
+<div style="width:100%; float:left;"><br><hr><br></div>
     
     <div class="admin_only" style="display:none;" >
         <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; ">
@@ -122,24 +144,11 @@ template = """
     <div id="constellations_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px;">
     </div>
     
-
-
-
+<div id="footer" style="width:100%; float:left; ">
 <br>
 <hr>
-    <div style="float:right;">
-        <img src="/js/images/osrf.png" width="200px"/>
-        <!-- img src="/js/images/DARPA_Logo.jpg" width="200px"/ -->
-    </div>
-
-<div style="float:left;">
-
-Logged in as: """ + email + """<br>
-<a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-<div class="admin_only" style="display:none;">
-    <a href="/cloudsim/inside/cgi-bin/admin_download">SSH key download</a><br>
+<i>CloudSim """ + version + """ is provided by the <b>Open Source Robotics Foundation</b>. (Your frame rate may vary. Electric sheeps not included)</i>
 </div>
-</div>    
     
 </body>
 </html>

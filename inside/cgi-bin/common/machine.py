@@ -289,7 +289,7 @@ class Machine (object):
                 # Expected; e.g., the machine isn't up yet
                 time.sleep(delay)
             else:
-                self._event({"type" : "check", "state":'ssh_connected'})
+                self._event({"type" : "launch", "goal": file_to_look_for +' is accessible'})
                 return
         self._event({"type":"launch","goal": "failed to get " + file_to_look_for, "state": 'fail', 'action':'ssh_connect'})   
         raise MachineException("Maximum retry limit exceeded; ssh connection could not be established or file '%s' not found" % file_to_look_for)
