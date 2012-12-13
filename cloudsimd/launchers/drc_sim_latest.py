@@ -42,6 +42,9 @@ wget http://packages.osrfoundation.org/drc.key -O - | sudo apt-key add -
 echo "package update" >> /home/ubuntu/setup.log
 apt-get update
 
+echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
+apt-get install -y cloudsim-client-tools
+
 echo "install drc" >> /home/ubuntu/setup.log
 apt-get install -y drcsim
 

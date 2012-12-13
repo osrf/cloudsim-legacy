@@ -20,7 +20,7 @@ from common.machine import create_ec2_proxy, get_unique_short_name
 
 username = "cloudsim_test@osrfoundation.org"
 
-class TestDrcSimLatest(unittest.TestCase):
+class DrcSimLatestTestCase(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)

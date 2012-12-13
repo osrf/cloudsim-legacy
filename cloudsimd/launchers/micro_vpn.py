@@ -43,6 +43,17 @@ def launch(username,
 # Exit on error
 set -e
 
+# echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+
+wget http://packages.ros.org/ros.key -O - | apt-key add -
+wget http://packages.osrfoundation.org/drc.key -O - | sudo apt-key add -
+
+echo "package update" >> /home/ubuntu/setup.log
+apt-get update
+echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
+apt-get install -y cloudsim-client-tools
+
+
 echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
 
 """

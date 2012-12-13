@@ -242,16 +242,14 @@ def zip_cloudsim():
     return tmp_zip
     
     
-class TestCases(unittest.TestCase):
+class CloudsimBootStrapTestCase(unittest.TestCase):
     
     def tearDown(self):
         print("Killing all instances")
         ec2 = create_ec2_proxy(get_boto_path())
         kill_all_ec2_instances(ec2)
 
-    def test_cloudsim_strap(self):
-        
-        #    
+    def test_cloudsim_zip(self):
         zip_path = zip_cloudsim()
         self.assert_(os.path.exists(zip_path), "no zip done!")
         
