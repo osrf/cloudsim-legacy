@@ -16,7 +16,7 @@ import sys
 import json
 
 
-TICK_INTERVAL = 10
+TICK_INTERVAL = 1
 
 def log(msg, chan="cloudsim_log"):
     print ("LOG: %s" % msg)

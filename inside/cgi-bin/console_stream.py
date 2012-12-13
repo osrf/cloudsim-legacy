@@ -33,7 +33,7 @@ def message_loop(channels):
         sys.stdout.flush()
         if msg['channel'] == "cloudsim_tick":
             tick_count +=1
-            if tick_count == 3:
+            if tick_count == 10:
                 # red.publish("cloudsim_log", "console_stream for user %s DONE" % email )
                 return
 

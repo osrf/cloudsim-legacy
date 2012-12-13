@@ -197,10 +197,11 @@ class Machine (object):
             if tries >= retries:
                 self._event({"type":"launch", "state":"fail", "action":'ip_set'})
                 raise MachineException("Can't get IP for machine reservation '%s'" % self.config.reservation)
+            
             if len(self.config.tags):
-                self._event({"type": "launch", "state":'tags_set'})
+                self._event({"type": "launch", "goal":"setting up AWS tags","state":'tags_set'})
                 self.ec2.create_tags([self.config.aws_id], self.config.tags)
-                self._event({"launch":"launch", "state":'tags_set'})
+                self._event({"launch":"launch", "goal":"tags set","state":'tags_set'})
             
             
         except Exception as e:

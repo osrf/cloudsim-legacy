@@ -112,7 +112,7 @@ template = """
 <body onload = "on_load_page()">
 
 
-    <div id="server_monitor_div"></div>
+
     <div style="float:left;">
         <img src="/js/images/osrf.png" width="200px"/>
         <!-- img src="/js/images/DARPA_Logo.jpg" width="200px"/ -->
@@ -147,7 +147,7 @@ Welcome, """ + email + """<br>
 <div id="footer" style="width:100%; float:left; ">
 <br>
 <hr>
-<i>CloudSim """ + version + """ is provided by the <b>Open Source Robotics Foundation</b>. (Your frame rate may vary. Electric sheeps not included)</i>
+<i>    <div id="server_monitor_div" style="float:left"></div> CloudSim """ + version + """ is provided by the <b>Open Source Robotics Foundation</b>. (Your frame rate may vary. Electric sheeps not included)</i>
 </div>
     
 </body>

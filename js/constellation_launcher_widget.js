@@ -1,59 +1,65 @@
 
 var machine_configurations = null;
 
+
 function create_constellation_launcher_widget(div_name)
 {   
     console.log('machine_launch_on_load_page div=' + div_name);
     var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs.py");
     machine_configurations = eval( '(' + x + ')' );
-    
-	var launch_div = document.getElementById(div_name);
-	var str  = '<h2>Launch a machine constellation</h2>'; 
-    str += '<select id="config_select" onchange="_launchSelectionChanged()";>'
 
+    var div = document.getElementById(div_name);
+    
+    var desc = document.createElement("div");
+    
+    var configs_select = document.createElement('select');
     for(var configuration in machine_configurations)
-    {
-        str += '<option>' + configuration + '</option>';
+    {        
+        var option=document.createElement("option");
+        option.text=configuration;
+        configs_select.add(option,null);
     }
-
-    str += '</select><button type="button" onclick="launch(_get_selectected_machine_config())">Launch</button><div id="config_div"></div>';
-    
-    launch_div.innerHTML = str;
-    _launchSelectionChanged()
-}
-
-
-function launch(config)
-{
-    var r=confirm('Launch a new "' + config + '" constellation?' );
-    if (r==false)
+    configs_select.onchange = function()
     {
-        return;
+    	var i = configs_select.selectedIndex;
+        var config = configs_select.options[i].text;
+        var description = machine_configurations[config].description;
+        
+        desc.innerHTML = description;	
     }
     
-    launch_constelaltion(config);
+    var launch_button= document.createElement('input');
+    launch_button.setAttribute('type','button');
+    launch_button.setAttribute('value','Launch');
+    
+    
+	launch_button.onclick =  function()
+    {   
+        var i = configs_select.selectedIndex;
+        var config = configs_select.options[i].text;
+        var r=confirm('Launch a new "' + config + '" constellation?' );
+        if (r==false)
+        {
+            return;
+        }
+       
+       launch_button.disabled = true;
+       setTimeout('_reenable("' + div_name+ '");', 3000);
+       launch_constelaltion(config);
+       
+    };
+    
+    var title = document.createElement('h2');
+    title.innerHTML = 'Launch a machine constellation';
+    div.appendChild(title);
+    div.appendChild(configs_select);
+    div.appendChild(launch_button);
+    div.appendChild(desc);
     
 }
-
-function _get_selectected_machine_index()
+function _reenable(div_name)
 {
-    var i =document.getElementById("config_select").selectedIndex;
-    return i;
+    var div = document.getElementById(div_name);
+    var btn = div.querySelector('input')
+    btn.disabled = false;
 }
-
-function _get_selectected_machine_config()
-{
-    var i = _get_selectected_machine_index();
-    var machine_config =document.getElementById("config_select").options[i].text;
-    return machine_config;
-}
-
-function _launchSelectionChanged()
-{
-    var machine_config =_get_selectected_machine_config();
-    var conf = machine_configurations[machine_config];
-    
-    var str = "<b>description:</b> " + conf.description + "<br>";
-    document.getElementById("config_div").innerHTML = str;
-}
-
