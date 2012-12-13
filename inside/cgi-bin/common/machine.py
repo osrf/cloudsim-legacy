@@ -90,6 +90,7 @@ class StdoutPublisher(object):
     
     
 
+
 class Machine (object):
     
     def __init__(   self,
@@ -770,6 +771,10 @@ class MachineDbTest(unittest.TestCase):
         groups = get_security_groups(ec2)
         self.assert_(name not in groups, "not deleted")
         
+    
+    def test_read_tags(self):
+        pass
+    
     def atest_tags(self):
         
         set_machine_tag("a","b","c", "up", True, 10)
