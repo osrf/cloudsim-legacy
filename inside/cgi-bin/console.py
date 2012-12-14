@@ -147,7 +147,7 @@ Welcome, """ + email + """<br>
 <div id="footer" style="width:100%; float:left; ">
 <br>
 <hr>
-<i>    <div id="server_monitor_div" style="float:left"></div> CloudSim """ + version + """ is provided by the <b>Open Source Robotics Foundation</b>. (Your frame rate may vary. Electric sheeps not included)</i>
+<i>    <div id="server_monitor_div" style="float:left"></div> CloudSim """ + version + """ is provided by the <b>Open Source Robotics Foundation</b>. (Your frame rate may vary. Electric sheep not included)</i>
 </div>
     
 </body>
