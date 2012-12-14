@@ -16,7 +16,7 @@ from common import create_openvpn_server_cfg_file,\
 from common import Machine_configuration
 from common.startup_script_builder import  ROS_SETUP_STARTUP_SCRIPT,\
     create_xorg_config_file, SOURCES_LIST_PRECISE, XGL_STARTUP_BEFORE,\
-    XGL_STARTUP_AFTER
+    XGL_STARTUP_AFTER, LAUNCH_SCRIPT_HEADER
 from common.machine import set_machine_tag, create_ec2_proxy,\
     create_if_not_exists_vpn_ping_security_group, get_unique_short_name
 
@@ -53,14 +53,10 @@ echo "source drc setup from bashrc" >> /home/ubuntu/setup.log
 
 """
 
+
 def get_launch_script():
-    startup_script = """#!/bin/bash
-# Exit on error
-set -e
-# Redirect everybody's output to a file
-logfile=/home/ubuntu/launch_stdout_stderr.log
-exec > $logfile 2>&1
-"""
+    startup_script = LAUNCH_SCRIPT_HEADER
+    
     startup_script += 'date > /home/ubuntu/setup.log\n'
     
     file_content = SOURCES_LIST_PRECISE

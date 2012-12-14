@@ -47,8 +47,8 @@ function _get_constellation_div_str(div_name, configuration_name, constellation_
     var str = "";
     str += '<div id="top" style="';
     str += 'width = 100%; float:left; border-top-left-radius:10px; border-top-right-radius:15px;';
-    str += ' background-color:#44497a; ';
-    str += ' width:100%; float:left;" ">' // #44497a
+    str += ' background-color: #44497a; ';
+    str += ' width:100%; float:left;" ">' 
     str += " <h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
     str +=   constellation_name + " [" + configuration_name + "]</center></h3>";    
     str += ' </div>' // top
@@ -121,7 +121,7 @@ function _set_const_style(style)
     style.border="1px solid #535453";
     style.borderRadius = "15px";
     style.margin = "1%";
-    style.backgroundColor = "#F1F1F2";
+    style.backgroundColor = "#a8a7a7"; // f1f1f2
 }
 
 

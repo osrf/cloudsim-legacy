@@ -51,12 +51,16 @@ function create_constellation_launcher_widget(div_name)
     
     var title = document.createElement('h2');
     title.innerHTML = 'Launch a machine constellation';
+    
+    configs_select.onchange();
+    
     div.appendChild(title);
     div.appendChild(configs_select);
     div.appendChild(launch_button);
     div.appendChild(desc);
     
 }
+
 function _reenable(div_name)
 {
     var div = document.getElementById(div_name);

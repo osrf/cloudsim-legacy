@@ -41,10 +41,8 @@ def launch( username,
             config_name, 
             credentials_ec2, 
             root_directory):
-    
     red = redis.Redis()
     constellation_name =  "c" + get_unique_short_name()
-    
     
     try:
         proc = multiprocessing.current_process().name
@@ -59,7 +57,7 @@ def launch( username,
                          root_directory)
     except Exception, e:
         log("cloudsimd.py launch error: %s" % e)
-    return
+    
     
 """
 Terminates the machine via the cloud interface. Files will be removed by the 

@@ -88,6 +88,13 @@ class StdoutPublisher(object):
 #    def get_path(self):
 #        pass
     
+
+class MockMachine(object):
+    
+    def __init__(self):
+        pass
+    
+    
     
 
 

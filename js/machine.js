@@ -58,6 +58,7 @@ function _set_mach_style(style)
     style.float = "left";
     style.borderRadius= "15px";
     style.margin = "1%";
+    style.backgroundColor = "#f1f1f2";
 }
 
 function _get_machine_widgets_style()
@@ -69,6 +70,7 @@ function _get_machine_widgets_style()
     //str += ' border: 1px solid black;';
     str += ' margin:1%;';
     //str += 'margin-bottom:10px;';
+    //str += " background-color: #f1f1f2; "
     str += '"'; 
     return str;	
 }

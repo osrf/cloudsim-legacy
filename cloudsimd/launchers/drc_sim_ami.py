@@ -15,7 +15,7 @@ from common import create_openvpn_server_cfg_file,\
 from common import Machine_configuration
 from common.startup_script_builder import  ROS_SETUP_STARTUP_SCRIPT,\
     create_xorg_config_file, SOURCES_LIST_PRECISE, XGL_STARTUP_BEFORE,\
-    XGL_STARTUP_AFTER
+    XGL_STARTUP_AFTER, LAUNCH_SCRIPT_HEADER
 from common.machine import set_machine_tag
 
 
@@ -26,11 +26,8 @@ echo "ami setup" >> /home/ubuntu/setup_ami.log
 """
 
 def get_launch_script():
-    startup_script = """#!/bin/bash
-# Exit on error
-set -e
-
-"""
+    startup_script = LAUNCH_SCRIPT_HEADER
+    
     startup_script += INSTALL_VPN
     startup_script += DRC_SETUP
     

@@ -6,15 +6,17 @@ import uuid
 import unittest
 import zipfile
 
+import time
+import boto
+
 from common import StdoutPublisher, INSTALL_VPN, Machine,\
     clean_local_ssh_key_entry, MachineDb
 from common import create_openvpn_server_cfg_file,\
     inject_file_into_script, create_openvpn_client_cfg_file,\
     create_ros_connect_file, create_vpn_connect_file
 from common import Machine_configuration
-import time
-import boto
-from common.machine import set_machine_tag
+from common import set_machine_tag, create_ec2_proxy
+from common import create_if_not_exists_vpn_ping_security_group
 
 #def launchx():
 #    print ("launch from micro_vpn")
@@ -39,14 +41,11 @@ def launch(username,
     ec2 = create_ec2_proxy(credentials_ec2)
     create_if_not_exists_vpn_ping_security_group(ec2, security_group, "Micro machine: ssh and vpn")
     
-    startup_script = """#!/bin/bash
-# Exit on error
-set -e
-
-# echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
-
-wget http://packages.ros.org/ros.key -O - | apt-key add -
-wget http://packages.osrfoundation.org/drc.key -O - | sudo apt-key add -
+    startup_script = LAUNCH_SCRIPT_HEADER
+    startup_script += """
+    
+echo "deb http://packages.osrfoundation.org/gazebo/ubuntu precise main" > /etc/apt/sources.list.d/gazebo.list
+wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
 
 echo "package update" >> /home/ubuntu/setup.log
 apt-get update

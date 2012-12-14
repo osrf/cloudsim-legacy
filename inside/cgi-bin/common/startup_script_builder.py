@@ -80,6 +80,15 @@ deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
 """
 
 
+LAUNCH_SCRIPT_HEADER =  """#!/bin/bash
+# Exit on error
+set -e
+# Redirect everybody's output to a file
+logfile=/home/ubuntu/launch_stdout_stderr.log
+exec > $logfile 2>&1
+
+"""
+
 INSTALL_VPN = """
 
 echo "Installing openvpn" >> /home/ubuntu/setup.log
