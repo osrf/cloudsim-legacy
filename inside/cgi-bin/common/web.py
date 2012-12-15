@@ -150,7 +150,7 @@ def authorize(role = "user"):
         exit(0)     
         
 
-def get_cloudsim_verion_txt():
+def get_cloudsim_version_txt():
     d = os.path.split(__file__)[0]
     version_path = os.path.join(d,'..','..', '..','VERSION')
     if(os.path.exists(version_path)):
@@ -180,7 +180,7 @@ def get_javascripts(exclude_list=[]):
 class CloudsimTest(unittest.TestCase):
     
     def test_version_str(self):
-        s = get_cloudsim_verion_txt()
+        s = get_cloudsim_version_txt()
         print(s)
         self.assert_(s != "No version information available", "versions")
     

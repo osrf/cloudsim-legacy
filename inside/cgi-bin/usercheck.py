@@ -62,7 +62,7 @@ sdb.db[openid_session] = email
 sdb.save()
 common.print_http_header()
 
-version_info = common.get_cloudsim_verion_txt()
+version_info = common.get_cloudsim_version_txt()
 
 page = """
 <!DOCTYPE html>

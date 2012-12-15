@@ -18,7 +18,7 @@ from common import  authorize
 email = authorize()
 udb = common.UserDatabase()
 role = udb.get_role(email)
-version = common.get_cloudsim_verion_txt()
+version = common.get_cloudsim_version_txt()
 
 user_info = json.dumps({'user':email, 'role':role})
 scripts = get_javascripts(['machine_view.js', 'jquery-1.8.3.min.js', 'jquery.flot.js' ])
