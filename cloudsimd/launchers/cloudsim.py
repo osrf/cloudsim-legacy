@@ -1,4 +1,3 @@
-from __future__ import with_statement
 from __future__ import print_function
 
 import os
@@ -24,6 +23,7 @@ from common import TEAM_LOGIN_DISTRIBUTION
 from common.machine import set_machine_tag, create_ec2_proxy,\
     create_if_not_exists_web_app_security_group, get_unique_short_name
 from common import kill_all_ec2_instances
+from common.startup_script_builder import LAUNCH_SCRIPT_HEADER
 
 TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """
 
@@ -71,10 +71,7 @@ echo "apache2 restarted" >> /home/ubuntu/setup.log
 echo www-data > /etc/at.allow
 
 
-
 echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
-
-
 
 """
 
@@ -98,10 +95,8 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, const
     log("cloudsim launch constellation '%s'" % constellation_name)
     machine_name = "cloudsim_" +constellation_name
     
-    
-    startup_script = """#!/bin/bash
-# Exit on error
-set -e
+    startup_script = LAUNCH_SCRIPT_HEADER
+    startup_script += """
 
 echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
 
