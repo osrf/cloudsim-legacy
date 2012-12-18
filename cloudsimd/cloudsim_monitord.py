@@ -15,6 +15,7 @@ from monitoring import sweep_monitor, latency_sweep
 import sys
 import json
 
+import traceback
 
 TICK_INTERVAL = 1
 
@@ -32,7 +33,9 @@ def monitor(root_directory):
             sweep_monitor(root_directory)
             time.sleep(0.1)
         except Exception, e:
-            log("Error during sweep monitor: %s" % e) 
+            
+            tb = traceback.format_exc()
+            log("Error during sweep monitor: %s" % tb) 
 
 def monitor_latency(root_directory):
     proc = multiprocessing.current_process().name

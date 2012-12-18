@@ -28,7 +28,7 @@ function create_machine_launch_monitor_widget(machine_div, constellation_name, m
         	return;
 
        var goal = data.goal;
-       var colors = ["yellow", "orange", "green"];
+       var colors = ["yellow", "blue"];
        count ++;
        if(count >= colors.length)
        {

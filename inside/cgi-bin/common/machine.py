@@ -361,6 +361,7 @@ class Machine (object):
                     data[ 'state'] = str(i.state)
                     self._event(data) 
                     return data
+        
         data['state'] = 'does_not_exist'
         data['result'] = 'failure'
         return data
@@ -554,6 +555,7 @@ class MachineDb(object):
     def get_zip_fname(self, constellation_name, machine_name):
         fname = os.path.join(self.root_dir, constellation_name, machine_name, machine_name + ".zip")
         return fname
+
 
 
 def list_all_machines_accross_domains(root_dir = MACHINES_DIR):

@@ -42,7 +42,7 @@ function create_server_monitor_widget(div_name)
        //log_div.innerHTML += str;
        	
        var msg = data.type;
-       var colors = ["gray", "yellow", "orange", "blue", "green"];
+       var colors = ["gray", "blue"];
        count ++;
        if(count >= colors.length)
        {

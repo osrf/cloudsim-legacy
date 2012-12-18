@@ -89,6 +89,30 @@ exec > $logfile 2>&1
 
 """
 
+def get_monitoring_tools_script(boundary_creds = None): 
+    
+    str =  """
+
+echo "Installing monitoring tools" >> /home/ubuntu/setup.log
+date >> /home/ubuntu/setup.log
+
+apt-get install -y ntp
+
+"""
+    if boundary_creds:
+        str += """
+curl -3 -s https://app.boundary.com/assets/downloads/setup_meter.sh > setup_meter.sh
+chmod +x setup_meter.sh
+./setup_meter.sh -d -i """ + boundary_creds 
+
+    str += """
+date >> /home/ubuntu/setup.log
+echo "monitoring tools installed " >> /home/ubuntu/setup.log
+
+""" 
+    return str
+
+
 INSTALL_VPN = """
 
 echo "Installing openvpn" >> /home/ubuntu/setup.log

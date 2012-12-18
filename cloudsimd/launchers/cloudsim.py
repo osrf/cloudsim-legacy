@@ -23,7 +23,8 @@ from common import TEAM_LOGIN_DISTRIBUTION
 from common.machine import set_machine_tag, create_ec2_proxy,\
     create_if_not_exists_web_app_security_group, get_unique_short_name
 from common import kill_all_ec2_instances
-from common.startup_script_builder import LAUNCH_SCRIPT_HEADER
+from common.startup_script_builder import LAUNCH_SCRIPT_HEADER,\
+    get_monitoring_tools_script
 
 TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """
 
@@ -70,9 +71,6 @@ echo "apache2 restarted" >> /home/ubuntu/setup.log
 # Make sure that www-data can run programs in the background (used inside CGI scripts)
 echo www-data > /etc/at.allow
 
-
-echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
-
 """
 
 #old_print = print
@@ -88,14 +86,27 @@ def log(msg):
     print("cloudsim log> %s" % msg)
 
 
+def machine_launch(username, machine_name, constellation_name, tags, publisher, credentials_ec2, constellation_directory, website_distribution = TEAM_LOGIN_DISTRIBUTION):
+    pass
+    
     
 def launch(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory, website_distribution = TEAM_LOGIN_DISTRIBUTION):
-    
-    
+
+    # log(startup_script)
+    security_group = "cloudsim"
+    ec2 = create_ec2_proxy(credentials_ec2)
+    create_if_not_exists_web_app_security_group(ec2, security_group, "web server and ssh")
+
     log("cloudsim launch constellation '%s'" % constellation_name)
     machine_name = "cloudsim_" +constellation_name
+        
+    machine_launch(username, machine_name, constellation_name, tags, publisher, credentials_ec2, constellation_directory )
+    
+    
     
     startup_script = LAUNCH_SCRIPT_HEADER
+    
+    
     startup_script += """
 
 echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
@@ -109,11 +120,14 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     startup_script += 'apt-get update\n'
 
     startup_script += TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE
-    # log(startup_script)
-    security_group = "cloudsim"
-    ec2 = create_ec2_proxy(credentials_ec2)
-    create_if_not_exists_web_app_security_group(ec2, security_group, "web server and ssh")
     
+    startup_script +=get_monitoring_tools_script("GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu")
+
+    startup_script += """
+echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
+
+"""
+
     config = Machine_configuration()
     config.initialize(   image_id ="ami-137bcf7a", 
                          # instance_type = 'm1.small',  

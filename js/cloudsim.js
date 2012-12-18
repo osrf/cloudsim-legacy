@@ -8,6 +8,13 @@ function create_constellation(div_name, configuration, constellation)
     if(configuration == "drc_sim_latest") return create_drc_sim_latest(constellation_div, constellation);
     if(configuration == "micro_vpn") return create_micro_vpn_constellation(constellation_div, constellation);
     if(configuration == "ros_fuerte") return create_ros_fuerte_constellation(constellation_div, constellation);
+    
+    if(configuration == "team_code_one")
+    {
+        _create_basic_machine(constellation_div, constellation, "micro_" + constellation );
+        _create_basic_machine(constellation_div, constellation, "cloudsim_" + constellation );
+        return;
+    }
 }
 
 function _create_basic_machine(constellation_div, constellation_name, machine_name)

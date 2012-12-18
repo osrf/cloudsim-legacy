@@ -19,7 +19,7 @@ def log(msg, chan = "launchers"):
         r = redis.Redis()
         r.publish(chan, msg)
     except:
-        print("launchers> %s" % msg)
+        print("LOG %s" % msg)
     
 
 """
@@ -39,25 +39,34 @@ def load(name):
 """
 Provides a dictionary of modules (one for each type of machine) that returns
 """
-def get_launch_functions():
+def generate_launch_functions():
     launch_functions = {}
-    print("dir:", directory)
-    print(os.listdir(directory) )
+    log("generate_launch_functions dir: %s" % directory)
+    
+    log("LIST %s" % os.listdir(directory) )
     launcher_modules = list(set([x.split(".py")[0] for x in os.listdir(directory)]))
     launcher_modules.remove("__init__")
     
-    print(launcher_modules)
+    log("modules: %s" % launcher_modules)
     
     for l in launcher_modules:
         try:
+            log("loading launcher %s " % l)
             launch_func = load(l)
             launch_functions[l] = launch_func
         except Exception,e:
-            print(e)
+            log("launcher load error '%s'" % e)
+            #raise
     return launch_functions
 
 launchers = None
 
+def get_launch_functions():
+    global launchers
+    
+    launchers = generate_launch_functions()
+    return launchers
+    
 def launch(username, 
            config_name, 
            constellation_name, 
@@ -65,26 +74,28 @@ def launch(username,
            credentials_ec2,
            root_directory):
     
-    global launchers
     
-    if not launchers:
-        launchers =  get_launch_functions()
-    
+ 
+    launchers =  get_launch_functions()
+ 
     func = launchers[config_name]
-    
+ 
     domain = username.split('@')[1]
     tags = {}
     tags['user'] = username
     tags['constellation_name'] = constellation_name
 # remove path and .py from the name of this file
+    
+    
+    
     tags['constellation_config'] = config_name
     tags['GMT'] = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
     
     tags['domain'] = domain
-    
+ 
     domain_dir = os.path.join(root_directory, domain)
+ 
     constellation_directory = os.path.join(domain_dir, constellation_name)
-    
     # save constellation config in a json file
     os.makedirs(constellation_directory)
     constellation_fname = os.path.join(constellation_directory, CONSTELLATION_JSONF_NAME)
@@ -96,6 +107,7 @@ def launch(username,
         fp.write(str)
         
     r = func(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory)
+    
     return r
 
 def start_simulator(  username, 
@@ -153,7 +165,7 @@ def terminate(username,
     mdb = MachineDb(username, machine_dir = root_directory)
 
     machines = mdb.get_machines_in_constellation(constellation_name)
-    log("xxx")
+    
     for machine_name, machine  in machines.iteritems():
         log("  - terminate machine %s" % machine.config.uid)
         machine.terminate()
@@ -163,4 +175,6 @@ def terminate(username,
 
 if __name__ == "__main__":
     x = get_launch_functions()
-    print (x)
+    print("\nlaunchers:")
+    for l in x.keys():
+        print ("\t" + l)

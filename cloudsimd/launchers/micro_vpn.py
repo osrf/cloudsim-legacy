@@ -17,6 +17,7 @@ from common import create_openvpn_server_cfg_file,\
 from common import Machine_configuration
 from common import set_machine_tag, create_ec2_proxy
 from common import create_if_not_exists_vpn_ping_security_group
+from common.startup_script_builder import LAUNCH_SCRIPT_HEADER
 
 #def launchx():
 #    print ("launch from micro_vpn")
