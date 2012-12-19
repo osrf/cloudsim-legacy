@@ -143,6 +143,7 @@ class Machine (object):
             self.ec2 = create_ec2_proxy(self.config.credentials_ec2 )
             self.config.tags = tags
             self.config.tags['machine_name'] = unique_name
+            self.config.tags['username'] = username
             self.config.uid = unique_name
             self.config.root_directory = root_directory
             self.config.cfg_dir=os.path.join(self.config.root_directory, self.config.uid)
