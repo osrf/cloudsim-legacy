@@ -41,18 +41,17 @@ def launch( username,
             config_name, 
             credentials_ec2, 
             root_directory):
+    
     red = redis.Redis()
     constellation_name =  "c" + get_unique_short_name()
     
     try:
         proc = multiprocessing.current_process().name
         #log("cloudsimd.py launch")
-        log("Launching constellation %s, config '%s' for user '%s' from proc '%s'" % (constellation_name, config_name,  username, proc))
-        publisher = RedisPublisher(username) 
+        log("Launching constellation %s, config '%s' for user '%s' from proc '%s'" % (constellation_name, config_name,  username, proc)) 
         launchers.launch(username, 
                          config_name, 
                          constellation_name, 
-                         publisher,
                          credentials_ec2,
                          root_directory)
     except Exception, e:
@@ -72,8 +71,7 @@ def terminate(username,
     log("terminate '%s' for '%s' from proc '%s'" % (constellation, username, proc))
 
     try:
-        publisher = RedisPublisher(username) 
-        launchers.terminate(username, constellation, publisher, credentials_ec2,
+        launchers.terminate(username, constellation, credentials_ec2,
                             root_directory)
     except Exception, e:
         log("Cloudsim daemon Error %s" % e)

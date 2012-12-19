@@ -91,8 +91,9 @@ def get_launch_script():
     return startup_script
     
 
-def launch(username, constellation_name, tags, publisher, credentials_ec2, root_directory):
+def launch(username, constellation_name, tags, credentials_ec2, root_directory):
     
+    machine_name = "simulator_" + constellation_name
     
     security_group = "drc_sim_latest"
     ec2 = create_ec2_proxy(credentials_ec2)
@@ -110,16 +111,16 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
                          ip_retries=100, 
                          ssh_retries=1000)
     
-    machine_name = "simulator_" + constellation_name
+    
     
     domain = username.split("@")[1]
     
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "waiting for ip")
     set_machine_tag(domain, constellation_name, machine_name, "up", True)
     
-    machine = Machine(machine_name,
+    machine = Machine(username,
+                      machine_name,
                      config,
-                     publisher.event,
                      tags,
                      credentials_ec2,
                      root_directory)

@@ -86,11 +86,9 @@ def log(msg):
     print("cloudsim log> %s" % msg)
 
 
-def machine_launch(username, machine_name, constellation_name, tags, publisher, credentials_ec2, constellation_directory, website_distribution = TEAM_LOGIN_DISTRIBUTION):
-    pass
+   
     
-    
-def launch(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory, website_distribution = TEAM_LOGIN_DISTRIBUTION):
+def launch(username, constellation_name, tags,  credentials_ec2, constellation_directory, website_distribution = TEAM_LOGIN_DISTRIBUTION):
 
     # log(startup_script)
     security_group = "cloudsim"
@@ -100,10 +98,7 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, const
     log("cloudsim launch constellation '%s'" % constellation_name)
     machine_name = "cloudsim_" +constellation_name
         
-    machine_launch(username, machine_name, constellation_name, tags, publisher, credentials_ec2, constellation_directory )
-    
-    
-    
+        
     startup_script = LAUNCH_SCRIPT_HEADER
     
     
@@ -139,9 +134,9 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
                          ip_retries=100, 
                          ssh_retries=200)
 
-    machine = Machine(machine_name,
+    machine = Machine(username,
+                      machine_name,
                      config,
-                     publisher.event,
                      tags,
                      credentials_ec2,
                      constellation_directory)
@@ -233,8 +228,7 @@ def cloudsim_bootstrap(username, ec2):
     constellation_directory = tempfile.mkdtemp("cloudsim")
     
     zip_path = zip_cloudsim()
-    pub = StdoutPublisher()
-    machine = launch(username, constellation_name, tags, pub, ec2, constellation_directory, zip_path)
+    machine = launch(username, constellation_name, tags,  ec2, constellation_directory, zip_path)
     return machine
 
 def zip_cloudsim():

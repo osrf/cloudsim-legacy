@@ -34,7 +34,7 @@ def get_launch_script():
     return startup_script
     
 
-def launch(username, constellation_name, tags, publisher, credentials_ec2, root_directory):
+def launch(username, constellation_name, tags, credentials_ec2, root_directory):
 
     security_group = "drc_sim_ami"
     ec2 = create_ec2_proxy(credentials_ec2)
@@ -55,9 +55,9 @@ def launch(username, constellation_name, tags, publisher, credentials_ec2, root_
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "waiting for ip")
     set_machine_tag(domain, constellation_name, machine_name, "up", True)
     machine_name = "simulator_" + constellation_name
-    machine = Machine(machine_name,
+    machine = Machine(username,
+                      machine_name,
                      config,
-                     publisher.event,
                      tags,
                      credentials_ec2,
                      root_directory)
@@ -125,13 +125,7 @@ class TestCases(unittest.TestCase):
         print (script)
         
     
-    def atest_launch(self):
-        
-        username = "toto@toto.com"
-        machine_name = "gazebo_" + str(uuid.uuid1())
-        publisher = StdoutPublisher()
-        launch(username, machine_name, publisher)
-        
+
         
 
 if __name__ == "__main__":

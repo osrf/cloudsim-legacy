@@ -18,6 +18,7 @@ from common import Machine_configuration
 from common import set_machine_tag, create_ec2_proxy
 from common import create_if_not_exists_vpn_ping_security_group
 from common.startup_script_builder import LAUNCH_SCRIPT_HEADER
+from common.pubsub import RedisPublisher
 
 #def launchx():
 #    print ("launch from micro_vpn")
@@ -35,7 +36,7 @@ def log(msg):
 
 def launch(username, 
            constellation_name, 
-           tags, publisher, credentials_ec2, 
+           tags, credentials_ec2, 
            constellation_directory):
     
     security_group = "micro_vpn"
@@ -80,12 +81,13 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "waiting for ip")
     set_machine_tag(domain, constellation_name, machine_name, "up", True)
     
-    machine = Machine(machine_name,
-                     config,
-                     publisher.event,
-                     tags,
-                     credentials_ec2,
-                     constellation_directory)
+    
+    machine = Machine(username,
+                      machine_name,
+                      config,
+                      tags,
+                      credentials_ec2,
+                      constellation_directory)
                      
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "booting up")
     
@@ -145,6 +147,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     # machine.get_aws_status(timeout)['state'] == 'running'
     machine.ssh_wait_for_ready("/home/ubuntu")
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
+    return machine
     
 class TestCases(unittest.TestCase):
     

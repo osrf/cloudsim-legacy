@@ -10,6 +10,11 @@ import unittest
 from constants import SESSION_DATABASE, USER_DATABASE, \
 OPENID_SESSION_COOKIE_NAME, HTTP_COOKIE, ADMIN_EMAIL
 
+
+def user_to_domain(email):
+    d = email.split('@')[1]
+    return d
+
 class UserDatabase (object):
     def __init__(self, fname = USER_DATABASE):
         self.fname = fname
@@ -22,11 +27,6 @@ class UserDatabase (object):
         if os.path.exists(self.fname):
             with open(self.fname, 'r') as f:
                 users = json.load(f)
-                
-#            with open(self.fname, 'r') as f:
-#                for u in f.readlines():
-#                    users.append(u.strip())
-#                f.close()
         return users    
     
     def get_role(self, email):
@@ -38,7 +38,7 @@ class UserDatabase (object):
         return admin
     
     def get_domain(self, email):
-        d = email.split('@')[1]
+        d = user_to_domain(email)
         return d
     
     

@@ -21,6 +21,7 @@ from startup_script_builder import *
 import zipfile
 from  testing import get_test_runner
 from uuid import UUID
+from pubsub import RedisPublisher
 
 """
 Removes the key for this ip, in case we connect to a different machine with the
@@ -49,6 +50,26 @@ def ping(hostname, count=3):
         return (min, avg, max, mdev)
     
     raise MachineException(out)
+
+def get_version_from_dpkg_str(s):
+    toks = s.split()
+    try:    
+        i = toks.index('ii')
+        name = toks[i+1]
+        version = toks[i+2]
+        return version
+    except:
+        return s
+    return s
+
+def get_local_software_package_version(package):
+    proc = subp.Popen(["dpkg", "-l", package], stdout=subp.PIPE, stderr=subp.PIPE)
+    s = proc.stdout.read()
+    if len(s) ==0:
+        e = proc.stderr.read()
+        return e
+    v = get_version_from_dpkg_str(s)
+    return v
 
 
 class MachineException(Exception):
@@ -101,14 +122,17 @@ class MockMachine(object):
 class Machine (object):
     
     def __init__(   self,
+                    username,
                     unique_name,
                     config, 
-                    event,
                     tags ={}, 
                     credentials_ec2 = BOTO_CONFIG_FILE_USEAST, # boto file
                     root_directory = MACHINES_DIR,
                     do_launch = True):
-        self.event = event
+        
+        pub = RedisPublisher(username)
+        self.event = pub.event
+        
         self.log = None
         self.config = config
         self.startup_script_done_file = '/tmp/startup_script_done'
@@ -311,12 +335,15 @@ class Machine (object):
             raise MachineException("Could not terminate instance %s" % self.config.aws_id)
         self.ec2.delete_key_pair(self.config.kp_name)
         self._event({"type":"launch", "goal":'terminated', "machine_id":self.config.aws_id})
-        
     
- 
+    def get_deb_package_version(self, package):
+        r = self.ssh_send_command('dpkg -l ' + package)
+        v = _get_version_from_dpkg_str(r)
+        return v
     
     def get_X_status(self):
         #self._event({"type":"test", "state":'X, OpenGL'})
+        # DISPLAY=:0 xdpyinfo
         try:
             r = self.ssh_send_command('DISPLAY=localhost:0 glxinfo')
             return True
@@ -420,12 +447,17 @@ class DomainDb(object):
     
         
                 
+def _domain(user_or_domain):
+    domain = user_or_domain
+    if user_or_domain.find('@') > 0:
+        domain = user_or_domain.split('@')[1]
+    return domain
 
-
-def set_machine_tag(domain, constellation, machine, key, value, expiration = None):
+def set_machine_tag(user_or_domain, constellation, machine, key, value, expiration = None):
     try:
         import redis
         red = redis.Redis()
+        domain = _domain(user_or_domain)
         redis_key = domain+"/"+constellation+"/" + machine
         str = red.get(redis_key)
         if not str:
@@ -439,10 +471,11 @@ def set_machine_tag(domain, constellation, machine, key, value, expiration = Non
     except:
         pass
 
-def get_machine_tag(domain, constellation, machine, key):
+def get_machine_tag(user_or_domain, constellation, machine, key):
     try:
         import redis
         red = redis.Redis()
+        domain = _domain(user_or_domain)
         redis_key = domain+"/"+constellation+"/" + machine
         str = red.get(redis_key)
         machine_info = json.loads(str)
@@ -451,7 +484,28 @@ def get_machine_tag(domain, constellation, machine, key):
     except:
         return None
    
+import subprocess as subp
 
+
+def _get_version_from_dpkg_str(s):
+    toks = s.split()
+    try:    
+        i = toks.index('ii')
+        name = toks[i+1]
+        version = toks[i+2]
+        return version
+    except:
+        return s
+    return s
+
+def get_package_version(package):
+    proc = subp.Popen(["dpkg", "-l", package], stdout=subp.PIPE, stderr=subp.PIPE)
+    s = proc.stdout.read()
+    if len(s) ==0:
+        s = proc.stderr.read()
+    v = get_version_from_dpkg_str(s)
+    return v
+    
 class MachineDb(object):
     
     def __init__(self, email, machine_dir = MACHINES_DIR):
@@ -580,6 +634,7 @@ class PingTest(unittest.TestCase):
     
     def test_a_ping(self):
          pass
+     
 #        print( "ping google.com 3x: (min, avg, max, mdev)")
 #        min, avg, max, mdev  = ping("google.com", 3)
 #        print ("min, avg, max, mdev\n", min, avg, max, mdev)
@@ -753,7 +808,18 @@ def create_if_not_exists_vpn_ping_security_group(ec2, group_name, description):
         sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
 
 
-class MachineDbTest(unittest.TestCase):
+class NonMachineTest(unittest.TestCase):
+    
+    def test_read_tags(self):
+        g = get_package_version("gazebo")
+        d = get_package_version("drcsim")
+        c = get_package_version("cloudsim-client-tools")
+        x = get_package_version("asdsdf")
+        print("gazebo: %s" % g)
+        print("drcsim: %s" % d)
+        print("cloudsim-client-tools: %s" % c)
+        print("asdsdf: %s" % x)
+    
     
     def test_security_groups(self):
         
@@ -780,9 +846,7 @@ class MachineDbTest(unittest.TestCase):
         groups = get_security_groups(ec2)
         self.assert_(name not in groups, "not deleted")
         
-    
-    def test_read_tags(self):
-        pass
+ 
     
     def atest_tags(self):
         

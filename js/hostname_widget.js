@@ -12,8 +12,9 @@ function _update_hostname_widget(widget_div, constellation_name, machine_name, i
         str += '<a href="/cloudsim/inside/cgi-bin/machine_zip_download.py';
         str += '?constellation=' + constellation_name;
         str += '&machine=' + machine_name;
-        str += '">Download keys</a><br>';
+        str += '">Download keys</a>';
 	}
+    str += '<br>';
     str += '<b>Launched by: </b>' + user + " ( at GMT " + launch_date+ ")";
     widget_div.innerHTML = str;
 }

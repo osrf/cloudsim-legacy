@@ -7,6 +7,7 @@ import time
 import common
 from common.machine import MachineDb, CONSTELLATION_JSONF_NAME
 import json
+from common.pubsub import RedisPublisher
 
 
 directory = os.path.split(__file__)[0]
@@ -70,11 +71,12 @@ def get_launch_functions():
 def launch(username, 
            config_name, 
            constellation_name, 
-           publisher,
            credentials_ec2,
-           root_directory):
+           root_directory,
+           publisher = None):
     
-    
+    if not publisher:
+        publisher = RedisPublisher(username)
  
     launchers =  get_launch_functions()
  
@@ -156,12 +158,11 @@ def stop_simulator(username, constellation_name, machine_name, root_directory):
 
 def terminate(username, 
               constellation_name, 
-              publisher, 
               credentials_ec2, 
               root_directory):
+    
     log("terminate constellation %s" % constellation_name)
-    publisher.event({'msg':'About to terminate'})
-
+    
     mdb = MachineDb(username, machine_dir = root_directory)
 
     machines = mdb.get_machines_in_constellation(constellation_name)
@@ -170,7 +171,6 @@ def terminate(username,
         log("  - terminate machine %s" % machine.config.uid)
         machine.terminate()
     
-
 
 
 if __name__ == "__main__":
