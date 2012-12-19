@@ -8,6 +8,7 @@ import unittest
 import json
 from testing import get_test_runner 
 import commands
+from common import testing
  
 class RedisPublisher(object):
     def __init__(self, username):
@@ -64,5 +65,5 @@ def subscribe(channels):
         
 if __name__ == '__main__':
     print('Machine TESTS')
-    unittest.main(testRunner = get_runner())          
+    unittest.main(testRunner = testing.get_test_runner())          
  
