@@ -11,8 +11,8 @@ function create_constellation(div_name, configuration, constellation)
     
     if(configuration == "team_code_one")
     {
-        _create_basic_machine(constellation_div, constellation, "micro_" + constellation );
-        _create_basic_machine(constellation_div, constellation, "cloudsim_" + constellation );
+        _create_basic_machine(constellation_div, constellation, "simulator_" + constellation );
+        _create_basic_machine(constellation_div, constellation, "robot_" + constellation );
         return;
     }
 }

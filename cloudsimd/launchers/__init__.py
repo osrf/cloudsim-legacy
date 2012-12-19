@@ -72,11 +72,9 @@ def launch(username,
            config_name, 
            constellation_name, 
            credentials_ec2,
-           root_directory,
-           publisher = None):
+           root_directory):
     
-    if not publisher:
-        publisher = RedisPublisher(username)
+    
  
     launchers =  get_launch_functions()
  
@@ -84,7 +82,7 @@ def launch(username,
  
     domain = username.split('@')[1]
     tags = {}
-    tags['user'] = username
+    # tags['user'] = username
     tags['constellation_name'] = constellation_name
 # remove path and .py from the name of this file
     
@@ -108,7 +106,7 @@ def launch(username,
     with open(constellation_fname,'w') as fp:
         fp.write(str)
         
-    r = func(username, constellation_name, tags, publisher, credentials_ec2, constellation_directory)
+    r = func(username, constellation_name, tags, credentials_ec2, constellation_directory)
     
     return r
 

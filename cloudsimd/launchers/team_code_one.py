@@ -3,7 +3,7 @@ from __future__ import with_statement
 import multiprocessing
 from common.testing import get_boto_path, get_test_path
 import unittest
-from common.machine import get_unique_short_name, StdoutPublisher
+from common.machine import get_unique_short_name, find_machine
 
 
 
@@ -17,38 +17,42 @@ def log(msg):
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
     
-def find_machine(username, constellation, machine):
-    mdb = MachineDb(username, machine_dir = root_directory)
-    machine = mdb.get_machine(constellation, machine_name)
-    return machine
 
 
-def launch(username, constellation_name, tags, credentials_ec2, root_directory):
 
-    from cloudsim import launch as cloudsim_launch
-    from drc_sim_latest import launch as drc_sim_latest_launch
-    from micro_vpn import launch as micro_vpn_launch
-
+def launch(username, constellation_name, tags, credentials_ec2, root_directory, machine_name_param = None ):
+    
+    sim_machine_name = "simulator_" + constellation_name
+    robot_machine_name = "robot_" + constellation_name
+    
+#    from cloudsim import launch as cloudsim_launch
+#    from micro_vpn import launch as micro_vpn_launch
+    
+    from drc_sim_latest import launch as sim_launch
+    from robot import launch as robot_launch
+    
     
     log("team code one")
-    sim_proc = multiprocessing.Process(target=micro_vpn_launch, args=(username, constellation_name, tags,  credentials_ec2, root_directory ))
-    team_proc = multiprocessing.Process(target=cloudsim_launch, args=(username, constellation_name, tags,  credentials_ec2, root_directory ))
+    sim_launch(username, constellation_name, tags,  credentials_ec2, root_directory, sim_machine_name )
     
-    sim_proc.start()
-    team_proc.start()
-    
-    log("join")
-    sim_proc.join()
-    
-    log("join")
-    team_proc.join()
-    
-    
-    log("done done")
-    
+#    sim_proc = multiprocessing.Process(target= sim_launch, args=(username, constellation_name, tags,  credentials_ec2, root_directory, sim_machine_name ))
+#    robot_proc = multiprocessing.Process(target=robot_launch, args=(username, constellation_name, tags,  credentials_ec2, root_directory, robot_machine_name ))
+#
+#    sim_proc.start()
+#    robot_proc.start()
+#
+#    log("robot_proc join")
+#    robot_proc.join()
+#        
+#    log("sim_proc join")
+#    sim_proc.join()
+#    
+#
+#    log("done done")
+#    
     machines = {}
-    machines['sim'] = find_machine(username, constellation_name, "micro_" + constellation_name)
-    machines['team_code'] = find_machine(username, constellation_name, "cloudsim_" + constellation_name )
+    machines['simultator'] = find_machine(username, constellation_name, sim_machine_name)
+#    machines['robot'] = find_machine(username, constellation_name, robot_machine_name )
     return machines
 
 class TeamCodeCase(unittest.TestCase):

@@ -143,7 +143,7 @@ class Machine (object):
             self.ec2 = create_ec2_proxy(self.config.credentials_ec2 )
             self.config.tags = tags
             self.config.tags['machine_name'] = unique_name
-            self.config.tags['username'] = username
+            self.config.tags['user'] = username
             self.config.uid = unique_name
             self.config.root_directory = root_directory
             self.config.cfg_dir=os.path.join(self.config.root_directory, self.config.uid)
@@ -172,7 +172,8 @@ class Machine (object):
             x = StdoutPublisher()
             event = x.event
         config = Machine_configuration.from_file(fname)
-        x = Machine(config.uid, config, event, do_launch = False)
+        email = config.tags['user']
+        x = Machine(email, config.uid,  config, event, do_launch = False)
         return x
 
     def _event(self, data_dict):
@@ -506,7 +507,12 @@ def get_package_version(package):
         s = proc.stderr.read()
     v = get_version_from_dpkg_str(s)
     return v
-    
+
+def find_machine(username, constellation, machine_name, machine_dir = MACHINES_DIR):
+    mdb = MachineDb(username, machine_dir)
+    machine = mdb.get_machine(constellation, machine_name)
+    return machine
+
 class MachineDb(object):
     
     def __init__(self, email, machine_dir = MACHINES_DIR):

@@ -34,8 +34,12 @@ def get_launch_script():
     return startup_script
     
 
-def launch(username, constellation_name, tags, credentials_ec2, root_directory):
+def launch(username, constellation_name, tags, credentials_ec2, root_directory, machine_name_param = None,):
 
+    machine_name = machine_name_param
+    if not machine_name:
+        machine_name = "simulator_" +constellation_name
+        
     security_group = "drc_sim_ami"
     ec2 = create_ec2_proxy(credentials_ec2)
     create_if_not_exists_vpn_ping_security_group(ec2, security_group, "DRC simulator: ssh and vpn")
@@ -54,7 +58,7 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory):
     domain = username.split("@")[1]
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "waiting for ip")
     set_machine_tag(domain, constellation_name, machine_name, "up", True)
-    machine_name = "simulator_" + constellation_name
+    
     machine = Machine(username,
                       machine_name,
                      config,

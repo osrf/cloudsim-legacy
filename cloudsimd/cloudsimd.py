@@ -20,6 +20,7 @@ from common import Machine
 
 import redis
 from common.machine import get_unique_short_name
+import traceback
 # register the daemon
 # sudo initctl reload-configuration
 
@@ -35,7 +36,7 @@ def log(msg, chan="cloudsim_log"):
         red = redis.Redis()
         red.publish(chan, msg)
     except Exception, e:
-        print("cloudsimd> %s" % msg)
+        pass
 
 def launch( username, 
             config_name, 
@@ -56,6 +57,8 @@ def launch( username,
                          root_directory)
     except Exception, e:
         log("cloudsimd.py launch error: %s" % e)
+        tb = traceback.format_exc()
+        log("cloudsimd.py launch error:  %s" % tb) 
     
     
 """

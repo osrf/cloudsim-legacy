@@ -93,7 +93,7 @@ def get_monitoring_tools_script(boundary_creds = None):
     
     str =  """
 
-echo "Installing monitoring tools" >> /home/ubuntu/setup.log
+echo "Installing network monitoring tools" >> /home/ubuntu/setup.log
 date >> /home/ubuntu/setup.log
 
 apt-get install -y ntp

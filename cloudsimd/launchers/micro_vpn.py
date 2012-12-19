@@ -37,13 +37,19 @@ def log(msg):
 def launch(username, 
            constellation_name, 
            tags, credentials_ec2, 
-           constellation_directory):
+           constellation_directory,
+           machine_name_param = None, ):
     
+    machine_name = machine_name_param
+    if not machine_name:
+        machine_name = "micro_" +constellation_name
+        
     security_group = "micro_vpn"
     ec2 = create_ec2_proxy(credentials_ec2)
     create_if_not_exists_vpn_ping_security_group(ec2, security_group, "Micro machine: ssh and vpn")
     
     startup_script = LAUNCH_SCRIPT_HEADER
+    
     startup_script += """
     
 echo "deb http://packages.osrfoundation.org/gazebo/ubuntu precise main" > /etc/apt/sources.list.d/gazebo.list
@@ -53,8 +59,9 @@ echo "package update" >> /home/ubuntu/setup.log
 apt-get update
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
+"""
 
-
+    startup_script += """
 echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
 
 """
@@ -75,7 +82,6 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
                          ip_retries=100, 
                          ssh_retries=200)
     
-    machine_name = "micro_" + constellation_name
     
     domain = username.split("@")[1]
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "waiting for ip")

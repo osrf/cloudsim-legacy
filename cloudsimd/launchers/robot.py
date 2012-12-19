@@ -81,24 +81,39 @@ def get_launch_script():
     startup_script += XGL_STARTUP_AFTER
     
     startup_script += 'date >> /home/ubuntu/setup.log\n'
+    
     startup_script += 'echo "setting drc / ros  package repo" >> /home/ubuntu/setup.log\n'
-    startup_script += DRC_SETUP
-    startup_script += 'date >> /home/ubuntu/setup.log\n'
     
     startup_script += 'date >> /home/ubuntu/setup.log\n'
-    startup_script += get_monitoring_tools_script("GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu")
+    startup_script += get_monitoring_tools_script(boundary_creds)("GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu")
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     
+    startup_script += """ 
+    
+echo "setting OSRF repo" >> /home/ubuntu/setup.log
+echo "deb http://packages.osrfoundation.org/gazebo/ubuntu precise main" > /etc/apt/sources.list.d/gazebo.list
+wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
+echo "package update" >> /home/ubuntu/setup.log
+apt-get update
+echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
+apt-get install -y cloudsim-client-tools
+
+"""
     startup_script += 'echo "Setup complete" >> /home/ubuntu/setup.log\n'
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     return startup_script
     
 
-def launch(username, constellation_name, tags, credentials_ec2, root_directory, machine_name_param = None,):
+def launch(username,
+           constellation_name, 
+           tags, 
+           credentials_ec2, 
+           root_directory,
+           machine_name_param = None):
     
     machine_name = machine_name_param
     if not machine_name:
-        machine_name = "simulator_" +constellation_name
+        machine_name = "robot_" +constellation_name
     
     security_group = "drc_sim_latest"
     ec2 = create_ec2_proxy(credentials_ec2)
