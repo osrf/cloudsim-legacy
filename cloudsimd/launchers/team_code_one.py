@@ -33,19 +33,20 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
     
     
     log("team code one")
-    sim_launch(username, constellation_name, tags,  credentials_ec2, root_directory, sim_machine_name )
+#    sim_launch(username, constellation_name, tags,  credentials_ec2, root_directory, sim_machine_name )
     
-#    sim_proc = multiprocessing.Process(target= sim_launch, args=(username, constellation_name, tags,  credentials_ec2, root_directory, sim_machine_name ))
-#    robot_proc = multiprocessing.Process(target=robot_launch, args=(username, constellation_name, tags,  credentials_ec2, root_directory, robot_machine_name ))
+    sim_proc = multiprocessing.Process(target= sim_launch, args=(username, constellation_name, tags,  credentials_ec2, root_directory, sim_machine_name ))
+    robot_proc = multiprocessing.Process(target=robot_launch, args=(username, constellation_name, tags,  credentials_ec2, root_directory, robot_machine_name ))
 #
-#    sim_proc.start()
-#    robot_proc.start()
+    sim_proc.start()
+    robot_proc.start()
 #
-#    log("robot_proc join")
-#    robot_proc.join()
-#        
-#    log("sim_proc join")
-#    sim_proc.join()
+    
+    log("sim_proc join")
+    sim_proc.join()
+    
+    log("robot_proc join")
+    robot_proc.join()
 #    
 #
 #    log("done done")
