@@ -4,6 +4,7 @@ import multiprocessing
 from common.testing import get_boto_path, get_test_path
 import unittest
 from common.machine import get_unique_short_name, find_machine
+import time
 
 
 
@@ -38,9 +39,13 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
     sim_proc = multiprocessing.Process(target= sim_launch, args=(username, constellation_name, tags,  credentials_ec2, root_directory, sim_machine_name ))
     robot_proc = multiprocessing.Process(target=robot_launch, args=(username, constellation_name, tags,  credentials_ec2, root_directory, robot_machine_name ))
 #
+    log("sim_proc start")
     sim_proc.start()
+    
+    log("robot_proc start")
     robot_proc.start()
 #
+    time.sleep(30)
     
     log("sim_proc join")
     sim_proc.join()
@@ -50,11 +55,7 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
 #    
 #
 #    log("done done")
-#    
-    machines = {}
-    machines['simultator'] = find_machine(username, constellation_name, sim_machine_name)
-#    machines['robot'] = find_machine(username, constellation_name, robot_machine_name )
-    return machines
+
 
 class TeamCodeCase(unittest.TestCase):
     

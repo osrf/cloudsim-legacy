@@ -9,10 +9,30 @@ function create_constellation(div_name, configuration, constellation)
     if(configuration == "micro_vpn") return create_micro_vpn_constellation(constellation_div, constellation);
     if(configuration == "ros_fuerte") return create_ros_fuerte_constellation(constellation_div, constellation);
     
-    if(configuration == "team_code_one")
+    if(configuration == "micro_sim")
+    {
+        _create_basic_machine(constellation_div, constellation, "simulator_" + constellation );
+        return;
+    }
+
+    if(configuration == "micro_robot")
+    {
+        _create_basic_machine(constellation_div, constellation, "robot_" + constellation );
+        return;
+    }
+    
+    if(configuration == "micro_duo")
     {
         _create_basic_machine(constellation_div, constellation, "simulator_" + constellation );
         _create_basic_machine(constellation_div, constellation, "robot_" + constellation );
+        return;
+    }
+    
+    if(configuration == "micro_duo")
+    {
+        _create_basic_machine(constellation_div, constellation, "simulator_" + constellation );
+        _create_basic_machine(constellation_div, constellation, "robot_" + constellation );
+        // _create_basic_machine(constellation_div, constellation, "router_" + constellation );
         return;
     }
 }

@@ -116,10 +116,6 @@ echo "monitoring tools installed " >> /home/ubuntu/setup.log
 INSTALL_VPN = """
 
 echo "Installing openvpn" >> /home/ubuntu/setup.log
-
-# Install and start openvpn.  Do this last, because we're going to 
-# infer that the machine is ready from the presence of the 
-# openvpn static key file.
 apt-get install -y openvpn
 
 echo "Generating openvpn key" >> /home/ubuntu/setup.log

@@ -224,7 +224,7 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     log("%s\n"%(machine.get_user_ssh_command_string()))
     log("http://%s"% machine.config.hostname)
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
-    return machine
+ 
     
     
 def cloudsim_bootstrap(username, ec2):

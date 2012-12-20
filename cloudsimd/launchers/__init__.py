@@ -8,6 +8,7 @@ import common
 from common.machine import MachineDb, CONSTELLATION_JSONF_NAME
 import json
 from common.pubsub import RedisPublisher
+import traceback
 
 
 directory = os.path.split(__file__)[0]
@@ -105,10 +106,13 @@ def launch(username,
     str = json.dumps(constellation_info)
     with open(constellation_fname,'w') as fp:
         fp.write(str)
-        
-    r = func(username, constellation_name, tags, credentials_ec2, constellation_directory)
-    
-    return r
+    try:
+        log("START constellation launch %s [%s]" % (constellation_name, config_name) )
+        func(username, constellation_name, tags, credentials_ec2, constellation_directory)
+        log("constellation launch %s [%s] DONE" % (constellation_name, config_name) )
+    except Exception as e:
+        tb = traceback.format_exc()
+        log("Error during launch: %s" % tb) 
 
 def start_simulator(  username, 
                       constellation_name,

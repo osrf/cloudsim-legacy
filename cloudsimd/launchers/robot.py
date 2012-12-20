@@ -206,7 +206,8 @@ def launch(username,
     log("machine ready")
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
     
-    return machine
+    
+
 
 class Test_launch_drcim_latest(unittest.TestCase):
     

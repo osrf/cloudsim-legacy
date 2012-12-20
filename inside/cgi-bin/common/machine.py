@@ -550,7 +550,11 @@ class MachineDb(object):
                 machine_list.remove('constellation.json')
                 machines[constellation] = constellation_info
                 for machine_name in machine_list:
-                    machine = self.get_machine(constellation, machine_name)
+                    machine = None
+                    try:
+                        machine = self.get_machine(constellation, machine_name)
+                    except:
+                        machine = None
                     if machine:
                         if get_all_machines or self.is_machine_up(constellation, machine_name ):
                             machines[constellation]['machines'][machine_name] = machine 
@@ -567,10 +571,11 @@ class MachineDb(object):
         
     def get_machine(self, constellation, machine_name):
         fname =  os.path.join(self.root_dir, constellation, machine_name, 'instance.json')
+        fname = os.path.abspath(fname)
         if os.path.exists(fname):
             machine = Machine.from_file(fname)
             return machine
-        return None
+        raise MachineException("Machine %s/%s not found in file [%s]" % (constellation, machine_name,fname ) )
     
     def get_machines_as_json(self):
         d = self.get_machines_as_dict()
@@ -594,20 +599,7 @@ class MachineDb(object):
                 jmachines[constellation_name]['machines'][machine_name] = jmachine
                 
         return jmachines
-    
-        
-#        json_machines ={}
-#        for name, machine in machines.iteritems():
-#            m = {}
-#            m.update(machine.config.__dict__)
-#            if (m.has_key("startup_script")):
-#                m.pop("startup_script")
-#            json_machines[name] = m
-#            
-#        str = json.dumps(json_machines)
-        return str
-    
-           
+
 
     def get_launch_log_fname(self, machine_name):
         fname =  os.path.join(self.root_dir, machine_name, "launch.log")

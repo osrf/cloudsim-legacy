@@ -135,7 +135,7 @@ def sweep_monitor (root_directory):
                 s = monitor_simulator(domain, constellation, machine)
                 log('   simulation %s' % s)
         else:
-            log('   removing %s' % s)
+            log('   REMOVING FROM DISK: %s/%s/%s [%s]' % (domain, constellation['name'], machine.config.uid, constellation['config']) )
             remove_machine_data(root_directory, domain, constellation, machine)
 
 #def sweep_monitor (root_dir):

@@ -10,7 +10,7 @@ import time
 import boto
 
 from common import StdoutPublisher, INSTALL_VPN, Machine,\
-    clean_local_ssh_key_entry, MachineDb
+    clean_local_ssh_key_entry, MachineDb, constants
 from common import create_openvpn_server_cfg_file,\
     inject_file_into_script, create_openvpn_client_cfg_file,\
     create_ros_connect_file, create_vpn_connect_file
@@ -20,9 +20,6 @@ from common import create_if_not_exists_vpn_ping_security_group
 from common.startup_script_builder import LAUNCH_SCRIPT_HEADER
 from common.pubsub import RedisPublisher
 
-#def launchx():
-#    print ("launch from micro_vpn")
-    
 
 def log(msg):
     try:
@@ -57,8 +54,13 @@ wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
 
 echo "package update" >> /home/ubuntu/setup.log
 apt-get update
+
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
+
+echo "install unzip" >> /home/ubuntu/setup.log
+apt-get install -y unzip zip ntp
+
 """
 
     startup_script += """
@@ -66,11 +68,11 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
 
 """
     
-    file_content = create_openvpn_server_cfg_file()
+    file_content = create_openvpn_server_cfg_file(client_ip= constants.OV_ROBOT_CLIENT_IP, server_ip=constants.OV_ROBOT_SERVER_IP)
     startup_script += inject_file_into_script("openvpn.config",file_content)
-
     startup_script += INSTALL_VPN
-    log(startup_script)
+    
+    #log(startup_script)
 
     config = Machine_configuration()
     config.initialize(   image_id ="ami-137bcf7a", 
@@ -111,7 +113,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     remote_fname = "/etc/openvpn/static.key"
     
     fname_vpn_cfg = os.path.join(machine.config.cfg_dir, "openvpn.config")
-    file_content = create_openvpn_client_cfg_file(machine.config.hostname)
+    file_content = create_openvpn_client_cfg_file(machine.config.hostname, client_ip= constants.OV_ROBOT_CLIENT_IP, server_ip=constants.OV_ROBOT_SERVER_IP)
     with open(fname_vpn_cfg, 'w') as f:
         f.write(file_content)
     
@@ -120,11 +122,11 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     with open(fname_start_vpn, 'w') as f:
         f.write(file_content)
 
-    vpnkey_fname = os.path.join(machine.config.cfg_dir, "openvpn.key")
+    vpnkey_fname = os.path.join(machine.config.cfg_dir, constants.OPENVPN_CLIENT_KEY_NAME)
     machine.scp_download_file(vpnkey_fname, remote_fname)
 
     fname_ros = os.path.join(machine.config.cfg_dir, "ros.sh")    
-    file_content = create_ros_connect_file()
+    file_content = create_ros_connect_file(openvpn_client_ip = constants.OV_ROBOT_CLIENT_IP, openvpn_server_ip = constants.OV_ROBOT_SERVER_IP)
     with open(fname_ros, 'w') as f:
         f.write(file_content)
     
@@ -145,13 +147,13 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
             zip_name = os.path.join(machine.config.uid, short_fname)
             fzip.write(fname, zip_name)
             
-    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "rebooting")        
-    log("rebooting machine")
-    r = machine.reboot()
-    
-    log("waiting for machine to be up again")
-    # machine.get_aws_status(timeout)['state'] == 'running'
-    machine.ssh_wait_for_ready("/home/ubuntu")
+#    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "rebooting")        
+#    log("rebooting machine")
+#    r = machine.reboot()
+#    
+#    log("waiting for machine to be up again")
+#    # machine.get_aws_status(timeout)['state'] == 'running'
+#    machine.ssh_wait_for_ready("/home/ubuntu")
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
 
     

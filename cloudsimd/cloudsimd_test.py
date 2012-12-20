@@ -16,7 +16,8 @@ from monitoring import sweep_monitor
 import time
 from common.testing import kill_all_ec2_instances, get_boto_path, get_test_path
 from common.machine import create_ec2_proxy, get_unique_short_name,\
-    get_machine_tag
+    get_machine_tag, find_machine
+import sys
 
 
 username = "cloudsim_test@osrfoundation.org"
@@ -26,28 +27,34 @@ class DrcSimLatestTestCase(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
 
-    def test_start_stop_simulation(self):
+    def atest_start_stop_simulation(self):
+        
+        unik = get_unique_short_name()
+        
+        self.username = "test@osrfoundation.org" 
+        self.constellation_name = "test_launch_drcim_latest_" + unik
+        self.machine_name = "simulator_" + unik
+        
         
         self.package_name = "drc_robot_utils"
         self.launch_file_name = "drc_robot.launch"
         self.launch_args= ""
-                      
-        self.username = "test@osrfoundation.org" 
-        self.constellation_name = "test_launch_drcim_latest_" + get_unique_short_name()
+
+        
         self.ec2 = get_boto_path()
         
         tags = {"test":"test_launch_drcim_latest"} 
         
         self.root_directory = get_test_path('Test_launch_drcim_latest')
-        
        
-        self.machine = launch(self.username, 
-                              "drc_sim_latest", 
+       
+        launch(self.username, "drc_sim_latest", 
                               self.constellation_name, 
                               self.ec2, 
                               self.root_directory)
         
-        self.machine_name  = self.machine.config.uid
+        self.machine = find_machine(username, self.constellation_name, self.machine_name, self.root_directory)
+
         
         try:
             import redis
@@ -92,6 +99,71 @@ class DrcSimLatestTestCase(unittest.TestCase):
         kill_all_ec2_instances(ec2)
     
 
+def my_flush():
+    pass
+
+class MicroDuoTestCase(unittest.TestCase):
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.machine = None
+
+    def test_start_stop_duo(self):
+                
+        unik = get_unique_short_name()
+        
+        t = type(sys.stdout)
+        if t !=  'file':
+            sys.stdout.flush = my_flush 
+            sys.stderr.flush = my_flush 
+            
+            
+      
+
+        
+        self.username = "test@osrfoundation.org" 
+        self.constellation_name = "test_MicroDuoTestCase_" + unik
+        self.sim_machine_name = "simulator_" + self.constellation_name
+        self.robot_machine_name = "robot_" + self.constellation_name
+       
+        self.ec2 = get_boto_path()
+        
+        tags = {"test":"MicroDuoTestCase"} 
+        
+        self.root_directory = get_test_path('MicroDuoTestCase')
+        
+        self.publisher = StdoutPublisher()
+        
+        
+        launch(self.username, 
+                              "micro_duo", 
+                              self.constellation_name, 
+                              self.ec2, 
+                              self.root_directory,
+                              )
+        
+        self.sim_machine = find_machine(username, self.constellation_name, self.sim_machine_name, self.root_directory)
+        self.robot_machine = find_machine(username, self.constellation_name, self.robot_machine_name, self.root_directory)
+ 
+        
+        time.sleep(5)
+        
+        v = self.sim_machine.get_deb_package_version("cloudsim-client-tools")
+        print("cloudsim-client-tools version %s" % v)
+        self.assert_(v.find("No packages found matching") == -1, "client tools not installed" )
+        
+        v = self.robot_machine.get_deb_package_version("cloudsim-client-tools")
+        print("cloudsim-client-tools version %s" % v)
+        self.assert_(v.find("No packages found matching") == -1, "client tools not installed" )
+        
+        
+    def tearDown(self):
+        unittest.TestCase.tearDown(self)
+        terminate(self.username, self.constellation_name, self.ec2, self.root_directory)
+        
+        #ec2 = create_ec2_proxy(get_boto_path())
+        #kill_all_ec2_instances(ec2)
+        
 class MicroTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -100,9 +172,10 @@ class MicroTestCase(unittest.TestCase):
 
     def atest_start_stop_micro(self):
         
-        
+        unik = get_unique_short_name()
         self.username = "test@osrfoundation.org" 
-        self.constellation_name = "test_MicroTestCase_" + get_unique_short_name()
+        self.constellation_name = "test_MicroTestCase_" + unik
+        self.machine_name = "micro_" + unik
         self.ec2 = get_boto_path()
         
         tags = {"test":"MicroTestCase"} 
@@ -112,14 +185,15 @@ class MicroTestCase(unittest.TestCase):
         self.publisher = StdoutPublisher()
         
         
-        self.machine = launch(self.username, 
+        launch(self.username, 
                               "micro_vpn", 
                               self.constellation_name, 
                               self.ec2, 
                               self.root_directory,
                               self.publisher)
         
-        self.machine_name  = self.machine.config.uid
+        self.machine = find_machine(username, self.constellation_name, self.machine_name, self.root_directory)
+ 
         
         time.sleep(5)
         

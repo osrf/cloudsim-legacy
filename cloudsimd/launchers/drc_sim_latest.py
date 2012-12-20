@@ -190,8 +190,7 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
     machine.ssh_wait_for_ready("/home/ubuntu")
     log("machine ready")
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
-    
-    return machine
+ 
 
 class Test_launch_drcim_latest(unittest.TestCase):
     
