@@ -797,12 +797,19 @@ def create_if_not_exists_web_app_security_group(ec2, group_name, description):
         sec.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
         sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
 
+def create_if_not_exists_simulator_security_group(ec2, group_name, description):
+    create_if_not_exists_vpn_ping_security_group(ec2, group_name, description)
+
+def create_if_not_exists_robot_security_group(ec2, group_name, description):
+    create_if_not_exists_vpn_ping_security_group(ec2, group_name, description)
+    
 def create_if_not_exists_vpn_ping_security_group(ec2, group_name, description):
     sec_groups = get_security_groups(ec2)
     if group_name not in sec_groups:
         # imcp all, 22 (ssh) 80 (http)
         sec = ec2.create_security_group(group_name, description)
         sec.authorize('udp', 1194, 1194, '0.0.0.0/0')   # web
+        sec.authorize('udp', 1195, 1195, '0.0.0.0/0')   # web
         sec.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
         sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
 

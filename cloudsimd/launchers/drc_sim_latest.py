@@ -9,7 +9,7 @@ import time
 
 
 from common import StdoutPublisher, INSTALL_VPN, Machine,\
-    clean_local_ssh_key_entry, MachineDb, get_test_runner
+    clean_local_ssh_key_entry, MachineDb, get_test_runner, constants
 from common import create_openvpn_server_cfg_file,\
     inject_file_into_script, create_openvpn_client_cfg_file,\
     create_ros_connect_file, create_vpn_connect_file
@@ -18,7 +18,8 @@ from common.startup_script_builder import  ROS_SETUP_STARTUP_SCRIPT,\
     create_xorg_config_file, SOURCES_LIST_PRECISE, XGL_STARTUP_BEFORE,\
     XGL_STARTUP_AFTER, LAUNCH_SCRIPT_HEADER, get_monitoring_tools_script
 from common.machine import set_machine_tag, create_ec2_proxy,\
-    create_if_not_exists_vpn_ping_security_group, get_unique_short_name
+    get_unique_short_name,\
+    create_if_not_exists_simulator_security_group
 
 
 
@@ -54,7 +55,7 @@ echo "source drc setup from bashrc" >> /home/ubuntu/setup.log
 """
 
 
-def get_launch_script():
+def get_launch_script(boundary_creds):
     startup_script = LAUNCH_SCRIPT_HEADER
     
     startup_script += 'date > /home/ubuntu/setup.log\n'
@@ -67,7 +68,10 @@ def get_launch_script():
     startup_script += 'date > /home/ubuntu/setup.log\n'
 
     startup_script += 'echo "setup VPN" >> /home/ubuntu/setup.log\n'
-    file_content = create_openvpn_server_cfg_file()
+    
+    #file_content = create_openvpn_server_cfg_file()
+    file_content = create_openvpn_server_cfg_file(client_ip = constants.OV_SIM_CLIENT_IP, server_ip = constants.OV_SIM_SERVER_IP)
+    
     startup_script += inject_file_into_script("openvpn.config",file_content)
     startup_script += INSTALL_VPN
     
@@ -86,9 +90,16 @@ def get_launch_script():
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     
     startup_script += 'date >> /home/ubuntu/setup.log\n'
-    startup_script += get_monitoring_tools_script("GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu")
+    startup_script += get_monitoring_tools_script(boundary_creds) # ("GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu")
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     
+    startup_script += """ 
+    
+echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
+apt-get install -y cloudsim-client-tools
+
+"""    
+
     startup_script += 'echo "Setup complete" >> /home/ubuntu/setup.log\n'
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     return startup_script
@@ -102,9 +113,12 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
     
     security_group = "drc_sim_latest"
     ec2 = create_ec2_proxy(credentials_ec2)
-    create_if_not_exists_vpn_ping_security_group(ec2, security_group, "DRC simulator: ping, ssh and vpn")
+    create_if_not_exists_simulator_security_group(ec2, security_group, "DRC simulator: ping, ssh and vpn")
     
-    startup_script = get_launch_script()
+    boundary_creds = None
+    if username.find('@osrfoundation.org') > 0:
+        boundary_creds = "GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu"
+    startup_script = get_launch_script(boundary_creds)
         
     config = Machine_configuration()
     config.initialize(   image_id = "ami-98fa58f1",  
@@ -115,8 +129,6 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
                          startup_script = startup_script,
                          ip_retries=100, 
                          ssh_retries=1000)
-    
-    
     
     domain = username.split("@")[1]
     
@@ -138,8 +150,8 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
     machine.ssh_wait_for_ready("/home/ubuntu")
     
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "preparing keys")
+    file_content = create_openvpn_client_cfg_file(machine.config.hostname, client_ip = constants.OV_SIM_CLIENT_IP, server_ip = constants.OV_SIM_SERVER_IP)
     fname_vpn_cfg = os.path.join(machine.config.cfg_dir, "openvpn.config")
-    file_content = create_openvpn_client_cfg_file(machine.config.hostname)
     with open(fname_vpn_cfg, 'w') as f:
         f.write(file_content)
     
@@ -158,19 +170,19 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
     
     fname_zip = os.path.join(machine.config.cfg_dir, "%s.zip" % machine.config.uid)
     
-    log("Downloading key")
-    remote_fname = "/etc/openvpn/static.key"
+    log("Downloading VPN key remote %s to %s" % (remote_fname, vpnkey_fname))
     machine.ssh_wait_for_ready(remote_fname)
     vpnkey_fname = os.path.join(machine.config.cfg_dir, "openvpn.key")
+    remote_fname = "/etc/openvpn/static.key"
     machine.scp_download_file(vpnkey_fname, remote_fname)
-    
+
+    log("creating %s" % fname_zip)
     files_to_zip = [ fname_ssh_key, 
                      fname_ssh_sh, 
                      fname_vpn_cfg,
                      vpnkey_fname,
                      fname_ros,]
     
-    log("creating %s" % fname_zip)
     with zipfile.ZipFile(fname_zip, 'w') as fzip:
         for fname in files_to_zip:
             short_fname = os.path.split(fname)[1]

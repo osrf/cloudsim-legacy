@@ -111,7 +111,7 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "preparing keys")
     log("Downloading key")
-    remote_fname = "/etc/openvpn/static.key"
+    
     
     fname_vpn_cfg = os.path.join(machine.config.cfg_dir, "openvpn.config")
     file_content = create_openvpn_client_cfg_file(machine.config.hostname, client_ip = constants.OV_SIM_CLIENT_IP, server_ip = constants.OV_SIM_SERVER_IP)
@@ -120,13 +120,14 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     with open(fname_vpn_cfg, 'w') as f:
         f.write(file_content)
         
-    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "preparing keys1")
     fname_start_vpn = os.path.join(machine.config.cfg_dir, "start_vpn.sh")    
     file_content = create_vpn_connect_file()
     with open(fname_start_vpn, 'w') as f:
         f.write(file_content)
-    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "preparing keys2")
+    
     vpnkey_fname = os.path.join(machine.config.cfg_dir, constants.OPENVPN_CLIENT_KEY_NAME)
+    
+    remote_fname = "/etc/openvpn/static.key"
     machine.scp_download_file(vpnkey_fname, remote_fname)
 
     fname_ros = os.path.join(machine.config.cfg_dir, "ros.sh")    
@@ -134,7 +135,6 @@ echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
     with open(fname_ros, 'w') as f:
         f.write(file_content)
     
-    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "preparing keys3")
     
     fname_ssh_key =  os.path.join(machine.config.cfg_dir, machine.config.kp_name + '.pem')
     fname_ssh_sh =  os.path.join(machine.config.cfg_dir,'ssh.sh')

@@ -35,6 +35,14 @@ function create_constellation(div_name, configuration, constellation)
         // _create_basic_machine(constellation_div, constellation, "router_" + constellation );
         return;
     }
+    
+    if(configuration == "robot_and_simulator")
+    {
+    	_create_simulator_machine(constellation_div, constellation, "simulator_" + constellation );
+        _create_basic_machine(constellation_div, constellation, "robot_" + constellation );
+        // _create_basic_machine(constellation_div, constellation, "router_" + constellation );
+        return;
+    }
 }
 
 function _create_basic_machine(constellation_div, constellation_name, machine_name)

@@ -9,7 +9,7 @@ import time
 
 
 from common import StdoutPublisher, INSTALL_VPN, Machine,\
-    clean_local_ssh_key_entry, MachineDb, get_test_runner
+    clean_local_ssh_key_entry, MachineDb, get_test_runner, constants
 from common import create_openvpn_server_cfg_file,\
     inject_file_into_script, create_openvpn_client_cfg_file,\
     create_ros_connect_file, create_vpn_connect_file
@@ -54,7 +54,7 @@ echo "source drc setup from bashrc" >> /home/ubuntu/setup.log
 """
 
 
-def get_launch_script():
+def get_launch_script(boundary_creds):
     startup_script = LAUNCH_SCRIPT_HEADER
     
     startup_script += 'date > /home/ubuntu/setup.log\n'
@@ -67,7 +67,7 @@ def get_launch_script():
     startup_script += 'date > /home/ubuntu/setup.log\n'
 
     startup_script += 'echo "setup VPN" >> /home/ubuntu/setup.log\n'
-    file_content = create_openvpn_server_cfg_file()
+    file_content = create_openvpn_server_cfg_file(client_ip= constants.OV_ROBOT_CLIENT_IP, server_ip=constants.OV_ROBOT_SERVER_IP)
     startup_script += inject_file_into_script("openvpn.config",file_content)
     startup_script += INSTALL_VPN
     
@@ -85,16 +85,11 @@ def get_launch_script():
     startup_script += 'echo "setting drc / ros  package repo" >> /home/ubuntu/setup.log\n'
     
     startup_script += 'date >> /home/ubuntu/setup.log\n'
-    startup_script += get_monitoring_tools_script(boundary_creds)("GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu")
+    startup_script += get_monitoring_tools_script(boundary_creds) # ()
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     
     startup_script += """ 
     
-echo "setting OSRF repo" >> /home/ubuntu/setup.log
-echo "deb http://packages.osrfoundation.org/gazebo/ubuntu precise main" > /etc/apt/sources.list.d/gazebo.list
-wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
-echo "package update" >> /home/ubuntu/setup.log
-apt-get update
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
 
@@ -119,7 +114,10 @@ def launch(username,
     ec2 = create_ec2_proxy(credentials_ec2)
     create_if_not_exists_vpn_ping_security_group(ec2, security_group, "DRC simulator: ping, ssh and vpn")
     
-    startup_script = get_launch_script()
+    boundary_creds = None
+    if username.find('@osrfoundation.org') > 0:
+        boundary_creds = "GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu"
+    startup_script = get_launch_script(boundary_creds)
         
     config = Machine_configuration()
     config.initialize(   image_id = "ami-98fa58f1",  
@@ -154,7 +152,8 @@ def launch(username,
     
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "preparing keys")
     fname_vpn_cfg = os.path.join(machine.config.cfg_dir, "openvpn.config")
-    file_content = create_openvpn_client_cfg_file(machine.config.hostname)
+    file_content = create_openvpn_client_cfg_file(machine.config.hostname, client_ip= constants.OV_ROBOT_CLIENT_IP, server_ip=constants.OV_ROBOT_SERVER_IP)
+
     with open(fname_vpn_cfg, 'w') as f:
         f.write(file_content)
     
@@ -176,7 +175,8 @@ def launch(username,
     log("Downloading key")
     remote_fname = "/etc/openvpn/static.key"
     machine.ssh_wait_for_ready(remote_fname)
-    vpnkey_fname = os.path.join(machine.config.cfg_dir, "openvpn.key")
+    
+    vpnkey_fname = os.path.join(machine.config.cfg_dir, constants.OPENVPN_CLIENT_KEY_NAME)
     machine.scp_download_file(vpnkey_fname, remote_fname)
     
     files_to_zip = [ fname_ssh_key, 
@@ -200,6 +200,7 @@ def launch(username,
     log("rebooting machine")
     machine.reboot()
     
+    time.sleep(30)
     log("waiting for machine to be up again")
     # machine.get_aws_status(timeout)['state'] == 'running'
     machine.ssh_wait_for_ready("/home/ubuntu")
