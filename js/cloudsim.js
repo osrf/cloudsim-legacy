@@ -36,6 +36,11 @@ function create_constellation(div_name, configuration, constellation)
         return;
     }
     
+    if(configuration == "robot")
+    {
+        _create_basic_machine(constellation_div, constellation, "robot_" + constellation );
+        return;
+    }
     if(configuration == "robot_and_simulator")
     {
     	_create_simulator_machine(constellation_div, constellation, "simulator_" + constellation );

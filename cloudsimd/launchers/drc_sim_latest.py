@@ -71,7 +71,6 @@ def get_launch_script(boundary_creds):
     
     #file_content = create_openvpn_server_cfg_file()
     file_content = create_openvpn_server_cfg_file(client_ip = constants.OV_SIM_CLIENT_IP, server_ip = constants.OV_SIM_SERVER_IP)
-    
     startup_script += inject_file_into_script("openvpn.config",file_content)
     startup_script += INSTALL_VPN
     
@@ -116,8 +115,8 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
     create_if_not_exists_simulator_security_group(ec2, security_group, "DRC simulator: ping, ssh and vpn")
     
     boundary_creds = None
-    if username.find('@osrfoundation.org') > 0:
-        boundary_creds = "GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu"
+    #if username.find('@osrfoundation.org') > 0:
+    #    boundary_creds = "GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu"
     startup_script = get_launch_script(boundary_creds)
         
     config = Machine_configuration()
@@ -146,20 +145,23 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
     machine.create_ssh_connect_script()
     clean_local_ssh_key_entry(machine.config.ip )
 
-    log("Waiting for ssh")
+    log("%s/%s> Waiting for ssh" % (constellation_name, machine_name) )
     machine.ssh_wait_for_ready("/home/ubuntu")
     
+    log("%s/%s> write openvpn.config" % (constellation_name, machine_name))
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "preparing keys")
     file_content = create_openvpn_client_cfg_file(machine.config.hostname, client_ip = constants.OV_SIM_CLIENT_IP, server_ip = constants.OV_SIM_SERVER_IP)
     fname_vpn_cfg = os.path.join(machine.config.cfg_dir, "openvpn.config")
     with open(fname_vpn_cfg, 'w') as f:
         f.write(file_content)
     
+    log("%s/%s> write start_vpn.sh" % (constellation_name, machine_name))
     fname_start_vpn = os.path.join(machine.config.cfg_dir, "start_vpn.sh")    
     file_content = create_vpn_connect_file()
     with open(fname_start_vpn, 'w') as f:
         f.write(file_content)
 
+    log("%s/%s> write ros.sh" % (constellation_name, machine_name))
     fname_ros = os.path.join(machine.config.cfg_dir, "ros.sh")    
     file_content = create_ros_connect_file()
     with open(fname_ros, 'w') as f:
@@ -170,13 +172,20 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
     
     fname_zip = os.path.join(machine.config.cfg_dir, "%s.zip" % machine.config.uid)
     
-    log("Downloading VPN key remote %s to %s" % (remote_fname, vpnkey_fname))
-    machine.ssh_wait_for_ready(remote_fname)
-    vpnkey_fname = os.path.join(machine.config.cfg_dir, "openvpn.key")
+    # wait (if necessary) for openvpn key to have been generated, then
+    # download it locally for inclusion into the zip file
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "waiting for openvpn key setup")
     remote_fname = "/etc/openvpn/static.key"
+    log("%s/%s> waiting for %s" % (constellation_name, machine_name, remote_fname) ) 
+    machine.ssh_wait_for_ready(remote_fname)
+    
+    vpnkey_fname = os.path.join(machine.config.cfg_dir, "openvpn.key")
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "openvpn key download")
+    log("%s/%s> Downloading VPN key remote %s to %s" % (constellation_name, machine_name, remote_fname, vpnkey_fname))
     machine.scp_download_file(vpnkey_fname, remote_fname)
 
-    log("creating %s" % fname_zip)
+    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "creating keys zip file")
+    log("%s/%s> creating %s" % (constellation_name, machine_name, fname_zip))
     files_to_zip = [ fname_ssh_key, 
                      fname_ssh_sh, 
                      fname_vpn_cfg,
@@ -190,17 +199,17 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
             fzip.write(fname, zip_name)
     
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "installing packages")
-    log("Waiting for setup to complete")
+    log("%s/%s> Waiting for setup to complete" % (constellation_name, machine_name) )
     machine.ssh_wait_for_ready()
     
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "rebooting")
-    log("rebooting machine")
+    log("%s/%s> rebooting machine" % (constellation_name, machine_name))
     machine.reboot()
     
-    log("waiting for machine to be up again")
+    log("%s/%s> waiting for machine to be up again" % (constellation_name, machine_name))
     # machine.get_aws_status(timeout)['state'] == 'running'
     machine.ssh_wait_for_ready("/home/ubuntu")
-    log("machine ready")
+    log("%s/%s> machine ready"% (constellation_name, machine_name))
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
  
 

@@ -82,18 +82,16 @@ def get_launch_script(boundary_creds):
     
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     
+    startup_script += 'date >> /home/ubuntu/setup.log\n'
     startup_script += 'echo "setting drc / ros  package repo" >> /home/ubuntu/setup.log\n'
+    startup_script += DRC_SETUP
+    startup_script += 'date >> /home/ubuntu/setup.log\n'
     
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     startup_script += get_monitoring_tools_script(boundary_creds) # ()
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     
-    startup_script += """ 
-    
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-apt-get install -y cloudsim-client-tools
-
-"""
+ 
     startup_script += 'echo "Setup complete" >> /home/ubuntu/setup.log\n'
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     return startup_script
@@ -115,8 +113,8 @@ def launch(username,
     create_if_not_exists_vpn_ping_security_group(ec2, security_group, "DRC simulator: ping, ssh and vpn")
     
     boundary_creds = None
-    if username.find('@osrfoundation.org') > 0:
-        boundary_creds = "GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu"
+    #if username.find('@osrfoundation.org') > 0:
+    #    boundary_creds = "GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu"
     startup_script = get_launch_script(boundary_creds)
         
     config = Machine_configuration()
