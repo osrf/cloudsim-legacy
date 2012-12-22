@@ -26,8 +26,10 @@ class DrcSimLatestTestCase(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
+        ec2 = create_ec2_proxy(get_boto_path())
+        kill_all_ec2_instances(ec2)
 
-    def atest_start_stop_simulation(self):
+    def test_start_stop_simulation(self):
         
         unik = get_unique_short_name()
         
@@ -108,7 +110,7 @@ class MicroDuoTestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.machine = None
 
-    def test_start_stop_duo(self):
+    def atest_start_stop_duo(self):
                 
         unik = get_unique_short_name()
         
