@@ -27,7 +27,9 @@ print('\n')
 
 cdb = ConfigsDb(email)
 
-admin_configs = ['micro_vpn','ros_fuerte','cloudsim', 'gazebo', 'drc_sim_ami' ]
+admin_configs = ['micro_vpn','ros_fuerte','cloudsim', 
+                 'gazebo', 'drc_sim_ami', 'micro_robot',
+                 'micro_sim', 'micro_duo' ]
 
 configs = cdb.get_configs()
 

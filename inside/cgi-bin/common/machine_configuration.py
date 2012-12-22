@@ -88,7 +88,7 @@ class ConfigsDb(object):
         configs['micro_vpn'] = {'description': "A non gpu machine with VPN but no simulator"}
         configs['drc_sim_latest'] = {'description': "A GPU machine with the latest ROS-fuerte, Gazebo and DRC simulation packages installed"}
         configs['cloudsim'] = {'description': "A micro instance that runs the Cloudsim web app"}
-        configs['team_code_one'] = {'description': "The latest simulator machine and a companion robot machine"}
+        configs['robot_and_simulator'] = {'description': "The latest simulator machine and a companion robot machine"}
         return configs
 
     def get_configs_as_json(self):
