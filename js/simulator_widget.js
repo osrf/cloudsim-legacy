@@ -2,8 +2,9 @@
 
 function create_simulator_state_widget(machine_div, constellation_name, machine_name,  widget_name)
 {
-    var package_name = "drc_robot_utils";
-    var launch_file = "drc_robot.launch";
+	// roslaunch atlas_utils atlas_position_controllers.launch
+    var package_name = "atlas_utils";//"drc_robot_utils";
+    var launch_file = "atlas_position_controllers.launch"; // "drc_robot.launch";
     var launch_args = "";
 	
     var widget_div = _create_empty_widget(machine_div, widget_name);
