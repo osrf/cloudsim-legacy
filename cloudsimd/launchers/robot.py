@@ -87,9 +87,9 @@ def get_launch_script(boundary_creds):
     startup_script += DRC_SETUP
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     
-    startup_script += 'date >> /home/ubuntu/setup.log\n'
-    startup_script += get_monitoring_tools_script(boundary_creds) # ()
-    startup_script += 'date >> /home/ubuntu/setup.log\n'
+#    startup_script += 'date >> /home/ubuntu/setup.log\n'
+#    startup_script += get_monitoring_tools_script(boundary_creds) # ()
+#    startup_script += 'date >> /home/ubuntu/setup.log\n'
     
  
     startup_script += 'echo "Setup complete" >> /home/ubuntu/setup.log\n'
