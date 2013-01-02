@@ -142,10 +142,10 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
 
     machine = Machine(username,
                       machine_name,
-                     config,
-                     tags,
-                     credentials_ec2,
-                     constellation_directory)
+                      config,
+                      tags,
+                      credentials_ec2,
+                      constellation_directory)
                      
     domain = username.split("@")[1]
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "waiting for ip")
@@ -213,8 +213,6 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     log("running deploy script '%s' remotely" % deploy_script_fname)
     out = machine.ssh_send_command("bash " + deploy_script_fname  )
     log ("\t%s"% out)
-    
-    
     
 #    print("check that file is there")
 #    out = machine.ssh_wait_for_ready('/var/www-cloudsim-auth/users')

@@ -1,7 +1,7 @@
 from __future__ import with_statement
 from __future__ import print_function
 
-import commands
+
 import unittest
 import uuid
 import os
@@ -10,7 +10,7 @@ import time
 import subprocess
 import json
 import shutil
-import re
+
  
 import boto
 
@@ -99,16 +99,6 @@ class StdoutPublisher(object):
         except:
             pass # test cases try to do something clever
         
-        
-        
-
-#class Constellation(object):
-#    def __init__(self, type, name, root_directory):
-#        pass
-#    
-#    def get_path(self):
-#        pass
-    
 
 class MockMachine(object):
     
@@ -137,10 +127,12 @@ class Machine (object):
         self.config = config
         self.startup_script_done_file = '/tmp/startup_script_done'
         self.ssh_connect_timeout = 1
+        
+        self.ec2 = create_ec2_proxy(credentials_ec2 )
         # We use this file as an indicator that our startup script has completed successfully
         if do_launch:
             self.config.credentials_ec2 = credentials_ec2
-            self.ec2 = create_ec2_proxy(self.config.credentials_ec2 )
+            
             self.config.tags = tags
             self.config.tags['machine_name'] = unique_name
             self.config.tags['user'] = username
@@ -161,10 +153,7 @@ class Machine (object):
             
             self.config.save_json(self.config.instance_fname)
             
-            #self.log.close()
-            #self.log = None
-        else:
-            self.ec2 = create_ec2_proxy(self.config.credentials_ec2 )
+
 
     @classmethod
     def from_file(cls,  fname, event = None):
@@ -302,7 +291,6 @@ class Machine (object):
         else:
             return output
 
-  
     def ssh_wait_for_ready(self, the_file_to_look_for=None):
         delay = 0.5
         file_to_look_for = the_file_to_look_for

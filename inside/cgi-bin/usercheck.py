@@ -12,8 +12,6 @@ cgitb.enable()
 
 
 
-
-
 # Get form and cookie data
 form = cgi.FieldStorage()
 email = form.getfirst(common.EMAIL_VARNAME)

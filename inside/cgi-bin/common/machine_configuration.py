@@ -49,8 +49,8 @@ class Machine_configuration(object):
         
     
     def as_json(self):
-        str = json.dumps(self.__dict__)
-        return str
+        s = json.dumps(self.__dict__)
+        return s
         
     def save_json(self, fname):
         
