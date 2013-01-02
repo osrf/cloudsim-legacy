@@ -43,14 +43,14 @@ wget http://packages.osrfoundation.org/drc.key -O - | sudo apt-key add -
 echo "package update" >> /home/ubuntu/setup.log
 apt-get update
 
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-apt-get install -y cloudsim-client-tools
-
 echo "install drc" >> /home/ubuntu/setup.log
 apt-get install -y drcsim
 
-echo "source drc setup from bashrc" >> /home/ubuntu/setup.log
+echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
+apt-get install -y cloudsim-client-tools
 
+echo "source drc setup from bashrc" >> /home/ubuntu/setup.log
+echo 'source /usr/share/drcsim/setup.sh' >> ~/.bashrc
 
 """
 
@@ -88,17 +88,10 @@ def get_launch_script(boundary_creds):
     startup_script += DRC_SETUP
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     
-    startup_script += 'date >> /home/ubuntu/setup.log\n'
-    startup_script += get_monitoring_tools_script(boundary_creds) # ("GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu")
-    startup_script += 'date >> /home/ubuntu/setup.log\n'
+#    startup_script += 'date >> /home/ubuntu/setup.log\n'
+#    startup_script += get_monitoring_tools_script(boundary_creds) # ("GxVCMUXvbNINCOV1XFtYPLvcC9r:3CTxnYc1eLQeZKjAavWX0wjMDBu")
+#    startup_script += 'date >> /home/ubuntu/setup.log\n'
     
-    startup_script += """ 
-    
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-apt-get install -y cloudsim-client-tools
-
-"""    
-
     startup_script += 'echo "Setup complete" >> /home/ubuntu/setup.log\n'
     startup_script += 'date >> /home/ubuntu/setup.log\n'
     return startup_script
@@ -127,7 +120,7 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
                          distro = 'precise',
                          startup_script = startup_script,
                          ip_retries=100, 
-                         ssh_retries=1000)
+                         ssh_retries=1500)
     
     domain = username.split("@")[1]
     
@@ -200,6 +193,18 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
     
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "installing packages")
     log("%s/%s> Waiting for setup to complete" % (constellation_name, machine_name) )
+    # machine.ssh_wait_for_ready()
+    
+    setup_files = ["/usr/share/doc/gnome-session/copyright",
+                   "/usr/share/doc/ros-fuerte-ros/copyright", 
+                   "/opt/ros/fuerte/share/urdfdom_model", 
+                   "/usr/share/doc/gazebo/copyright", 
+                   "/usr/share/doc/drcsim/copyright", 
+                   "/usr/share/doc/cloudsim-client-tools/copyright"]
+    for f in setup_files:
+        machine.ssh_wait_for_ready(f)
+    
+    # wait for setup complete
     machine.ssh_wait_for_ready()
     
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "rebooting")

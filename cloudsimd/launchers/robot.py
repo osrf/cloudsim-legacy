@@ -192,7 +192,16 @@ def launch(username,
     
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "installing packages")
     log("Waiting for setup to complete")
-    machine.ssh_wait_for_ready()
+    
+    setup_files = ["/usr/share/doc/gnome-session/copyright",
+                   "/usr/share/doc/ros-fuerte-ros/copyright", 
+                   "/opt/ros/fuerte/share/urdfdom_model", 
+                   "/usr/share/doc/gazebo/copyright", 
+                   "/usr/share/doc/drcsim/copyright", 
+                   "/usr/share/doc/cloudsim-client-tools/copyright"]
+    
+    for f in setup_files:
+        machine.ssh_wait_for_ready(f)
     
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "rebooting")
     log("rebooting machine")

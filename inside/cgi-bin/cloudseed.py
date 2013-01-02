@@ -105,7 +105,9 @@ template = """
             cloudseed(email, key, secret);
             
         };
-    
+        
+        
+        
         var status_img = document.createElement('img');
         status_img.src = "/js/images/gray_status.png";
         
@@ -121,6 +123,21 @@ template = """
         
         div.appendChild(launch_button);
         
+        var div = document.getElementById("prog_div");
+        $( "#"+ div_name ).progressbar({
+            value: 37
+        });
+        var progress = 0;
+        var test_button= document.createElement('input');
+        test_button.setAttribute('type','button');
+        test_button.setAttribute('value','Test');
+        test_button.onclick =  function()
+        {
+            
+            progress += 10;
+            
+        }
+        div.appendChild(test_button);
     }
     
     
@@ -144,9 +161,11 @@ template = """
             $('.admin_only').show();
         }
         
+        // create_progress_widget("prog_div");
+        
         create_server_monitor_widget("server_monitor_div");
         create_cloudseed_widget("cloudseed_div");
-        create_progress_widget("prog_div");
+        
         
         
         stream();
@@ -193,7 +212,9 @@ template = """
     <h1>CloudSeed</h1>
     <div id="server_monitor_div"></div>
     <div id="cloudseed_div"></div>
-
+    
+     
+    
     <div id="prog_div"></div>
 
 <br>

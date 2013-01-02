@@ -241,6 +241,19 @@ export ROS_MASTER_URI=http://%s:11311
                 """  % (openvpn_client_ip, openvpn_server_ip)
     return s
 
+def create_scp_download_file(key_file, ip, username = "ubuntu"):
+    s = """#!/bin/bash
+
+echo "Download remote file via scp"
+echo "remote source " $1    
+echo "local target " $2
+
+# This commands suppresses prompts and can be invoked from any directory
+  DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s %s@%s:$1 $2
+    
+    """ % (key_file, username, ip, key_file, username, ip)
+    return s
 
 def create_ssh_connect_file(key_file, ip, username = "ubuntu"):
     s = """#!/bin/bash
