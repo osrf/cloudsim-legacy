@@ -203,6 +203,9 @@ def launch(username,
     for f in setup_files:
         machine.ssh_wait_for_ready(f)
     
+    # wait for setup complete file
+    machine.ssh_wait_for_ready()
+    
     set_machine_tag(domain, constellation_name, machine_name, "launch_state", "rebooting")
     log("rebooting machine")
     machine.reboot()

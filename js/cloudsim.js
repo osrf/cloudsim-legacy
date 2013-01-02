@@ -58,7 +58,7 @@ function _create_basic_machine(constellation_div, constellation_name, machine_na
     
     create_machine_launch_monitor_widget(machine_div, constellation_name, machine_name,"launch_state");
     create_machine_state_widget(machine_div,constellation_name, machine_name, "cloud_state");
-    create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
+    //create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
     create_hostname_widget(machine_div, constellation_name, machine_name, "hostname");	
     create_latency_widget(machine_div, constellation_name, machine_name, "latency");
     
@@ -71,7 +71,7 @@ function _create_simulator_machine(constellation_div, constellation_name, machin
     
     create_machine_launch_monitor_widget(machine_div, constellation_name, machine_name,"launch_state");
     create_machine_state_widget(machine_div, constellation_name, machine_name,"cloud_state");
-    create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
+    //create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
     create_hostname_widget (machine_div, constellation_name, machine_name, "hostname");	
     create_glx_state_widget(machine_div, constellation_name, machine_name, "glx_state");
     create_simulator_state_widget(machine_div, constellation_name, machine_name, "simulator_state");
