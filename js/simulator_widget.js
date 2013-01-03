@@ -48,7 +48,7 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
             return;
         }
         start_button.disabled = true;
-        start_simulator(constellation_name, machine_name, package_name, launch_file_name, launch_args)
+        start_simulator(constellation_name, machine_name, package_name, launch_file, launch_args)
         setTimeout(function()
         {
             start_button.disabled = false;
