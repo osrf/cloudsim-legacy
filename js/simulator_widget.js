@@ -38,8 +38,22 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
         var package_name = package_text.value;
         var launch_file = launch_file_text.value;
         var launch_args = args_text.value;
+        /*
         _start_simulator(constellation_name, machine_name, package_name, launch_file, launch_args)
-
+        */
+        
+        var r=confirm("Start simulator on machine " + machine_name + "?");
+        if (r==false)
+        {
+            return;
+        }
+        start_button.disabled = true;
+        start_simulator(constellation_name, machine_name, package_name, launch_file_name, launch_args)
+        setTimeout(function()
+        {
+            start_button.disabled = false;
+        }, 10000);
+        
     };
     
     
@@ -49,8 +63,15 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
     stop_button.setAttribute('name','stop');
     stop_button.setAttribute('value','Stop');
 
-    stop_button.onclick =  function(){
-        _stop_simulator(constellation_name, machine_name);
+    stop_button.onclick =  function()
+    {
+        // _stop_simulator(constellation_name, machine_name);
+    	var r=confirm("Stop simulator on machine " + machine_name + "?");
+        if (r==false)
+        {
+            return;
+        }    
+        stop_simulator(constellation_name, machine_name);
     };
     
     widget_div.appendChild(document.createTextNode("package: "));
@@ -140,7 +161,7 @@ function create_glx_state_widget(machine_div, constellation_name, machine_name, 
 }
 
 
-
+/*
 function _start_simulator(constellation_name, machine_name, package_name, launch_file_name, launch_args)
 {
 
@@ -148,10 +169,9 @@ function _start_simulator(constellation_name, machine_name, package_name, launch
     if (r==false)
     {
         return;
-    }    
+    }
+    
     start_simulator(constellation_name, machine_name, package_name, launch_file_name, launch_args)
-
-
 }
 
 
@@ -166,3 +186,4 @@ function _stop_simulator(constellation_name, machine_name)
     stop_simulator(constellation_name, machine_name);
 
 }
+*/
