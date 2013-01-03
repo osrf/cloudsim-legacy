@@ -135,7 +135,7 @@ def start_simulator(  username,
     
     
     #script = '". /opt/ros/fuerte/setup.sh; export ROS_IP=%s; export DISPLAY=%s; roslaunch %s %s %s  >/dev/null 2>/dev/null </dev/null &"'%(server_ip, display, package_name, launch_file_name, launch_args)
-    script = '". /usr/share/gazebo-1.?/setup.sh; . /usr/share/drcsim-1.?/setup.sh; export ROS_IP=%s; export GAZEBO_IP=%s; export DISPLAY=%s; roslaunch %s %s gzname:=gzserver %s  &"'%(server_ip, server_ip, display, package_name, launch_file_name, launch_args)
+    script = '". /usr/share/drcsim/setup.sh; export ROS_IP=%s; export GAZEBO_IP=%s; export DISPLAY=%s; roslaunch %s %s gzname:=gzserver %s  &"'%(server_ip, server_ip, display, package_name, launch_file_name, launch_args)
     
     cmd = ['echo', script, '>start_ros.sh']
     cmd_str = ' '.join(cmd)
