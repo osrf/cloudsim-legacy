@@ -89,6 +89,34 @@ exec > $logfile 2>&1
 
 """
 
+DRC_SETUP = """
+
+echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
+echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+
+wget http://packages.ros.org/ros.key -O - | apt-key add -
+wget http://packages.osrfoundation.org/drc.key -O - | sudo apt-key add -
+
+echo "package update" >> /home/ubuntu/setup.log
+apt-get update
+
+apt-get install -y ntp 
+
+echo "install drc" >> /home/ubuntu/setup.log
+apt-get install -y drcsim
+
+echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
+apt-get install -y cloudsim-client-tools
+
+echo "source drc setup from bashrc" >> /home/ubuntu/setup.log
+echo 'source /usr/share/drcsim/setup.sh' >> /home/ubuntu/.bashrc
+
+echo "disabling ecc for Tesla gpus" >> /home/ubuntu/setup.log
+nvidia-smi -g 0 --ecc-config=0
+nvidia-smi -g 1 --ecc-config=0
+
+"""
+
 def get_monitoring_tools_script(boundary_creds = None): 
     
     str =  """

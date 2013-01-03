@@ -16,7 +16,8 @@ from common import create_openvpn_server_cfg_file,\
 from common import Machine_configuration
 from common.startup_script_builder import  ROS_SETUP_STARTUP_SCRIPT,\
     create_xorg_config_file, SOURCES_LIST_PRECISE, XGL_STARTUP_BEFORE,\
-    XGL_STARTUP_AFTER, LAUNCH_SCRIPT_HEADER, get_monitoring_tools_script
+    XGL_STARTUP_AFTER, LAUNCH_SCRIPT_HEADER, get_monitoring_tools_script,\
+    DRC_SETUP
 from common.machine import set_machine_tag, create_ec2_proxy,\
     create_if_not_exists_vpn_ping_security_group, get_unique_short_name
 
@@ -30,28 +31,6 @@ def log(msg):
     except:
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
-
-DRC_SETUP = """
-
-echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
-echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
-
-wget http://packages.ros.org/ros.key -O - | apt-key add -
-wget http://packages.osrfoundation.org/drc.key -O - | sudo apt-key add -
-
-echo "package update" >> /home/ubuntu/setup.log
-apt-get update
-
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-apt-get install -y cloudsim-client-tools
-
-echo "install drc" >> /home/ubuntu/setup.log
-apt-get install -y drcsim
-
-echo "source drc setup from bashrc" >> /home/ubuntu/setup.log
-
-
-"""
 
 
 def get_launch_script(boundary_creds):
