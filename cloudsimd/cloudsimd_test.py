@@ -35,7 +35,7 @@ class DrcSimLatestTestCase(unittest.TestCase):
         
         self.username = "test@osrfoundation.org" 
         self.constellation_name = "test_launch_drcim_latest_" + unik
-        self.machine_name = "simulator_" + unik
+        self.machine_name = "simulator_" + self.constellation_name
         
         
         self.package_name = "drc_robot_utils"
