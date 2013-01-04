@@ -138,7 +138,8 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
 
     log("%s/%s> write ros.sh" % (constellation_name, machine_name))
     fname_ros = os.path.join(machine.config.cfg_dir, "ros.sh")    
-    file_content = create_ros_connect_file()
+    file_content = create_ros_connect_file(openvpn_client_ip=constants.OV_SIM_CLIENT_IP, openvpn_server_ip=constants.OV_SIM_SERVER_IP)
+
     with open(fname_ros, 'w') as f:
         f.write(file_content)
     
