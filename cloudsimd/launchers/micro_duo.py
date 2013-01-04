@@ -8,6 +8,7 @@ import time
 import os
 from common import constants
 
+import logging
 
 
 def log(msg):
@@ -15,6 +16,7 @@ def log(msg):
         import redis
         redis_client = redis.Redis()
         redis_client.publish("launchers", msg)
+        logging.info(msg)
     except:
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)

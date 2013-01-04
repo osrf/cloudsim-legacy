@@ -7,14 +7,15 @@ import unittest
 from common.machine import get_unique_short_name, find_machine
 import time
 
-
-
+from common import constants
+import logging
 
 def log(msg):
     try:
         import redis
         redis_client = redis.Redis()
         redis_client.publish("launchers", msg)
+        logging.info(msg)
     except:
         print("[redis not installed]")
     print("launchers log> %s" % msg)
@@ -64,10 +65,15 @@ def launch(username, constellation_name, tags, credentials_ec2, root_directory, 
     robot_machine.scp_send_file(sim_zip_fname, zip_base_name)
     
     robot_machine.ssh_send_command("unzip " + zip_base_name)
+    log("copying sim.conf ")
     robot_machine.ssh_send_command("sudo cp " + os.path.join(sim_machine_name, constants.OPENVPN_CONFIG_FNAME) + " /etc/openvpn/sim.conf")
+    log("copying key")
     robot_machine.ssh_send_command("sudo cp " + os.path.join(sim_machine_name, constants.OPENVPN_CLIENT_KEY_NAME) + " /etc/openvpn/")
+    log("adding port")
     robot_machine.ssh_send_command("sudo sh -c 'echo lport 1195 >> /etc/openvpn/sim.conf'")
+    log("restarting the openvpn service")
     robot_machine.ssh_send_command("sudo service openvpn restart")
+    log("adding ros.sh to ~/.bashrc")
     robot_machine.ssh_send_command("echo . " + os.path.join("~", sim_machine_name, "ros.sh") + " >> ~/.bashrc")
 
 

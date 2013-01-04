@@ -10,6 +10,8 @@ import json
 from common.pubsub import RedisPublisher
 import traceback
 
+import logging
+logging.basicConfig(filename='cloudsimd.log',level=logging.DEBUG)
 
 directory = os.path.split(__file__)[0]
 
@@ -20,6 +22,7 @@ def log(msg, chan = "launchers"):
         import redis
         r = redis.Redis()
         r.publish(chan, msg)
+        logging.info("launchers log: %s" % msg)
     except:
         print("LOG %s" % msg)
     
@@ -57,6 +60,7 @@ def generate_launch_functions():
             launch_func = load(l)
             launch_functions[l] = launch_func
         except Exception,e:
+            logging.error("launcher load error: %s" % e)
             log("launcher load error '%s'" % e)
             #raise
     return launch_functions
@@ -75,7 +79,7 @@ def launch(username,
            credentials_ec2,
            root_directory):
     
-    
+    logging.info("launch %s %s %s" % (username, config_name, constellation_name) )
  
     launchers =  get_launch_functions()
  
@@ -112,6 +116,7 @@ def launch(username,
         log("constellation launch %s [%s] DONE" % (constellation_name, config_name) )
     except Exception as e:
         tb = traceback.format_exc()
+        logging.error("%s" % tb)
         log("Error during launch: %s" % tb) 
 
 def start_simulator(  username, 
