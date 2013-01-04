@@ -112,8 +112,10 @@ echo "source drc setup from bashrc" >> /home/ubuntu/setup.log
 echo 'source /usr/share/drcsim/setup.sh' >> /home/ubuntu/.bashrc
 
 echo "disabling ecc for Tesla gpus" >> /home/ubuntu/setup.log
-nvidia-smi -g 0 --ecc-config=0
-nvidia-smi -g 1 --ecc-config=0
+
+# we don't care if these commands fail.
+nvidia-smi -g 0 --ecc-config=0 || true
+nvidia-smi -g 1 --ecc-config=0 || true
 
 """
 

@@ -22,13 +22,14 @@ from common.machine import set_machine_tag, create_ec2_proxy,\
     get_unique_short_name,\
     create_if_not_exists_simulator_security_group
 
-
+import logging
 
 def log(msg):
     try:
         import redis
         redis_client = redis.Redis()
         redis_client.publish("launchers", msg)
+        logging.info(msg)
     except:
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
