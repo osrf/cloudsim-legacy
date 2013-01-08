@@ -16,11 +16,13 @@ SIM_IP='10.0.0.51'
 ROBOT_IP='10.0.0.52'
 OPENVPN_SERVER_IP='11.8.0.1'
 OPENVPN_CLIENT_IP='11.8.0.2'
+
 SIM_ROBOT_SCRIPT = """#!/bin/bash
 
 exec >/tmp/log 2>&1
 route add %s gw %s
 """%(OPENVPN_CLIENT_IP, TS_IP)
+
 ROUTER_SCRIPT = """#!/bin/bash
 exec >/tmp/log 2>&1
 apt-get install -y openvpn

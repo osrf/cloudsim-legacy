@@ -141,7 +141,8 @@ def launch(username,
         f.write(file_content)
 
     fname_ros = os.path.join(machine.config.cfg_dir, "ros.sh")    
-    file_content = create_ros_connect_file()
+    file_content = create_ros_connect_file(openvpn_client_ip = constants.OV_ROBOT_CLIENT_IP, openvpn_server_ip = constants.OV_ROBOT_SERVER_IP)
+
     with open(fname_ros, 'w') as f:
         f.write(file_content)
     
