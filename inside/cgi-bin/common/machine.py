@@ -196,7 +196,7 @@ class Machine (object):
                                             user_data=self.config.startup_script)
             # self.config.print_cfg()
             self.config.reservation = res.id
-             
+            
             
             retries = self.config.ip_retries
             tries = 0
@@ -614,159 +614,21 @@ def list_all_machines_accross_domains(root_dir = MACHINES_DIR):
                 all_machines.append( (domain, constellation, machine)  )
     return all_machines
 
-#########################################################################
 
-
-class PingTest(unittest.TestCase):
+def terminate_constellation(username, 
+              constellation_name, 
+              credentials_ec2, 
+              root_directory):
     
-    def test_a_ping(self):
-         pass
-     
-#        print( "ping google.com 3x: (min, avg, max, mdev)")
-#        min, avg, max, mdev  = ping("google.com", 3)
-#        print ("min, avg, max, mdev\n", min, avg, max, mdev)
-#        self.assert_(max > min, "bad pong")
-#        self.assert_(min > 1.0, "bad pong")
-#        
-#        caught = False
-#        try:
-#            r = ping("xYZ_google_XYZ.com", 3)
-#        except MachineException, e:
-#            caught = True
-#            print(e)
-#        
-#        self.assert_(caught)
-        
-             
-class MachineCaseVpn(object): #(unittest.TestCase): 
-
-    def get_boto_path(self):
-        return "/home/hugo/code/boto.ini"
-
-
-        
-    def test_micro_launch_vpn_1(self):
-        
-        root_directory = "test_launch_vpn"
-        publisher = StdoutPublisher("toto@toto.com")
-        machine_name = str(uuid.uuid1())
-        
-        cmd = "rm -rf %s" % root_directory
-        status, o = commands.getstatusoutput(cmd)
-        print(o)
-        
-        
-        startup_script = """#!/bin/bash
-# Exit on error
-set -e
-
-echo "Creating openvpn.conf" >> /home/ubuntu/setup.log
-
-"""
-      
-        file_content = create_openvpn_server_cfg_file()
-        startup_script += inject_file_into_script("openvpn.config",file_content)
-
-        startup_script += INSTALL_VPN
-        print(startup_script)
-
-        tags = {'hello':'world', 'user':'toto@toto.com'}
-                   
-        config = Machine_configuration()
-        config.initialize(   image_id ="ami-137bcf7a", 
-                             instance_type = 't1.micro', # 'm1.small' , 
-                             security_groups = ['ping_ssh'],
-                             username = 'ubuntu', 
-                             distro = 'precise',
-                             startup_script = startup_script,
-                             ip_retries=100, 
-                             ssh_retries=200)
-
-        micro = Machine(machine_name,
-                         config,
-                         publisher.event,
-                         tags,
-                         credentials_ec2 =  self.get_boto_path(), # boto file
-                         root_directory = root_directory)
-        
-        micro.create_ssh_connect_script()
-        clean_local_ssh_key_entry(micro.config.ip )
-        print("")
-        print("")
-        print("Waiting for ssh")
-        micro.ssh_wait_for_ready("/home/ubuntu")
-        
-        print("Waiting for setup to complete")
-        micro.ssh_wait_for_ready()
-        
-        print("Downloading key")
-        remote_fname = "/etc/openvpn/static.key"
-        
-        fname_vpn_cfg = os.path.join(micro.config.cfg_dir, "openvpn.config")
-        file_content = create_openvpn_client_cfg_file(micro.config.hostname)
-        with open(fname_vpn_cfg, 'w') as f:
-            f.write(file_content)
-        
-        fname_ros = os.path.join(micro.config.cfg_dir, "ros.sh")    
-        file_content = create_ros_connect_file()
-        with open(fname_ros, 'w') as f:
-            f.write(file_content)
-        
-        fname_start_vpn = os.path.join(micro.config.cfg_dir, "start_vpn.sh")    
-        file_content = create_vpn_connect_file()
-        with open(fname_start_vpn, 'w') as f:
-            f.write(file_content)
-        
-        vpnkey_fname = os.path.join(micro.config.cfg_dir, "openvpn.key")
-        micro.scp_download_file(vpnkey_fname, remote_fname)
-        
-        fname_ssh_key =  os.path.join(micro.config.cfg_dir, micro.config.kp_name + '.pem')
-        fname_ssh_sh =  os.path.join(micro.config.cfg_dir,'ssh.sh')
-        fname_zip = os.path.join(micro.config.cfg_dir, "%s.zip" % micro.config.uid)
-        
-        print("creating %s" % fname_zip)
-        with zipfile.ZipFile(fname_zip, 'w') as fzip:
-            for fname in [fname_ssh_key, 
-                          fname_ssh_sh, 
-                          fname_vpn_cfg,
-                          fname_ros,
-                          vpnkey_fname]:
-                short_fname = os.path.split(fname)[1]
-                zip_name = os.path.join(micro.config.uid, short_fname)
-                fzip.write(fname, zip_name)
-        
-
-    def test_micro_launch_vpn_2(self):
-        root_directory = "test_launch_vpn"
-        
-        id = os.listdir(root_directory)[0]
-        config_path = os.path.join(root_directory, id, "instance.json")
-        print("machine %s" % config_path)
-        self.assert_(os.path.exists(config_path), "no machine")
-        
-        
-        publisher = StdoutPublisher("toto@toto.com")
-        machine = Machine.from_file(config_path, publisher.event)
-        
-        repeats = 5
-        for i in range(repeats):
-            print("Checking status [%s / %s]" % (i+1, repeats))
-            
-            m = machine.test_aws_status()
-            print("    aws status= %s" % m)
-            p = machine.ping()
-            print("    ping= %s" % str(p) )
-            x = machine.test_X()
-            print("    X= %s" % x)
-            g = machine.test_gazebo()
-            print("    gazebo= %s" % g)
-            time.sleep(2)  
-        print("Shuting down\n\n\n")      
+    # log("terminate constellation %s" % constellation_name)
+    
+    mdb = MachineDb(username, machine_dir = root_directory)
+    machines = mdb.get_machines_in_constellation(constellation_name)
+    for machine_name, machine  in machines.iteritems():
+        # log("  - terminate machine %s" % machine_name)
         machine.terminate()
-        print("\n\n\n")
-        
-        
-        
+
+
 def get_security_groups(ec2):
         rs = ec2.get_all_security_groups()
         groups = [str(x).split("SecurityGroup:")[1] for x in rs] 

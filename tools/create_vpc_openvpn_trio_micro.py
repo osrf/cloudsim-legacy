@@ -16,7 +16,6 @@ SIM_IP='10.0.0.51'
 ROBOT_IP='10.0.0.52'
 OPENVPN_SERVER_IP='11.8.0.1'
 OPENVPN_CLIENT_IP='11.8.0.2'
-
 SIM_ROBOT_SCRIPT = """#!/bin/bash
 
 exec >/tmp/log 2>&1

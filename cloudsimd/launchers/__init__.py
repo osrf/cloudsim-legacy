@@ -5,7 +5,8 @@ import imp
 import os
 import time
 import common
-from common.machine import MachineDb, CONSTELLATION_JSONF_NAME
+from common.machine import MachineDb, CONSTELLATION_JSONF_NAME,\
+    terminate_constellation
 import json
 from common.pubsub import RedisPublisher
 import traceback
@@ -169,14 +170,15 @@ def terminate(username,
               root_directory):
     
     log("terminate constellation %s" % constellation_name)
+    terminate_constellation(username, constellation_name, credentials_ec2, root_directory)
     
-    mdb = MachineDb(username, machine_dir = root_directory)
-
-    machines = mdb.get_machines_in_constellation(constellation_name)
-    
-    for machine_name, machine  in machines.iteritems():
-        log("  - terminate machine %s" % machine.config.uid)
-        machine.terminate()
+#    mdb = MachineDb(username, machine_dir = root_directory)
+#
+#    machines = mdb.get_machines_in_constellation(constellation_name)
+#    
+#    for machine_name, machine  in machines.iteritems():
+#        log("  - terminate machine %s" % machine.config.uid)
+#        machine.terminate()
     
 
 
