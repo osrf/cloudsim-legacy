@@ -154,7 +154,7 @@ route add %s gw %s
                                          user_data=SIM_SCRIPT)
     roles_to_reservations['simulation'] = res.id
     
-    running_machines = wait_for_multiple_machines_to_run(ec2conn, roles_to_reservations, nb_of_tries = 100)
+    running_machines = wait_for_multiple_machines_to_run(ec2conn, roles_to_reservations, nb_of_tries = 150)
     
     resources['router_aws_id'] = running_machines['router']
     resources['robot_aws_id'] = running_machines['robot']
