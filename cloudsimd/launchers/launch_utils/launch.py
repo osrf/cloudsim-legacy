@@ -9,6 +9,18 @@ import subprocess
 import commands
 
 
+def log(msg):
+    try:
+        import redis
+        redis_client = redis.Redis()
+        redis_client.publish("launch", msg)
+        logging.info(msg)
+    except:
+        print("Warning: redis not installed.")
+    print("cloudsim log> %s" % msg)
+    
+
+
 class LaunchException(Exception):
     pass
 
@@ -20,12 +32,13 @@ class SshClient(object):
     def __init__(self, constellation_directory, key_name, username, ip, ):
         self.key_fname = os.path.join(constellation_directory, "%s.pem" % key_name) 
         self.user = '%s@%s' % (username, ip)
-        self.ssh_connect_timeout = 5
+        self.ssh_connect_timeout = 1
         
         
     def cmd(self, cmd, extra_ssh_args=[] ): 
         ssh_cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', self.key_fname] + extra_ssh_args + [self.user]
         ssh_cmd.append(cmd)
+        log(" ".join(ssh_cmd) )
         po = subprocess.Popen(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out,err = po.communicate()
         if po.returncode != 0:
@@ -38,6 +51,7 @@ class SshClient(object):
                    'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', 
                    self.key_fname] + extra_scp_args + [local_fname,'%s:%s'%(self.user, remote_fname)]
         scp_cmd_string = ' '.join(scp_cmd)
+        log(scp_cmd_string)
         status, output = commands.getstatusoutput(scp_cmd_string)
         if status != 0:
             raise SshClientException('scp failed: %s'%(output))
@@ -53,7 +67,8 @@ class SshClient(object):
                    'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', 
                    self.key_fname] + extra_scp_args + ['%s:%s'%(self.config.user, remote_fname), local_fname ]
         scp_cmd_string = ' '.join(scp_cmd)
-        print(scp_cmd_string) 
+        
+        log(scp_cmd_string) 
         status, output = commands.getstatusoutput(scp_cmd_string)
         if status != 0:
             raise SshClientException('scp failed: %s'%(output))
@@ -68,17 +83,6 @@ class SshClient(object):
             return False
         return True
         
-
-def log(msg):
-    try:
-        import redis
-        redis_client = redis.Redis()
-        redis_client.publish("launchers", msg)
-        logging.info(msg)
-    except:
-        print("Warning: redis not installed.")
-    print("cloudsim log> %s" % msg)
-    
 
 def get_ec2_instance(ec2conn, id):
     reservations = ec2conn.get_all_instances()
@@ -167,7 +171,7 @@ def get_constellation_data(user_or_domain, constellation):
 
 def wait_for_multiple_machines_to_terminate(ec2conn, roles_to_aws_ids, nb_of_tries):
     
-    ready_machines = {}
+     
     
     count = nb_of_tries + len(roles_to_aws_ids)
     aws_ids_to_roles = dict((v,k) for k,v in roles_to_aws_ids.iteritems())
@@ -186,9 +190,9 @@ def wait_for_multiple_machines_to_terminate(ec2conn, roles_to_aws_ids, nb_of_tri
         while not done:
             time.sleep(1)
             count = count - 1
-            print("terminate count down: %s " % count)
+            log("terminate count down: %s " % count)
             if count < 0:
-                msg = "timeout while terminating EC2 machine(s) %s" % reservations_to_roles
+                msg = "timeout while terminating EC2 machine(s) %s" % aws_ids_to_roles
                 raise LaunchException(msg)
             
             reservations =  ec2conn.get_all_instances()
@@ -200,6 +204,6 @@ def wait_for_multiple_machines_to_terminate(ec2conn, roles_to_aws_ids, nb_of_tri
                     if instance.state == 'terminated':
                         role = aws_ids_to_roles[aws_id]
                         aws_ids_to_roles.pop(aws_id)
-                        print 'Terminated %s (AWS %s)'%(role, aws_id)
+                        log('Terminated %s (AWS %s)'%(role, aws_id) )
                         done = True
                         break

@@ -39,12 +39,12 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     robot_machine_name = "robot_" + constellation_name
     router_machine_name = "router_" + constellation_name
     
-    log("trio")
+    log("new trio constellation: %s" % constellation_name)
     
     
     resources['vpc_id'] = vpcconn.create_vpc('10.0.0.0/24').id
     vpc_id = resources['vpc_id']
-    print("VPC %s" % vpc_id )
+    log("VPC %s" % vpc_id )
     
     resources['subnet_id'] = vpcconn.create_subnet(vpc_id, '10.0.0.0/24').id
     subnet_id = resources['subnet_id']
@@ -67,7 +67,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     elastic_ip = ec2conn.allocate_address('vpc')
     resources['router_ip'] = elastic_ip.public_ip
     
-    print("elastic ip %s" % resources['router_ip'])
+    log("elastic ip %s" % resources['router_ip'])
     
     resources['eip_allocation_id'] = elastic_ip.allocation_id
 
@@ -188,42 +188,92 @@ route add %s gw %s
     
     ssh_router.cmd("mkdir cloudsim")
     
-    local = os.path.join(constellation_directory, "%s.pem" % resources['robot_key_pair_name'])
-    remote = os.path.join("cloudim", "%s.pem" % resources['robot_key_pair_name']) 
+    local = os.path.join(constellation_directory, "%s.pem" % resources['sim_key_pair_name'])
+    remote = os.path.join("cloudsim", "%s.pem" % resources['sim_key_pair_name']) 
     ssh_router.upload_file(local, remote)
     
-    local = os.path.join(constellation_directory, "%s.pem" % resources['sim_key_pair_name'])
-    remote = os.path.join("cloudim", "%s.pem" % resources['robot_key_pair_name'])
+    local = os.path.join(constellation_directory, "%s.pem" % resources['robot_key_pair_name'])
+    remote = os.path.join("cloudsim", "%s.pem" % resources['robot_key_pair_name'])
     ssh_router.upload_file(local, remote)
+    
+    """
+    
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-cloudsim_cxd4a32c76.pem ubuntu@67.202.24.213 
+    """
+    
+    dpkg_log_robot = """
+    #!/bin/bash
+    
+    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "tail -1 /var/log/dpkg.log"
+    
+    """ % (resources['robot_key_pair_name'], ROBOT_IP)
+    ssh_router.create_file(dpkg_log_robot, "cloudsim/dpkg_log_robot.sh")
+    
+    find_file_robot = """
+    #!/bin/bash
+    
+    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "ls -l $1" 
+    
+    """ % (resources['robot_key_pair_name'], ROBOT_IP)
+    ssh_router.create_file(find_file_robot, "cloudsim/dpkg_log_robot.sh")
+    
+    find_file_sim = """
+    #!/bin/bash
+    
+    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "ls -l $1" 
+    
+    """ % (resources['sim_key_pair_name'], ROBOT_IP)
+    ssh_router.create_file(find_file_sim, "cloudsim/dpkg_log_robot.sh")
+    
+    dpkg_log_sim = """
+    #!/bin/bash
+    
+    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "tail -1 /var/log/dpkg.log"
+    
+    """ % (resources['sim_key_pair_name'], ROBOT_IP)
+    ssh_router.create_file(dpkg_log_sim, "cloudsim/dpkg_log_sim.sh")
+    
+    
     
     ping_gl = """#!/bin/bash
     
-    ssh -i %s ubuntu@%s "ls -l"
+    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "ls -l /home/ubuntu"
     
     """ % (resources['sim_key_pair_name'], SIM_IP)
     ssh_router.create_file(ping_gl, "cloudsim/ping_gl.sh")
+    
+    ping_gazebo = """#!/bin/bash
+    
+    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "ls -l /home/ubuntu"
+    
+    """ % (resources['sim_key_pair_name'], SIM_IP)
+    ssh_router.create_file(ping_gazebo, "cloudsim/ping_gazebo.sh")
     
     # router setup
     # ssh -i key-vpc-527d3738.pem ubuntu@107.23.183.181 "mkdir cloudsim"
     # scp -i key-vpc-527d3738.pem ./key-vpc-527d3738.pem  ubuntu@107.23.183.181:cloudsim
 
-
-    print("resources:")
-    pprint.pprint(resources)
-    
     expiration = None
     set_constellation_data(username, constellation_name, resources, expiration)
-    
+    log("resources: %s" %   pprint.pformat(resources) )
+    log("provisionning done")
 
 
 
 def terminate_vpc_micro_trio(username, constellation_name, credentials_ec2, root_directory):
 
     ec2conn, vpcconn = aws_connect(credentials_ec2)    
- 
+    
+    log("terminate_vpc_micro_trio [user=%s, constellation_name=%s" % (username, constellation_name) )
+    
     resources = get_constellation_data(username,  constellation_name)
-    print("resources:")
-    pprint.pprint(resources)
+    log("resources: %s" %   pprint.pformat(resources) )
     
     
     try:
@@ -233,7 +283,7 @@ def terminate_vpc_micro_trio(username, constellation_name, credentials_ec2, root
         vpcconn.delete_route(route_table_id, '0.0.0.0/0')
         vpcconn.delete_route_table(route_table_id)
     except Exception, e:
-        print("error cleaning up routing table: %s" % e)
+        log("error cleaning up routing table: %s" % e)
     
     try:
         running_machines =  {}
@@ -244,32 +294,32 @@ def terminate_vpc_micro_trio(username, constellation_name, credentials_ec2, root
         print ('Waiting after killing instances...')
         time.sleep(20.0)
     except Exception, e:
-        print ("error killing instances: %s" % e)
+        log ("error killing instances: %s" % e)
         
     
     try:
         router_key_pair_name =  resources[ 'router_key_pair_name']
         ec2conn.delete_key_pair(router_key_pair_name)
     except Exception, e:
-        print("error cleaning up router key %s: %s" % (router_key_pair_name, e))
+        log("error cleaning up router key %s: %s" % (router_key_pair_name, e))
     
     try:
         robot_key_pair_name =  resources[ 'robot_key_pair_name']
         ec2conn.delete_key_pair(robot_key_pair_name)
     except Exception, e:
-        print("error cleaning up robot key %s: %s" % (robot_key_pair_name, e))
+        log("error cleaning up robot key %s: %s" % (robot_key_pair_name, e))
         
     try:
         sim_key_pair_name =  resources[ 'sim_key_pair_name']
         ec2conn.delete_key_pair(sim_key_pair_name)
     except Exception, e:
-        print("error cleaning up simulation key %s: %s" % (sim_key_pair_name, e))
+        log("error cleaning up simulation key %s: %s" % (sim_key_pair_name, e))
         
     try:    
         security_group_id =  resources['security_group_id' ]
         ec2conn.delete_security_group(group_id = security_group_id)
     except Exception, e:
-        print("error cleaning up security group %s: %s" % (security_group_id, e))
+        log("error cleaning up security group %s: %s" % (security_group_id, e))
     
     try:
         eip_allocation_id =  resources['eip_allocation_id' ]
@@ -283,20 +333,20 @@ def terminate_vpc_micro_trio(username, constellation_name, credentials_ec2, root
         vpcconn.detach_internet_gateway(igw_id, vpc_id)
         vpcconn.delete_internet_gateway(igw_id)
     except Exception, e:
-        print("error cleaning up internet gateway: %s" % e)
+        log("error cleaning up internet gateway: %s" % e)
     
     try:
         subnet_id  =  resources['subnet_id']
         vpcconn.delete_subnet(subnet_id)
     except Exception, e:
-        print("error cleaning up subnet: %s" % e) 
+        log("error cleaning up subnet: %s" % e) 
         
     
     try:
         vpc_id =  resources['vpc_id']
         vpcconn.delete_vpc(vpc_id)
     except Exception, e:
-        print("error cleaning up vpc: %s" % e )
+        log("error cleaning up vpc: %s" % e )
     
 
 
