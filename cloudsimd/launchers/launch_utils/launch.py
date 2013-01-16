@@ -1,88 +1,14 @@
 import time
-import os
-
-import logging
-import boto
-from pprint import pprint
 import json
-import subprocess
-import commands
 
-
-def log(msg):
-    try:
-        import redis
-        redis_client = redis.Redis()
-        redis_client.publish("launch", msg)
-        logging.info(msg)
-    except:
-        print("Warning: redis not installed.")
-    print("cloudsim log> %s" % msg)
-    
+from launch_db import log
 
 
 class LaunchException(Exception):
     pass
 
 
-class SshClientException(Exception):
-    pass
 
-class SshClient(object):
-    def __init__(self, constellation_directory, key_name, username, ip, ):
-        self.key_fname = os.path.join(constellation_directory, "%s.pem" % key_name) 
-        self.user = '%s@%s' % (username, ip)
-        self.ssh_connect_timeout = 1
-        
-        
-    def cmd(self, cmd, extra_ssh_args=[] ): 
-        ssh_cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', self.key_fname] + extra_ssh_args + [self.user]
-        ssh_cmd.append(cmd)
-        log(" ".join(ssh_cmd) )
-        po = subprocess.Popen(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out,err = po.communicate()
-        if po.returncode != 0:
-            raise SshClientException(out + err)
-        else:
-            return out
-    
-    def upload_file(self, local_fname, remote_fname, extra_scp_args=[]):
-        scp_cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-o', 
-                   'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', 
-                   self.key_fname] + extra_scp_args + [local_fname,'%s:%s'%(self.user, remote_fname)]
-        scp_cmd_string = ' '.join(scp_cmd)
-        log(scp_cmd_string)
-        status, output = commands.getstatusoutput(scp_cmd_string)
-        if status != 0:
-            raise SshClientException('scp failed: %s'%(output))
-        else:
-            return output
-    
-    def create_file(self, text, remote_fname):
-        cmd = "cat <<DELIM > %s\n%s\nDELIM\n" % (remote_fname, text)
-        self.cmd(cmd)
-    
-    def download_file(self, local_fname, remote_fname, extra_scp_args=[]):
-        scp_cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-o', 
-                   'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', 
-                   self.key_fname] + extra_scp_args + ['%s:%s'%(self.config.user, remote_fname), local_fname ]
-        scp_cmd_string = ' '.join(scp_cmd)
-        
-        log(scp_cmd_string) 
-        status, output = commands.getstatusoutput(scp_cmd_string)
-        if status != 0:
-            raise SshClientException('scp failed: %s'%(output))
-        else:
-            return output
-        
-    def find_file(self, remote_path):
-        cmd = 'ls %s' %  remote_path
-        try:
-            self.cmd(cmd)
-        except SshClientException:
-            return False
-        return True
-        
 
 def get_ec2_instance(ec2conn, id):
     reservations = ec2conn.get_all_instances()
@@ -106,7 +32,7 @@ def wait_for_multiple_machines_to_run(ec2conn, roles_to_reservations, nb_of_trie
         while not done:
             time.sleep(1)
             count = count - 1
-            print("run count down: %s " % count)
+            print("Waiting for running state: %s %s/%s " % (reservations_to_roles.values(), count, nb_of_tries)  )
             if count < 0:
                 msg = "timeout while waiting for EC2 machine(s) %s" % reservations_to_roles
                 raise LaunchException(msg)
@@ -124,49 +50,7 @@ def wait_for_multiple_machines_to_run(ec2conn, roles_to_reservations, nb_of_trie
                 
     return ready_machines
 
-def wait_for_ssh(self, public_ip, key_file, fname='/done', username = 'ubuntu'):
-    ssh_cmd = ['ssh', '-o', 'StrictHostKeyChecking=no',
-           '-i', '%s.pem'%(key_file), '%s@%s'%(username,
-           public_ip), 'ls %s' % fname]
-    while True:
-        po = subprocess.Popen(ssh_cmd)
-        po.communicate()
-        if po.returncode == 0:
-            break
 
-
-def _domain(user_or_domain):
-    domain = user_or_domain
-    if user_or_domain.find('@') > 0:
-        domain = user_or_domain.split('@')[1]
-    return domain
-
-def set_constellation_data(user_or_domain, constellation, value, expiration = None):
-    try:
-        import redis
-        red = redis.Redis()
-        domain = _domain(user_or_domain)
-        redis_key = domain+"/" + constellation
-        
-        str = json.dumps(value)
-        red.set(redis_key, str)
-        if expiration:
-            red.expire(redis_key, expiration)
-    except Exception, e:
-        log("can't set constellation data: %s" % e)
-        
-
-def get_constellation_data(user_or_domain, constellation):
-    try:
-        import redis
-        red = redis.Redis()
-        domain = _domain(user_or_domain)
-        redis_key = domain+"/"+constellation
-        str = red.get(redis_key)
-        data = json.loads(str)
-        return data
-    except:
-        return None    
 
 
 def wait_for_multiple_machines_to_terminate(ec2conn, roles_to_aws_ids, nb_of_tries):
@@ -190,7 +74,7 @@ def wait_for_multiple_machines_to_terminate(ec2conn, roles_to_aws_ids, nb_of_tri
         while not done:
             time.sleep(1)
             count = count - 1
-            log("terminate count down: %s " % count)
+            log("terminate count down: %s %s/%s " % (aws_ids_to_roles.values(), count, nb_of_tries) )
             if count < 0:
                 msg = "timeout while terminating EC2 machine(s) %s" % aws_ids_to_roles
                 raise LaunchException(msg)

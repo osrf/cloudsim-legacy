@@ -88,7 +88,7 @@ def launch(username,
  
     domain = username.split('@')[1]
     tags = {}
-    # tags['user'] = username
+    tags['username'] = username
     tags['constellation_name'] = constellation_name
 # remove path and .py from the name of this file
     
@@ -108,9 +108,9 @@ def launch(username,
     constellation_info = {}
     constellation_info['name'] = constellation_name
     constellation_info['config'] = config_name
-    str = json.dumps(constellation_info)
+    s = json.dumps(constellation_info)
     with open(constellation_fname,'w') as fp:
-        fp.write(str)
+        fp.write(s)
     try:
         log("START constellation launch %s [%s]" % (constellation_name, config_name) )
         func(username, constellation_name, tags, credentials_ec2, constellation_directory)

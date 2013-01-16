@@ -144,7 +144,7 @@ class Creator():
             po.communicate()
             if po.returncode == 0:
                 break
-    
+
     def write_config_files(self):
         scp_cmd = ['scp', '-o', 'StrictHostKeyChecking=no', 
                    '-i', '%s.pem'%(self.key_pair_name), '%s@%s:%s'%(USERNAME, self.eip.public_ip, '/etc/openvpn/static.key'), 'static.key']

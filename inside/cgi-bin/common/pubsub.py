@@ -1,13 +1,8 @@
 from __future__ import with_statement
 from __future__ import print_function
 
-import sys
-import os
 import unittest
-
 import json
-from testing import get_test_runner 
-import commands
 from common import testing
  
 class RedisPublisher(object):
@@ -65,5 +60,5 @@ def subscribe(channels):
         
 if __name__ == '__main__':
     print('Machine TESTS')
-    unittest.main(testRunner = testing.get_test_runner())          
+    unittest.main(testRunner = testing.get_test_runner())
  

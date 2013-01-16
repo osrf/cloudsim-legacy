@@ -7,10 +7,6 @@ import boto
 import pprint
 
 from common.machine import get_unique_short_name
-
-
-
- 
 from common.testing import get_boto_path, get_test_path
 
 from launch_utils import wait_for_multiple_machines_to_run 
@@ -21,46 +17,57 @@ from launch_utils import set_constellation_data
 from launch_utils import get_constellation_data
 from launch_utils import SshClient
 
+from launch_utils import RedisPublisher
 
+from boto.pyami.config import Config as BotoConfig
+from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
 
 
 def aws_connect(credentials_ec2):    
-    boto.config = boto.pyami.config.Config(credentials_ec2)
+    boto.config = BotoConfig(credentials_ec2)
+    #boto.config = boto.pyami.config.Config(credentials_ec2)
     ec2conn = boto.connect_ec2()
     vpcconn =  boto.connect_vpc()    
     return ec2conn, vpcconn
 
+
+def create_securtity_group(ec2conn, sg_name, constellation_name, vpc_id):
+    sg = ec2conn.create_security_group(sg_name, 'Security group for constellation %s' % (constellation_name), vpc_id)
+    sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
+    sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
+    sg.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
+    return sg.id
+
+
+
+
 def launch(username, constellation_name, tags, credentials_ec2, constellation_directory, resources ):
     
     ec2conn, vpcconn = aws_connect(credentials_ec2)
-    
-    
+
     sim_machine_name = "simulator_" + constellation_name
     robot_machine_name = "robot_" + constellation_name
     router_machine_name = "router_" + constellation_name
     
     log("new trio constellation: %s" % constellation_name)
     
-    
     resources['vpc_id'] = vpcconn.create_vpc('10.0.0.0/24').id
     vpc_id = resources['vpc_id']
     log("VPC %s" % vpc_id )
-    
     resources['subnet_id'] = vpcconn.create_subnet(vpc_id, '10.0.0.0/24').id
     subnet_id = resources['subnet_id']
     
     sg_name = 'mysg-%s'%(vpc_id) 
-    sg = ec2conn.create_security_group(sg_name, 'Security group for VPC %s'%(vpc_id), vpc_id)
-    sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
-    sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
-    sg.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
-    resources['security_group_id'] = sg.id
+    resources['security_group_id'] =  create_securtity_group(ec2conn, sg_name, constellation_name, vpc_id)
     
+    router_security_group = resources['security_group_id'] 
+    field_computer_security_group = resources['security_group_id']
+    simulation_security_group = resources['security_group_id'] 
     
     resources['igw_id'] = vpcconn.create_internet_gateway().id
     igw_id = resources['igw_id']
     vpcconn.attach_internet_gateway(igw_id, vpc_id)
-
+    
     resources['route_table_id'] = vpcconn.create_route_table(vpc_id).id
     vpcconn.create_route(resources['route_table_id'], '0.0.0.0/0', igw_id)
     resources['route_table_association_id'] = vpcconn.associate_route_table(resources['route_table_id'], subnet_id)
@@ -70,20 +77,18 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     log("elastic ip %s" % resources['router_ip'])
     
     resources['eip_allocation_id'] = elastic_ip.allocation_id
-
-    # keys
-    resources['router_key_pair_name'] = 'key-router-%s'%(vpc_id)
+    
+    resources['router_key_pair_name'] = 'key-router-%s'%(constellation_name)
     key_pair = ec2conn.create_key_pair(resources['router_key_pair_name'])
     key_pair.save(constellation_directory)
     
-    resources['robot_key_pair_name'] = 'key-robot-%s'%(vpc_id)
+    resources['robot_key_pair_name'] = 'key-robot-%s'%(constellation_name)
     key_pair = ec2conn.create_key_pair(resources['robot_key_pair_name'])
     key_pair.save(constellation_directory)
     
-    resources['sim_key_pair_name'] = 'key-sim-%s'%(vpc_id)
+    resources['sim_key_pair_name'] = 'key-sim-%s'%(constellation_name)
     key_pair = ec2conn.create_key_pair(resources['sim_key_pair_name'])
     key_pair.save(constellation_directory)
-    
     
     TYPE='t1.micro'
     #IMAGE='ami-0d153248'
@@ -109,7 +114,12 @@ chmod 644 /etc/openvpn/static.key
 sysctl -w net.ipv4.ip_forward=1
 iptables -A FORWARD -i tun0 -o eth0 -j ACCEPT
 iptables -A FORWARD -o tun0 -i eth0 -j ACCEPT
-touch /done
+
+mkdir /home/ubuntu/cloudsim
+mkdir /home/ubuntu/cloudsim/setup
+touch /home/ubuntu/cloudsim/setup/done
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+
 """%(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP)
     
     roles_to_reservations ={}
@@ -118,23 +128,28 @@ touch /done
     res = ec2conn.run_instances(IMAGE, instance_type=TYPE,
                                          subnet_id=subnet_id,
                                          private_ip_address=TS_IP,
-                                         security_group_ids=[sg.id],
+                                         security_group_ids=[router_security_group ],
                                          key_name=resources['router_key_pair_name'] ,
                                          user_data=ROUTER_SCRIPT)
     roles_to_reservations['router'] = res.id
     
-    
     ROBOT_IP='10.0.0.52'
     ROBOT_SCRIPT = """#!/bin/bash
-
 exec >/tmp/log 2>&1
+
 route add %s gw %s
+
+mkdir /home/ubuntu/cloudsim
+mkdir /home/ubuntu/cloudsim/setup
+touch /home/ubuntu/cloudsim/setup/done
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+
 """%(OPENVPN_CLIENT_IP, TS_IP)
 
     res = ec2conn.run_instances(IMAGE, instance_type=TYPE,
                                  subnet_id=subnet_id,
                                  private_ip_address=ROBOT_IP,
-                                 security_group_ids=[sg.id],
+                                 security_group_ids=[field_computer_security_group],
                                  key_name=resources['robot_key_pair_name'] ,
                                  user_data=ROBOT_SCRIPT)
     
@@ -142,14 +157,21 @@ route add %s gw %s
     
     SIM_IP='10.0.0.51'
     SIM_SCRIPT = """#!/bin/bash
-
 exec >/tmp/log 2>&1
+
+
 route add %s gw %s
+
+mkdir /home/ubuntu/cloudsim
+mkdir /home/ubuntu/cloudsim/setup
+touch /home/ubuntu/cloudsim/setup/done
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+
 """%(OPENVPN_CLIENT_IP, TS_IP)
     res = ec2conn.run_instances(IMAGE, instance_type=TYPE,
                                          subnet_id=subnet_id,
                                          private_ip_address=SIM_IP,
-                                         security_group_ids=[sg.id],
+                                         security_group_ids=[simulation_security_group],
                                          key_name=resources['sim_key_pair_name'] ,
                                          user_data=SIM_SCRIPT)
     roles_to_reservations['simulation'] = res.id
@@ -159,7 +181,7 @@ route add %s gw %s
     resources['router_aws_id'] = running_machines['router']
     resources['robot_aws_id'] = running_machines['robot']
     resources['simulation_aws_id'] = running_machines['simulation']
-     
+    
     
     router_tags = {'Name':router_machine_name}
     router_tags.update(tags)
@@ -178,15 +200,10 @@ route add %s gw %s
     router_instance =  get_ec2_instance(ec2conn, resources['router_aws_id'])
     router_instance.modify_attribute('sourceDestCheck', False)
     
-    
     ssh_router = SshClient(constellation_directory, resources['router_key_pair_name'], 'ubuntu', resources['router_ip'])
     
-    done = False
-    while not done:
-        done = ssh_router.find_file("/done")
-        time.sleep(1)
-    
-    ssh_router.cmd("mkdir cloudsim")
+    router_setup_done = get_ssh_cmd_generator(ssh_router,"ls cloudsim/setup/done", "cloudsim/setup/done", max_retries = 100)
+    empty_ssh_queue([router_setup_done], 2)
     
     local = os.path.join(constellation_directory, "%s.pem" % resources['sim_key_pair_name'])
     remote = os.path.join("cloudsim", "%s.pem" % resources['sim_key_pair_name']) 
@@ -196,68 +213,62 @@ route add %s gw %s
     remote = os.path.join("cloudsim", "%s.pem" % resources['robot_key_pair_name'])
     ssh_router.upload_file(local, remote)
     
-    """
-    
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-cloudsim_cxd4a32c76.pem ubuntu@67.202.24.213 
-    """
-    
     dpkg_log_robot = """
     #!/bin/bash
     
-    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "tail -1 /var/log/dpkg.log"
+    DIR="\$( cd "\$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$DIR/%s.pem ubuntu@%s "tail -1 /var/log/dpkg.log"
     
     """ % (resources['robot_key_pair_name'], ROBOT_IP)
-    ssh_router.create_file(dpkg_log_robot, "cloudsim/dpkg_log_robot.sh")
-    
+    ssh_router.create_file(dpkg_log_robot, "cloudsim/dpkg_log_robot.bash")
+
+
     find_file_robot = """
     #!/bin/bash
     
-    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "ls -l $1" 
+    DIR="\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$DIR/%s.pem ubuntu@%s "ls \$1" 
     
     """ % (resources['robot_key_pair_name'], ROBOT_IP)
-    ssh_router.create_file(find_file_robot, "cloudsim/dpkg_log_robot.sh")
+    ssh_router.create_file(find_file_robot, "cloudsim/find_file_robot.bash")
     
     find_file_sim = """
     #!/bin/bash
     
-    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "ls -l $1" 
+    DIR="\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$DIR/%s.pem ubuntu@%s "ls \$1" 
     
-    """ % (resources['sim_key_pair_name'], ROBOT_IP)
-    ssh_router.create_file(find_file_sim, "cloudsim/dpkg_log_robot.sh")
+    """ % (resources['sim_key_pair_name'], SIM_IP)
+    ssh_router.create_file(find_file_sim, "cloudsim/find_file_sim.bash")
     
     dpkg_log_sim = """
     #!/bin/bash
     
-    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "tail -1 /var/log/dpkg.log"
+    DIR="\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$DIR/%s.pem ubuntu@%s "tail -1 /var/log/dpkg.log"
     
-    """ % (resources['sim_key_pair_name'], ROBOT_IP)
-    ssh_router.create_file(dpkg_log_sim, "cloudsim/dpkg_log_sim.sh")
-    
-    
+    """ % (resources['sim_key_pair_name'], SIM_IP)
+    ssh_router.create_file(dpkg_log_sim, "cloudsim/dpkg_log_sim.bash")
     
     ping_gl = """#!/bin/bash
     
-    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "ls -l /home/ubuntu"
+    DIR="\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$DIR/%s.pem ubuntu@%s "DISPLAY=localhost:0 glxinfo"
     
     """ % (resources['sim_key_pair_name'], SIM_IP)
-    ssh_router.create_file(ping_gl, "cloudsim/ping_gl.sh")
+    ssh_router.create_file(ping_gl, "cloudsim/ping_gl.bash")
     
     ping_gazebo = """#!/bin/bash
     
-    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/%s.pem ubuntu@%s "ls -l /home/ubuntu"
+    DIR="\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$DIR/%s.pem ubuntu@%s "gztopic list"
     
     """ % (resources['sim_key_pair_name'], SIM_IP)
     ssh_router.create_file(ping_gazebo, "cloudsim/ping_gazebo.sh")
-    
-    # router setup
-    # ssh -i key-vpc-527d3738.pem ubuntu@107.23.183.181 "mkdir cloudsim"
-    # scp -i key-vpc-527d3738.pem ./key-vpc-527d3738.pem  ubuntu@107.23.183.181:cloudsim
+
+    robot_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_robot.bash cloudsim/setup/done", "cloudsim/setup/done", max_retries = 100)
+    sim_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash cloudsim/setup/done", "cloudsim/setup/done", max_retries = 100)
+    empty_ssh_queue([robot_done, sim_done], 1)
 
     expiration = None
     set_constellation_data(username, constellation_name, resources, expiration)
@@ -374,7 +385,7 @@ class TrioCase(unittest.TestCase):
         
         self.username = "toto@toto.com"
         self.credentials_ec2  = get_boto_path()
-        self.tags = {'TestCase':'vpc_micro_trio', 'constellation' : self.constellation_name, 'user': self.username}
+        self.tags = {'TestCase':'vpc_micro_trio', 'configuration': "vpc_micro_trio", 'constellation' : self.constellation_name, 'user': self.username}
         
         self.root_directory = os.path.join(get_test_path('test_vpn_micro_trio'), self.constellation_name,)
         os.makedirs(self.root_directory)
@@ -389,13 +400,10 @@ class TrioCase(unittest.TestCase):
     def tearDown(self):
         unittest.TestCase.tearDown(self)
         #self.machine.terminate() 
-        
         # self.constellation_name = 
-        
         terminate_vpc_micro_trio(self.username, self.constellation_name, self.credentials_ec2, self.root_directory)
         
         
-    
         
 if __name__ == "__main__":
     unittest.main()        
