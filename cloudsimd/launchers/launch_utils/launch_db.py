@@ -16,6 +16,45 @@ def log(msg):
     print("cloudsim log> %s" % msg)
   
 
+def publish_event(type, username, data):
+    msg = {}
+    msg.update(data)
+    msg['type'] = type
+    msg['username'] = username
+    try:
+        import redis
+        redis_cli = redis.Redis()
+        channel_name = msg['username'].split("@")[1]
+        j_msg = json.dumps(msg)
+        redis_cli.publish(channel_name, j_msg)
+    except:
+        log("publish_event: %s" % (msg))
+        
+            
+class ConstellationState(object):
+    
+    def __init__(self, username, constellation_name):
+        self.username = username
+        self.constellation_name = constellation_name
+        
+    def has_value(self, name):
+        resources = get_constellation_data(self.username,  self.constellation_name)
+        return resources.has_key(name)
+        
+    def get_value(self, name):
+        resources = get_constellation_data(self.username,  self.constellation_name)
+        return resources[name]
+    
+    def set_value(self, name, value):
+        resources = get_constellation_data(self.username,  self.constellation_name)
+        if not resources:
+            resources = {}
+        resources[name] = value
+        expiration = None
+        set_constellation_data(self.username, self.constellation_name, resources, expiration)
+    
+    
+
 
 
 def _domain(user_or_domain):
@@ -40,6 +79,22 @@ def set_constellation_data(user_or_domain, constellation, value, expiration = No
     except Exception, e:
         log("can't set constellation data: %s" % e)
         
+
+def get_constellations():
+    try:
+        data = []
+        import redis
+        red = redis.Redis()
+        keys = red.keys("*")
+        for key in keys:
+            toks = key.split("/")
+            if len(toks) == 2:
+                domain = toks[0]
+                constellation = toks[1]
+                data.append( (domain, constellation) )
+        return data
+    except:
+        return None        
 
 def get_constellation_data(user_or_domain, constellation):
     try:

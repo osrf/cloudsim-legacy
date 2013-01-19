@@ -1,7 +1,7 @@
 from __future__ import print_function
 import unittest
 import time
-from launch_utils.sshclient import SshClientException
+from sshclient import SshClientException
 
 
 class SshRetryException(Exception):
@@ -9,7 +9,7 @@ class SshRetryException(Exception):
 
 
 
-def get_ssh_cmd_generator(ssh_client, cmd, expected_output, max_retries = 100):
+def get_ssh_cmd_generator(ssh_client, cmd, expected_output, constellation_data, key, value, max_retries = 100):
     
     print("generator ssh cmd: %s, expected output: %s" % (cmd, expected_output) )
     count = max_retries
@@ -22,6 +22,7 @@ def get_ssh_cmd_generator(ssh_client, cmd, expected_output, max_retries = 100):
             result = ssh_client.cmd(cmd)
             if result.strip() == expected_output:
                 print("   FOUND %s (%s/%s)" % (cmd, max_retries-count, max_retries))
+                constellation_data.set_value(key, value)
                 yield True
                 done = True
         except SshClientException:

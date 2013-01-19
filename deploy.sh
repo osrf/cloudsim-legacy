@@ -23,7 +23,7 @@ sudo mkdir -p /var/www-cloudsim-auth/machines
 
 #if [ -f $DIR/boto-useast ]
 #then
-    sudo mv -f $DIR/../boto.ini /var/www-cloudsim-auth/boto-useast
+    sudo cp -f $DIR/../boto.ini /var/www-cloudsim-auth/boto-useast
 #fi
 
 cd $DIR/..
