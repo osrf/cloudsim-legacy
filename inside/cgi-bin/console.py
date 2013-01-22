@@ -84,13 +84,23 @@ template = """
         
         var es = new EventSource(stream_url);
         
+        var hidden_event_types = [];
         
         es.addEventListener("cloudsim", function(event)
         {
              var str_data = event.data;
-             if(log_events)
-                 console.log(str_data);
              var data = eval( '(' + str_data + ')' );
+             
+             if(log_events)
+             {
+                 var type = data.type;
+                 // console.log(type);
+                 if( hidden_event_types.indexOf(type) == -1) 
+                 {
+                     console.log(str_data);
+                 }
+             }
+             
              $.publish("/cloudsim", data);
              
          }, false);

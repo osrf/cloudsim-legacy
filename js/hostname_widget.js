@@ -25,21 +25,19 @@ function create_hostname_widget(machine_div, constellation_name, machine_name, w
     var widget_div = _create_empty_widget(machine_div, widget_name);
     _update_hostname_widget(widget_div, constellation_name, machine_name, "xxx.xxx.xxx", "x-xxxxx", "xx@xx.xxx", "xxxx-xx-xx xx:xx:xx");
     
-    $.subscribe("/cloudsim", function(event, data){
-        if(data.constellation_name != constellation_name)
+    $.subscribe("/cloudsim", function(event, msg){
+        if(msg.constellation_name != constellation_name)
             return;
-        if(data.machine_name != machine_name)
+        if(msg.machine_name != machine_name)
             return
             
-        if(data.type == 'cloud')
+        if(msg.type == 'machine')
         {
-        	var is_download_ready = false;
-        	if(data.launch_state == "installing packages" || data.launch_state == "running" || data.launch_state == "rebooting")
-        	{
-        		is_download_ready = true;
-        	}
+        	
+        	var data = msg.data;
+        	
         	_update_hostname_widget(widget_div, constellation_name, machine_name, 
-        		data.ip, data.aws_id, data.user, data.GMT,is_download_ready );
+        		data.ip, data.aws_id, data.username, data.gmt, data.key_download_ready );
         }
         
         

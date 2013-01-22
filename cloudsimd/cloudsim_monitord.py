@@ -96,10 +96,12 @@ if __name__ == "__main__":
         
     root_directory =  MACHINES_DIR
     
+    
+    
     try:
         log("Cloudsim_monitor daemon started pid %s" % os.getpid())
 
-        async_monitor(root_directory, proc_count)
+    #    async_monitor(root_directory, proc_count)
         
     except Exception, e:
         log("Cloudsim monitor error: %s" %  e)

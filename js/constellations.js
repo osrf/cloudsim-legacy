@@ -11,8 +11,11 @@ function create_constellations_widget(div_name)
         if(data.constellation_name)
         {
         	var constellation = data.constellation_name;
-        	var configuration = data.constellation_config;
-            // console.log("CONS " + data.constellation_name);
+        	var configuration = data.configuration; 
+        	
+        	//data.constellation_config;
+            
+        	
             var constellation_div =  div.querySelector("#"+constellation);
             if( constellation_div == null)
             {

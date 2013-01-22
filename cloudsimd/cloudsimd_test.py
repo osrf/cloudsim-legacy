@@ -22,7 +22,14 @@ import sys
 
 username = "cloudsim_test@osrfoundation.org"
 
-class DrcSimLatestTestCase(unittest.TestCase):
+
+#class DTestCase(unittest.TestCase):
+#    
+#    def test_launch(self):
+#        ec2 = create_ec2_proxy(get_boto_path())
+#        
+
+class DrcSimLatestTestCase(): # unittest.TestCase
 
     def setUp(self):
         unittest.TestCase.setUp(self)

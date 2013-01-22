@@ -431,11 +431,7 @@ class DomainDb(object):
         if os.path.exists(self.root_dir):
             for domain in os.listdir(self.root_dir):
                 domains.append(domain)
-
         return domains
-    
-    
-        
                 
 def _domain(user_or_domain):
     domain = user_or_domain

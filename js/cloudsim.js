@@ -13,9 +13,27 @@ function create_constellation(div_name, configuration, constellation)
     {
         _create_basic_machine(constellation_div, constellation, "field_computer_" + constellation );
         _create_basic_machine(constellation_div, constellation, "router_" + constellation );
-        _create_simulator_machine(constellation_div, constellation, "simulator_" + constellation );
+        
+        
+        var div =  constellation_div.querySelector("#machines" );
+        
+        var machine_name = "simulator_" + constellation;
+        var machine_div = create_machine(div, machine_name);
+        
+        create_machine_launch_monitor_widget(machine_div, constellation, machine_name,"launch_state");
+        create_machine_state_widget(machine_div, constellation, machine_name,"cloud_state");
+        //create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
+        create_hostname_widget (machine_div, constellation, machine_name, "hostname");	
+        create_glx_state_widget(machine_div, constellation, machine_name, "glx_state");
+        create_simulator_state_widget(machine_div, constellation, machine_name, "simulator_state");
+        create_latency_widget(machine_div, constellation, machine_name, "latency");
     }
-
+    
+    if(configuration == "simulator")
+    {
+        var machine_name = "simulator_" +constellation;
+        _create_simulator_machine(constellation_div, constellation, machine_name);
+    }
     
     if(configuration == "micro_sim")
     {

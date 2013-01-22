@@ -4,6 +4,8 @@ from __future__ import print_function
 import imp
 import os
 import time
+
+
 import common
 from common.machine import MachineDb, CONSTELLATION_JSONF_NAME,\
     terminate_constellation
@@ -16,14 +18,13 @@ logging.basicConfig(filename='cloudsimd.log',level=logging.DEBUG)
 
 directory = os.path.split(__file__)[0]
 
-
-
 def log(msg, chan = "launchers"):
     try:
         import redis
         r = redis.Redis()
         r.publish(chan, msg)
         logging.info("launchers log: %s" % msg)
+        print("LOG %s" % msg)
     except:
         print("LOG %s" % msg)
     
@@ -83,7 +84,7 @@ def launch(username,
     logging.info("launch %s %s %s" % (username, config_name, constellation_name) )
  
     launchers =  get_launch_functions()
- 
+    
     func = launchers[config_name]
  
     domain = username.split('@')[1]

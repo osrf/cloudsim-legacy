@@ -13,6 +13,24 @@ def log(msg):
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
 
+"""
+Removes the key for this ip, in case we connect to a different machine with the
+same key in the future. This avoids ssh messages
+"""
+def clean_local_ssh_key_entry( hostname):
+    www_ssh_host_file = "/var/www/.ssh/known_hosts" 
+    if os.path.exists(www_ssh_host_file):
+        cmd = 'sudo ssh-keygen -f %s -R %s' % (www_ssh_host_file, hostname)
+        s,o = commands.getstatusoutput(cmd)
+    
+        print("clean_local_ssh_key_entry for %s" % hostname)
+        print(o)
+        print
+        return s
+    else:
+        return ""
+
+
 class SshClientException(Exception):
     pass
 
@@ -51,9 +69,10 @@ class SshClient(object):
         self.cmd(cmd)
     
     def download_file(self, local_fname, remote_fname, extra_scp_args=[]):
+        
         scp_cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-o', 
                    'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', 
-                   self.key_fname] + extra_scp_args + ['%s:%s'%(self.config.user, remote_fname), local_fname ]
+                   self.key_fname] + extra_scp_args + ['%s:%s'%(self.user, remote_fname), local_fname ]
         scp_cmd_string = ' '.join(scp_cmd)
         
         log(scp_cmd_string) 

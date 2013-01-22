@@ -9,53 +9,42 @@ function create_machine_state_widget(machine_div, constellation_name, machine_na
     
     var blink = 0;
     // reaction
-    $.subscribe("/cloudsim", function(event, data)
+    $.subscribe("/cloudsim", function(event, msg)
     {
-        if(data.constellation_name != constellation_name) return;
-        if(data.machine_name != machine_name) return;
-
-        if(data.type == 'cloud')
+    	if(msg.type != 'machine') 
+        	return;
+        
+    	if(msg.constellation_name != constellation_name) 
+        	return;
+        
+    	if(msg.machine_name != machine_name) 
+        	return;
+        
+        var machine_state = msg.data.state;
+        var color = "red";
+        
+        if(machine_state == 'shutting-down')
         {
-            var color = "red";
-            if(data.result != 'success')
-            {
-            	color = "red";
-            	_update_machine_state(widget_div, color, "error");
-            	return;
-            }
-            
-            if(data.state == 'shutting-down' && data.result == 'success')
-            {
-                color = "orange";
-                str = 'shutting-down';
-                _update_machine_state(widget_div, color, str);
-            	return;
-            }
-            
-            if(data.state == 'terminated' && data.result == 'success')
-            {
-                color = "orange";
-                str = 'terminated';
-                _update_machine_state(widget_div, color, str);
-            	return;
-            }
-            
-            if(data.state == 'running' && data.result == 'success')
-            {
-                color = "blue";
-            }
-            
-            var str = data.state;
-            if(data.launch_state != "running")
-            {
-            	color = "yellow";
-                str = data.launch_state;
-            }
-            
-            _update_machine_state(widget_div, color, str);
+            color = "orange";
         }
         
+        if(machine_state == 'pending')
+        {
+        	color = "yellow";
+        }
+        	
+        if(machine_state == 'terminated')
+        {
+            color = "red";
+        }
         
+        if(machine_state == 'running')
+        {
+            color = "blue";
+        }
+        
+        _update_machine_state(widget_div, color, machine_state);
+    
         
     });
 }

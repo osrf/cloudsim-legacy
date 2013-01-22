@@ -18,24 +18,10 @@ function create_machine_launch_monitor_widget(machine_div, constellation_name, m
         if(data.machine_name != machine_name)
             return;
         
-        if(data.launch_state == "running")
-        {
-            widget_div.innerHTML = "Setup: " + status_img("blue") + " complete";
-            return;
-        }
-
         if(data.type != 'launch')
         	return;
 
-       var goal = data.goal;
-       var colors = ["yellow", "blue"];
-       count ++;
-       if(count >= colors.length)
-       {
-           count =0;
-       }
-       var color = colors[count];
-       widget_div.innerHTML = "Setup: " + status_img(color) + " " + goal;
-
+       	widget_div.innerHTML = "Launch: " + status_img(data.color) + " " + data.text;
+        
     });
 }

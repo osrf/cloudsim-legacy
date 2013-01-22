@@ -85,7 +85,7 @@ def wait_for_multiple_machines_to_terminate(ec2conn, roles_to_aws_ids, constella
         while not done:
             time.sleep(1)
             count = count - 1
-            log("terminate count down: %s %s/%s " % (aws_ids_to_roles.values(), count, max_retries) )
+            #log("terminate count down: %s %s/%s " % (aws_ids_to_roles.values(), count, max_retries) )
             if count < 0:
                 msg = "timeout while terminating EC2 machine(s) %s" % aws_ids_to_roles
                 raise LaunchException(msg)
@@ -103,3 +103,5 @@ def wait_for_multiple_machines_to_terminate(ec2conn, roles_to_aws_ids, constella
                         constellation.set_value(role, final_state)
                         done = True
                         break
+                    else:
+                        log("%s (AWS %s) state: %s %/%s" % (role, aws_id,instance.state, count, max_retries ))

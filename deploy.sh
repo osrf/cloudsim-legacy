@@ -60,7 +60,7 @@ sudo stop cloudsimd
 sudo stop cloudsim_monitord
 
 sudo start cloudsimd
-sudo start cloudsim_monitord
+#sudo start cloudsim_monitord
 
 
 sudo apache2ctl restart

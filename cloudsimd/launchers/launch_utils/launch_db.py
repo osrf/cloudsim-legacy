@@ -16,7 +16,7 @@ def log(msg):
     print("cloudsim log> %s" % msg)
   
 
-def publish_event(type, username, data):
+def publish_event(username, type, data):
     msg = {}
     msg.update(data)
     msg['type'] = type
@@ -28,7 +28,7 @@ def publish_event(type, username, data):
         j_msg = json.dumps(msg)
         redis_cli.publish(channel_name, j_msg)
     except:
-        log("publish_event: %s" % (msg))
+        log("publish_event: channel[%s] msg[%s]" % (msg))
         
             
 class ConstellationState(object):
@@ -53,7 +53,9 @@ class ConstellationState(object):
         expiration = None
         set_constellation_data(self.username, self.constellation_name, resources, expiration)
     
-    
+    def expire(self, nb_of_secs):
+        resources  = get_constellation_data(self.username,  self.constellation_name)
+        set_constellation_data(self.username, self.constellation_name, resources, nb_of_secs)
 
 
 
@@ -72,8 +74,8 @@ def set_constellation_data(user_or_domain, constellation, value, expiration = No
         domain = _domain(user_or_domain)
         redis_key = domain+"/" + constellation
         
-        str = json.dumps(value)
-        red.set(redis_key, str)
+        s = json.dumps(value)
+        red.set(redis_key, s)
         if expiration:
             red.expire(redis_key, expiration)
     except Exception, e:
