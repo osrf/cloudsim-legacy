@@ -1,3 +1,13 @@
-To prepare:
+To prepare a machine:
 
-sudo apt-get install tc
+  sudo apt-get install tc
+
+First time on the machine after boot:
+
+  ./init.py tun0
+
+Thereafter, to manipulate parameters, e.g.:
+
+  ./configure.py tun0 100ms 125kbit 10%
+
+At the time of writing, the 125kbit max bandwidth parameter is not used.
