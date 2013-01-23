@@ -146,15 +146,7 @@ function create_glx_state_widget(machine_div, constellation_name, machine_name, 
             
         if(data.type == 'graphics')
         {
-        	var text = "not running";
-            var color = "red";
-		    if(data.result == 'success')
-		    {
-		        color = "blue";
-		        text = "running";	
-		    }
-		    
-		    _update_glx_state(widget_div, color, text);
+            _update_glx_state(widget_div, data.color, data.text);
         }
         
     });

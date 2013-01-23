@@ -3,14 +3,12 @@ from __future__ import print_function
 import unittest
 import os
 import time
+ 
 
 import boto
 from boto.pyami.config import Config as BotoConfig
 
-import pprint
-
-from common.machine import get_unique_short_name
-from common.testing import get_boto_path, get_test_path
+from launch_utils import get_unique_short_name
 
 from launch_utils import wait_for_multiple_machines_to_run 
 from launch_utils import wait_for_multiple_machines_to_terminate
@@ -24,11 +22,13 @@ from launch_utils import SshClient
 
 from launch_utils import get_ssh_cmd_generator, empty_ssh_queue # task_list
 from launch_utils import ConstellationState # launch_db
-from launch_utils.launch_events import latency_event, launch_event, gl_event,\
-    simulator_event, machine_state_event
-from launch_utils.launch_db import get_constellations
+
 from launch_utils.sshclient import clean_local_ssh_key_entry
-import commands
+
+
+from common.testing import get_boto_path, get_test_path
+from launch_utils.launch_events import launch_event
+
 
 
 CONFIGURATION = "vpc_trio"
@@ -45,8 +45,8 @@ def aws_connect(credentials_ec2):
     return ec2conn, vpcconn
 
 def get_ping_data(ping_str):
-    min, avg, max, mdev  =  [float(x) for x in ping_str.split()[-2].split('/')]
-    return (min, avg, max, mdev)
+    mini, avg, maxi, mdev  =  [float(x) for x in ping_str.split()[-2].split('/')]
+    return (mini, avg, maxi, mdev)
 
 def create_securtity_group(ec2conn, sg_name, constellation_name, vpc_id):
     sg = ec2conn.create_security_group(sg_name, 'Security group for constellation %s' % (constellation_name), vpc_id)
@@ -81,150 +81,21 @@ def get_aws_states(ec2conn, machine_names_to_ids):
 
    
 
-def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, root_directory):
+def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
     pass
 
-def stop_simulator(username, constellation, machine, root_directory):
+def stop_simulator(username, constellation, machine):
     pass
             
-def monitor(username, constellation_name, credentials_ec2, constellation_directory, counter):
-    
-    time.sleep(1)
-    
-    constellation = ConstellationState(username, constellation_name)
-    
-    constellation_state = None
-    try:
-        
-        constellation_state = constellation.get_value("constellation_state") 
-        # log("constellation %s state %s" % (constellation_name, constellation_state) )
-        if constellation_state == "terminated":
-            log("constellation_state terminated for  %s " % constellation_name)
-            return True
-    except:
-        log("monitor: Can't access constellation  %s data" % constellation_name)
-        return True
-    
-    router_state = constellation.get_value('router_state')
-    robot_state = constellation.get_value('robot_state')
-    simulation_state = constellation.get_value('simulation_state')
-    
-    router_machine_name = constellation.get_value('router_machine_name')
-    robot_machine_name = constellation.get_value('robot_machine_name')
-    sim_machine_name = constellation.get_value('sim_machine_name')
-    
-    
-    router_state_index = machine_states.index(router_state)
-    aws_ids = {}
-    if constellation.has_value('router_aws_id'):
-        aws_ids["router"] = constellation.get_value('router_aws_id')
-    if constellation.has_value('robot_aws_id'):
-        aws_ids["robot"] = constellation.get_value('robot_aws_id')
-    if constellation.has_value('simulation_aws_id'):
-        aws_ids["sim"] = constellation.get_value('simulation_aws_id')
-    
-    
-    if len(aws_ids):
-        ec2conn, vpcconn = aws_connect(credentials_ec2)
-        aws_states = get_aws_states(ec2conn, aws_ids)
-        
-        constellation.set_value("router_aws_state", aws_states["router"]) 
-        constellation.set_value("simulation_aws_state", aws_states["sim"])
-        constellation.set_value("robot_aws_state", aws_states["robot"])
-        
-        router_ip =  constellation.get_value('router_ip')
-        gmt = ""
-        try:
-            gmt = constellation.get_value('gmt')
-        except:
-            pass
-        # todo: is download ready
-        
-        machine_state_event(username, CONFIGURATION, constellation_name, router_machine_name, {'state': aws_states["router"], 'ip':router_ip, 'aws_id': aws_ids["router"], 'gmt':gmt, 'username': username, 'key_download_ready':True } )
-        machine_state_event(username, CONFIGURATION, constellation_name, robot_machine_name, {'state': aws_states["robot"], 'ip':ROBOT_IP, 'aws_id': aws_ids["router"], 'gmt':gmt, 'username': username, 'key_download_ready':True  })
-        machine_state_event(username, CONFIGURATION, constellation_name, sim_machine_name, {'state': aws_states["sim"], 'ip':SIM_IP, 'aws_id': aws_ids["router"], 'gmt':gmt, 'username': username, 'key_download_ready':True  })
+def monitor(username, constellation_name, credentials_ec2, counter):
+    import vpc_trio
+    return vpc_trio.monitor(username, constellation_name, credentials_ec2, counter)
 
-    
-    if router_state_index >= machine_states.index('running'):
-        router_ip = constellation.get_value('router_ip')
-        router_key_pair_name = constellation.get_value('router_key_pair_name')
-        ssh_router = SshClient(constellation_directory, router_key_pair_name, 'ubuntu', router_ip)
-        
-        ping_robot = ssh_router.cmd("ping -c3 %s" % ROBOT_IP)
-        mini, avg, maxi, mdev = get_ping_data(ping_robot)
-        log('ping robot %s %s %s %s' % (mini, avg, maxi, mdev) )
-        latency_event(username, CONFIGURATION, constellation_name, robot_machine_name, mini, avg, maxi, mdev)
-        
-        ping_simulator = ssh_router.cmd("ping -c3 %s" % SIM_IP)
-        mini, avg, maxi, mdev = get_ping_data(ping_simulator)
-        log('ping simulator %s %s %s %s' % (mini, avg, maxi, mdev) )
-        latency_event(username, CONFIGURATION, constellation_name, sim_machine_name, mini, avg, maxi, mdev)
-        
-       
-        o, ping_router = commands.getstatusoutput("ping -c3 %s" % router_ip)
-        if o == 0:
-            mini, avg, maxi, mdev = get_ping_data(ping_router)
-            log('ping router %s %s %s %s' % (mini, avg, maxi, mdev) )
-            latency_event(username, CONFIGURATION, constellation_name, router_machine_name, mini, avg, maxi, mdev)
-        
-        
-        if router_state == "running":
-            launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "blue", "complete")
-        
-        if robot_state == "running":
-            launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "blue", "complete")
-        
-        if simulation_state == "running":
-            launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "complete")
-        
-        if router_state == 'packages_setup':
-            try:
-                router_package = ssh_router.cmd("cloudsim/dpkg_log_router.bash")
-                #log("cloudsim/dpkg_log_router.bash = %s" % router_package )
-                launch_event(username, "vpc_trio", constellation_name, router_machine_name, "orange", router_package)
-            except Exception, e:
-                log("cloudsim/dpkg_log_router.bash error: %s" % e)
-       
-        if robot_state == 'packages_setup':
-            try:
-                robot_package = ssh_router.cmd("cloudsim/dpkg_log_robot.bash")
-                #log("cloudsim/dpkg_log_robot.bash = %s" % robot_package )
-                launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "orange", robot_package)
-            except Exception, e:
-                log("cloudsim/dpkg_log_robot.bash error: %s" % e)
-        
-        
-        if simulation_state == 'packages_setup':
-            try:
-                simulation_package = ssh_router.cmd("cloudsim/dpkg_log_sim.bash")
-                #log("cloudsim/dpkg_log_sim.bash = %s" % simulation_package )
-                launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", simulation_package)
-            except Exception, e:
-                log("cloudsim/dpkg_log_sim.bash error: %s" % e )
-        
-        
-        if simulation_state == 'running':
-            try:
-                ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
-                log("cloudsim/ping_gl.bash = %s" % ping_gl )
-                gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, ping_gl)
-                
-            except Exception, e:
-                log("cloudsim/ping_gl.bash error %s" % e )
-            
-            try:
-                ping_gazebo = ssh_router.cmd("bash cloudsim/ping_gazebo.bash")
-                log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
-                simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, ping_gazebo)
-            except Exception, e:
-                log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
-    
-    
-    return False
 
 
 def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
-    
+    log("new trio constellation: %s" % constellation_name)
+        
     ec2conn, vpcconn = aws_connect(credentials_ec2)
     constellation = ConstellationState(username, constellation_name)
     
@@ -253,19 +124,23 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "yellow", "starting")
     launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "yellow", "starting")
     
+    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "acquiring public ip")
+    elastic_ip = ec2conn.allocate_address('vpc')
+    router_ip = elastic_ip.public_ip
+    constellation.set_value('router_ip', router_ip)
+    log("elastic ip %s" % elastic_ip.public_ip)
+    eip_allocation_id = elastic_ip.allocation_id
+    constellation.set_value('eip_allocation_id', eip_allocation_id)
+    clean_local_ssh_key_entry(router_ip)
     
-#    monitor(username, constellation_name, credentials_ec2, constellation_directory )
-    
-    log("new trio constellation: %s" % constellation_name)
+    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "creating virtual private network")
     vpc_id = vpcconn.create_vpc('10.0.0.0/24').id
     constellation.set_value('vpc_id',vpc_id)
-    
-    
     log("VPC %s" % vpc_id )
     subnet_id= vpcconn.create_subnet(vpc_id, '10.0.0.0/24').id
     constellation.set_value('subnet_id', subnet_id) 
 
-    
+    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "setting up security groups")
     router_sg_name = 'router-sg-%s'%(constellation_name) 
     router_security_group_id = create_securtity_group(ec2conn, router_sg_name, constellation_name, vpc_id)
     constellation.set_value('router_security_group_id', router_security_group_id)
@@ -289,18 +164,9 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     
     vpcconn.create_route(route_table_id, '0.0.0.0/0', igw_id)
     route_table_association_id = vpcconn.associate_route_table(route_table_id, subnet_id)
-    
     constellation.set_value('route_table_association_id', route_table_association_id )  
-    elastic_ip = ec2conn.allocate_address('vpc')
     
-    router_ip = elastic_ip.public_ip
-    constellation.set_value('router_ip', router_ip)
-    log("elastic ip %s" % elastic_ip.public_ip)
     
-    clean_local_ssh_key_entry(router_ip)
-    
-    eip_allocation_id = elastic_ip.allocation_id
-    constellation.set_value('eip_allocation_id', eip_allocation_id)
     
     router_key_pair_name = 'key-router-%s'%(constellation_name)
     constellation.set_value('router_key_pair_name', router_key_pair_name)

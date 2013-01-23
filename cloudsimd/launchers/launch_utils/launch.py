@@ -1,5 +1,5 @@
 import time
-import json
+import uuid
 
 from launch_db import log
 
@@ -9,6 +9,9 @@ class LaunchException(Exception):
 
 
 
+def get_unique_short_name(prefix = 'x'):
+    s = str(uuid.uuid1()).split('-')[0]
+    return prefix + s
 
 def get_ec2_instance(ec2conn, id):
     reservations = ec2conn.get_all_instances()
@@ -104,4 +107,4 @@ def wait_for_multiple_machines_to_terminate(ec2conn, roles_to_aws_ids, constella
                         done = True
                         break
                     else:
-                        log("%s (AWS %s) state: %s %/%s" % (role, aws_id,instance.state, count, max_retries ))
+                        log("%s (AWS %s) state: %s %s/%s" % (role, aws_id,instance.state, count, max_retries ))

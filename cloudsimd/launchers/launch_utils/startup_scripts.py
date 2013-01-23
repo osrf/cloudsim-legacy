@@ -215,6 +215,7 @@ apt-get install -y ntp
 
 echo "install drc" >> /home/ubuntu/setup.log
 apt-get install -y drcsim
+echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
 
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools    

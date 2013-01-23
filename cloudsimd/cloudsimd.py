@@ -13,13 +13,15 @@ from json import loads
 
 import redis
 
-from common import RedisPublisher
+from launchers.launch_utils import RedisPublisher
 import launchers
+
 from common import MACHINES_DIR
 from common import BOTO_CONFIG_FILE_USEAST
-from common import Machine
 
-from common.machine import get_unique_short_name
+#from common import Machine
+
+from launchers.launch_utils import get_unique_short_name
 from common.web import get_cloudsim_version_txt
 
 import traceback
@@ -34,6 +36,10 @@ from launchers.launch_utils import get_constellations
 from launchers.launch_utils import get_constellation_data
 
 
+#
+# The plugins contains the function pointers for each type of constellation
+# Don't forget to register new constellations
+#
 plugins = {}
 plugins['vpc_micro_trio'] = {'launch':vpc_micro_trio.launch,    'terminate':vpc_micro_trio.terminate,    'monitor':vpc_micro_trio.monitor,   'start_simulator':vpc_micro_trio.start_simulator,   'stop_simulator':vpc_micro_trio.stop_simulator}
 plugins['vpc_trio'] =       {'launch':vpc_trio.launch,          'terminate':vpc_trio.terminate,          'monitor':vpc_trio.monitor,         'start_simulator':vpc_trio.start_simulator,         'stop_simulator':vpc_trio.stop_simulator}
@@ -145,7 +151,7 @@ def stop_simulator(username, config, constellation,  machine):
         log("traceback:  %s" % tb)
             
 
-def monitor(username, config, constellation_name, credentials_ec2, constellation_path):
+def monitor(username, config, constellation_name, credentials_ec2):
     
     proc = multiprocessing.current_process().name
     log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))   
@@ -156,7 +162,7 @@ def monitor(username, config, constellation_name, credentials_ec2, constellation
         while not done:
             try:
                 #log("monitor %s (%s)" % (constellation_name, counter) )
-                done = monitor(username, constellation_name, credentials_ec2, constellation_path, counter)
+                done = monitor(username, constellation_name, credentials_ec2, counter)
                 #log("monitor return value %s" % ( done) )
                 counter += 1
             except Exception, e:
@@ -171,11 +177,11 @@ def monitor(username, config, constellation_name, credentials_ec2, constellation
         tb = traceback.format_exc()
         log("traceback:  %s" % tb) 
 
-def async_monitor(username, config, constellation_name, boto_path, constellation_path):
+def async_monitor(username, config, constellation_name, boto_path):
     
     log("cloudsimd async_monitor [config %s] %s/%s"% (config, username, constellation_name) )
     try:
-        p = multiprocessing.Process(target=monitor, args=(username, config, constellation_name, boto_path, constellation_path) )
+        p = multiprocessing.Process(target=monitor, args=(username, config, constellation_name, boto_path) )
         p.start()
     except Exception, e:
         log("cloudsimd async_monitor Error %s" % e)
@@ -255,8 +261,7 @@ def resume_monitoring(boto_path, root_dir):
     log("existing constellations %s" % constellation_names)
     for domain, constellation_name in constellation_names:
         try:
-            constellation_path = os.path.join(root_dir, constellation_name )  
-            log("   constellation %s/%s [%s]" %  (domain, constellation_name, constellation_path) )  
+            log("   constellation %s/%s " %  (domain, constellation_name) )  
             constellation = get_constellation_data(domain,  constellation_name)
             state = constellation['constellation_state']
             config = constellation['configuration']
@@ -264,7 +269,7 @@ def resume_monitoring(boto_path, root_dir):
             log ("      config %s" % config)
             log ("      state %s" % state)
             if state != "terminated":
-                async_monitor(username, config, constellation_name, boto_path, constellation_path)
+                async_monitor(username, config, constellation_name, boto_path)
         except Exception, e:
             print ("MONITOR ERROR %s in constellation : %s" % (e, constellation_name))
             tb = traceback.format_exc()
@@ -304,7 +309,7 @@ def run(boto_path, root_dir, tick_interval):
                 os.makedirs(constellation_path)
                 
                 async_launch(username, config, constellation_name, boto_path, constellation_path)
-                async_monitor(username, config, constellation_name, boto_path, constellation_path)
+                async_monitor(username, config,constellation_name, boto_path)
                 continue
             
             constellation = data['constellation']

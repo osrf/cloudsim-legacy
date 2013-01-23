@@ -7,7 +7,7 @@ import cgitb
 import json
 import os
 import urlparse
-from common import  authorize, MachineDb
+from common import  authorize
 import redis
 
 
@@ -33,10 +33,14 @@ print("\n")
 
 if method == 'GET':
     constellation = get_constellation_from_path()
-    mdb = MachineDb(email)
-    r = mdb.get_machines_as_dict()[constellation]
-    r['constellation'] = constellation
+#    mdb = MachineDb(email)
+#    r = mdb.get_machines_as_dict()[constellation]
+#    r['constellation'] = constellation
+    
+    r = {}
     str = json.dumps(r)
+    
+    
     print(str)
     exit(0)
 

@@ -44,6 +44,5 @@ str = json.dumps(configs)
     
 
 
-log("Launchers: %s" % cdb.get_config_dir())
 
 print(str)

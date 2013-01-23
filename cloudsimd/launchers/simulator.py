@@ -3,14 +3,15 @@ from __future__ import print_function
 import unittest
 import os
 import time
+import commands
+import zipfile
 
 import boto
 from boto.pyami.config import Config as BotoConfig
 
-from common.machine import get_unique_short_name
-from common.testing import get_boto_path, get_test_path
 
-from launch_utils import wait_for_multiple_machines_to_run 
+from launch_utils import get_unique_short_name
+#from launch_utils import wait_for_multiple_machines_to_run 
 from launch_utils import wait_for_multiple_machines_to_terminate
 from launch_utils import get_ec2_instance 
 from launch_utils import log
@@ -26,12 +27,12 @@ from launch_utils.launch_events import latency_event, launch_event, gl_event,\
     simulator_event, machine_state_event
 
 from launch_utils.sshclient import clean_local_ssh_key_entry
-import commands
 from launch_utils.startup_scripts import get_drc_startup_script,\
     get_open_vpn_single, create_openvpn_client_cfg_file, create_vpn_connect_file,\
     create_ros_connect_file, create_ssh_connect_file
-import zipfile
 from launch_utils.launch import LaunchException
+
+from common.testing import get_boto_path, get_test_path
     
 
 CONFIGURATION = "simulator"
@@ -74,7 +75,7 @@ def start_simulator(username, constellation, machine_name, package_name, launch_
 def stop_simulator(username, constellation, machine, root_directory):
     pass
             
-def monitor(username, constellation_name, credentials_ec2, constellation_directory, counter):
+def monitor(username, constellation_name, credentials_ec2, counter):
     
     time.sleep(1)
     constellation = ConstellationState(username, constellation_name)
@@ -113,11 +114,12 @@ def monitor(username, constellation_name, credentials_ec2, constellation_directo
             pass
         
         # todo: is download ready
-        machine_state_event(username, CONFIGURATION, constellation_name, sim_machine_name, {'state': aws_states["sim"], 'ip':sim_ip, 'aws_id': aws_ids["router"], 'gmt':gmt, 'username': username, 'key_download_ready':True  })
+        machine_state_event(username, CONFIGURATION, constellation_name, sim_machine_name, {'state': aws_states["sim"], 'ip':sim_ip, 'aws_id': aws_ids["sim"], 'gmt':gmt, 'username': username, 'key_download_ready':True  })
 
     
                 
     if sim_state_index >= machine_states.index('packages_setup'):
+        constellation_directory = constellation.get_value('constellation_directory')
         sim_key_pair_name = constellation.get_value('sim_key_pair_name')
         ssh_sim = SshClient(constellation_directory, sim_key_pair_name, 'ubuntu', sim_ip)
         
@@ -143,11 +145,12 @@ def monitor(username, constellation_name, credentials_ec2, constellation_directo
             try:
                 ping_gl = ssh_sim.cmd("bash cloudsim/ping_gl.bash")
                 log("cloudsim/ping_gl.bash = %s" % ping_gl )
-                gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, ping_gl)
+                gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "running")
                 
             except Exception, e:
                 log("monitor: cloudsim/ping_gl.bash error %s" % e )
-            
+                gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "Not running")
+                
             try:
                 ping_gazebo = ssh_sim.cmd("bash cloudsim/ping_gazebo.bash")
                 log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
@@ -169,6 +172,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     constellation.set_value('simulation_state', 'nothing')
     constellation.set_value('gmt', tags['GMT'])
     constellation.set_value('simulation_aws_state', 'nothing')
+    constellation.set_value('constellation_directory', constellation_directory)
     
     constellation.set_value('username', username)
     sim_machine_name = "simulator_"+ constellation_name
@@ -246,8 +250,8 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
                 if  state == 'running':
                     aws_id = r.instances[0].id
                     running_machines['simulation_state'] = aws_id
-                    constellation.set_value('simulation_state', 'newtork_setup')
-                    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, 'newtork_setup')
+                    constellation.set_value('simulation_state', 'network_setup')
+                    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, 'network_setup')
                     done = True
                 launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, state)
                 if color == "yellow":
@@ -269,13 +273,26 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     # ec2conn.associate_address(router_aws_id, allocation_id = eip_allocation_id)
     sim_instance = get_ec2_instance(ec2conn, simulation_aws_id)
     sim_ip = sim_instance.ip_address
+    
+    clean_local_ssh_key_entry(sim_ip)
+    
     constellation.set_value('simulation_ip', sim_ip)
     log("%s simulation machine ip %s" % (constellation_name, sim_ip))
     ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
     
     networking_done = get_ssh_cmd_generator(ssh_sim,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "sim_state", 'packages_setup' ,max_retries = 1000)
-    empty_ssh_queue([networking_done], sleep=2)
+    #empty_ssh_queue([networking_done], sleep=2)
     
+    color = "orange"
+    for g in networking_done:
+        found = g.next()
+        launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, "waiting for setup done")
+        if color == "yellow":
+            color = "orange"
+        else:
+            color = "yellow"
+            
+                    
     find_file_sim = """
     #!/bin/bash
     
@@ -454,7 +471,7 @@ class TrioCase(unittest.TestCase):
         sweep_count = 10
         for i in range(sweep_count):
             print("monitoring %s/%s" % (i,sweep_count) )
-            monitor(self.username, self.constellation_name, self.credentials_ec2, self.constellation_directory, i)
+            monitor(self.username, self.constellation_name, self.credentials_ec2, i)
             time.sleep(1)
     
     def tearDown(self):

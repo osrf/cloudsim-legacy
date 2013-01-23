@@ -1,724 +1,724 @@
-from __future__ import with_statement
-from __future__ import print_function
-
-
-import unittest
-import uuid
-import os
-import sys
-import time
-import subprocess
-import json
-import shutil
-
- 
-import boto
-
-from machine_configuration import Machine_configuration
-
-from constants import *
-from startup_script_builder import *
-import zipfile
-from  testing import get_test_runner
-from uuid import UUID
-from pubsub import RedisPublisher
-
-"""
-Removes the key for this ip, in case we connect to a different machine with the
-same key in the future. This avoids ssh messages
-"""
-def clean_local_ssh_key_entry( hostname):
-    www_ssh_host_file = "/var/www/.ssh/known_hosts" 
-    if os.path.exists(www_ssh_host_file):
-        cmd = 'sudo ssh-keygen -f %s -R %s' % (www_ssh_host_file, hostname)
-        s,o = commands.getstatusoutput(cmd)
-    
-        print("clean_local_ssh_key_entry for %s" % hostname)
-        print(o)
-        print
-        return s
-    else:
-        return ""
-
-"""
-Calls the ping command and returns statistics
-"""
-def ping(hostname, count=3):
-    s,out = commands.getstatusoutput("ping -c%s %s" % (count, hostname) )
-    if s == 0:
-        min, avg, max, mdev  =  [float(x) for x in out.split()[-2].split('/')]
-        return (min, avg, max, mdev)
-    
-    raise MachineException(out)
-
-def get_version_from_dpkg_str(s):
-    toks = s.split()
-    try:    
-        i = toks.index('ii')
-        name = toks[i+1]
-        version = toks[i+2]
-        return version
-    except:
-        return s
-    return s
-
-def get_local_software_package_version(package):
-    proc = subp.Popen(["dpkg", "-l", package], stdout=subp.PIPE, stderr=subp.PIPE)
-    s = proc.stdout.read()
-    if len(s) ==0:
-        e = proc.stderr.read()
-        return e
-    v = get_version_from_dpkg_str(s)
-    return v
-
-
-class MachineException(Exception):
-    pass
-
-def create_ec2_proxy(boto_config_file):
-    boto.config = boto.pyami.config.Config(boto_config_file)
-    ec2 = boto.connect_ec2()
-    return ec2
-
-class StdoutPublisher(object):
-    def __init__(self, username = None):
-        self.username = username
-        
-        
-    def event(self, event_data):
-        #print("%s = (%s, %s)" %(self.username, name, data) )
-        event_str = "event: cloudsim"
-        data_str = "data:%s\n\n" %  (event_data)
-            
-        print(event_str)
-        if event_data:
-            print(data_str)
-
-        try:
-            sys.stdout.flush()
-        except:
-            pass # test cases try to do something clever
-        
-
-class MockMachine(object):
-    
-    def __init__(self):
-        pass
-    
-    
-    
-
-
-class Machine (object):
-    
-    def __init__(   self,
-                    username,
-                    unique_name,
-                    config, 
-                    tags ={}, 
-                    credentials_ec2 = BOTO_CONFIG_FILE_USEAST, # boto file
-                    root_directory = MACHINES_DIR,
-                    do_launch = True):
-        
-        pub = RedisPublisher(username)
-        self.event = pub.event
-        
-        self.log = None
-        self.config = config
-        self.startup_script_done_file = '/tmp/startup_script_done'
-        self.ssh_connect_timeout = 1
-        
-        self.ec2 = create_ec2_proxy(credentials_ec2 )
-        # We use this file as an indicator that our startup script has completed successfully
-        if do_launch:
-            self.config.credentials_ec2 = credentials_ec2
-            
-            self.config.tags = tags
-            self.config.tags['machine_name'] = unique_name
-            self.config.tags['user'] = username
-            self.config.uid = unique_name
-            self.config.root_directory = root_directory
-            self.config.cfg_dir=os.path.join(self.config.root_directory, self.config.uid)
-            os.makedirs(self.config.cfg_dir)
-            
-            self.config.launch_log_fname = os.path.join(self.config.cfg_dir, 'launch.log')
-            # self.log = open(self.config.launch_log_fname, 'w')
-            self.config.instance_fname = os.path.join(self.config.cfg_dir, 'instance.json')
-            
-            #self.config.save_json(self.config.instance_fname)
-            self._create_machine_keys() 
-            # self.config.save_json(self.config.instance_fname)
-            
-            self._launch()
-            
-            self.config.save_json(self.config.instance_fname)
-            
-
-
-    @classmethod
-    def from_file(cls,  fname, event = None):
-        if(event == None):
-            x = StdoutPublisher()
-            event = x.event
-        config = Machine_configuration.from_file(fname)
-        email = config.tags['user']
-        x = Machine(email, config.uid,  config, event, do_launch = False)
-        return x
-
-    def _event(self, data_dict):
-        if self.event:
-            data_dict.update(self.config.tags)
-            self.event(data_dict)
-        
-    
-    def _get_instance(self, reservation_id):
-        for r in self.ec2.get_all_instances():
-            if r.id == reservation_id and r.instances[0].public_dns_name:
-                inst = r.instances[0]
-                return inst
-        return None
-    
-    def _launch(self):
-        """
-        Called by the ctor when launch is True
-        """        
-        self.config.startup_script += '\ntouch %s\n'%(self.startup_script_done_file)
-        try:
-            # Start it up
-            
-            self._event({"type:":"launch", "goal" : "acquiring computing resource", "state":"reserve"})
-            res = self.ec2.run_instances(   image_id=self.config.image_id,
-                                            min_count =1,
-                                            max_count =1,
-                                            key_name=self.config.kp_name,
-                                            instance_type=self.config.instance_type,
-                                            security_groups = self.config.security_groups,
-                                            user_data=self.config.startup_script)
-            # self.config.print_cfg()
-            self.config.reservation = res.id
-            
-            
-            retries = self.config.ip_retries
-            tries = 0
-            while tries< retries:
-                done = False
-                tries += 1
-                self._event({"type":"launch", "state":'retry', "goal":"waiting for IP address", "try":tries, "retries":retries} )
-                for r in self.ec2.get_all_instances():
-                    if r.id == res.id and r.instances[0].public_dns_name:
-                        done = True
-                        inst = r.instances[0]
-                        self.config.hostname = inst.public_dns_name
-                        self.config.ip = inst.ip_address
-                        self.config.aws_id = inst.id
-                        self._event({"type":"launch", "goal":"network configured", "ip": self.config.ip, 'aws_id': self.config.aws_id})
-                        break
-                    time.sleep(0.5)
-                if done:
-                    break 
-                
-            if tries >= retries:
-                self._event({"type":"launch", "state":"fail", "action":'ip_set'})
-                raise MachineException("Can't get IP for machine reservation '%s'" % self.config.reservation)
-            
-            if len(self.config.tags):
-                self._event({"type": "launch", "goal":"setting up AWS tags","state":'tags_set'})
-                self.ec2.create_tags([self.config.aws_id], self.config.tags)
-                self._event({"launch":"launch", "goal":"tags set","state":'tags_set'})
-            
-            
-        except Exception as e:
-            # Clean up
-            
-            if os.path.exists(self.config.kp_fname):
-                os.unlink(self.config.kp_fname)
-            shutil.rmtree(self.config.cfg_dir)
-            # re-raise
-            raise
-
-    def create_ssh_connect_script(self, fname = "ssh.sh"):
-        ssh_connect_fname = os.path.join(self.config.cfg_dir, fname)
-        with open(ssh_connect_fname, 'w') as f:
-            s = create_ssh_connect_file(self.config.kp_name + '.pem', self.config.ip, self.config.username)
-            f.write(s)
-
-    def _create_machine_keys(self):
-        # save the ssh key
-        kp_name = 'key-%s'%(self.config.uid)
-        kp = self.ec2.create_key_pair(kp_name)
-        kp.save(self.config.cfg_dir)
-        
-        self.config.kp_name = kp_name
-        self.config.kp_fname = os.path.join(self.config.cfg_dir, self.config.kp_name + '.pem')
-    
-    def get_user_ssh_command_string(self):
-        """
-        Returns an ssh command that the user can type to access the machine
-        """
-        return "ssh -i %s %s@%s"%(self.config.kp_fname, self.config.username, self.config.hostname)
-
-    def ssh_send_command(self, cmd, extra_ssh_args=[]):
-        ssh_cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', self.config.kp_fname] + extra_ssh_args + ['%s@%s'%(self.config.username, self.config.hostname)]
-        #ssh_cmd.extend([cmd])
-        ssh_cmd.append(cmd)
-        po = subprocess.Popen(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out,err = po.communicate()
-        if po.returncode != 0:
-            raise MachineException(out + err)
-        else:
-            return out
-
-    def scp_send_file(self, local_fname, remote_fname, extra_scp_args=[]):
-        scp_cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-o', 
-                   'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', 
-                   self.config.kp_fname] + extra_scp_args + [local_fname,'%s@%s:%s'%(self.config.username, self.config.hostname, remote_fname)]
-        scp_cmd_string = ' '.join(scp_cmd)
-        status, output = commands.getstatusoutput(scp_cmd_string)
-        if status != 0:
-            raise MachineException('scp failed: %s'%(output))
-        else:
-            return output
-        
-    def scp_download_file(self, local_fname, remote_fname, extra_scp_args=[]):
-        scp_cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-o', 
-                   'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', 
-                   self.config.kp_fname] + extra_scp_args + ['%s@%s:%s'%(self.config.username, self.config.hostname, remote_fname), local_fname ]
-        scp_cmd_string = ' '.join(scp_cmd)
-        print(scp_cmd_string) 
-        status, output = commands.getstatusoutput(scp_cmd_string)
-        if status != 0:
-            raise MachineException('scp failed: %s'%(output))
-        else:
-            return output
-
-    def ssh_wait_for_ready(self, the_file_to_look_for=None):
-        delay = 0.5
-        file_to_look_for = the_file_to_look_for
-        if not file_to_look_for:
-            file_to_look_for = self.startup_script_done_file
-        cmd = 'ls %s' %  file_to_look_for
-        
-        retries = self.config.ssh_retries
-        tries = 0
-        self._event({"type" :"launch", "goal":'SSH: waiting for ' + file_to_look_for, "file":file_to_look_for, "try": tries, "retries":retries })
-        while tries < retries:
-            tries += 1
-            # print ( "%s / %s" % (tries, retries))
-            self._event({"type":"launch", "state":'retry', "goal":'SSH: waiting for ' + file_to_look_for, "file": file_to_look_for,  "try": tries, "retries": retries })
-            
-            try:
-                self.ssh_send_command(cmd)
-            except MachineException as ex:
-                # Expected; e.g., the machine isn't up yet
-                time.sleep(delay)
-            else:
-                self._event({"type" : "launch", "goal": file_to_look_for +' is accessible'})
-                return
-        self._event({"type":"launch","goal": "failed to get " + file_to_look_for, "state": 'fail', 'action':'ssh_connect'})   
-        raise MachineException("Maximum retry limit exceeded; ssh connection could not be established or file '%s' not found" % file_to_look_for)
-    
-    def terminate(self):
-        self._event({"type":"launch", "goal": "terminating", "state":'terminated'})
-        terminated_list = self.ec2.terminate_instances(instance_ids=[self.config.aws_id])
-        if(len(terminated_list) == 0 ):
-            self._event({"type":"fail", "state":'terminated', 'machine_id': self.config.aws_id})
-            raise MachineException("Could not terminate instance %s" % self.config.aws_id)
-        self.ec2.delete_key_pair(self.config.kp_name)
-        self._event({"type":"launch", "goal":'terminated', "machine_id":self.config.aws_id})
-    
-    def get_deb_package_version(self, package):
-        r = self.ssh_send_command('dpkg -l ' + package)
-        v = _get_version_from_dpkg_str(r)
-        return v
-    
-    def get_X_status(self):
-        #self._event({"type":"test", "state":'X, OpenGL'})
-        # DISPLAY=:0 xdpyinfo
-        try:
-            r = self.ssh_send_command('DISPLAY=localhost:0 glxinfo')
-            return True
-        except:
-            return False
-
-    def ping(self, count = 3):
-        #self._event({"type":"test", "state":'latency', 'count':count})
-        host = self.config.hostname
-        try:
-            min, avg, max, mdev = ping(host, count)
-            return {'count':count, 'min':min, 'avg':avg, 'max':max, 'mdev':mdev}
-        except:
-            return None
-
-    def get_gazebo_status(self):
-        
-        d = self.config.distro
-        #cmd = 'source /opt/ros/%s/setup.bash && rosrun gazebo gztopic list' % d
-        cmd = 'source /usr/share/gazebo-1.?/setup.sh && gztopic list' 
-        
-        try:
-            r = self.ssh_send_command(cmd)
-            
-            return True
-        except:
-            return False
-
-    def get_aws_status(self, timeout=1):
-        #self._event({"type":"test", "state":'aws'})
-
-        data = {}
-        data.update(self.config.tags)
-        
-        data['hostname'] = self.config.hostname
-        data['ip'] = self.config.ip
-        data['aws_id'] = self.config.aws_id
-        data['result'] = 'success'
-        for r in self.ec2.get_all_instances():
-            for i in r.instances:
-                if i.id == self.config.aws_id:
-                    data[ 'state'] = str(i.state)
-                    self._event(data) 
-                    return data
-        
-        data['state'] = 'does_not_exist'
-        data['result'] = 'failure'
-        return data
-    
-    def reboot(self):
-        """
-        Reboots the machine and waits until it has gone down ()
-        """
-        #r = self.ec2.reboot_instances([self.config.aws_id])
-        r = self.ssh_send_command("sudo reboot")
-
-        while self.ping(1):
-            time.sleep(0.1)
-        
-        return r
-        
-
-#    def reboot(self, timeout=1):
-#        cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'sudo', 'reboot']
-#        po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-#        out,err = po.communicate()
-#        if po.returncode == 0:
-#            return (True, out + err)
-#        else:
-#            return (False, out + err)
-#    def stop(self, timeout=1):
-#        ec2 = create_ec2_proxy(self.botofile)
-#        try:
-#            ec2.stop_instances([self.aws_id])
-#        except Exception as e:
-#            return False, str(e)
-#        return True, ''
+#from __future__ import with_statement
+#from __future__ import print_function
 #
-#    def start(self, timeout=1):
-#        ec2 = create_ec2_proxy(self.botofile)
+#
+#import unittest
+#import uuid
+#import os
+#import sys
+#import time
+#import subprocess
+#import json
+#import shutil
+#
+# 
+#import boto
+#
+#from machine_configuration import Machine_configuration
+#
+#from constants import *
+#from startup_script_builder import *
+#import zipfile
+#from  testing import get_test_runner
+#from uuid import UUID
+#from pubsub import RedisPublisher
+#
+#"""
+#Removes the key for this ip, in case we connect to a different machine with the
+#same key in the future. This avoids ssh messages
+#"""
+#def clean_local_ssh_key_entry( hostname):
+#    www_ssh_host_file = "/var/www/.ssh/known_hosts" 
+#    if os.path.exists(www_ssh_host_file):
+#        cmd = 'sudo ssh-keygen -f %s -R %s' % (www_ssh_host_file, hostname)
+#        s,o = commands.getstatusoutput(cmd)
+#    
+#        print("clean_local_ssh_key_entry for %s" % hostname)
+#        print(o)
+#        print
+#        return s
+#    else:
+#        return ""
+#
+#"""
+#Calls the ping command and returns statistics
+#"""
+#def ping(hostname, count=3):
+#    s,out = commands.getstatusoutput("ping -c%s %s" % (count, hostname) )
+#    if s == 0:
+#        min, avg, max, mdev  =  [float(x) for x in out.split()[-2].split('/')]
+#        return (min, avg, max, mdev)
+#    
+#    raise MachineException(out)
+#
+#def get_version_from_dpkg_str(s):
+#    toks = s.split()
+#    try:    
+#        i = toks.index('ii')
+#        name = toks[i+1]
+#        version = toks[i+2]
+#        return version
+#    except:
+#        return s
+#    return s
+#
+#def get_local_software_package_version(package):
+#    proc = subp.Popen(["dpkg", "-l", package], stdout=subp.PIPE, stderr=subp.PIPE)
+#    s = proc.stdout.read()
+#    if len(s) ==0:
+#        e = proc.stderr.read()
+#        return e
+#    v = get_version_from_dpkg_str(s)
+#    return v
+#
+#
+#class MachineException(Exception):
+#    pass
+#
+#def create_ec2_proxy(boto_config_file):
+#    boto.config = boto.pyami.config.Config(boto_config_file)
+#    ec2 = boto.connect_ec2()
+#    return ec2
+#
+#class StdoutPublisher(object):
+#    def __init__(self, username = None):
+#        self.username = username
+#        
+#        
+#    def event(self, event_data):
+#        #print("%s = (%s, %s)" %(self.username, name, data) )
+#        event_str = "event: cloudsim"
+#        data_str = "data:%s\n\n" %  (event_data)
+#            
+#        print(event_str)
+#        if event_data:
+#            print(data_str)
+#
 #        try:
-#            ec2.start_instances([self.aws_id])
+#            sys.stdout.flush()
+#        except:
+#            pass # test cases try to do something clever
+#        
+#
+#class MockMachine(object):
+#    
+#    def __init__(self):
+#        pass
+#    
+#    
+#    
+#
+#
+#class Machine (object):
+#    
+#    def __init__(   self,
+#                    username,
+#                    unique_name,
+#                    config, 
+#                    tags ={}, 
+#                    credentials_ec2 = BOTO_CONFIG_FILE_USEAST, # boto file
+#                    root_directory = MACHINES_DIR,
+#                    do_launch = True):
+#        
+#        pub = RedisPublisher(username)
+#        self.event = pub.event
+#        
+#        self.log = None
+#        self.config = config
+#        self.startup_script_done_file = '/tmp/startup_script_done'
+#        self.ssh_connect_timeout = 1
+#        
+#        self.ec2 = create_ec2_proxy(credentials_ec2 )
+#        # We use this file as an indicator that our startup script has completed successfully
+#        if do_launch:
+#            self.config.credentials_ec2 = credentials_ec2
+#            
+#            self.config.tags = tags
+#            self.config.tags['machine_name'] = unique_name
+#            self.config.tags['user'] = username
+#            self.config.uid = unique_name
+#            self.config.root_directory = root_directory
+#            self.config.cfg_dir=os.path.join(self.config.root_directory, self.config.uid)
+#            os.makedirs(self.config.cfg_dir)
+#            
+#            self.config.launch_log_fname = os.path.join(self.config.cfg_dir, 'launch.log')
+#            # self.log = open(self.config.launch_log_fname, 'w')
+#            self.config.instance_fname = os.path.join(self.config.cfg_dir, 'instance.json')
+#            
+#            #self.config.save_json(self.config.instance_fname)
+#            self._create_machine_keys() 
+#            # self.config.save_json(self.config.instance_fname)
+#            
+#            self._launch()
+#            
+#            self.config.save_json(self.config.instance_fname)
+#            
+#
+#
+#    @classmethod
+#    def from_file(cls,  fname, event = None):
+#        if(event == None):
+#            x = StdoutPublisher()
+#            event = x.event
+#        config = Machine_configuration.from_file(fname)
+#        email = config.tags['user']
+#        x = Machine(email, config.uid,  config, event, do_launch = False)
+#        return x
+#
+#    def _event(self, data_dict):
+#        if self.event:
+#            data_dict.update(self.config.tags)
+#            self.event(data_dict)
+#        
+#    
+#    def _get_instance(self, reservation_id):
+#        for r in self.ec2.get_all_instances():
+#            if r.id == reservation_id and r.instances[0].public_dns_name:
+#                inst = r.instances[0]
+#                return inst
+#        return None
+#    
+#    def _launch(self):
+#        """
+#        Called by the ctor when launch is True
+#        """        
+#        self.config.startup_script += '\ntouch %s\n'%(self.startup_script_done_file)
+#        try:
+#            # Start it up
+#            
+#            self._event({"type:":"launch", "goal" : "acquiring computing resource", "state":"reserve"})
+#            res = self.ec2.run_instances(   image_id=self.config.image_id,
+#                                            min_count =1,
+#                                            max_count =1,
+#                                            key_name=self.config.kp_name,
+#                                            instance_type=self.config.instance_type,
+#                                            security_groups = self.config.security_groups,
+#                                            user_data=self.config.startup_script)
+#            # self.config.print_cfg()
+#            self.config.reservation = res.id
+#            
+#            
+#            retries = self.config.ip_retries
+#            tries = 0
+#            while tries< retries:
+#                done = False
+#                tries += 1
+#                self._event({"type":"launch", "state":'retry', "goal":"waiting for IP address", "try":tries, "retries":retries} )
+#                for r in self.ec2.get_all_instances():
+#                    if r.id == res.id and r.instances[0].public_dns_name:
+#                        done = True
+#                        inst = r.instances[0]
+#                        self.config.hostname = inst.public_dns_name
+#                        self.config.ip = inst.ip_address
+#                        self.config.aws_id = inst.id
+#                        self._event({"type":"launch", "goal":"network configured", "ip": self.config.ip, 'aws_id': self.config.aws_id})
+#                        break
+#                    time.sleep(0.5)
+#                if done:
+#                    break 
+#                
+#            if tries >= retries:
+#                self._event({"type":"launch", "state":"fail", "action":'ip_set'})
+#                raise MachineException("Can't get IP for machine reservation '%s'" % self.config.reservation)
+#            
+#            if len(self.config.tags):
+#                self._event({"type": "launch", "goal":"setting up AWS tags","state":'tags_set'})
+#                self.ec2.create_tags([self.config.aws_id], self.config.tags)
+#                self._event({"launch":"launch", "goal":"tags set","state":'tags_set'})
+#            
+#            
 #        except Exception as e:
-#            return False, str(e)
-#        return True, ''
-
-class DomainDb(object):
-    
-    def __init__(self,  root_dir = MACHINES_DIR):
-        print("")
-        self.root_dir = root_dir
-    
-    def get_domains(self):
-        domains = []
-        if os.path.exists(self.root_dir):
-            for domain in os.listdir(self.root_dir):
-                domains.append(domain)
-        return domains
-                
-def _domain(user_or_domain):
-    domain = user_or_domain
-    if user_or_domain.find('@') > 0:
-        domain = user_or_domain.split('@')[1]
-    return domain
-
-def set_machine_tag(user_or_domain, constellation, machine, key, value, expiration = None):
-    try:
-        import redis
-        red = redis.Redis()
-        domain = _domain(user_or_domain)
-        redis_key = domain+"/"+constellation+"/" + machine
-        str = red.get(redis_key)
-        if not str:
-            str = "{}"
-        machine_info = json.loads(str)
-        machine_info[key] = value
-        str2 = json.dumps(machine_info)
-        red.set(redis_key, str2)
-        if expiration:
-            red.expire(redis_key, expiration)
-    except:
-        pass
-
-def get_machine_tag(user_or_domain, constellation, machine, key):
-    try:
-        import redis
-        red = redis.Redis()
-        domain = _domain(user_or_domain)
-        redis_key = domain+"/"+constellation+"/" + machine
-        str = red.get(redis_key)
-        machine_info = json.loads(str)
-        value = machine_info[key]
-        return value
-    except:
-        return None
-   
-import subprocess as subp
-
-
-def _get_version_from_dpkg_str(s):
-    toks = s.split()
-    try:    
-        i = toks.index('ii')
-        name = toks[i+1]
-        version = toks[i+2]
-        return version
-    except:
-        return s
-    return s
-
-def get_package_version(package):
-    proc = subp.Popen(["dpkg", "-l", package], stdout=subp.PIPE, stderr=subp.PIPE)
-    s = proc.stdout.read()
-    if len(s) ==0:
-        s = proc.stderr.read()
-    v = get_version_from_dpkg_str(s)
-    return v
-
-def find_machine(username, constellation, machine_name, machine_dir = MACHINES_DIR):
-    mdb = MachineDb(username, machine_dir)
-    machine = mdb.get_machine(constellation, machine_name)
-    return machine
-
-class MachineDb(object):
-    
-    def __init__(self, email, machine_dir = MACHINES_DIR):
-        self.user = email
-        self.domain = email.split('@')[1]
-        self.root_dir =  os.path.join(machine_dir, self.domain)
-        
-    def get_machines_in_constellation(self, constellation):
-        machines = {}
-        if os.path.exists(self.root_dir):
-            constellation_path = os.path.join(self.root_dir, constellation)
-            constellation_info = self.get_constellation(constellation)
-            constellation_info['machines'] = {}
-            machine_list = os.listdir(constellation_path)
-            machine_list.remove('constellation.json')
-            for machine_name in machine_list:
-                machine = self.get_machine(constellation, machine_name)
-                if machine:
-                    machines[machine_name] = machine 
-        return machines
-    
-    def is_machine_up(self, constellation, machine_name):
-        r = get_machine_tag(self.domain, constellation, machine_name, "up")
-        return r == True # can be None
-    
-    def get_machines(self, get_all_machines = False):
-        machines = {}
-        if os.path.exists(self.root_dir):
-            for constellation in os.listdir(self.root_dir):
-                
-                constellation_path = os.path.join(self.root_dir, constellation)
-                constellation_info = self.get_constellation(constellation)
-                constellation_info['machines'] = {}
-                machine_list = os.listdir(constellation_path)
-                machine_list.remove('constellation.json')
-                machines[constellation] = constellation_info
-                for machine_name in machine_list:
-                    machine = None
-                    try:
-                        machine = self.get_machine(constellation, machine_name)
-                    except:
-                        machine = None
-                    if machine:
-                        if get_all_machines or self.is_machine_up(constellation, machine_name ):
-                            machines[constellation]['machines'][machine_name] = machine 
-        return machines
-    
-    def get_constellation(self, constellation):
-        fname =  os.path.join(self.root_dir, constellation, CONSTELLATION_JSONF_NAME)
-        constellation_info = None
-        with open(fname,'r') as fp:
-            str = fp.read()
-            constellation_info = json.loads(str)
-        return constellation_info
-        
-        
-    def get_machine(self, constellation, machine_name):
-        fname =  os.path.join(self.root_dir, constellation, machine_name, 'instance.json')
-        fname = os.path.abspath(fname)
-        if os.path.exists(fname):
-            machine = Machine.from_file(fname)
-            return machine
-        raise MachineException("Machine %s/%s not found in file [%s]" % (constellation, machine_name,fname ) )
-    
-    def get_machines_as_json(self):
-        d = self.get_machines_as_dict()
-        str = json.dumps(d)
-        return str
-    
-    def get_machines_as_dict(self):
-        jmachines = {}
-        machines = self.get_machines()
-        for constellation_name, constellation_info in machines.iteritems():
-            
-            jmachines[constellation_name] = {}
-            jmachines[constellation_name]['config'] = constellation_info['config']
-            c_machines = constellation_info['machines']
-            
-            jmachines[constellation_name] = constellation_info
-            for machine_name, machine  in c_machines.iteritems():
-                jmachine = {}
-                jmachine.update(machine.config.__dict__)
-                del(jmachine['startup_script'])
-                jmachines[constellation_name]['machines'][machine_name] = jmachine
-                
-        return jmachines
-
-
-    def get_launch_log_fname(self, machine_name):
-        fname =  os.path.join(self.root_dir, machine_name, "launch.log")
-        return fname
-    
-    def get_zip_fname(self, constellation_name, machine_name):
-        fname = os.path.join(self.root_dir, constellation_name, machine_name, machine_name + ".zip")
-        return fname
-
-
-
-def list_all_machines_accross_domains(root_dir = MACHINES_DIR):
-    
-    ddb = DomainDb(root_dir)
-    domains = ddb.get_domains()
-    
-    all_machines = []
-    for domain in domains:
-        email = "user@" + domain
-        mdb = MachineDb(email, root_dir)
-        machines = mdb.get_machines()
-        for constellation_name, constellation in machines.iteritems():
-            for machine_name, machine in constellation['machines'].iteritems():
-                all_machines.append( (domain, constellation, machine)  )
-    return all_machines
-
-
-def terminate_constellation(username, 
-              constellation_name, 
-              credentials_ec2, 
-              root_directory):
-    
-    # log("terminate constellation %s" % constellation_name)
-    
-    mdb = MachineDb(username, machine_dir = root_directory)
-    machines = mdb.get_machines_in_constellation(constellation_name)
-    for machine_name, machine  in machines.iteritems():
-        # log("  - terminate machine %s" % machine_name)
-        machine.terminate()
-
-
-def get_security_groups(ec2):
-        rs = ec2.get_all_security_groups()
-        groups = [str(x).split("SecurityGroup:")[1] for x in rs] 
-        return groups
-
-def get_unique_short_name(prefix = 'x'):
-    s = str(uuid.uuid1()).split('-')[0]
-    return prefix + s
-
-def create_if_not_exists_web_app_security_group(ec2, group_name, description):
-    sec_groups = get_security_groups(ec2)
-    if group_name not in sec_groups:
-        # imcp all, 22 (ssh) 80 (http)
-        sec = ec2.create_security_group(group_name, description)
-        sec.authorize('tcp', 80, 80, '0.0.0.0/0')   # web
-        sec.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
-        sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
-
-def create_if_not_exists_simulator_security_group(ec2, group_name, description):
-    create_if_not_exists_vpn_ping_security_group(ec2, group_name, description)
-
-def create_if_not_exists_robot_security_group(ec2, group_name, description):
-    create_if_not_exists_vpn_ping_security_group(ec2, group_name, description)
-    
-def create_if_not_exists_vpn_ping_security_group(ec2, group_name, description):
-    sec_groups = get_security_groups(ec2)
-    if group_name not in sec_groups:
-        # imcp all, 22 (ssh) 80 (http)
-        sec = ec2.create_security_group(group_name, description)
-        sec.authorize('udp', 1194, 1194, '0.0.0.0/0')   # web
-        sec.authorize('udp', 1195, 1195, '0.0.0.0/0')   # web
-        sec.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
-        sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
-
-
-class NonMachineTest(unittest.TestCase):
-    
-    def test_read_tags(self):
-        g = get_package_version("gazebo")
-        d = get_package_version("drcsim")
-        c = get_package_version("cloudsim-client-tools")
-        x = get_package_version("asdsdf")
-        print("gazebo: %s" % g)
-        print("drcsim: %s" % d)
-        print("cloudsim-client-tools: %s" % c)
-        print("asdsdf: %s" % x)
-    
-    
-    def test_security_groups(self):
-        
-        name = "s_" + str(uuid.uuid1()).split('-')[0]
-        
-        
-        boto_config_file = '/home/hugo/code/boto.ini'
-        ec2 = create_ec2_proxy(boto_config_file)
-        groups = get_security_groups(ec2)
-        
-        self.assert_(name not in groups, "already there")
-        
-        # imcp all, 22 (ssh) 80 (http)
-        sec = ec2.create_security_group(name, 'Simulation machine secutrity for drc_sim_latest configuration')
-        sec.authorize('tcp', 80, 80, '0.0.0.0/0')   # web
-        sec.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
-        sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
-        
-        groups = get_security_groups(ec2)
-        print (groups)
-        self.assert_(name in groups, "not created")
-        
-        ec2.delete_security_group(name)
-        groups = get_security_groups(ec2)
-        self.assert_(name not in groups, "not deleted")
-        
- 
-    
-    def atest_tags(self):
-        
-        set_machine_tag("a","b","c", "up", True, 10)
-        x = get_machine_tag("a","b","c", "down")
-        self.assert_(None == x, "")
-        x = get_machine_tag("a","b","c", "up")
-        self.assert_(True == x, "not found again")
-         
-    
-    def atest_list_machines(self):
-        dir = '/var/www-cloudsim-auth/machines'
-        print('listing machines in "%s":' % dir)
-        machines = list_all_machines_accross_domains(dir)
-        for domain, constellation, machine in machines:
-            print("   %s/%s/%s" % (domain, constellation['name'], machine.config.uid) )
-            # print("done")
-        
-        
-if __name__ == '__main__':
-    print('Machine TESTS')
-    unittest.main(testRunner = get_test_runner())        
- 
+#            # Clean up
+#            
+#            if os.path.exists(self.config.kp_fname):
+#                os.unlink(self.config.kp_fname)
+#            shutil.rmtree(self.config.cfg_dir)
+#            # re-raise
+#            raise
+#
+#    def create_ssh_connect_script(self, fname = "ssh.sh"):
+#        ssh_connect_fname = os.path.join(self.config.cfg_dir, fname)
+#        with open(ssh_connect_fname, 'w') as f:
+#            s = create_ssh_connect_file(self.config.kp_name + '.pem', self.config.ip, self.config.username)
+#            f.write(s)
+#
+#    def _create_machine_keys(self):
+#        # save the ssh key
+#        kp_name = 'key-%s'%(self.config.uid)
+#        kp = self.ec2.create_key_pair(kp_name)
+#        kp.save(self.config.cfg_dir)
+#        
+#        self.config.kp_name = kp_name
+#        self.config.kp_fname = os.path.join(self.config.cfg_dir, self.config.kp_name + '.pem')
+#    
+#    def get_user_ssh_command_string(self):
+#        """
+#        Returns an ssh command that the user can type to access the machine
+#        """
+#        return "ssh -i %s %s@%s"%(self.config.kp_fname, self.config.username, self.config.hostname)
+#
+#    def ssh_send_command(self, cmd, extra_ssh_args=[]):
+#        ssh_cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', self.config.kp_fname] + extra_ssh_args + ['%s@%s'%(self.config.username, self.config.hostname)]
+#        #ssh_cmd.extend([cmd])
+#        ssh_cmd.append(cmd)
+#        po = subprocess.Popen(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#        out,err = po.communicate()
+#        if po.returncode != 0:
+#            raise MachineException(out + err)
+#        else:
+#            return out
+#
+#    def scp_send_file(self, local_fname, remote_fname, extra_scp_args=[]):
+#        scp_cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-o', 
+#                   'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', 
+#                   self.config.kp_fname] + extra_scp_args + [local_fname,'%s@%s:%s'%(self.config.username, self.config.hostname, remote_fname)]
+#        scp_cmd_string = ' '.join(scp_cmd)
+#        status, output = commands.getstatusoutput(scp_cmd_string)
+#        if status != 0:
+#            raise MachineException('scp failed: %s'%(output))
+#        else:
+#            return output
+#        
+#    def scp_download_file(self, local_fname, remote_fname, extra_scp_args=[]):
+#        scp_cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-o', 
+#                   'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', 
+#                   self.config.kp_fname] + extra_scp_args + ['%s@%s:%s'%(self.config.username, self.config.hostname, remote_fname), local_fname ]
+#        scp_cmd_string = ' '.join(scp_cmd)
+#        print(scp_cmd_string) 
+#        status, output = commands.getstatusoutput(scp_cmd_string)
+#        if status != 0:
+#            raise MachineException('scp failed: %s'%(output))
+#        else:
+#            return output
+#
+#    def ssh_wait_for_ready(self, the_file_to_look_for=None):
+#        delay = 0.5
+#        file_to_look_for = the_file_to_look_for
+#        if not file_to_look_for:
+#            file_to_look_for = self.startup_script_done_file
+#        cmd = 'ls %s' %  file_to_look_for
+#        
+#        retries = self.config.ssh_retries
+#        tries = 0
+#        self._event({"type" :"launch", "goal":'SSH: waiting for ' + file_to_look_for, "file":file_to_look_for, "try": tries, "retries":retries })
+#        while tries < retries:
+#            tries += 1
+#            # print ( "%s / %s" % (tries, retries))
+#            self._event({"type":"launch", "state":'retry', "goal":'SSH: waiting for ' + file_to_look_for, "file": file_to_look_for,  "try": tries, "retries": retries })
+#            
+#            try:
+#                self.ssh_send_command(cmd)
+#            except MachineException as ex:
+#                # Expected; e.g., the machine isn't up yet
+#                time.sleep(delay)
+#            else:
+#                self._event({"type" : "launch", "goal": file_to_look_for +' is accessible'})
+#                return
+#        self._event({"type":"launch","goal": "failed to get " + file_to_look_for, "state": 'fail', 'action':'ssh_connect'})   
+#        raise MachineException("Maximum retry limit exceeded; ssh connection could not be established or file '%s' not found" % file_to_look_for)
+#    
+#    def terminate(self):
+#        self._event({"type":"launch", "goal": "terminating", "state":'terminated'})
+#        terminated_list = self.ec2.terminate_instances(instance_ids=[self.config.aws_id])
+#        if(len(terminated_list) == 0 ):
+#            self._event({"type":"fail", "state":'terminated', 'machine_id': self.config.aws_id})
+#            raise MachineException("Could not terminate instance %s" % self.config.aws_id)
+#        self.ec2.delete_key_pair(self.config.kp_name)
+#        self._event({"type":"launch", "goal":'terminated', "machine_id":self.config.aws_id})
+#    
+#    def get_deb_package_version(self, package):
+#        r = self.ssh_send_command('dpkg -l ' + package)
+#        v = _get_version_from_dpkg_str(r)
+#        return v
+#    
+#    def get_X_status(self):
+#        #self._event({"type":"test", "state":'X, OpenGL'})
+#        # DISPLAY=:0 xdpyinfo
+#        try:
+#            r = self.ssh_send_command('DISPLAY=localhost:0 glxinfo')
+#            return True
+#        except:
+#            return False
+#
+#    def ping(self, count = 3):
+#        #self._event({"type":"test", "state":'latency', 'count':count})
+#        host = self.config.hostname
+#        try:
+#            min, avg, max, mdev = ping(host, count)
+#            return {'count':count, 'min':min, 'avg':avg, 'max':max, 'mdev':mdev}
+#        except:
+#            return None
+#
+#    def get_gazebo_status(self):
+#        
+#        d = self.config.distro
+#        #cmd = 'source /opt/ros/%s/setup.bash && rosrun gazebo gztopic list' % d
+#        cmd = 'source /usr/share/gazebo-1.?/setup.sh && gztopic list' 
+#        
+#        try:
+#            r = self.ssh_send_command(cmd)
+#            
+#            return True
+#        except:
+#            return False
+#
+#    def get_aws_status(self, timeout=1):
+#        #self._event({"type":"test", "state":'aws'})
+#
+#        data = {}
+#        data.update(self.config.tags)
+#        
+#        data['hostname'] = self.config.hostname
+#        data['ip'] = self.config.ip
+#        data['aws_id'] = self.config.aws_id
+#        data['result'] = 'success'
+#        for r in self.ec2.get_all_instances():
+#            for i in r.instances:
+#                if i.id == self.config.aws_id:
+#                    data[ 'state'] = str(i.state)
+#                    self._event(data) 
+#                    return data
+#        
+#        data['state'] = 'does_not_exist'
+#        data['result'] = 'failure'
+#        return data
+#    
+#    def reboot(self):
+#        """
+#        Reboots the machine and waits until it has gone down ()
+#        """
+#        #r = self.ec2.reboot_instances([self.config.aws_id])
+#        r = self.ssh_send_command("sudo reboot")
+#
+#        while self.ping(1):
+#            time.sleep(0.1)
+#        
+#        return r
+#        
+#
+##    def reboot(self, timeout=1):
+##        cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(timeout), '-i', self.ssh_key_fname, '%s@%s'%(self.username, self.hostname), 'sudo', 'reboot']
+##        po = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+##        out,err = po.communicate()
+##        if po.returncode == 0:
+##            return (True, out + err)
+##        else:
+##            return (False, out + err)
+##    def stop(self, timeout=1):
+##        ec2 = create_ec2_proxy(self.botofile)
+##        try:
+##            ec2.stop_instances([self.aws_id])
+##        except Exception as e:
+##            return False, str(e)
+##        return True, ''
+##
+##    def start(self, timeout=1):
+##        ec2 = create_ec2_proxy(self.botofile)
+##        try:
+##            ec2.start_instances([self.aws_id])
+##        except Exception as e:
+##            return False, str(e)
+##        return True, ''
+#
+#class DomainDb(object):
+#    
+#    def __init__(self,  root_dir = MACHINES_DIR):
+#        print("")
+#        self.root_dir = root_dir
+#    
+#    def get_domains(self):
+#        domains = []
+#        if os.path.exists(self.root_dir):
+#            for domain in os.listdir(self.root_dir):
+#                domains.append(domain)
+#        return domains
+#                
+#def _domain(user_or_domain):
+#    domain = user_or_domain
+#    if user_or_domain.find('@') > 0:
+#        domain = user_or_domain.split('@')[1]
+#    return domain
+#
+#def set_machine_tag(user_or_domain, constellation, machine, key, value, expiration = None):
+#    try:
+#        import redis
+#        red = redis.Redis()
+#        domain = _domain(user_or_domain)
+#        redis_key = domain+"/"+constellation+"/" + machine
+#        str = red.get(redis_key)
+#        if not str:
+#            str = "{}"
+#        machine_info = json.loads(str)
+#        machine_info[key] = value
+#        str2 = json.dumps(machine_info)
+#        red.set(redis_key, str2)
+#        if expiration:
+#            red.expire(redis_key, expiration)
+#    except:
+#        pass
+#
+#def get_machine_tag(user_or_domain, constellation, machine, key):
+#    try:
+#        import redis
+#        red = redis.Redis()
+#        domain = _domain(user_or_domain)
+#        redis_key = domain+"/"+constellation+"/" + machine
+#        str = red.get(redis_key)
+#        machine_info = json.loads(str)
+#        value = machine_info[key]
+#        return value
+#    except:
+#        return None
+#   
+#import subprocess as subp
+#
+#
+#def _get_version_from_dpkg_str(s):
+#    toks = s.split()
+#    try:    
+#        i = toks.index('ii')
+#        name = toks[i+1]
+#        version = toks[i+2]
+#        return version
+#    except:
+#        return s
+#    return s
+#
+#def get_package_version(package):
+#    proc = subp.Popen(["dpkg", "-l", package], stdout=subp.PIPE, stderr=subp.PIPE)
+#    s = proc.stdout.read()
+#    if len(s) ==0:
+#        s = proc.stderr.read()
+#    v = get_version_from_dpkg_str(s)
+#    return v
+#
+#def find_machine(username, constellation, machine_name, machine_dir = MACHINES_DIR):
+#    mdb = MachineDb(username, machine_dir)
+#    machine = mdb.get_machine(constellation, machine_name)
+#    return machine
+#
+#class MachineDb(object):
+#    
+#    def __init__(self, email, machine_dir = MACHINES_DIR):
+#        self.user = email
+#        self.domain = email.split('@')[1]
+#        self.root_dir =  os.path.join(machine_dir, self.domain)
+#        
+#    def get_machines_in_constellation(self, constellation):
+#        machines = {}
+#        if os.path.exists(self.root_dir):
+#            constellation_path = os.path.join(self.root_dir, constellation)
+#            constellation_info = self.get_constellation(constellation)
+#            constellation_info['machines'] = {}
+#            machine_list = os.listdir(constellation_path)
+#            machine_list.remove('constellation.json')
+#            for machine_name in machine_list:
+#                machine = self.get_machine(constellation, machine_name)
+#                if machine:
+#                    machines[machine_name] = machine 
+#        return machines
+#    
+#    def is_machine_up(self, constellation, machine_name):
+#        r = get_machine_tag(self.domain, constellation, machine_name, "up")
+#        return r == True # can be None
+#    
+#    def get_machines(self, get_all_machines = False):
+#        machines = {}
+#        if os.path.exists(self.root_dir):
+#            for constellation in os.listdir(self.root_dir):
+#                
+#                constellation_path = os.path.join(self.root_dir, constellation)
+#                constellation_info = self.get_constellation(constellation)
+#                constellation_info['machines'] = {}
+#                machine_list = os.listdir(constellation_path)
+#                machine_list.remove('constellation.json')
+#                machines[constellation] = constellation_info
+#                for machine_name in machine_list:
+#                    machine = None
+#                    try:
+#                        machine = self.get_machine(constellation, machine_name)
+#                    except:
+#                        machine = None
+#                    if machine:
+#                        if get_all_machines or self.is_machine_up(constellation, machine_name ):
+#                            machines[constellation]['machines'][machine_name] = machine 
+#        return machines
+#    
+#    def get_constellation(self, constellation):
+#        fname =  os.path.join(self.root_dir, constellation, CONSTELLATION_JSONF_NAME)
+#        constellation_info = None
+#        with open(fname,'r') as fp:
+#            str = fp.read()
+#            constellation_info = json.loads(str)
+#        return constellation_info
+#        
+#        
+#    def get_machine(self, constellation, machine_name):
+#        fname =  os.path.join(self.root_dir, constellation, machine_name, 'instance.json')
+#        fname = os.path.abspath(fname)
+#        if os.path.exists(fname):
+#            machine = Machine.from_file(fname)
+#            return machine
+#        raise MachineException("Machine %s/%s not found in file [%s]" % (constellation, machine_name,fname ) )
+#    
+#    def get_machines_as_json(self):
+#        d = self.get_machines_as_dict()
+#        str = json.dumps(d)
+#        return str
+#    
+#    def get_machines_as_dict(self):
+#        jmachines = {}
+#        machines = self.get_machines()
+#        for constellation_name, constellation_info in machines.iteritems():
+#            
+#            jmachines[constellation_name] = {}
+#            jmachines[constellation_name]['config'] = constellation_info['config']
+#            c_machines = constellation_info['machines']
+#            
+#            jmachines[constellation_name] = constellation_info
+#            for machine_name, machine  in c_machines.iteritems():
+#                jmachine = {}
+#                jmachine.update(machine.config.__dict__)
+#                del(jmachine['startup_script'])
+#                jmachines[constellation_name]['machines'][machine_name] = jmachine
+#                
+#        return jmachines
+#
+#
+#    def get_launch_log_fname(self, machine_name):
+#        fname =  os.path.join(self.root_dir, machine_name, "launch.log")
+#        return fname
+#    
+#    def get_zip_fname(self, constellation_name, machine_name):
+#        fname = os.path.join(self.root_dir, constellation_name, machine_name, machine_name + ".zip")
+#        return fname
+#
+#
+#
+#def list_all_machines_accross_domains(root_dir = MACHINES_DIR):
+#    
+#    ddb = DomainDb(root_dir)
+#    domains = ddb.get_domains()
+#    
+#    all_machines = []
+#    for domain in domains:
+#        email = "user@" + domain
+#        mdb = MachineDb(email, root_dir)
+#        machines = mdb.get_machines()
+#        for constellation_name, constellation in machines.iteritems():
+#            for machine_name, machine in constellation['machines'].iteritems():
+#                all_machines.append( (domain, constellation, machine)  )
+#    return all_machines
+#
+#
+#def terminate_constellation(username, 
+#              constellation_name, 
+#              credentials_ec2, 
+#              root_directory):
+#    
+#    # log("terminate constellation %s" % constellation_name)
+#    
+#    mdb = MachineDb(username, machine_dir = root_directory)
+#    machines = mdb.get_machines_in_constellation(constellation_name)
+#    for machine_name, machine  in machines.iteritems():
+#        # log("  - terminate machine %s" % machine_name)
+#        machine.terminate()
+#
+#
+#def get_security_groups(ec2):
+#        rs = ec2.get_all_security_groups()
+#        groups = [str(x).split("SecurityGroup:")[1] for x in rs] 
+#        return groups
+#
+#def get_unique_short_name(prefix = 'x'):
+#    s = str(uuid.uuid1()).split('-')[0]
+#    return prefix + s
+#
+#def create_if_not_exists_web_app_security_group(ec2, group_name, description):
+#    sec_groups = get_security_groups(ec2)
+#    if group_name not in sec_groups:
+#        # imcp all, 22 (ssh) 80 (http)
+#        sec = ec2.create_security_group(group_name, description)
+#        sec.authorize('tcp', 80, 80, '0.0.0.0/0')   # web
+#        sec.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
+#        sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
+#
+#def create_if_not_exists_simulator_security_group(ec2, group_name, description):
+#    create_if_not_exists_vpn_ping_security_group(ec2, group_name, description)
+#
+#def create_if_not_exists_robot_security_group(ec2, group_name, description):
+#    create_if_not_exists_vpn_ping_security_group(ec2, group_name, description)
+#    
+#def create_if_not_exists_vpn_ping_security_group(ec2, group_name, description):
+#    sec_groups = get_security_groups(ec2)
+#    if group_name not in sec_groups:
+#        # imcp all, 22 (ssh) 80 (http)
+#        sec = ec2.create_security_group(group_name, description)
+#        sec.authorize('udp', 1194, 1194, '0.0.0.0/0')   # web
+#        sec.authorize('udp', 1195, 1195, '0.0.0.0/0')   # web
+#        sec.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
+#        sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
+#
+#
+#class NonMachineTest(unittest.TestCase):
+#    
+#    def test_read_tags(self):
+#        g = get_package_version("gazebo")
+#        d = get_package_version("drcsim")
+#        c = get_package_version("cloudsim-client-tools")
+#        x = get_package_version("asdsdf")
+#        print("gazebo: %s" % g)
+#        print("drcsim: %s" % d)
+#        print("cloudsim-client-tools: %s" % c)
+#        print("asdsdf: %s" % x)
+#    
+#    
+#    def test_security_groups(self):
+#        
+#        name = "s_" + str(uuid.uuid1()).split('-')[0]
+#        
+#        
+#        boto_config_file = '/home/hugo/code/boto.ini'
+#        ec2 = create_ec2_proxy(boto_config_file)
+#        groups = get_security_groups(ec2)
+#        
+#        self.assert_(name not in groups, "already there")
+#        
+#        # imcp all, 22 (ssh) 80 (http)
+#        sec = ec2.create_security_group(name, 'Simulation machine secutrity for drc_sim_latest configuration')
+#        sec.authorize('tcp', 80, 80, '0.0.0.0/0')   # web
+#        sec.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
+#        sec.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
+#        
+#        groups = get_security_groups(ec2)
+#        print (groups)
+#        self.assert_(name in groups, "not created")
+#        
+#        ec2.delete_security_group(name)
+#        groups = get_security_groups(ec2)
+#        self.assert_(name not in groups, "not deleted")
+#        
+# 
+#    
+#    def atest_tags(self):
+#        
+#        set_machine_tag("a","b","c", "up", True, 10)
+#        x = get_machine_tag("a","b","c", "down")
+#        self.assert_(None == x, "")
+#        x = get_machine_tag("a","b","c", "up")
+#        self.assert_(True == x, "not found again")
+#         
+#    
+#    def atest_list_machines(self):
+#        dir = '/var/www-cloudsim-auth/machines'
+#        print('listing machines in "%s":' % dir)
+#        machines = list_all_machines_accross_domains(dir)
+#        for domain, constellation, machine in machines:
+#            print("   %s/%s/%s" % (domain, constellation['name'], machine.config.uid) )
+#            # print("done")
+#        
+#        
+#if __name__ == '__main__':
+#    print('Machine TESTS')
+#    unittest.main(testRunner = get_test_runner())        
+# 
