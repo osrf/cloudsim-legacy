@@ -7,8 +7,7 @@ import time
 import vpc_trio 
 from launch_utils.launch import get_unique_short_name
 from launch_utils.testing import get_boto_path, get_test_path
-from vpc_trio import OPENVPN_CLIENT_IP, TS_IP, configurable_launch,\
-    OPENVPN_SERVER_IP
+from vpc_trio import OPENVPN_CLIENT_IP, TS_IP,  OPENVPN_SERVER_IP, trio_launch
 from launch_utils.startup_scripts import get_vpc_router_script
 
 CONFIGURATION = "vpc_micro_trio"
@@ -69,7 +68,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP) 
     
 
-    configurable_launch(username, constellation_name, tags, credentials_ec2, constellation_directory,
+    trio_launch(username, constellation_name, tags, credentials_ec2, constellation_directory,
                         ROUTER_AWS_TYPE,
                         ROUTER_AWS_IMAGE,
                         ROUTER_SCRIPT,
@@ -80,13 +79,16 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
                         
                         SIM_AWS_IMAGE,
                         SIM_AWS_TYPE,
-                        SIM_SCRIPT)
+                        SIM_SCRIPT,
+                        CONFIGURATION)
 
 def monitor(username, constellation_name, credentials_ec2, counter):
-    return vpc_trio.monitor(username, constellation_name, credentials_ec2, counter)
+    return vpc_trio.trio_monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION)
+
 
 def terminate(username, constellation_name, credentials_ec2, constellation_directory):
-    vpc_trio.terminate(username, constellation_name, credentials_ec2, constellation_directory)
+    vpc_trio.trio_terminate(username, constellation_name, credentials_ec2, constellation_directory, CONFIGURATION)
+                           
     
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, ):
     vpc_trio.start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args)

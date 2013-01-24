@@ -244,7 +244,7 @@ touch /home/ubuntu/cloudsim/setup/done
 
 def create_vpn_connect_file():
     return """#!bin/bash
-sudo openvpn --config openvpn.config"
+sudo openvpn --config openvpn.config
 
 """
 
