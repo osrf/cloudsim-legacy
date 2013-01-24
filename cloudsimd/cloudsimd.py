@@ -9,19 +9,20 @@ import time
 
 import multiprocessing
 from json import loads
-
-
 import redis
+import json
 
 from launchers.launch_utils import RedisPublisher
+
 import launchers
 
-from common import MACHINES_DIR
-from common import BOTO_CONFIG_FILE_USEAST
 
 #from common import Machine
 
 from launchers.launch_utils import get_unique_short_name
+
+from common import MACHINES_DIR
+from common import BOTO_CONFIG_FILE_USEAST
 from common.web import get_cloudsim_version_txt
 
 import traceback
@@ -30,12 +31,17 @@ from launchers import vpc_trio
 from launchers import simulator
 from launchers import vpc_micro_trio
 
-import json
+
 
 from launchers.launch_utils import get_constellations
 from launchers.launch_utils import get_constellation_data
 
 
+def list_constellations():
+    r = redis.Redis()
+    x = [json.loads(r.get(x)) for x in r.keys()]
+    
+    return x
 #
 # The plugins contains the function pointers for each type of constellation
 # Don't forget to register new constellations
@@ -63,7 +69,11 @@ def log(msg, chan="cloudsim_log"):
         pass
 
 
-
+def list_constellations():
+    r = redis.Redis()
+    x = [json.loads(r.get(x)) for x in r.keys()]
+    
+    return x
 
 
 def launch( username, 

@@ -9,7 +9,7 @@ import unittest
 
 from constants import SESSION_DATABASE, USER_DATABASE, \
 OPENID_SESSION_COOKIE_NAME, HTTP_COOKIE, ADMIN_EMAIL
-from testing import get_test_path
+
 
 
 
@@ -194,7 +194,7 @@ class CloudsimTest(unittest.TestCase):
 class AdminDbTest(unittest.TestCase):
 
     def test_addremove_users(self):
-        db_fname = get_test_path('userdbtest.txt')
+        db_fname = "userdbtest.txt" #get_test_path('userdbtest.txt')
         if(os.path.exists(db_fname)):
             os.remove(db_fname)
         

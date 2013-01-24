@@ -2,8 +2,13 @@ from __future__ import print_function
 from launch_db import publish_event
 
 
-def simulator_event(username, configuration, constellation_name, machine_name, data):
-    msg = {'configuration':configuration, 'constellation_name':constellation_name, 'machine_name': machine_name, 'data': data}
+def simulator_event(username, configuration, constellation_name, machine_name, color, text):
+    msg = {'configuration':configuration, 
+           'constellation_name':constellation_name, 
+           'machine_name': machine_name, 
+           'color': color,
+           'text':text}
+    
     publish_event(username, "simulator", msg)
 
 def gl_event(username, configuration, constellation_name, machine_name, color, text):

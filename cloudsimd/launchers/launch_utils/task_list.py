@@ -3,6 +3,7 @@ import unittest
 import time
 from sshclient import SshClientException
 
+from launch_db import log
 
 class SshRetryException(Exception):
     pass
@@ -11,7 +12,7 @@ class SshRetryException(Exception):
 
 def get_ssh_cmd_generator(ssh_client, cmd, expected_output, constellation_data, key, value, max_retries = 100):
     
-    print("generator ssh cmd: %s, expected output: %s" % (cmd, expected_output) )
+    log("generator ssh cmd: %s, expected output: %s" % (cmd, expected_output) )
     count = max_retries
     done = False
     
@@ -21,7 +22,7 @@ def get_ssh_cmd_generator(ssh_client, cmd, expected_output, constellation_data, 
         try:
             result = ssh_client.cmd(cmd)
             if result.strip() == expected_output:
-                print("   FOUND %s (%s/%s)" % (cmd, max_retries-count, max_retries))
+                log("   FOUND %s (%s/%s)" % (cmd, max_retries-count, max_retries))
                 constellation_data.set_value(key, value)
                 yield True
                 done = True
@@ -33,7 +34,7 @@ def get_ssh_cmd_generator(ssh_client, cmd, expected_output, constellation_data, 
             yield False
             done = True
         else:
-            print("   RETRY %s (%s/%s)" % (cmd,max_retries-count, max_retries))
+            log("   RETRY %s (%s/%s)" % (cmd,max_retries-count, max_retries))
             yield False
 
 def empty_ssh_queue(generator_list, sleep):

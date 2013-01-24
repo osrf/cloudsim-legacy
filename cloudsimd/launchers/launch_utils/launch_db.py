@@ -1,8 +1,7 @@
 from __future__ import print_function
 import unittest
-import time
 import logging
-from common import testing
+import testing
 import json
 
 def log(msg, channel = "launch"):
@@ -104,8 +103,8 @@ def get_constellation_data(user_or_domain, constellation):
         red = redis.Redis()
         domain = _domain(user_or_domain)
         redis_key = domain+"/"+constellation
-        str = red.get(redis_key)
-        data = json.loads(str)
+        s = red.get(redis_key)
+        data = json.loads(s)
         return data
     except:
         return None    

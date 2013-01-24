@@ -9,7 +9,6 @@ import commands
 import boto
 from boto.pyami.config import Config as BotoConfig
 
-
 from launch_utils import get_unique_short_name
 from launch_utils import wait_for_multiple_machines_to_run 
 from launch_utils import wait_for_multiple_machines_to_terminate
@@ -24,11 +23,12 @@ from launch_utils.launch_events import latency_event, launch_event, gl_event,\
     simulator_event, machine_state_event
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_drc_startup_script,\
-    get_vpc_router_script, get_vpc_open_vpn
-    
+    get_vpc_router_script, get_vpc_open_vpn, create_openvpn_client_cfg_file,\
+    create_vpn_connect_file, create_ros_connect_file, create_ssh_connect_file
 
-from common.testing import get_boto_path, get_test_path
-
+from launch_utils.testing import get_boto_path, get_test_path
+import zipfile
+from shutil import copyfile
 
 CONFIGURATION = "vpc_trio"
 
@@ -42,7 +42,7 @@ OPENVPN_CLIENT_IP='11.8.0.2'
 
 def aws_connect(credentials_ec2):    
     boto.config = BotoConfig(credentials_ec2)
-    #boto.config = boto.pyami.config.Config(credentials_ec2)
+    # boto.config = boto.pyami.config.Config(credentials_ec2)
     ec2conn = boto.connect_ec2()
     vpcconn =  boto.connect_vpc()    
     return ec2conn, vpcconn
@@ -84,12 +84,38 @@ def get_aws_states(ec2conn, machine_names_to_ids):
 
    
 
-def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, ):
-    pass
+def start_simulator(username, constellation_name, machine_name, package_name, launch_file_name, launch_args, ):
+    
+    constellation_dict = get_constellation_data(username,  constellation_name)
+    constellation_directory = constellation_dict['constellation_directory']
+    router_key_pair_name    = constellation_dict['router_key_pair_name']
+    router_ip    = constellation_dict['router_ip']
+    
+    try:
+        cmd = "bash cloudsim/start_sim.bash " + package_name + " " + launch_args
+        ssh_router = SshClient(constellation_directory, router_key_pair_name, 'ubuntu', router_ip)
+        r = ssh_router.cmd(cmd)
+        log('start_simulator %s' % r)
+    except Exception, e:
+        log('start_simulator error %s' % e)
+        
+        
 
-def stop_simulator(username, constellation, machine):
-    pass
-            
+def stop_simulator(username, constellation_name, machine_name):
+    
+    constellation_dict = get_constellation_data(username,  constellation_name)
+    constellation_directory = constellation_dict['constellation_directory']
+    router_key_pair_name    = constellation_dict['router_key_pair_name']
+    router_ip    = constellation_dict['router_ip']
+    
+    try:
+        cmd = "bash cloudsim/stop_sim.bash"
+        ssh_router = SshClient(constellation_directory, router_key_pair_name, 'ubuntu', router_ip)
+        r = ssh_router.cmd(cmd)
+        log('stop_simulator %s' % r)
+    except Exception, e:
+        log('stop_simulator error %s' % e)
+
 def monitor(username, constellation_name, credentials_ec2, counter):
     
     time.sleep(1)
@@ -102,6 +128,12 @@ def monitor(username, constellation_name, credentials_ec2, counter):
         # log("constellation %s state %s" % (constellation_name, constellation_state) )
         if constellation_state == "terminated":
             log("constellation_state terminated for  %s " % constellation_name)
+            router_machine_name = constellation.get_value('router_machine_name')
+            robot_machine_name = constellation.get_value('robot_machine_name')
+            sim_machine_name = constellation.get_value('sim_machine_name')
+            launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "red", "terminated")
+            launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "red", "terminated")
+            launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "terminated")
             return True
     except:
         log("Can't access constellation  %s data" % constellation_name)
@@ -114,6 +146,12 @@ def monitor(username, constellation_name, credentials_ec2, counter):
     router_machine_name = constellation.get_value('router_machine_name')
     robot_machine_name = constellation.get_value('robot_machine_name')
     sim_machine_name = constellation.get_value('sim_machine_name')
+
+    if constellation_state == "terminating":
+        launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "terminating")
+        launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "orange", "terminating")
+        launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "terminating")
+
     
     constellation_directory = constellation.get_value('constellation_directory')
     
@@ -128,26 +166,25 @@ def monitor(username, constellation_name, credentials_ec2, counter):
     
     
     if len(aws_ids):
+        
         ec2conn = aws_connect(credentials_ec2)[0]
         aws_states = get_aws_states(ec2conn, aws_ids)
         
         constellation.set_value("router_aws_state", aws_states["router"]) 
         constellation.set_value("simulation_aws_state", aws_states["sim"])
         constellation.set_value("robot_aws_state", aws_states["robot"])
+        gmt = constellation.get_value('gmt')
         
-        router_ip =  constellation.get_value('router_ip')
-        gmt = ""
-        try:
-            gmt = constellation.get_value('gmt')
-        except:
-            pass
         # todo: is download ready
-        
-        machine_state_event(username, CONFIGURATION, constellation_name, router_machine_name, {'state': aws_states["router"], 'ip':router_ip, 'aws_id': aws_ids["router"], 'gmt':gmt, 'username': username, 'key_download_ready':True } )
         machine_state_event(username, CONFIGURATION, constellation_name, robot_machine_name, {'state': aws_states["robot"], 'ip':ROBOT_IP, 'aws_id': aws_ids["router"], 'gmt':gmt, 'username': username, 'key_download_ready':True  })
         machine_state_event(username, CONFIGURATION, constellation_name, sim_machine_name, {'state': aws_states["sim"], 'ip':SIM_IP, 'aws_id': aws_ids["router"], 'gmt':gmt, 'username': username, 'key_download_ready':True  })
+        
+        router_ip = "xxx.xxx.xxx.xxx"
+        if constellation.has_value('router_ip'):
+            router_ip =  constellation.get_value('router_ip')
+        machine_state_event(username, CONFIGURATION, constellation_name, router_machine_name, {'state': aws_states["router"], 'ip':router_ip, 'aws_id': aws_ids["router"], 'gmt':gmt, 'username': username, 'key_download_ready':True } )
+        
 
-    
     if router_state_index >= machine_states.index('packages_setup'):
         router_ip = constellation.get_value('router_ip')
         router_key_pair_name = constellation.get_value('router_key_pair_name')
@@ -179,17 +216,6 @@ def monitor(username, constellation_name, credentials_ec2, counter):
             if simulation_state == "running":
                 launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "complete")
         
-        if constellation_state == "terminating":
-            if router_state == "running":
-                launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "terminating")
-            
-            if robot_state == "running":
-                launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "orange", "terminating")
-            
-            if simulation_state == "running":
-                launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "terminating")
-        
-        
         if router_state == 'packages_setup':
             try:
                 router_package = ssh_router.cmd("bash cloudsim/dpkg_log_router.bash")
@@ -206,7 +232,6 @@ def monitor(username, constellation_name, credentials_ec2, counter):
             except Exception, e:
                 log("monitor: cloudsim/dpkg_log_robot.bash error: %s" % e)
         
-        
         if simulation_state == 'packages_setup':
             try:
                 simulation_package = ssh_router.cmd("bash cloudsim/dpkg_log_sim.bash")
@@ -214,7 +239,6 @@ def monitor(username, constellation_name, credentials_ec2, counter):
                 launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", simulation_package)
             except Exception, e:
                 log("monitor: cloudsim/dpkg_log_sim.bash error: %s" % e )
-        
         
         if simulation_state == 'running':
             try:
@@ -236,48 +260,27 @@ def monitor(username, constellation_name, credentials_ec2, counter):
     #log("monitor not done")
     return False
 
-def get_micro_sim_script():
-    SIM_SCRIPT = """#!/bin/bash
-exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
+def configurable_launch(username, 
+                        constellation_name, 
+                        tags, 
+                        credentials_ec2, 
+                        constellation_directory, 
+                        
+                        ROUTER_AWS_TYPE,
+                        ROUTER_AWS_IMAGE,
+                        ROUTER_SCRIPT,
+                        
+                        ROBOT_AWS_TYPE,
+                        ROBOT_AWS_IMAGE,
+                        ROBOT_SCRIPT,
+                        
+                        SIM_AWS_IMAGE,
+                        SIM_AWS_TYPE,
+                        SIM_SCRIPT                        
+                        
+                        ):
 
-route add %s gw %s
-
-apt-get install -y ssh
-
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
-touch /home/ubuntu/cloudsim/setup/done
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
-
-"""%(OPENVPN_CLIENT_IP, TS_IP)
-    return SIM_SCRIPT
-
-def get_micro_robot_script():
-    ROBOT_SCRIPT = """#!/bin/bash
-exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
-
-date > /home/ubuntu/setup.log
-
-"""
-
-    ROBOT_SCRIPT += """
-
-route add %s gw %s
-
-""" % (OPENVPN_CLIENT_IP, TS_IP)
-    ROBOT_SCRIPT += """
-    
-    
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
-touch /home/ubuntu/cloudsim/setup/done
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
-"""
-    return ROBOT_SCRIPT
-
-
-def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
     log("new trio constellation: %s" % constellation_name) 
        
     ec2conn, vpcconn = aws_connect(credentials_ec2)
@@ -349,8 +352,6 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
         launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "%s" % e)
         raise
         
-    
-
     # clean_local_ssh_key_entry(router_ip)
     
     launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "creating virtual private network")
@@ -407,17 +408,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     key_pair = ec2conn.create_key_pair(sim_key_pair_name)
     key_pair.save(constellation_directory)
     
-    
     roles_to_reservations ={}    
-    
-    ROBOT_AWS_TYPE  = 'cg1.4xlarge'
-    ROBOT_AWS_IMAGE = 'ami-98fa58f1' 
-    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
-    ROBOT_SCRIPT = get_drc_startup_script(open_vpn_script)
-                                          
-    # ROBOT_AWS_TYPE  = 't1.micro'
-    # ROBOT_AWS_IMAGE = "ami-137bcf7a"
-    # ROBOT_SCRIPT = get_micro_robot_script()
     
     try:
         launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "orange", "booting")
@@ -431,17 +422,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     except Exception, e:
         launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "red", "%s" % e)
         raise       
-    
-    SIM_AWS_TYPE = 'cg1.4xlarge'
-    SIM_AWS_IMAGE= 'ami-98fa58f1'
-    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
-    SIM_SCRIPT = get_drc_startup_script(open_vpn_script)
-    
-    
-    # SIM_AWS_TYPE  = 't1.micro'
-    # SIM_AWS_IMAGE = "ami-137bcf7a"
-    # SIM_SCRIPT = get_micro_sim_script()
-    
+
     
     try:
         launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "booting")
@@ -456,9 +437,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
         launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "%s" % e)
         raise       
 
-    ROUTER_AWS_TYPE='t1.micro'
-    ROUTER_AWS_IMAGE="ami-137bcf7a"
-    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP)
+
     
     try:
         launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "booting")
@@ -504,7 +483,6 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     ec2conn.associate_address(robot_aws_id, allocation_id = robot_eip_allocation_id)
     ec2conn.associate_address(simulation_aws_id, allocation_id = sim_eip_allocation_id)
     
-    
     router_instance =  get_ec2_instance(ec2conn, router_aws_id)
     router_instance.modify_attribute('sourceDestCheck', False)
     
@@ -525,7 +503,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     dpkg_log_robot = """
     #!/bin/bash
     
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "tail -1 /var/log/dpkg.log"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "tail -1 /var/log/dpkg.log"
     
     """ % ( robot_key_pair_name, ROBOT_IP)
     ssh_router.create_file(dpkg_log_robot, "cloudsim/dpkg_log_robot.bash")
@@ -533,17 +511,18 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     find_file_robot = """
     #!/bin/bash
     
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "ls \$1" 
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "ls \$1" 
     
     """ % ( robot_key_pair_name , ROBOT_IP)
     ssh_router.create_file(find_file_robot, "cloudsim/find_file_robot.bash")
-    
+
+    #DIR="\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
+    #ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$DIR/%s.pem ubuntu@%s "ls \$1"
+        
     find_file_sim = """
     #!/bin/bash
     
-    #DIR="\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
-    #ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$DIR/%s.pem ubuntu@%s "ls \$1"
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "ls \$1" 
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "ls \$1" 
     
     """ % ( sim_key_pair_name, SIM_IP)
     ssh_router.create_file(find_file_sim, "cloudsim/find_file_sim.bash")
@@ -551,26 +530,109 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     dpkg_log_sim = """
     #!/bin/bash
     
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "tail -1 /var/log/dpkg.log"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "tail -1 /var/log/dpkg.log"
     
     """ % (sim_key_pair_name, SIM_IP)
     ssh_router.create_file(dpkg_log_sim, "cloudsim/dpkg_log_sim.bash")
     
     ping_gl = """#!/bin/bash
     
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "DISPLAY=localhost:0 glxinfo"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "DISPLAY=localhost:0 timeout 3 glxinfo"
     
     """ % (sim_key_pair_name, SIM_IP)
     ssh_router.create_file(ping_gl, "cloudsim/ping_gl.bash")
     
     ping_gazebo = """#!/bin/bash
     
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "gztopic list"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "gztopic list"
     
     """ % (sim_key_pair_name, SIM_IP)
     ssh_router.create_file(ping_gazebo, "cloudsim/ping_gazebo.bash")
     
+    stop_sim = """#!/bin/bash
+    
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "killall -INT roslaunch"
+    
+    """ % (sim_key_pair_name, SIM_IP)
+    ssh_router.create_file(stop_sim, "cloudsim/stop_sim.bash")
+    
+    start_sim = """#!/bin/bash
+    
+    
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "cloudsim/start_sim $1 $2 $3"
+    
+    """ % (sim_key_pair_name, SIM_IP)
+    ssh_router.create_file(start_sim, "cloudsim/start_sim.bash")
+
+
+    
+    
+    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "blue", "creating key zip file")
+    # create router.zip
+    hostname = router_ip
+    
+    router_machine_dir = os.path.join(constellation_directory, router_machine_name)
+    os.makedirs(router_machine_dir )
+    file_content = create_openvpn_client_cfg_file(hostname, client_ip = OPENVPN_CLIENT_IP, server_ip = OPENVPN_SERVER_IP)
+    fname_vpn_cfg = os.path.join(router_machine_dir, "openvpn.config")
+    with open(fname_vpn_cfg, 'w') as f:
+        f.write(file_content)
+    
+    
+    fname_start_vpn = os.path.join(router_machine_dir , "start_vpn.bash")    
+    file_content = create_vpn_connect_file()
+    with open(fname_start_vpn, 'w') as f:
+        f.write(file_content)
+
+    fname_ros = os.path.join(router_machine_dir, "ros.bash")    
+    file_content = create_ros_connect_file(openvpn_client_ip=OPENVPN_CLIENT_IP, openvpn_server_ip=OPENVPN_SERVER_IP)
+
+    with open(fname_ros, 'w') as f:
+        f.write(file_content)
+
+
+    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "creating zip file bundle")    
+    router_key_short_filename = router_key_pair_name + '.pem'
+    router_key_path =  os.path.join(router_machine_dir, router_key_short_filename)
+    copyfile(os.path.join(constellation_directory, router_key_short_filename), router_key_path)
+    
+    fname_ssh_sh =  os.path.join(router_machine_dir,'router_ssh.bash')
+    file_content = create_ssh_connect_file(router_key_short_filename, router_ip)
+    with open(fname_ssh_sh, 'w') as f:
+            f.write(file_content)
+
+    router_fname_zip = os.path.join(router_machine_dir, "%s.zip" % router_machine_name)
+    
+    # wait (if necessary) for openvpn key to have been generated, then
+    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "waiting for key generation") 
+    remote_fname = "/etc/openvpn/static.key"
+    router_key_ready = get_ssh_cmd_generator(ssh_router, "ls /etc/openvpn/static.key", "/etc/openvpn/static.key", constellation, "sim_state", 'running' ,max_retries = 100)
+    empty_ssh_queue([router_key_ready], sleep=2)
+    
+    vpnkey_fname = os.path.join(router_machine_dir, "openvpn.key")
+    # download it locally for inclusion into the zip file
+    
+    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "downloading router vpn key to CloudSim server") 
+    ssh_router.download_file(vpnkey_fname, remote_fname) 
+    
+    #creating zip
+    files_to_zip = [ router_key_path, 
+                     fname_start_vpn,
+                     fname_ssh_sh, 
+                     fname_vpn_cfg,
+                     vpnkey_fname,
+                     fname_ros,]
+    
+    with zipfile.ZipFile(router_fname_zip, 'w') as fzip:
+        for fname in files_to_zip:
+            short_fname = os.path.split(fname)[1]
+            zip_name = os.path.join(router_machine_name, short_fname)
+            fzip.write(fname, zip_name)
+
     constellation.set_value('router_state', 'running')
+    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "blue", "running")
+    
+    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating zip file bundle")
 
     robot_ssh = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_robot.bash launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "robot_state", "packages_setup", max_retries = 100)
     sim_ssh = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "simulation_state", "packages_setup", max_retries = 100)
@@ -582,7 +644,41 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     constellation.set_value('constellation_state', 'running')
     log("provisionning done")
 
+    
+def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
+    ROBOT_AWS_TYPE  = 'cg1.4xlarge'
+    ROBOT_AWS_IMAGE = 'ami-98fa58f1' 
+    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
+    ROBOT_SCRIPT = get_drc_startup_script(open_vpn_script)
+    
+    SIM_AWS_TYPE = 'cg1.4xlarge'
+    SIM_AWS_IMAGE= 'ami-98fa58f1'
+    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
+    SIM_SCRIPT = get_drc_startup_script(open_vpn_script)
+    ROUTER_AWS_TYPE='t1.micro'
+    ROUTER_AWS_IMAGE="ami-137bcf7a"
+    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP) 
+    # ROBOT_AWS_TYPE  = 't1.micro'
+    # ROBOT_AWS_IMAGE = "ami-137bcf7a"
+    # ROBOT_SCRIPT = get_micro_robot_script()
+    
+    # SIM_AWS_TYPE  = 't1.micro'
+    # SIM_AWS_IMAGE = "ami-137bcf7a"
+    # SIM_SCRIPT = get_micro_sim_script()
 
+    configurable_launch(username, constellation_name, tags, credentials_ec2, constellation_directory,
+                        ROUTER_AWS_TYPE,
+                        ROUTER_AWS_IMAGE,
+                        ROUTER_SCRIPT,
+                        
+                        ROBOT_AWS_TYPE,
+                        ROBOT_AWS_IMAGE,
+                        ROBOT_SCRIPT,
+                        
+                        SIM_AWS_IMAGE,
+                        SIM_AWS_TYPE,
+                        SIM_SCRIPT)
+    
 def terminate(username, constellation_name, credentials_ec2, constellation_directory):
 
     resources = get_constellation_data(username,  constellation_name)
@@ -732,12 +828,16 @@ class TrioCase(unittest.TestCase):
     
     def test_trio(self):
         
-        self.constellation_name =  get_unique_short_name("test_" + CONFIGURATION + "_")
+        self.constellation_name =  get_unique_short_name("test_%s_" % CONFIGURATION)
         
         self.username = "toto@osrfoundation.org"
         self.credentials_ec2  = get_boto_path()
         
-        self.tags = {'TestCase':CONFIGURATION, 'configuration': CONFIGURATION, 'constellation' : self.constellation_name, 'user': self.username, 'GMT':"now"}
+        self.tags = {'TestCase':CONFIGURATION, 
+                     'configuration': CONFIGURATION, 
+                     'constellation' : self.constellation_name, 
+                     'user': self.username,
+                     'GMT' : "not avail"}
         
         self.constellation_directory = os.path.abspath( os.path.join(get_test_path('test_trio'), self.constellation_name))
         print("creating: %s" % self.constellation_directory )
@@ -748,7 +848,7 @@ class TrioCase(unittest.TestCase):
         sweep_count = 10
         for i in range(sweep_count):
             print("monitoring %s/%s" % (i,sweep_count) )
-            monitor(self.username, self.constellation_name, self.credentials_ec2, self.constellation_directory, i)
+            monitor(self.username, self.constellation_name, self.credentials_ec2, i)
             time.sleep(1)
     
     def tearDown(self):

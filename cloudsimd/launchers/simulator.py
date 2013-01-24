@@ -32,7 +32,7 @@ from launch_utils.startup_scripts import get_drc_startup_script,\
     create_ros_connect_file, create_ssh_connect_file
 from launch_utils.launch import LaunchException
 
-from common.testing import get_boto_path, get_test_path
+from launch_utils.testing import get_boto_path, get_test_path
     
 
 CONFIGURATION = "simulator"
@@ -322,10 +322,9 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     """ 
     ssh_sim.create_file(ping_gazebo, "cloudsim/ping_gazebo.bash")
     
+
     hostname = sim_ip
     file_content = create_openvpn_client_cfg_file(hostname, client_ip = OPENVPN_CLIENT_IP, server_ip = OPENVPN_SERVER_IP)
-    
-
     fname_vpn_cfg = os.path.join(sim_machine_dir, "openvpn.config")
     with open(fname_vpn_cfg, 'w') as f:
         f.write(file_content)

@@ -25,6 +25,8 @@ from common.machine import set_machine_tag, create_ec2_proxy,\
 from common import kill_all_ec2_instances
 from common.startup_script_builder import LAUNCH_SCRIPT_HEADER,\
     get_monitoring_tools_script
+import redis
+import json
 
 TEAM_LOGIN_STARTUP_SCRIPT_TEMPLATE = """
 
@@ -84,6 +86,7 @@ def log(msg):
     except:
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
+
 
 
 def launch(username, constellation_name, tags,  credentials_ec2, constellation_directory, machine_name_param = None):
