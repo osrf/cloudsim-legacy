@@ -640,6 +640,16 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     robot_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_robot.bash cloudsim/setup/done", "cloudsim/setup/done",  constellation, "robot_state", "running",  max_retries = 500)
     sim_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", "running",max_retries = 500)
     empty_ssh_queue([robot_ssh, sim_ssh, robot_done, sim_done], 1)
+    
+    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "rebooting")
+    ssh_router.cmd("bash cloudsim/sim_reboot.bash")
+    
+    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "rebooting")
+    ssh_router.cmd("bash cloudsim/sim_reboot.bash")
+    
+    robot_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_robot.bash cloudsim/setup/done", "cloudsim/setup/done",  constellation, "robot_state", "running",  max_retries = 500)
+    sim_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", "running",max_retries = 500)
+    empty_ssh_queue([robot_ssh, sim_ssh, robot_done, sim_done], 1)
 
     constellation.set_value('constellation_state', 'running')
     log("provisionning done")
