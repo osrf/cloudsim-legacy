@@ -46,21 +46,16 @@ sudo chmod 700 /var/www-cloudsim-auth
 #
 # Setup a daemons to launch and monitor simulations for us
 #
-sudo cp $DIR/cloudsimd/cloudsimd.conf /etc/init
-sudo cp $DIR/cloudsimd/cloudsim_monitord.conf /etc/init
-
 sudo rm -rf /var/cloudsimd
 sudo mkdir -p /var/cloudsimd
 sudo cp -a $DIR/cloudsimd/* /var/cloudsimd
-
 sudo cp -a $DIR/inside/cgi-bin/common /var/cloudsimd
 
+
+sudo cp $DIR/cloudsimd/cloudsimd.conf /etc/init
 sudo initctl reload-configuration
+
 sudo stop cloudsimd
-sudo stop cloudsim_monitord
-
 sudo start cloudsimd
-#sudo start cloudsim_monitord
-
 
 sudo apache2ctl restart

@@ -10,11 +10,11 @@ import common
 import cgitb
 cgitb.enable()
 
-
+EMAIL_VARNAME = 'openid.ext1.value.email'
 
 # Get form and cookie data
 form = cgi.FieldStorage()
-email = form.getfirst(common.EMAIL_VARNAME)
+email = form.getfirst(EMAIL_VARNAME)
 in_cookies = Cookie.Cookie()
 in_cookies.load(os.environ[common.HTTP_COOKIE])
 openid_session = in_cookies[common.OPENID_SESSION_COOKIE_NAME].value

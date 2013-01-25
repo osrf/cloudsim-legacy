@@ -21,7 +21,8 @@ import launchers
 
 from launchers.launch_utils import get_unique_short_name
 
-from common import MACHINES_DIR
+MACHINES_DIR = '/var/www-cloudsim-auth/machines'
+
 from common import BOTO_CONFIG_FILE_USEAST
 from common.web import get_cloudsim_version_txt
 
