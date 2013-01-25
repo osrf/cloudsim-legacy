@@ -94,27 +94,27 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
             
         if(data.type == 'simulator')
         {
-            
-            var color = "red";
-            if(data.result == 'success')
-            {
-                
-            	widget_div.querySelector("img").src = "/js/images/blue_status.png";
-            }
-            else
+            if(data.color == 'red' )
             {
                 widget_div.querySelector("img").src = "/js/images/red_status.png";
+                stop_button.disabled = true;
+                start_button.disabled = false;
+                
             }
-        }
-        if(data.launch_state != "running")
-        {
-            stop_button.disabled = true;
-            start_button.disabled = true;
-        }
-        else
-        {
-            stop_button.disabled = false;
-            start_button.disabled = false;
+            if(data.color == 'blue' )
+            {
+                widget_div.querySelector("img").src = "/js/images/blue_status.png";
+                stop_button.disabled = false;
+                start_button.disabled = true;
+            }
+            
+            if(data.color == 'gray' )
+            {
+                widget_div.querySelector("img").src = "/js/images/blue_status.png";
+                stop_button.disabled = true;
+                start_button.disabled = true;
+            }
+            
         }
     });
 }

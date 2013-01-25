@@ -142,22 +142,25 @@ def monitor(username, constellation_name, credentials_ec2, counter):
          
         
         if sim_state_index >= machine_states.index('running'):
+            gl_is_up = False
             try:
                 ping_gl = ssh_sim.cmd("bash cloudsim/ping_gl.bash")
                 log("cloudsim/ping_gl.bash = %s" % ping_gl )
-                gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "running")
-                
+                gl_is_up = True
+                gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "running")
             except Exception, e:
                 log("monitor: cloudsim/ping_gl.bash error %s" % e )
                 gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "Not running")
+                simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, "gray", "running")
                 
-            try:
-                ping_gazebo = ssh_sim.cmd("bash cloudsim/ping_gazebo.bash")
-                log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
-                simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, ping_gazebo)
-            except Exception, e:
-                log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
-    
+            if gl_is_up:
+                try:
+                    ping_gazebo = ssh_sim.cmd("bash cloudsim/ping_gazebo.bash")
+                    log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
+                    simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "running")
+                except Exception, e:
+                    log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
+                    simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "not running")
     #log("monitor not done")
     return False
 

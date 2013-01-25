@@ -24,7 +24,7 @@ from launch_utils import SshClient
 from launch_utils import ConstellationState # launch_db
 from launch_utils.launch_events import latency_event, launch_event, gl_event,\
     simulator_event, machine_state_event
-
+    
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_cloudsim_startup_script, create_ssh_connect_file
 
@@ -37,7 +37,7 @@ from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
 
 CONFIGURATION = "cloudsim"
 
-TEAM_LOGIN_DISTRIBUTION= '/var/www-cloudsim-auth/cloudsim.zip'
+CLOUDSIM_ZIP_PATH= '/var/www-cloudsim-auth/cloudsim.zip'
 
 
 
@@ -162,7 +162,7 @@ def monitor(username, constellation_name, credentials_ec2, counter):
     return False
 
 
-def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
+def launch(username, constellation_name, tags, credentials_ec2, constellation_directory, website_distribution = CLOUDSIM_ZIP_PATH ):
     
     ec2conn = aws_connect(credentials_ec2)[0]
     constellation = ConstellationState(username, constellation_name)
@@ -286,8 +286,8 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
             color = "orange"
         else:
             color = "yellow"
-            
-                    
+     
+    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating monitoring scripts")
     find_file_sim = """
     #!/bin/bash
     
@@ -305,8 +305,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     ssh_sim.create_file(dpkg_log_sim, "cloudsim/dpkg_log_sim.bash")
 
 
-    
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating zip file bundle")    
+    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating zip file bundle")
     key_filename = sim_key_pair_name + '.pem'
     fname_ssh_key =  os.path.join(sim_machine_dir, key_filename)
     
@@ -330,40 +329,42 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     empty_ssh_queue([sim_setup_done], sleep=2)
 
     short_file_name = os.path.split(website_distribution)[1] 
-    remote_fname = "/home/%s/%s" % (machine.config.username, short_file_name)
+    remote_fname = "/home/ubuntu/%s" % ( short_file_name)
     log("uploading '%s' to the server to '%s'" % (website_distribution, remote_fname) )
-    out = machine.scp_send_file(website_distribution, remote_fname)
-    log ("\t%s"% out)
-    machine.ssh_wait_for_ready(remote_fname)
+    
+    out = ssh_sim.upload_file(website_distribution, remote_fname)
+    log(" upload: %s" % out)
+    upload_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "sim_state", 'running' ,max_retries = 100)
+    empty_ssh_queue([upload_done], sleep=2)
     
     
     log("unzip web app")
-    out = machine.ssh_send_command("unzip " + remote_fname )
+    out = ssh_sim.cmd("unzip " + remote_fname )
     log ("\t%s"% out)
     
     log("Setup admin user %s" % username)
     add_user_cmd = 'echo \'{"%s":"admin"}\' > cloudsim/distfiles/users' % username 
     log("add user to cloudsim: %s" % add_user_cmd)
-    out =machine.ssh_send_command(add_user_cmd)
+    out = ssh_sim.cmd(add_user_cmd)
     log ("\t%s"% out)
     
     log("Uploading the key file to the server")
-    remote_fname = "/home/%s/cloudsim/cloudsim_ssh.zip" % (machine.config.username)
+    remote_fname = "/home/ubuntu/cloudsim/cloudsim_ssh.zip"
     log("uploading '%s' to the server to '%s'" % (fname_zip, remote_fname) )
-    out = machine.scp_send_file(fname_zip , remote_fname)
+    out = ssh_sim.upload_file(fname_zip , remote_fname)
     log ("\t%s"% out)
     
     log("Uploading the ec2 credentials to the server")
-    remote_fname = "/home/%s/cloudsim/boto-useast" % (machine.config.username)
+    remote_fname = "/home/ubuntu/cloudsim/boto-useast" 
     log("uploading '%s' to the server to '%s'" % (credentials_ec2, remote_fname) )
-    out = machine.scp_send_file(credentials_ec2 , remote_fname)
+    out = ssh_sim.upload(credentials_ec2 , remote_fname)
     log ("\t%s"% out)
     
     #out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)
     log("Deploying the cloudsim web app")
-    deploy_script_fname = "/home/%s/cloudsim/deploy.sh" % machine.config.username 
+    deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh" 
     log("running deploy script '%s' remotely" % deploy_script_fname)
-    out = machine.ssh_send_command("bash " + deploy_script_fname  )
+    out = ssh_sim.cmd("bash " + deploy_script_fname  )
     log ("\t%s"% out)
     
 #    print("check that file is there")
@@ -371,11 +372,9 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
 #    print ("\t%s"% out)
     
     log('setup complete')
-    log("%s\n"%(machine.get_user_ssh_command_string()))
-    log("http://%s"% machine.config.hostname)
-    set_machine_tag(domain, constellation_name, machine_name, "launch_state", "running")
- 
-        
+    log("ssh -i %s ubuntu%\n" % (key_filename, sim_ip) )
+    log("http://%s"% sim_ip)
+           
     constellation.set_value('constellation_state', 'running')
     log("provisionning done")
 

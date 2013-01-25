@@ -176,6 +176,9 @@ def trio_monitor(username, constellation_name, credentials_ec2, counter, CONFIGU
     constellation_directory = constellation.get_value('constellation_directory')
     
     router_state_index = machine_states.index(router_state)
+    sim_state_index = machine_states.index(simulation_state)
+    
+    
     aws_ids = {}
     if constellation.has_value('router_aws_id'):
         aws_ids["router"] = constellation.get_value('router_aws_id')
@@ -260,24 +263,28 @@ def trio_monitor(username, constellation_name, credentials_ec2, counter, CONFIGU
             except Exception, e:
                 log("monitor: cloudsim/dpkg_log_sim.bash error: %s" % e )
         
-        if simulation_state == 'running':
+        if sim_state_index >= machine_states.index('running'):
+            gl_is_up = False
             try:
                 ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
                 log("cloudsim/ping_gl.bash = %s" % ping_gl )
+                gl_is_up = True
                 gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "running")
-                
             except Exception, e:
-                gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "%s" % e)
                 log("monitor: cloudsim/ping_gl.bash error %s" % e )
-            
-            try:
-                ping_gazebo = ssh_router.cmd("bash cloudsim/ping_gazebo.bash")
-                log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
-                simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, ping_gazebo)
-            except Exception, e:
-                log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
-    
-    #log("monitor not done")
+                gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "Not running")
+                simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, "gray", "running")
+                
+            if gl_is_up:
+                try:
+                    ping_gazebo = ssh_router.cmd("bash cloudsim/ping_gazebo.bash")
+                    log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
+                    simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "running")
+                except Exception, e:
+                    log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
+                    simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "not running")
+
+
     return False
 
 
@@ -587,14 +594,26 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     start_sim = """#!/bin/bash
     
     
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "cloudsim/start_sim $1 $2 $3"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "cloudsim/start_sim \$1 \$2 \$3"
     
     """ % (sim_key_pair_name, SIM_IP)
     ssh_router.create_file(start_sim, "cloudsim/start_sim.bash")
 
-
+    sim_reboot = """#!/bin/bash
     
     
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "sudo reboot"
+    
+    """ % (sim_key_pair_name, SIM_IP)
+    ssh_router.create_file(sim_reboot, "cloudsim/sim_reboot.bash")
+    
+    robot_reboot = """#!/bin/bash
+    
+    
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "sudo reboot"
+    
+    """ % (robot_key_pair_name , ROBOT_IP)
+    ssh_router.create_file(robot_reboot, "cloudsim/robot_reboot.bash")    
     launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "blue", "creating key zip file bundle")
     
     
@@ -617,7 +636,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
     os.makedirs(sim_machine_dir )
     sim_key_short_filename = sim_key_pair_name + '.pem'
-    sim_key_path =  os.path.join(router_machine_dir, sim_key_short_filename)
+    sim_key_path =  os.path.join(sim_machine_dir, sim_key_short_filename)
     copyfile(os.path.join(constellation_directory,   sim_key_short_filename), sim_key_path)    
 
 
@@ -705,8 +724,6 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     #  - openvpn key
     #  - scripts to connect with ssh, openvpn, ROS setup 
     
-    
-    
     launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating zip file bundle")
     
     fname_ssh_sh =  os.path.join(robot_machine_dir,'robot_ssh.bash')
@@ -716,32 +733,33 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
             
     files_to_zip = [ sim_key_path, 
                      fname_ssh_sh,]
-    
+
     robot_fname_zip = os.path.join(robot_machine_dir, "%s.zip" % robot_machine_name)
     create_zip_file(robot_fname_zip, robot_machine_name, files_to_zip)
-    
-    
-    
+
     constellation.set_value('router_state', 'running')
     launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "blue", "running")
 
+    robot_ssh_ready = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_robot.bash launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "robot_state", "packages_setup", max_retries = 500)
+    sim_ssh_ready = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "simulation_state", "packages_setup", max_retries = 500)
+    robot_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_robot.bash cloudsim/setup/done", "cloudsim/setup/done",  constellation, "robot_state", "running",  max_retries = 250)
+    sim_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", "running",max_retries = 250)
+    empty_ssh_queue([robot_ssh_ready, sim_ssh_ready, robot_done, sim_done], 2)
 
-    robot_ssh = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_robot.bash launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "robot_state", "packages_setup", max_retries = 100)
-    sim_ssh = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "simulation_state", "packages_setup", max_retries = 100)
+    #
+    # REBOOT the 2 large machines
+    #
+    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "rebooting")
+    ssh_router.cmd("bash cloudsim/sim_reboot.bash")
+    launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "orange", "rebooting")
+    ssh_router.cmd("bash cloudsim/robot_reboot.bash")
+    
+    log("Waiting for reboot to be done")
+    time.sleep(15)
     
     robot_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_robot.bash cloudsim/setup/done", "cloudsim/setup/done",  constellation, "robot_state", "running",  max_retries = 500)
     sim_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", "running",max_retries = 500)
-    empty_ssh_queue([robot_ssh, sim_ssh, robot_done, sim_done], 1)
-    
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "rebooting")
-    ssh_router.cmd("bash cloudsim/sim_reboot.bash")
-    
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "rebooting")
-    ssh_router.cmd("bash cloudsim/sim_reboot.bash")
-    
-    robot_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_robot.bash cloudsim/setup/done", "cloudsim/setup/done",  constellation, "robot_state", "running",  max_retries = 500)
-    sim_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", "running",max_retries = 500)
-    empty_ssh_queue([robot_ssh, sim_ssh, robot_done, sim_done], 1)
+    empty_ssh_queue([robot_done, sim_done], 2)
 
     constellation.set_value('constellation_state', 'running')
     log("provisionning done")
@@ -877,7 +895,7 @@ def trio_terminate(username, constellation_name, credentials_ec2, constellation_
         log("error cleaning up vpc: %s" % e )
     
     constellation.set_value('constellation_state', 'terminated')
-
+    constellation.expire(5 * 60)
 
 class DbCase(unittest.TestCase):
     
