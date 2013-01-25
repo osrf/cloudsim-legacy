@@ -686,7 +686,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating zip file bundle")
 
     
-    fname_ssh_sh =  os.path.join(router_machine_dir,'simulator_ssh.bash')
+    fname_ssh_sh =  os.path.join(sim_machine_dir,'simulator_ssh.bash')
     file_content = create_ssh_connect_file(sim_key_short_filename, SIM_IP)
     with open(fname_ssh_sh, 'w') as f:
             f.write(file_content)
@@ -697,6 +697,8 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     sim_fname_zip = os.path.join(sim_machine_dir, "%s.zip" % sim_machine_name)
     create_zip_file(sim_fname_zip, sim_machine_name, files_to_zip)
     
+    
+    
     # create field computer zip file with keys
     # This file is kept on the server and provides the user with:
     #  - key file for ssh access to the router
@@ -704,11 +706,10 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     #  - scripts to connect with ssh, openvpn, ROS setup 
     
     
+    
     launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating zip file bundle")
     
-
-
-    fname_ssh_sh =  os.path.join(router_machine_dir,'simulator_ssh.bash')
+    fname_ssh_sh =  os.path.join(robot_machine_dir,'robot_ssh.bash')
     file_content = create_ssh_connect_file(sim_key_short_filename, ROBOT_IP)
     with open(fname_ssh_sh, 'w') as f:
             f.write(file_content)
@@ -716,8 +717,8 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     files_to_zip = [ sim_key_path, 
                      fname_ssh_sh,]
     
-    sim_fname_zip = os.path.join(router_machine_dir, "%s.zip" % robot_machine_name)
-    create_zip_file(sim_fname_zip, robot_machine_name, files_to_zip)
+    robot_fname_zip = os.path.join(robot_machine_dir, "%s.zip" % robot_machine_name)
+    create_zip_file(robot_fname_zip, robot_machine_name, files_to_zip)
     
     
     

@@ -122,8 +122,9 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
 function _update_glx_state(widget_div, color, text)
 {
     var status = status_img(color);
-    var str = "X and GL state: "
+    var str = "";
     str += status;
+    str += "<b>X and GL state:</b> ";
     str += text;
     widget_div.innerHTML = str;
     

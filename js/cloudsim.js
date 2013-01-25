@@ -9,7 +9,7 @@ function create_constellation(div_name, configuration, constellation)
     if(configuration == "micro_vpn") return create_micro_vpn_constellation(constellation_div, constellation);
     if(configuration == "ros_fuerte") return create_ros_fuerte_constellation(constellation_div, constellation);
 
-    if(configuration == "vpc_trio")
+    if(configuration == "vpc_trio" || configuration == "vpc_micro_trio" )
     {
         _create_basic_machine(constellation_div, constellation, "field_computer_" + constellation );
         _create_basic_machine(constellation_div, constellation, "router_" + constellation );
