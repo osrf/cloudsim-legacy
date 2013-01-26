@@ -21,10 +21,7 @@ sudo rm -rf /var/www/distfiles
 sudo chown -R www-data:www-data /var/www
 sudo mkdir -p /var/www-cloudsim-auth/machines
 
-#if [ -f $DIR/boto-useast ]
-#then
-    sudo cp -f $DIR/../boto.ini /var/www-cloudsim-auth/boto-useast
-#fi
+sudo cp -f $DIR/../boto.ini /var/www-cloudsim-auth/boto-useast
 
 cd $DIR/..
 zip -r cloudsim.zip cloudsim

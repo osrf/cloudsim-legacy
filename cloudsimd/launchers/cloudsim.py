@@ -280,7 +280,6 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     
     color = "orange"
     for g in networking_done:
-        found = g.next()
         launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, "waiting for setup done")
         if color == "yellow":
             color = "orange"
@@ -357,7 +356,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     log("Uploading the ec2 credentials to the server")
     remote_fname = "/home/ubuntu/cloudsim/boto-useast" 
     log("uploading '%s' to the server to '%s'" % (credentials_ec2, remote_fname) )
-    out = ssh_sim.upload(credentials_ec2 , remote_fname)
+    out = ssh_sim.upload_file(credentials_ec2 , remote_fname)
     log ("\t%s"% out)
     
     #out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)
@@ -372,7 +371,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
 #    print ("\t%s"% out)
     
     log('setup complete')
-    log("ssh -i %s ubuntu%\n" % (key_filename, sim_ip) )
+    log("ssh -i %s ubuntu %s\n" % (key_filename, sim_ip) )
     log("http://%s"% sim_ip)
            
     constellation.set_value('constellation_state', 'running')

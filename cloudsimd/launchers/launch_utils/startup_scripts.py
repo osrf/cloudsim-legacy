@@ -147,6 +147,7 @@ DELIM
 
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
+chown -R ubuntu:ubuntu /home/ubuntu/
 
 apt-get update
 
@@ -196,6 +197,8 @@ echo www-data > /etc/at.allow
 touch /home/ubuntu/cloudsim/setup/done
 echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
 """
+
+    return s
     
 
 def get_drc_startup_script(open_vpn_script):

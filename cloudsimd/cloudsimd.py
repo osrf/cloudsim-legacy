@@ -31,7 +31,7 @@ import traceback
 from launchers import vpc_trio
 from launchers import simulator
 from launchers import vpc_micro_trio
-
+from launchers import cloudsim
 
 
 from launchers.launch_utils import get_constellations
@@ -51,6 +51,7 @@ plugins = {}
 plugins['vpc_micro_trio'] = {'launch':vpc_micro_trio.launch,    'terminate':vpc_micro_trio.terminate,    'monitor':vpc_micro_trio.monitor,   'start_simulator':vpc_micro_trio.start_simulator,   'stop_simulator':vpc_micro_trio.stop_simulator}
 plugins['vpc_trio'] =       {'launch':vpc_trio.launch,          'terminate':vpc_trio.terminate,          'monitor':vpc_trio.monitor,         'start_simulator':vpc_trio.start_simulator,         'stop_simulator':vpc_trio.stop_simulator}
 plugins['simulator'] =       {'launch':simulator.launch,          'terminate':simulator.terminate,       'monitor':simulator.monitor,         'start_simulator':simulator.start_simulator,         'stop_simulator':simulator.stop_simulator}
+plugins['cloudsim'] =       {'launch':cloudsim.launch,          'terminate':cloudsim.terminate,       'monitor':cloudsim.monitor,         'start_simulator':cloudsim.start_simulator,         'stop_simulator':cloudsim.stop_simulator}
 
 
 class LaunchException(Exception):
