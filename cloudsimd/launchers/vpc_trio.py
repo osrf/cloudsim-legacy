@@ -61,7 +61,38 @@ def create_securtity_group(ec2conn, sg_name, constellation_name, vpc_id):
 machine_states = [ 'terminated', 'terminating', 'stopped' 'stopping', 'nothing', 'starting', 'booting','network_setup', 'packages_setup', 'running', 'simulation_running']
 constellation_states = ['terminated', 'terminating','launching', 'running']
 
+def launch_prerelease(username, constellation_name, tags, credentials_ec2, constellation_directory ):
+    # call trio_launch with small instance machine types with simple scripts and call  
+    
+    ROBOT_AWS_TYPE  = 'cg1.4xlarge'
+    ROBOT_AWS_IMAGE = 'ami-98fa58f1' 
+    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
+    ROBOT_SCRIPT = get_drc_startup_script(open_vpn_script, drc_package_name = "drcsim-prerelease")
 
+                        
+    
+    SIM_AWS_TYPE = 'cg1.4xlarge'
+    SIM_AWS_IMAGE= 'ami-98fa58f1'
+    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
+    SIM_SCRIPT = get_drc_startup_script(open_vpn_script, drc_package_name = "drcsim-prerelease")
+    ROUTER_AWS_TYPE='t1.micro'
+    ROUTER_AWS_IMAGE="ami-137bcf7a"
+    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP) 
+    
+    
+    trio_launch(username, constellation_name, tags, credentials_ec2, constellation_directory,
+                        ROUTER_AWS_TYPE,
+                        ROUTER_AWS_IMAGE,
+                        ROUTER_SCRIPT,
+                        
+                        ROBOT_AWS_TYPE,
+                        ROBOT_AWS_IMAGE,
+                        ROBOT_SCRIPT,
+                        
+                        SIM_AWS_IMAGE,
+                        SIM_AWS_TYPE,
+                        SIM_SCRIPT, 
+                        CONFIGURATION)
 
 def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
     # call trio_launch with small instance machine types with simple scripts and call  

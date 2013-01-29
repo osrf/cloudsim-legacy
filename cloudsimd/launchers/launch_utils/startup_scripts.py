@@ -206,7 +206,7 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
     
 
-def get_drc_startup_script(open_vpn_script):
+def get_drc_startup_script(open_vpn_script, drc_package_name = "drcsim"):
     
     s = """#!/bin/bash
 # Exit on error
@@ -365,8 +365,8 @@ initctl start lightdm
 
 apt-get install -y ntp 
 
-echo "install drc" >> /home/ubuntu/setup.log
-apt-get install -y drcsim
+echo "install """ + drc_package_name+ """ >> /home/ubuntu/setup.log
+apt-get install -y """ + drc_package_name+ """
 echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
 
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
