@@ -33,6 +33,8 @@ from launch_utils.launch import LaunchException
 from launch_utils.testing import get_boto_path, get_test_path
 from launch_utils.monitoring import parse_ping_data
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
+import tempfile
+import shutil
     
 
 CONFIGURATION = "cloudsim"
@@ -105,6 +107,7 @@ def monitor(username, constellation_name, credentials_ec2, counter):
     if len(aws_ids):
         ec2conn = aws_connect(credentials_ec2)[0]
         aws_states = get_aws_states(ec2conn, aws_ids)
+        #log(aws_states, 'cloudsim_log')
         constellation.set_value("simulation_aws_state", aws_states["sim"])
         sim_ip =  constellation.get_value('simulation_ip')
         gmt = ""
@@ -170,7 +173,10 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     constellation.set_value('configuration', CONFIGURATION)
     constellation.set_value('constellation_state', 'launching')
     constellation.set_value('simulation_state', 'nothing')
-    constellation.set_value('gmt', tags['GMT'])
+    try:
+        constellation.set_value('gmt', tags['GMT'])
+    except:
+        pass
     constellation.set_value('simulation_aws_state', 'nothing')
     constellation.set_value('constellation_directory', constellation_directory)
     
@@ -426,7 +432,47 @@ def terminate(username, constellation_name, credentials_ec2, constellation_direc
     
     constellation.set_value('constellation_state', 'terminated')
     
-   
+
+def cloudsim_bootstrap(username, credentials_ec2):
+    print(__file__)
+    constellation_name = get_unique_short_name('CloudSim_')
+    tags = {'GMT':'now'}
+    constellation_directory = tempfile.mkdtemp("cloudsim")
+    
+    website_distribution = zip_cloudsim()
+    launch(username, constellation_name, tags,  credentials_ec2, constellation_directory, website_distribution)
+    
+    
+    
+def zip_cloudsim():
+    
+    tmp_dir = tempfile.mkdtemp("cloudsim")
+    tmp_zip = os.path.join(tmp_dir, "cloudsim.zip")
+    full_path_of_cloudsim = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    # Account for having a version in the name of the directory, which we
+    # want to get rid of
+    shutil.copytree(full_path_of_cloudsim, os.path.join(tmp_dir, 'cloudsim'))
+    os.chdir(tmp_dir)
+    commands.getoutput('zip -r %s cloudsim'%(tmp_zip))
+  
+    return tmp_zip
+    
+    
+class CloudsimBootStrapTestCase(unittest.TestCase):
+    
+    def tearDown(self):
+        pass
+       
+    def test_cloudsim_zip(self):
+        zip_path = zip_cloudsim()
+        self.assert_(os.path.exists(zip_path), "no zip done!")
+        
+    def test_cloudsim_bootstrap(self):
+        
+        ec2 = get_boto_path()
+        cloudsim_bootstrap("test@osrfoundation.org", ec2)
+        
+        
 
 class DbCase(unittest.TestCase):
     
@@ -441,7 +487,7 @@ class DbCase(unittest.TestCase):
         data = get_constellation_data(user_or_domain, constellation)
         self.assert_(data['a'] == value['a'], "not set")
 
-class TrioCase(unittest.TestCase):
+class CloudsimCase(unittest.TestCase):
     
     
     def test_launch(self):
