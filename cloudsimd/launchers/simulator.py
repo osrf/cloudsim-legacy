@@ -122,14 +122,15 @@ def monitor(username, constellation_name, credentials_ec2, counter):
     if sim_state_index >= machine_states.index('packages_setup'):
         constellation_directory = constellation.get_value('constellation_directory')
         sim_key_pair_name = constellation.get_value('sim_key_pair_name')
-        ssh_sim = SshClient(constellation_directory, sim_key_pair_name, 'ubuntu', sim_ip)
+        sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
+        ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
         
         if sim_state_index >= machine_states.index('running'):
             launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "complete")
             
         if simulation_state == 'packages_setup':
             try:
-                simulation_package = ssh_sim.cmd("cloudsim/dpkg_log_sim.bash")
+                simulation_package = ssh_sim.cmd("bash cloudsim/dpkg_log_sim.bash")
                 
                 launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", simulation_package)
             except Exception, e:
@@ -300,7 +301,9 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
         else:
             color = "yellow"
             
-                    
+    constellation.set_value('simulation_state', 'packages_setup')    
+    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, "packages setup")
+                
     find_file_sim = """
     #!/bin/bash
     
@@ -362,7 +365,7 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     # wait (if necessary) for openvpn key to have been generated, then
     launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "yellow", "waiting for key generation") 
     remote_fname = "/etc/openvpn/static.key"
-    sim_key_ready = get_ssh_cmd_generator(ssh_sim, "ls /etc/openvpn/static.key", "/etc/openvpn/static.key", constellation, "sim_state", 'running' ,max_retries = 100)
+    sim_key_ready = get_ssh_cmd_generator(ssh_sim, "ls /etc/openvpn/static.key", "/etc/openvpn/static.key", constellation, "sim_state", 'packages_setup' ,max_retries = 100)
     empty_ssh_queue([sim_key_ready], sleep=2)
     
     vpnkey_fname = os.path.join(sim_machine_dir, "openvpn.key")
@@ -385,6 +388,11 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
             short_fname = os.path.split(fname)[1]
             zip_name = os.path.join(sim_machine_name, short_fname)
             fzip.write(fname, zip_name)
+    
+    sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "sim_state", 'rebooting' ,max_retries = 100)
+    empty_ssh_queue([sim_setup_done], sleep=2)
+   
+    ssh_sim.cmd("sudo reboot")
     
     sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "sim_state", 'running' ,max_retries = 100)
     empty_ssh_queue([sim_setup_done], sleep=2)
@@ -444,8 +452,14 @@ def terminate(username, constellation_name, credentials_ec2, constellation_direc
    
 
 class DbCase(unittest.TestCase):
-    
-    def test_set_get(self):
+    def test(self):
+        user = 'caguero@osrfoundation.org'
+        const = 'cxd9e5836a'
+        cred = get_boto_path()
+        
+        monitor(user, const, cred, 1)
+        
+    def atest_set_get(self):
         
         user_or_domain = "hugo@toto.com"
         constellation = "constellation"
@@ -459,7 +473,7 @@ class DbCase(unittest.TestCase):
 class TrioCase(unittest.TestCase):
     
     
-    def test_launch(self):
+    def atest_launch(self):
         
         test_name = "test_" + CONFIGURATION
         self.constellation_name =  get_unique_short_name(test_name + "_")
