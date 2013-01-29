@@ -8,7 +8,9 @@ def get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP):
 set -e
 exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
+apt-get install -y ntp 
 apt-get install -y openvpn
+
 cat <<DELIM > /etc/openvpn/openvpn.conf
 dev tun
 ifconfig """ + OPENVPN_SERVER_IP+ " " + OPENVPN_CLIENT_IP + """
@@ -162,6 +164,9 @@ echo "mercurial installed" >> /home/ubuntu/setup.log
 
 apt-get install -y cloud-utils
 echo "cloud-utils installed" >> /home/ubuntu/setup.log
+
+apt-get install -y ntp
+echo "ntp installed" >> /home/ubuntu/setup.log
 
 apt-get install -y apache2
 echo "apache2 installed" >> /home/ubuntu/setup.log
