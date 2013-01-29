@@ -294,8 +294,7 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     
     color = "orange"
     for g in networking_done:
-        found = g.next()
-        launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, "waiting for setup done")
+        launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, "waiting for network")
         if color == "yellow":
             color = "orange"
         else:

@@ -36,6 +36,8 @@ from launchers import cloudsim
 
 from launchers.launch_utils import get_constellations
 from launchers.launch_utils import get_constellation_data
+from launchers.launch_utils import set_constellation_data
+
 
 
 def list_constellations():
@@ -141,7 +143,7 @@ def terminate(username,
         log("traceback:  %s" % tb) 
     data = get_constellation_data(username, constellation)
     data['constellation_state'] = 'terminated'
-    get_constellation_data(username, constellation, data, 360)
+    set_constellation_data(username, constellation, data, 360)
         
 
 def start_simulator(username, config, constellation, machine_name, package_name, launch_file_name, launch_arg, credentials_ec2, root_directorys):
