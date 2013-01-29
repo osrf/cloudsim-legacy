@@ -29,7 +29,7 @@ function create_constellation(div_name, configuration, constellation)
         create_latency_widget(machine_div, constellation, machine_name, "latency");
     }
     
-    if(configuration == "simulator")
+    if(configuration == "simulator" || configuration == "simulator_prerelease")
     {
         var machine_name = "simulator_" +constellation;
         _create_simulator_machine(constellation_div, constellation, machine_name);

@@ -74,7 +74,8 @@ def start_simulator(username, constellation, machine_name, package_name, launch_
 
 def stop_simulator(username, constellation, machine, root_directory):
     pass
-            
+           
+    
 def monitor(username, constellation_name, credentials_ec2, counter):
     
     time.sleep(1)
@@ -166,7 +167,12 @@ def monitor(username, constellation_name, credentials_ec2, counter):
 
 
 def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
-    
+    _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,  "simulator", drc_package_name = "drcsim" )
+
+def launch_prerelease(username, constellation_name, tags, credentials_ec2, constellation_directory):
+    _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,  "simulator_prerelease", drc_package_name = "drcsim-prerelease" )
+
+def _launch(username, constellation_name, tags, credentials_ec2, constellation_directory, CONFIGURATION, drc_package_name "drcsim"):
     ec2conn = aws_connect(credentials_ec2)[0]
     constellation = ConstellationState(username, constellation_name)
    
@@ -217,7 +223,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     SIM_AWS_IMAGE= 'ami-98fa58f1'
     
     open_vpn_script = get_open_vpn_single(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
-    SIM_SCRIPT = get_drc_startup_script(open_vpn_script)
+    SIM_SCRIPT = get_drc_startup_script(open_vpn_script, drc_package_name)
     
     try:
         launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "booting")

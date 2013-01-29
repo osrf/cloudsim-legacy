@@ -16,8 +16,8 @@ class ConfigsDb(object):
         configs['vpc_micro_trio'] = {'description': "test constellation with 3 micro machines"} 
         configs['vpc_trio'] = {'description': "3 machines: a gpu field computer, a router and a gpu simulator"}
         configs['simulator'] = {'description': "1 machine: gpu computer with the latest ROS-fuerte, Gazebo and DRC simulation packages installed"}
+        configs['simulator_prerelease'] = {'description': "1 machine: gpu computer with the latest ROS-fuerte, Gazebo and DRC pre-release simulation packages installed"}
         configs['cloudsim'] = {'description': "A CloudSim web app clone"}
-        
         return configs
 
     def get_configs_as_json(self):
