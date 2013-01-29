@@ -172,7 +172,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
 def launch_prerelease(username, constellation_name, tags, credentials_ec2, constellation_directory):
     _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,  "simulator_prerelease", drc_package_name = "drcsim-prerelease" )
 
-def _launch(username, constellation_name, tags, credentials_ec2, constellation_directory, CONFIGURATION, drc_package_name "drcsim"):
+def _launch(username, constellation_name, tags, credentials_ec2, constellation_directory, CONFIGURATION, drc_package_name):
     ec2conn = aws_connect(credentials_ec2)[0]
     constellation = ConstellationState(username, constellation_name)
    
