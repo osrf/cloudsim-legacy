@@ -1,5 +1,5 @@
 
-function launch_constelaltion(configuration)
+function launch_constellation(configuration)
 {
     var url = '/cloudsim/inside/cgi-bin/constellation?configuration=' + configuration;
     

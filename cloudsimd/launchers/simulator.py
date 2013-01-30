@@ -236,6 +236,8 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     
     try:
         launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "booting")
+        
+        # start a new machine, using the AWS api via the boto library
         res = ec2conn.run_instances( image_id       = SIM_AWS_IMAGE, 
                                      instance_type  = SIM_AWS_TYPE,
                                      #subnet_id      = subnet_id,

@@ -45,7 +45,7 @@ function create_constellation_launcher_widget(div_name)
        
        launch_button.disabled = true;
        setTimeout('_reenable("' + div_name+ '");', 3000);
-       launch_constelaltion(config);
+       launch_constellation(config);
        
     };
     
