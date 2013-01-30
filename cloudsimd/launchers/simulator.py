@@ -35,7 +35,7 @@ from launch_utils.launch import LaunchException
 from launch_utils.testing import get_boto_path, get_test_path
     
 
-CONFIGURATION = "simulator"
+#CONFIGURATION = "simulator"
 OPENVPN_SERVER_IP='11.8.0.1'
 OPENVPN_CLIENT_IP='11.8.0.2'
 
@@ -74,9 +74,15 @@ def start_simulator(username, constellation, machine_name, package_name, launch_
 
 def stop_simulator(username, constellation, machine, root_directory):
     pass
-           
-    
+               
 def monitor(username, constellation_name, credentials_ec2, counter):
+    _monitor(username, constellation_name, credentials_ec2, "simulator", counter)
+
+def monitor_prerelease(username, constellation_name, credentials_ec2, counter):
+    _monitor(username, constellation_name, credentials_ec2, "simulator_prerelease", counter)
+
+
+def _monitor(username, constellation_name, credentials_ec2, CONFIGURATION,  counter):           
     
     time.sleep(1)
     constellation = ConstellationState(username, constellation_name)
@@ -165,6 +171,8 @@ def monitor(username, constellation_name, credentials_ec2, counter):
                     simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "not running")
     #log("monitor not done")
     return False
+
+
 
 
 def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
@@ -402,6 +410,13 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
 
 
 def terminate(username, constellation_name, credentials_ec2, constellation_directory):
+    _terminate(username, 'simulator', constellation_name, credentials_ec2, constellation_directory)
+    
+def terminate_prerelease(username, constellation_name, credentials_ec2, constellation_directory):
+    _terminate(username, 'simulator_prerelease', constellation_name, credentials_ec2, constellation_directory)
+    
+
+def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, constellation_directory):
 
     resources = get_constellation_data(username,  constellation_name)
     launch_event(username, CONFIGURATION, constellation_name, resources['sim_machine_name'], "orange", "terminating")
@@ -449,6 +464,7 @@ def terminate(username, constellation_name, credentials_ec2, constellation_direc
     
     constellation.set_value('constellation_state', 'terminated')
     
+    
    
 
 class DbCase(unittest.TestCase):
@@ -474,7 +490,7 @@ class TrioCase(unittest.TestCase):
     
     
     def atest_launch(self):
-        
+        CONFIGURATION = 'simulator'
         test_name = "test_" + CONFIGURATION
         self.constellation_name =  get_unique_short_name(test_name + "_")
         

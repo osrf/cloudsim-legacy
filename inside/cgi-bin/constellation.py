@@ -32,16 +32,14 @@ print('Content-type: application/json')
 print("\n")
 
 if method == 'GET':
-    constellation = get_constellation_from_path()
-#    mdb = MachineDb(email)
-#    r = mdb.get_machines_as_dict()[constellation]
-#    r['constellation'] = constellation
-    
-    r = {}
-    str = json.dumps(r)
-    
-    
-    print(str)
+    r = redis.Redis()
+    try:    
+        domain = email.split('@')[1]
+        key = domain+"/"+ get_constellation_from_path()
+        s = r.get(key)
+    except:
+        s = "%s" % r.keys()
+    print(s)
     exit(0)
 
 if method == 'PUT':
@@ -63,6 +61,6 @@ if method == 'POST':
     d['command'] = 'launch'
     d['configuration'] = get_query_param('configuration')
     
-str = json.dumps(d)
+s = json.dumps(d)
 redis_client = redis.Redis()
-redis_client.publish('cloudsim_cmds', str)
+redis_client.publish('cloudsim_cmds', s)

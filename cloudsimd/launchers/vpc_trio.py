@@ -124,14 +124,19 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
                         SIM_AWS_TYPE,
                         SIM_SCRIPT, 
                         CONFIGURATION)
-    
+def terminate_prerelease(username, constellation_name, credentials_ec2, constellation_directory):
+    _terminate(username, constellation_name, credentials_ec2, constellation_directory, "vpc_trio_prerelease")
+        
 def terminate(username, constellation_name, credentials_ec2, constellation_directory):
     # call terminate with the appropriate configuration name
-    trio_terminate(username, constellation_name, credentials_ec2, constellation_directory, CONFIGURATION)
+    _terminate(username, constellation_name, credentials_ec2, constellation_directory, "vpc_trio")
     
+def monitor_prerelease(username, constellation_name, credentials_ec2, counter):
+    _monitor(username, constellation_name, credentials_ec2, counter, "vpc_trio_prerelease")
+
     
 def monitor(username, constellation_name, credentials_ec2, counter):
-    trio_monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION)
+    _monitor(username, constellation_name, credentials_ec2, counter, "vpc_trio")
 
 def start_simulator(username, constellation_name, machine_name, package_name, launch_file_name, launch_args, ):
     
@@ -168,7 +173,7 @@ def stop_simulator(username, constellation_name, machine_name):
 
     
     
-def trio_monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION):
+def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION):
     time.sleep(1)
     constellation = ConstellationState(username, constellation_name)
     
@@ -797,7 +802,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
 
     
     
-def trio_terminate(username, constellation_name, credentials_ec2, constellation_directory, CONFIGURATION):
+def _terminate(username, constellation_name, credentials_ec2, constellation_directory, CONFIGURATION):
 
     resources = get_constellation_data(username,  constellation_name)
     launch_event(username, CONFIGURATION, constellation_name, resources['sim_machine_name'], "orange", "terminating")

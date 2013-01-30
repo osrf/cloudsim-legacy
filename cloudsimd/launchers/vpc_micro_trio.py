@@ -83,11 +83,11 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
                         CONFIGURATION)
 
 def monitor(username, constellation_name, credentials_ec2, counter):
-    return vpc_trio.trio_monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION)
+    return vpc_trio._monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION)
 
 
 def terminate(username, constellation_name, credentials_ec2, constellation_directory):
-    vpc_trio.trio_terminate(username, constellation_name, credentials_ec2, constellation_directory, CONFIGURATION)
+    vpc_trio._terminate(username, constellation_name, credentials_ec2, constellation_directory, CONFIGURATION)
                            
     
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, ):

@@ -365,7 +365,7 @@ initctl start lightdm
 
 apt-get install -y ntp 
 
-echo "install """ + drc_package_name+ """ >> /home/ubuntu/setup.log
+echo "install """ + drc_package_name+ """ ">> /home/ubuntu/setup.log
 apt-get install -y """ + drc_package_name+ """
 echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
 echo "export DISPLAY=:0" >> /home/ubuntu/.bashrc

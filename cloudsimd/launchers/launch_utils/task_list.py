@@ -39,8 +39,8 @@ def get_ssh_cmd_generator(ssh_client, cmd, expected_output, constellation_data, 
 
 def empty_ssh_queue(generator_list, sleep):
     while len(generator_list):
-        time.sleep(sleep)
         for g in generator_list:
+            time.sleep(sleep)
             found = g.next()
             if found:
                 generator_list.remove(g)

@@ -360,7 +360,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     log ("\t%s"% out)
     
     log("Uploading the ec2 credentials to the server")
-    remote_fname = "/home/ubuntu/cloudsim/boto-useast" 
+    remote_fname = "/home/ubuntu/boto.ini" 
     log("uploading '%s' to the server to '%s'" % (credentials_ec2, remote_fname) )
     out = ssh_sim.upload_file(credentials_ec2 , remote_fname)
     log ("\t%s"% out)
