@@ -314,7 +314,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     key_filename = sim_key_pair_name + '.pem'
     fname_ssh_key =  os.path.join(sim_machine_dir, key_filename)
     
-    fname_ssh_sh =  os.path.join(sim_machine_dir,'ssh.sh')
+    fname_ssh_sh =  os.path.join(sim_machine_dir,'ssh.bash')
     file_content = create_ssh_connect_file(key_filename, sim_ip)
     with open(fname_ssh_sh, 'w') as f:
             f.write(file_content)

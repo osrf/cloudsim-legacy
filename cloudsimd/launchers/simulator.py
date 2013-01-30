@@ -69,11 +69,33 @@ def get_aws_states(ec2conn, machine_names_to_ids):
             aws_states[machine] = state
     return aws_states
 
-def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, root_directory):
-    pass
+def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
+    constellation_dict = get_constellation_data(username,  constellation)
+    constellation_directory = constellation_dict['constellation_directory']
+    sim_key_pair_name    = constellation_dict['sim_key_pair_name']
+    sim_ip    = constellation_dict['simulation_ip']
+    
+    try:
+        cmd = "bash cloudsim/start_sim.bash " + package_name + " " + launch_args
+        ssh_sim = SshClient(constellation_directory, sim_key_pair_name, 'ubuntu', sim_ip)
+        r = ssh_sim.cmd(cmd)
+        log('start_simulator %s' % r)
+    except Exception, e:
+        log('start_simulator error %s' % e)
 
-def stop_simulator(username, constellation, machine, root_directory):
-    pass
+def stop_simulator(username, constellation, machine):
+    constellation_dict = get_constellation_data(username,  constellation)
+    constellation_directory = constellation_dict['constellation_directory']
+    sim_key_pair_name    = constellation_dict['sim_key_pair_name']
+    sim_ip    = constellation_dict['simulation_ip']
+    
+    try:
+        cmd = "bash cloudsim/stop_sim.bash"
+        ssh_sim = SshClient(constellation_directory, sim_key_pair_name, 'ubuntu', sim_ip)
+        r = ssh_sim.cmd(cmd)
+        log('stop_simulator %s' % r)
+    except Exception, e:
+        log('stop_simulator error %s' % e)
                
 def monitor(username, constellation_name, credentials_ec2, counter):
     _monitor(username, constellation_name, credentials_ec2, "simulator", counter)
@@ -260,15 +282,17 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     color = "yellow"
     while not done:
         time.sleep(2)
+        count -=1
+        if count < 0:
+            msg = "timeout while waiting for EC2 machine(s) %s" % sim_machine_name
+            raise LaunchException(msg)
+        
         for r in ec2conn.get_all_instances():
-            count -=1
-            if count < 0:
-                msg = "timeout while waiting for EC2 machine(s) %s" % sim_machine_name
-                raise LaunchException(msg) 
             if r.id ==  res.id:
-                state = r.instances[0].state 
+                state = r.instances[0].state
+                aws_id = r.instances[0].id 
+                log("%s aws %s state = %s" % (sim_machine_name, aws_id, state))
                 if  state == 'running':
-                    aws_id = r.instances[0].id
                     running_machines['simulation_state'] = aws_id
                     constellation.set_value('simulation_state', 'network_setup')
                     launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, 'network_setup')
@@ -305,6 +329,7 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     
     color = "orange"
     for g in networking_done:
+        time.sleep(1)
         launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, "waiting for network")
         if color == "yellow":
             color = "orange"
@@ -365,7 +390,7 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     key_filename = sim_key_pair_name + '.pem'
     fname_ssh_key =  os.path.join(sim_machine_dir, key_filename)
     
-    fname_ssh_sh =  os.path.join(sim_machine_dir,'ssh.sh')
+    fname_ssh_sh =  os.path.join(sim_machine_dir,'ssh.bash')
     file_content = create_ssh_connect_file(key_filename, sim_ip)
     with open(fname_ssh_sh, 'w') as f:
             f.write(file_content)
@@ -399,12 +424,12 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
             zip_name = os.path.join(sim_machine_name, short_fname)
             fzip.write(fname, zip_name)
     
-    sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "sim_state", 'rebooting' ,max_retries = 100)
+    sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'booting' ,max_retries = 1500)
     empty_ssh_queue([sim_setup_done], sleep=2)
    
     ssh_sim.cmd("sudo reboot")
     
-    sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "sim_state", 'running' ,max_retries = 100)
+    sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 300)
     empty_ssh_queue([sim_setup_done], sleep=2)
     
     constellation.set_value('constellation_state', 'running')
@@ -470,9 +495,9 @@ def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, con
    
 
 class DbCase(unittest.TestCase):
-    def test(self):
-        user = 'caguero@osrfoundation.org'
-        const = 'cxd9e5836a'
+    def atest(self):
+        user = 'hugo@osrfoundation.org'
+        const = 'cxdbcf5cf8'
         cred = get_boto_path()
         
         monitor(user, const, cred, 1)
@@ -491,7 +516,7 @@ class DbCase(unittest.TestCase):
 class TrioCase(unittest.TestCase):
     
     
-    def atest_launch(self):
+    def test_launch(self):
         CONFIGURATION = 'simulator'
         test_name = "test_" + CONFIGURATION
         self.constellation_name =  get_unique_short_name(test_name + "_")

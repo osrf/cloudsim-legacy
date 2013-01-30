@@ -146,22 +146,26 @@ def terminate(username,
     set_constellation_data(username, constellation, data, 360)
         
 
-def start_simulator(username, config, constellation, machine_name, package_name, launch_file_name, launch_arg, credentials_ec2, root_directorys):
+def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
 
     try:
-        start_simulator  = plugins[config_name]['start_simulator']
-        start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, credentials_ec2, root_directory)
+        data = get_constellation_data(username, constellation)
+        config = data['configuration']
+        start_simulator  = plugins[config]['start_simulator']
+        start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args)
     except Exception, e:
         log("cloudsimd.py start_simulator error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb) 
 
 
-def stop_simulator(username, config, constellation,  machine):
+def stop_simulator(username, constellation,  machine):
     try:
+        data = get_constellation_data(username, constellation)
+        config = data['configuration']
         root_directory =  MACHINES_DIR
-        stop_simulator  = plugins[config_name]['stop_simulator']
-        stop_simulator(username, constellation, machine, root_directory)
+        stop_simulator  = plugins[config]['stop_simulator']
+        stop_simulator(username, constellation, machine)
     except Exception, e:
         log("cloudsimd.py stop_simulator error: %s" % e)
         tb = traceback.format_exc()
@@ -226,21 +230,21 @@ def async_terminate(username, constellation, credentials_ec2, constellation_dire
 
 
                 
-def async_start_simulator(username, config, constellation, machine, package_name, launch_file_name,launch_args, credentials_ec2, root_directory ):
+def async_start_simulator(username, constellation, machine, package_name, launch_file_name,launch_args ):
     
     
     log("async start simulator! user %s machine %s, pack %s launch %s args '%s'" % (username, machine, package_name, 
                                                                                     launch_file_name, launch_args ))
     try:
-        p = multiprocessing.Process(target=start_simulator, args=(username, config, constellation, machine, package_name, launch_file_name, launch_args, credentials_ec2, root_directory ) )
+        p = multiprocessing.Process(target=start_simulator, args=(username,  constellation, machine, package_name, launch_file_name, launch_args ) )
         p.start()
     except Exception, e:
         log("Cloudsim daemon Error %s" % e)
 
-def async_stop_simulator(username, config, constellation, machine):
+def async_stop_simulator(username, constellation, machine):
     log("async stop simulator! user %s machine %s" % (username, machine))
     try:
-        p = multiprocessing.Process(target=stop_simulator, args=(username, config, constellation,  machine) )
+        p = multiprocessing.Process(target=stop_simulator, args=(username,  constellation,  machine) )
         # jobs.append(p)
         p.start()
     except Exception, e:
@@ -336,16 +340,17 @@ def run(boto_path, root_dir, tick_interval):
                 async_terminate(username, constellation, boto_path, constellation_path )
                 continue
             
+            
             machine = data['machine']
             if cmd == "start_simulator" :
                 package_name = data['package_name']
                 launch_file_name = data['launch_file_name'] 
                 launch_args = data['launch_args']
-                async_start_simulator(username, config, constellation, machine, package_name, launch_file_name, launch_args, boto_path, constellation_path) 
+                async_start_simulator(username, constellation, machine, package_name, launch_file_name, launch_args) 
                 continue
             
             if cmd == "stop_simulator" :
-                async_stop_simulator(username, config, constellation, machine, boto_path, constellation_path)
+                async_stop_simulator(username, config, constellation, machine, boto_path)
                 continue
             
             
