@@ -31,17 +31,13 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
     start_button.setAttribute('type','button');
     start_button.setAttribute('name','start');
     start_button.setAttribute('value','Start');
-    start_button.disabled = true;
+    //start_button.disabled = true;
     
 	start_button.onclick =  function()
     {   
         var package_name = package_text.value;
         var launch_file = launch_file_text.value;
         var launch_args = args_text.value;
-        /*
-        _start_simulator(constellation_name, machine_name, package_name, launch_file, launch_args)
-        */
-        
         var r=confirm("Start simulator on machine " + machine_name + "?");
         if (r==false)
         {
@@ -58,7 +54,7 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
     
     
     var stop_button= document.createElement('input');
-    stop_button.disabled = true;
+    //stop_button.disabled = true;
     stop_button.setAttribute('type','button');
     stop_button.setAttribute('name','stop');
     stop_button.setAttribute('value','Stop');
@@ -97,22 +93,22 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
             if(data.color == 'red' )
             {
                 widget_div.querySelector("img").src = "/js/images/red_status.png";
-                stop_button.disabled = true;
-                start_button.disabled = false;
+                //stop_button.disabled = true;
+                //start_button.disabled = false;
                 
             }
             if(data.color == 'blue' )
             {
                 widget_div.querySelector("img").src = "/js/images/blue_status.png";
-                stop_button.disabled = false;
-                start_button.disabled = true;
+                //stop_button.disabled = false;
+                //start_button.disabled = true;
             }
             
             if(data.color == 'gray' )
             {
                 widget_div.querySelector("img").src = "/js/images/blue_status.png";
-                stop_button.disabled = true;
-                start_button.disabled = true;
+                //stop_button.disabled = true;
+                //start_button.disabled = true;
             }
             
         }

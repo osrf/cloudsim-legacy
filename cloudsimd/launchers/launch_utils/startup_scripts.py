@@ -299,6 +299,13 @@ roslaunch \$1 \$2 \$3 gzname:=gzserver  &
 
 DELIM
 
+cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
+
+killall -INT roslaunch
+
+DELIM
+
+
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim  
 
 # Add ROS and OSRF repositories

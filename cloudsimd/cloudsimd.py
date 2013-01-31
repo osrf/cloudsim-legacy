@@ -246,7 +246,7 @@ def async_start_simulator(username, constellation, machine, package_name, launch
         log("Cloudsim daemon Error %s" % e)
 
 def async_stop_simulator(username, constellation, machine):
-    log("async stop simulator! user %s machine %s" % (username, machine))
+    log("async stop simulator! user %s constellation %s machine %s" % (username, constellation, machine))
     try:
         p = multiprocessing.Process(target=stop_simulator, args=(username,  constellation,  machine) )
         # jobs.append(p)
@@ -354,7 +354,7 @@ def run(boto_path, root_dir, tick_interval):
                 continue
             
             if cmd == "stop_simulator" :
-                async_stop_simulator(username, config, constellation, machine, boto_path)
+                async_stop_simulator(username, constellation, machine)
                 continue
             
             

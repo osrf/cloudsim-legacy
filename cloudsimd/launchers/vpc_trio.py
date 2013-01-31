@@ -305,7 +305,8 @@ def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATI
             gl_is_up = False
             try:
                 ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
-                log("cloudsim/ping_gl.bash = %s" % ping_gl )
+                #log("cloudsim/ping_gl.bash = %s" % ping_gl )
+                log("cloudsim/ping_gl.bash = OK" )
                 gl_is_up = True
                 gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "running")
             except Exception, e:

@@ -68,38 +68,34 @@ def get_aws_states(ec2conn, machine_names_to_ids):
     return aws_states
 
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
+
     constellation_dict = get_constellation_data(username,  constellation)
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_pair_name    = constellation_dict['sim_key_pair_name']
     sim_ip    = constellation_dict['simulation_ip']
     sim_machine_name = constellation_dict['sim_machine_name']
     sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
+    c = "bash cloudsim/start_sim.bash %s %s %s" %(package_name, launch_file_name, launch_args)
+    cmd = c.strip()
+    ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
+    r = ssh_sim.cmd(cmd)
+    log('start_simulator %s' % r)
 
-    try:
-        c = "bash cloudsim/start_sim.bash %s %s %s" %(package_name, launch_file_name, launch_args)
-        cmd = c.trim()
-        ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
-        r = ssh_sim.cmd(cmd)
-        log('start_simulator %s' % r)
-    except Exception, e:
-        log('start_simulator error %s' % e)
 
 def stop_simulator(username, constellation, machine):
+    
     constellation_dict = get_constellation_data(username,  constellation)
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_pair_name    = constellation_dict['sim_key_pair_name']
     sim_ip    = constellation_dict['simulation_ip']
     sim_machine_name = constellation_dict['sim_machine_name']
     sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
-        
-    try:
-        cmd = "bash cloudsim/stop_sim.bash"
-        ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
-        r = ssh_sim.cmd(cmd)
-        log('stop_simulator %s' % r)
-    except Exception, e:
-        log('stop_simulator error %s' % e)
-               
+    cmd = "bash cloudsim/stop_sim.bash"
+    ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
+    r = ssh_sim.cmd(cmd)
+    log('stop_simulator %s' % r)
+
+
 def monitor(username, constellation_name, credentials_ec2, counter):
     _monitor(username, constellation_name, credentials_ec2, "simulator", counter)
 
@@ -176,7 +172,8 @@ def _monitor(username, constellation_name, credentials_ec2, CONFIGURATION,  coun
             gl_is_up = False
             try:
                 ping_gl = ssh_sim.cmd("bash cloudsim/ping_gl.bash")
-                log("cloudsim/ping_gl.bash = %s" % ping_gl )
+                #log("cloudsim/ping_gl.bash = %s" % ping_gl )
+                log("cloudsim/ping_gl.bash OK"  )
                 gl_is_up = True
                 gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "running")
             except Exception, e:
@@ -366,7 +363,9 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     ssh_sim.create_file(ping_gl, "cloudsim/ping_gl.bash")
     
     ping_gazebo = """#!/bin/bash
-    gztopic list
+    
+. /usr/share/drcsim/setup.sh
+gztopic list
     
     """ 
     ssh_sim.create_file(ping_gazebo, "cloudsim/ping_gazebo.bash")
