@@ -46,7 +46,7 @@ def get_open_vpn_single(client_ip,
     
 cat <<DELIM >  /home/ubuntu/openvpn.config  
 dev tun
-ifconfig """ + client_ip + " " + server_ip + """
+ifconfig """ + server_ip + " " + client_ip + """
 secret static.key  
 
 DELIM
@@ -206,7 +206,7 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
     
 
-def get_drc_startup_script(open_vpn_script, drc_package_name = "drcsim"):
+def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name):
     
     s = """#!/bin/bash
 # Exit on error
@@ -289,14 +289,13 @@ mkdir /home/ubuntu/cloudsim/setup
 
 cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
 
-echo date "$1 $2 $3" >> /home/ubuntu/cloudsim/start_sim.log
+echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
 
 . /usr/share/drcsim/setup.sh 
-export ROS_IP= 10.0.0.51 
-export GAZEBO_IP= 10.0.0.51 
+export ROS_IP=""" + machine_ip +""" 
+export GAZEBO_IP=""" + machine_ip +"""
 export DISPLAY=:0 
-roslaunch $1 $2 
-gzname:=gzserver $3  &
+roslaunch \$1 \$2 \$3 gzname:=gzserver  &
 
 DELIM
 
@@ -416,8 +415,8 @@ eval export ROS_PACKAGE_PATH=$oldrpp:\$ROS_PACKAGE_PATH
 export ROS_IP=""" + openvpn_client_ip + """
 export ROS_MASTER_URI=http://""" + openvpn_server_ip + """:11311 
 
-#export GAZEBO_IP=""" + openvpn_client_ip + """
-#export GAZEBO_MASTER_URI=http://""" + openvpn_server_ip + """:11345
+export GAZEBO_IP=""" + openvpn_client_ip + """
+export GAZEBO_MASTER_URI=http://""" + openvpn_server_ip + """:11345
                 
     """  
     return s

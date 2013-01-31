@@ -39,6 +39,9 @@ from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
 
 
+def flush_db():
+    r = redis.Redis()
+    r.flushdb()
 
 def list_constellations():
     r = redis.Redis()
@@ -112,7 +115,8 @@ def launch( username,
     except Exception, e:
         log("cloudsimd.py launch error: %s" % e)
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb) 
+        log("traceback:  %s" % tb)
+        terminate(username, constellation_name, credentials_ec2, constellation_directory)
     
     
 """

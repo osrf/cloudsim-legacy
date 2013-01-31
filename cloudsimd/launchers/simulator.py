@@ -33,11 +33,9 @@ from launch_utils.startup_scripts import get_drc_startup_script,\
 from launch_utils.launch import LaunchException
 
 from launch_utils.testing import get_boto_path, get_test_path
+from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
     
 
-#CONFIGURATION = "simulator"
-OPENVPN_SERVER_IP='11.8.0.1'
-OPENVPN_CLIENT_IP='11.8.0.2'
 
 
 def aws_connect(credentials_ec2):    
@@ -74,10 +72,13 @@ def start_simulator(username, constellation, machine_name, package_name, launch_
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_pair_name    = constellation_dict['sim_key_pair_name']
     sim_ip    = constellation_dict['simulation_ip']
-    
+    sim_machine_name = constellation_dict['sim_machine_name']
+    sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
+
     try:
-        cmd = "bash cloudsim/start_sim.bash " + package_name + " " + launch_args
-        ssh_sim = SshClient(constellation_directory, sim_key_pair_name, 'ubuntu', sim_ip)
+        c = "bash cloudsim/start_sim.bash %s %s %s" %(package_name, launch_file_name, launch_args)
+        cmd = c.trim()
+        ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
         r = ssh_sim.cmd(cmd)
         log('start_simulator %s' % r)
     except Exception, e:
@@ -88,10 +89,12 @@ def stop_simulator(username, constellation, machine):
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_pair_name    = constellation_dict['sim_key_pair_name']
     sim_ip    = constellation_dict['simulation_ip']
-    
+    sim_machine_name = constellation_dict['sim_machine_name']
+    sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
+        
     try:
         cmd = "bash cloudsim/stop_sim.bash"
-        ssh_sim = SshClient(constellation_directory, sim_key_pair_name, 'ubuntu', sim_ip)
+        ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
         r = ssh_sim.cmd(cmd)
         log('stop_simulator %s' % r)
     except Exception, e:
@@ -145,8 +148,6 @@ def _monitor(username, constellation_name, credentials_ec2, CONFIGURATION,  coun
         # todo: is download ready
         machine_state_event(username, CONFIGURATION, constellation_name, sim_machine_name, {'state': aws_states["sim"], 'ip':sim_ip, 'aws_id': aws_ids["sim"], 'gmt':gmt, 'username': username, 'key_download_ready':True  })
 
-    
-                
     if sim_state_index >= machine_states.index('packages_setup'):
         constellation_directory = constellation.get_value('constellation_directory')
         sim_key_pair_name = constellation.get_value('sim_key_pair_name')
@@ -238,7 +239,9 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     sim_security_group= ec2conn.create_security_group(sim_sg_name, "simulator security group for constellation %s" % constellation_name)
     sim_security_group.authorize('tcp', 80, 80, '0.0.0.0/0')   # web
     sim_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
-    sim_security_group.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping       
+    sim_security_group.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping        
+    sim_security_group.authorize('udp', 1194, 1194, '0.0.0.0/0') # OpenVPN
+    
     sim_security_group_id = sim_security_group.id
     constellation.set_value('sim_security_group_id', sim_security_group_id)
 
@@ -254,7 +257,7 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     SIM_AWS_IMAGE= 'ami-98fa58f1'
     
     open_vpn_script = get_open_vpn_single(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
-    SIM_SCRIPT = get_drc_startup_script(open_vpn_script, drc_package_name)
+    SIM_SCRIPT = get_drc_startup_script(open_vpn_script, OPENVPN_SERVER_IP, drc_package_name)
     
     try:
         launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "booting")
@@ -357,7 +360,7 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     
     ping_gl = """#!/bin/bash
     
-    DISPLAY=localhost:0 glxinfo
+    DISPLAY=localhost:0 timeout 3 glxinfo
     
     """ 
     ssh_sim.create_file(ping_gl, "cloudsim/ping_gl.bash")
