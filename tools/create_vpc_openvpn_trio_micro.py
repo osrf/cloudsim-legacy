@@ -157,7 +157,7 @@ class Creator():
         ovcfg.close()
 
         route_and_openvpn = open('route_and_openvpn.sh', 'w+')
-        route_and_openvpn.write('#!/bin/bash\nsudo route add -net 10.0.0.0 netmask 255.255.255.0 %s\nsudo openvpn --config openvpn.config&'%(OPENVPN_SERVER_IP))
+        route_and_openvpn.write('#!/bin/bash\nsudo route add -net 10.0.0.0 netmask 255.255.255.0 gw %s\nsudo openvpn --config openvpn.config&'%(OPENVPN_SERVER_IP))
         route_and_openvpn.close()
 
     def cleanup(self):

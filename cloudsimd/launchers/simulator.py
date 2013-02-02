@@ -379,9 +379,10 @@ gztopic list
     
     
     fname_start_vpn = os.path.join(sim_machine_dir , "start_vpn.bash")    
-    file_content = create_vpn_connect_file()
+    file_content = create_vpn_connect_file(OPENVPN_CLIENT_IP)
     with open(fname_start_vpn, 'w') as f:
         f.write(file_content)
+    os.chmod(fname_start_vpn, 0755)
 
     fname_ros = os.path.join(sim_machine_dir, "ros.bash")    
     file_content = create_ros_connect_file(openvpn_client_ip=OPENVPN_CLIENT_IP, openvpn_server_ip=OPENVPN_SERVER_IP)
@@ -391,11 +392,13 @@ gztopic list
     
     key_filename = sim_key_pair_name + '.pem'
     fname_ssh_key =  os.path.join(sim_machine_dir, key_filename)
+    os.chmod(fname_ssh_key, 0600)
     
     fname_ssh_sh =  os.path.join(sim_machine_dir,'ssh.bash')
     file_content = create_ssh_connect_file(key_filename, sim_ip)
     with open(fname_ssh_sh, 'w') as f:
             f.write(file_content)
+    os.chmod(fname_ssh_sh, 0600)
             
     fname_zip = os.path.join(sim_machine_dir, "%s.zip" % sim_machine_name)
     
@@ -410,6 +413,7 @@ gztopic list
     
     launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "yellow", "downloading sim key to CloudSim server") 
     ssh_sim.download_file(vpnkey_fname, remote_fname) 
+    os.chmod(vpnkey_fname,0600)
     
     #creating zip
     files_to_zip = [ fname_ssh_key, 
