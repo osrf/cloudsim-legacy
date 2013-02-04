@@ -12,8 +12,8 @@ class ConfigsDb(object):
     
     def get_configs(self):
         configs = {}
-        configs['vpc_trio_prerelease'] = {'description': "test constellation with 3 micro machines"} 
         configs['vpc_micro_trio'] = {'description': "test constellation with 3 micro machines"} 
+        configs['vpc_trio_prerelease'] = {'description': "test constellation with 3 micro machines"} 
         configs['vpc_trio'] = {'description': "3 machines: a gpu field computer, a router and a gpu simulator"}
         configs['simulator'] = {'description': "1 machine: gpu computer with the latest ROS-fuerte, Gazebo and DRC simulation packages installed"}
         configs['simulator_prerelease'] = {'description': "1 machine: gpu computer with the latest ROS-fuerte, Gazebo and DRC pre-release simulation packages installed"}

@@ -27,10 +27,9 @@ print('\n')
 
 cdb = ConfigsDb(email)
 
-admin_configs = ['vpc_micro_trio', # 'cloudsim', 
-                'micro_vpn',
-                'drc_sim_ami']
+admin_configs = ['vpc_micro_trio',] # 'cloudsim', ]
 
+        
 configs = cdb.get_configs()
 
 if not is_admin:
@@ -40,9 +39,5 @@ if not is_admin:
             log("configs removing %s =  %s" % (bad_config, len(configs) ) )
             
 
-str = json.dumps(configs)
-    
-
-
-
-print(str)
+s = json.dumps(configs)
+print(s)
