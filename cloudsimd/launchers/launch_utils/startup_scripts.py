@@ -232,7 +232,7 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
     
 
-def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name):
+def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51"):
     
     s = """#!/bin/bash
 # Exit on error
@@ -331,6 +331,22 @@ killall -INT roslaunch
 
 DELIM
 
+cat <<DELIM > /home/ubuntu/cloudsim/ros.bash
+
+# To connect via ROS:
+
+# ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path
+oldrpp=$ROS_PACKAGE_PATH
+
+. /usr/share/drcsim/setup.sh
+eval export ROS_PACKAGE_PATH=\$oldrpp:\\$ROS_PACKAGE_PATH
+export ROS_IP=""" + machine_ip +"""
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311 
+
+export GAZEBO_IP=""" + machine_ip +"""
+export GAZEBO_MASTER_URI=http:///""" + ros_master_ip + """:11345
+
+DELIM
 
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim  
 
@@ -413,7 +429,7 @@ touch /home/ubuntu/cloudsim/setup/done
     return s
 
 def create_vpn_connect_file(openvpn_client_ip):
-    return """#!bin/bash
+    return """#!/bin/bash
 set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -431,7 +447,7 @@ echo "    sudo killall openvpn"
 """
 
 def create_vpc_vpn_connect_file(openvpn_client_ip):
-    return """#!bin/bash
+    return """#!/bin/bash
 set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -469,7 +485,7 @@ secret openvpn.key
     """ 
     return s
 
-def create_ros_connect_file(openvpn_client_ip, openvpn_server_ip ):
+def create_ros_connect_file(machine_ip, master_ip ):
     
     s = """
 # To connect via ROS:
@@ -484,11 +500,11 @@ def create_ros_connect_file(openvpn_client_ip, openvpn_server_ip ):
 oldrpp=$ROS_PACKAGE_PATH
 . /opt/ros/fuerte/setup.sh
 eval export ROS_PACKAGE_PATH=$oldrpp:\$ROS_PACKAGE_PATH
-export ROS_IP=""" + openvpn_client_ip + """
-export ROS_MASTER_URI=http://""" + openvpn_server_ip + """:11311 
+export ROS_IP=""" + machine_ip + """
+export ROS_MASTER_URI=http://""" + master_ip + """:11311 
 
-export GAZEBO_IP=""" + openvpn_client_ip + """
-export GAZEBO_MASTER_URI=http://""" + openvpn_server_ip + """:11345
+export GAZEBO_IP=""" + machine_ip + """
+export GAZEBO_MASTER_URI=http://""" + master_ip + """:11345
                 
     """  
     return s

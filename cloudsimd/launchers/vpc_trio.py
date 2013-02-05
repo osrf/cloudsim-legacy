@@ -154,6 +154,7 @@ def monitor(username, constellation_name, credentials_ec2, counter):
 
 def start_simulator(username, constellation_name, machine_name, package_name, launch_file_name, launch_args, ):
     
+    log("vpc_trio start_simulator")
     constellation_dict = get_constellation_data(username,  constellation_name)
     constellation_directory = constellation_dict['constellation_directory']
     router_key_pair_name    = constellation_dict['router_key_pair_name']
@@ -171,7 +172,7 @@ def start_simulator(username, constellation_name, machine_name, package_name, la
         
 
 def stop_simulator(username, constellation_name, machine_name):
-    
+    log("vpc_trio stop_simulator")
     constellation_dict = get_constellation_data(username,  constellation_name)
     constellation_directory = constellation_dict['constellation_directory']
     router_key_pair_name    = constellation_dict['router_key_pair_name']
@@ -686,13 +687,14 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     
     ping_gazebo = """#!/bin/bash
     
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "gztopic list"
+    
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s ". /usr/share/drcsim/setup.sh; gztopic list"
     
     """ % (sim_key_pair_name, SIM_IP)
     ssh_router.create_file(ping_gazebo, "cloudsim/ping_gazebo.bash")
     
     stop_sim = """#!/bin/bash
-    
+
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "killall -INT roslaunch"
     
     """ % (sim_key_pair_name, SIM_IP)
@@ -770,7 +772,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     os.chmod(fname_start_vpn, 0755)
     
     fname_ros = os.path.join(router_machine_dir, "ros.bash")    
-    file_content = create_ros_connect_file(openvpn_client_ip=OPENVPN_CLIENT_IP, openvpn_server_ip=OPENVPN_SERVER_IP)
+    file_content = create_ros_connect_file(machine_ip=OPENVPN_CLIENT_IP, master_ip=SIM_IP)
 
     with open(fname_ros, 'w') as f:
         f.write(file_content)
