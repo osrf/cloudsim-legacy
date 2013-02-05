@@ -1,28 +1,28 @@
 // Units: ms.
-var INITIAL_MIN_LATENCY = 0;
-var MAX_LATENCY = 1000; 
+var INITIAL_PACKET_LATENCY = 0;
+var MAX_PACKET_LATENCY = 1000; 
 
 //Units: percentage
-var MAX_PACKAGE_LOSS = 100; 
-var INITIAL_MIN_PACKET_LOSS = 0;
+var MAX_PACKET_LOSS = 100; 
+var INITIAL_PACKET_LOSS = 0;
 
-function create_traffic_shaper_widget(machine_div, constellation_name, machine_name, widget_name)
+function create_traffic_shaper_widget(_machineDiv, _constellationName, _machineName, _widgetName)
 {
-    var widget_div = _create_empty_widget(machine_div, widget_name);
+    var widget_div = _create_empty_widget(_machineDiv, _widgetName);
 
-    var min_latency_text = document.createElement('input');
-    min_latency_text.setAttribute('type','number');
-    min_latency_text.setAttribute('name','minLatency');
-    min_latency_text.setAttribute('value', INITIAL_MIN_LATENCY);
-    min_latency_text.setAttribute('min', 0); 
-    min_latency_text.setAttribute('max', MAX_LATENCY); 
+    var targetPacketLatency_text = document.createElement('input');
+    targetPacketLatency_text.setAttribute('type','number');
+    targetPacketLatency_text.setAttribute('name','targetPacketLatency');
+    targetPacketLatency_text.setAttribute('value', INITIAL_PACKET_LATENCY);
+    targetPacketLatency_text.setAttribute('min', 0); 
+    targetPacketLatency_text.setAttribute('max', MAX_PACKET_LATENCY); 
     
-    var min_packet_loss_text = document.createElement('input');
-    min_packet_loss_text.setAttribute('type','number');
-    min_packet_loss_text.setAttribute('name','minPacketLoss');
-    min_packet_loss_text.setAttribute('value', INITIAL_MIN_PACKET_LOSS); 
-    min_packet_loss_text.setAttribute('min', 0); 
-    min_packet_loss_text.setAttribute('max', MAX_PACKAGE_LOSS); 
+    var targetPacketLoss_text = document.createElement('input');
+    targetPacketLoss_text.setAttribute('type','number');
+    targetPacketLoss_text.setAttribute('name','targetPacketLoss');
+    targetPacketLoss_text.setAttribute('value', INITIAL_PACKET_LOSS); 
+    targetPacketLoss_text.setAttribute('min', 0); 
+    targetPacketLoss_text.setAttribute('max', MAX_PACKET_LOSS); 
   
     var update_button = document.createElement('input');
     update_button.setAttribute('type','button');
@@ -31,7 +31,7 @@ function create_traffic_shaper_widget(machine_div, constellation_name, machine_n
     
 	update_button.onclick = function()
     {               
-        update_traffic_shaper(constellation_name, machine_name, min_latency_text.value, min_packet_loss_text.value);
+        update_traffic_shaper(_constellationName, _machineName, targetPacketLatency_text.value, targetPacketLoss_text.value);
     };
         
     var reset_button = document.createElement('input');
@@ -41,15 +41,15 @@ function create_traffic_shaper_widget(machine_div, constellation_name, machine_n
 
     reset_button.onclick = function()
     {
-        update_traffic_shaper(constellation_name, machine_name, INITIAL_MIN_LATENCY, INITIAL_MIN_PACKET_LOSS);           
-        min_latency_text.value = INITIAL_MIN_LATENCY;
-        min_packet_loss_text.value = INITIAL_MIN_PACKET_LOSS;
+        update_traffic_shaper(_constellationName, _machineName, INITIAL_PACKET_LATENCY, INITIAL_PACKET_LOSS);           
+        targetPacketLatency_text.value = INITIAL_PACKET_LATENCY;
+        targetPacketLoss_text.value = INITIAL_PACKET_LOSS;
     };
     
-    widget_div.appendChild(document.createTextNode("Min latency (ms.): "));
-    widget_div.appendChild(min_latency_text);
-    widget_div.appendChild(document.createTextNode("Min packet loss (%): "));
-    widget_div.appendChild(min_packet_loss_text);
+    widget_div.appendChild(document.createTextNode("Target latency (ms.): "));
+    widget_div.appendChild(targetPacketLatency_text);
+    widget_div.appendChild(document.createTextNode("Target packet loss (%): "));
+    widget_div.appendChild(targetPacketLoss_text);
     widget_div.appendChild(update_button);
     widget_div.appendChild(reset_button);  
 }

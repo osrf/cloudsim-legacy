@@ -38,6 +38,8 @@ from launchers.launch_utils import set_constellation_data
 
 from time import gmtime, strftime
 
+from tc import traffic_shaper
+
 def flush_db():
     r = redis.Redis()
     r.flushdb()
@@ -51,6 +53,9 @@ def list_constellations():
 # The plugins contains the function pointers for each type of constellation
 # Don't forget to register new constellations
 #
+
+trafficShapers = {}
+
 plugins = {}
 plugins['vpc_micro_trio'] = {'launch':vpc_micro_trio.launch,    'terminate':vpc_micro_trio.terminate,    'monitor':vpc_micro_trio.monitor,   'start_simulator':vpc_micro_trio.start_simulator,   'stop_simulator':vpc_micro_trio.stop_simulator}
 plugins['vpc_trio'] =       {'launch':vpc_trio.launch,          'terminate':vpc_trio.terminate,          'monitor':vpc_trio.monitor,         'start_simulator':vpc_trio.start_simulator,         'stop_simulator':vpc_trio.stop_simulator}
@@ -62,8 +67,8 @@ plugins['simulator_prerelease'] =       {'launch':simulator.launch_prerelease,  
 
 
 # --- Traffic shaper ---
-TC_MAX_LATENCY = 1000 #ms
-TC_MAX_LOSS = 100 #Percentage
+#TC_MAX_LATENCY = 1000 #ms
+#TC_MAX_LOSS = 100 #Percentage
 # --- Traffic shaper ---
 
 class LaunchException(Exception):
@@ -305,40 +310,32 @@ def resume_monitoring(boto_path, root_dir):
             log("traceback:  %s" % tb)
             
             
-def run_tc_command(username, constellation_name, min_latency, min_packet_loss):  
-    constellation = get_constellation_data(username,  constellation_name)
+def run_tc_command(_username, _constellationName, _targetPacketLatency, _targetPacketLoss):  
+    constellation = get_constellation_data(_username,  _constellationName)
     config = constellation['configuration']
-    key_directory = constellation['constellation_directory'] + '/'   
+    keyDirectory = os.path.join(constellation['constellation_directory'])
         
     if (config == 'simulator_prerelease') or (config == 'simulator'):
-        key_directory += constellation['sim_machine_name']
-        sim_key_pair_name = constellation['sim_key_pair_name']
+        keyDirectory = os.path.join(keyDirectory, constellation['sim_machine_name'])
+        keyPairName = constellation['sim_key_pair_name']
         ip = constellation['simulation_ip']
     elif (config == 'vpc_trio_prerelease') or (config == 'vpc_trio') or (config == 'vpc_micro_trio'):
-        key_directory += 'router_' + constellation_name
-        sim_key_pair_name = constellation['router_key_pair_name']
+        keyDirectory = os.path.join(keyDirectory, 'router_' + _constellationName)
+        keyPairName = constellation['router_key_pair_name']
         ip = constellation['router_ip']
     else:
         #You should not be here
         log("cloudsim::run_tc_command() Unknown constellation type: (%s)" % (config) )
         return                     
         
-    #ssh to the simulator machine and run tc script with the given arguments
-    ssh_sim = SshClient(key_directory, sim_key_pair_name, 'ubuntu', ip)
-
-    tc_cmd = 'init_tc.py eth0'
-    ssh_sim.cmd(tc_cmd)  
-    
-    tc_cmd = 'configure_tc.py eth0 ' + min_latency + 'ms ' + min_packet_loss + '%'
-    log("New traffic shaper command sent to %s, with key %s in directory %s (Min latency= %s, minPackageLoss= %s" %
-         (ip, sim_key_pair_name, key_directory, min_latency, min_packet_loss))   
-    ssh_sim.cmd(tc_cmd)    
-
-    now = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
-    tc_cmd_log = 'echo "(' + now + ')' + tc_cmd + '" > /tmp/tc.log'   
-    ssh_sim.cmd(tc_cmd_log)
-    
-            
+    if not _constellationName in trafficShapers:
+        trafficShapers[_constellationName] = traffic_shaper.TrafficShaper(_constellationName, keyDirectory, keyPairName, ip, 'eth0')
+        
+    trafficShaper = trafficShapers[_constellationName]
+    trafficShaper.setTargetPacketLatency(_targetPacketLatency)
+    trafficShaper.setTargetPacketLoss(_targetPacketLoss)
+    trafficShaper.update()
+         
 def run(boto_path, root_dir, tick_interval):
     
     red = redis.Redis()
@@ -397,11 +394,9 @@ def run(boto_path, root_dir, tick_interval):
                 continue
             
             if cmd == 'update_tc' :
-                min_latency = int(data['min_latency'])                             
-                min_package_loss = int(data['min_package_loss'])
-                                
-                if (min_latency >= 0 and min_latency <= TC_MAX_LATENCY) and (min_package_loss >= 0 and min_package_loss <= TC_MAX_LOSS):            
-                    run_tc_command(username, constellation, str(min_latency), str(min_package_loss))                
+                targetPacketLatency = int(data['targetPacketLatency'])                             
+                targetPacketLoss = int(data['targetPacketLoss'])
+                run_tc_command(username, constellation, targetPacketLatency, targetPacketLoss)                
             
         except Exception, e:
             log("Error processing message [%s]" % msg)

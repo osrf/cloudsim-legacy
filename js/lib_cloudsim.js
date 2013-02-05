@@ -83,13 +83,13 @@ function stop_simulator(constellation_name, machine_name)
 
 }
 
-function update_traffic_shaper(constellation_name, machine_name, min_latency, min_package_loss)
+function update_traffic_shaper(_constellationName, _machineName, _targetPacketLatency, _targetPacketLoss)
 {
 	var url = '/cloudsim/inside/cgi-bin/tc_cmd.py?command=update_tc'; 
-    url += '&constellation=' + constellation_name;
-    url += '&machine=' + machine_name;
-    url += '&min_latency=' + min_latency;
-    url += '&min_package_loss=' + min_package_loss;
+    url += '&constellation=' + _constellationName;
+    url += '&machine=' + _machineName;
+    url += '&targetPacketLatency=' + _targetPacketLatency;
+    url += '&targetPacketLoss=' + _targetPacketLoss;
     
     console.log(url);
     msg = httpGet(url);

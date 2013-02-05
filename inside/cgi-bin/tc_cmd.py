@@ -21,8 +21,8 @@ try:
     d['machine'] = form.getfirst('machine')
     
     if d['command'] == 'update_tc':
-        d['min_latency'] = form.getfirst('min_latency')
-        d['min_package_loss'] = form.getfirst('min_package_loss')
+        d['targetPacketLatency'] = form.getfirst('targetPacketLatency')
+        d['targetPacketLoss'] = form.getfirst('targetPacketLoss')
     else:
         print ('tc_cmd.py Incorrect command (%s)' % (d['command']))
 except Exception, e:
