@@ -36,8 +36,6 @@ from launchers.launch_utils import get_constellations
 from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
 
-from time import gmtime, strftime
-
 from tc import traffic_shaper
 
 def flush_db():
@@ -65,11 +63,6 @@ plugins['cloudsim'] =       {'launch':cloudsim.launch,          'terminate':clou
 plugins['vpc_trio_prerelease'] =       {'launch':vpc_trio.launch_prerelease,          'terminate':vpc_trio.terminate_prerelease,          'monitor':vpc_trio.monitor_prerelease,         'start_simulator':vpc_trio.start_simulator,         'stop_simulator':vpc_trio.stop_simulator}
 plugins['simulator_prerelease'] =       {'launch':simulator.launch_prerelease,          'terminate':simulator.terminate_prerelease,       'monitor':simulator.monitor_prerelease,         'start_simulator':simulator.start_simulator,         'stop_simulator':simulator.stop_simulator}
 
-
-# --- Traffic shaper ---
-#TC_MAX_LATENCY = 1000 #ms
-#TC_MAX_LOSS = 100 #Percentage
-# --- Traffic shaper ---
 
 class LaunchException(Exception):
     pass
@@ -125,7 +118,7 @@ def launch( username,
         log("cloudsimd.py launch error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
-        terminate(username, constellation_name, credentials_ec2, constellation_directory)
+        #terminate(username, constellation_name, credentials_ec2, constellation_directory)
     
     
 """
