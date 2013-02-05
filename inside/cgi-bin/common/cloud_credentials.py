@@ -8,7 +8,7 @@ class CloudCredentials(object):
     def __init__(self, 
                  aws_access_key_id, 
                  aws_secret_access_key, 
-                 ec2_region_name = 'us-east-1', 
+                 ec2_region_name = 'us-east-1b', 
                  ec2_region_endpoint = 'ec2.amazonaws.com', 
                  fname = BOTO_CONFIG_FILE_USEAST ):
         

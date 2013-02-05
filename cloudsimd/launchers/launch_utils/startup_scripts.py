@@ -188,8 +188,8 @@ echo "unzip installed" >> /home/ubuntu/setup.log
 apt-get install -y mercurial
 echo "mercurial installed" >> /home/ubuntu/setup.log
 
-apt-get install -y cloud-utils
-echo "cloud-utils installed" >> /home/ubuntu/setup.log
+#apt-get install -y cloud-utils
+#echo "cloud-utils installed" >> /home/ubuntu/setup.log
 
 apt-get install -y ntp
 echo "ntp installed" >> /home/ubuntu/setup.log
@@ -201,8 +201,12 @@ echo "apache2 installed" >> /home/ubuntu/setup.log
 # echo "apache2 with mod-python installed" >> /home/ubuntu/setup.log
 
 apt-get install -y redis-server python-pip
-sudo pip install redis
+pip install redis
 echo "redis installed" >> /home/ubuntu/setup.log
+
+sudo pip install boto
+echo "boto installed" >> /home/ubuntu/setup.log
+
 
 sudo pip install unittest-xml-reporting
 echo "XmlTestRunner installed" >> /home/ubuntu/setup.log
