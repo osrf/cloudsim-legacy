@@ -1,3 +1,4 @@
+var WITH_TRAFFIC_SHAPER = true;
 
 function create_constellation(div_name, configuration, constellation)
 {
@@ -12,9 +13,8 @@ function create_constellation(div_name, configuration, constellation)
     if(configuration == "vpc_trio" || configuration == "vpc_micro_trio" || configuration == "vpc_trio_prerelease" )
     {
         _create_basic_machine(constellation_div, constellation, "field_computer_" + constellation );
-        _create_basic_machine(constellation_div, constellation, "router_" + constellation );
-        
-        
+        _create_basic_machine(constellation_div, constellation, "router_" + constellation, WITH_TRAFFIC_SHAPER );
+                
         var div =  constellation_div.querySelector("#machines" );
         
         var machine_name = "simulator_" + constellation;
@@ -32,7 +32,7 @@ function create_constellation(div_name, configuration, constellation)
     if(configuration == "simulator" || configuration == "simulator_prerelease")
     {
         var machine_name = "simulator_" +constellation;
-        _create_simulator_machine(constellation_div, constellation, machine_name);
+        _create_simulator_machine(constellation_div, constellation, machine_name, WITH_TRAFFIC_SHAPER);
     }
     
     if(configuration == "micro_sim")
@@ -76,22 +76,28 @@ function create_constellation(div_name, configuration, constellation)
     }
 }
 
-function _create_basic_machine(constellation_div, constellation_name, machine_name)
+function _create_basic_machine(constellation_div, constellation_name, machine_name, traffic_shaper_included)
 {
-
+	traffic_shaper_included = traffic_shaper_included || false;
     var div =  constellation_div.querySelector("#machines" );
     var machine_div = create_machine(div, machine_name);
     
     create_machine_launch_monitor_widget(machine_div, constellation_name, machine_name,"launch_state");
     create_machine_state_widget(machine_div,constellation_name, machine_name, "cloud_state");
     //create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
-    create_hostname_widget(machine_div, constellation_name, machine_name, "hostname");	
-    create_latency_widget(machine_div, constellation_name, machine_name, "latency");
-    
+    create_hostname_widget(machine_div, constellation_name, machine_name, "hostname");
+   
+    if (traffic_shaper_included)
+    {
+        create_traffic_shaper_widget(machine_div, constellation_name, machine_name, "traffic_shaper");
+    }
+        
+    create_latency_widget(machine_div, constellation_name, machine_name, "latency");   
 }
 
-function _create_simulator_machine(constellation_div, constellation_name, machine_name)
+function _create_simulator_machine(constellation_div, constellation_name, machine_name, traffic_shaper_included)
 {
+	traffic_shaper_included = traffic_shaper_included || false;
     var div =  constellation_div.querySelector("#machines" );
     var machine_div = create_machine(div, machine_name);
     
@@ -101,13 +107,19 @@ function _create_simulator_machine(constellation_div, constellation_name, machin
     create_hostname_widget (machine_div, constellation_name, machine_name, "hostname");	
     create_glx_state_widget(machine_div, constellation_name, machine_name, "glx_state");
     create_simulator_state_widget(machine_div, constellation_name, machine_name, "simulator_state");
+    
+    if (traffic_shaper_included)
+    {
+        create_traffic_shaper_widget(machine_div, constellation_name, machine_name, "traffic_shaper");
+    }
+    
     create_latency_widget(machine_div, constellation_name, machine_name, "latency");
 }
 
 function create_cloudsim_constellation(constellation_div, constellation_name)
 {
 	var machine_name = "cloudsim_" +constellation_name;
-    _create_basic_machine(constellation_div, constellation_name, machine_name );
+    _create_basic_machine(constellation_div, constellation_name);
 }
 
 function create_drc_sim_ami_constellation(constellation_div, constellation_name)

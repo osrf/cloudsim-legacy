@@ -8,8 +8,16 @@ def get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP):
 set -e
 exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
+
+# Add OSRF repositories
+echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
+apt-get update
+
 apt-get install -y ntp 
 apt-get install -y openvpn
+
+apt-get install -y cloudsim-client-tools
 
 cat <<DELIM > /etc/openvpn/openvpn.conf
 dev tun
@@ -423,9 +431,10 @@ echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
 echo "export DISPLAY=:0" >> /home/ubuntu/.bashrc
 
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-apt-get install -y cloudsim-client-tools    
-    
+apt-get install -y cloudsim-client-tools
 
+sudo -u ubuntu /usr/bin/init_tc.py eth0    
+echo "sudo -u ubuntu /usr/bin/init_tc.py eth0" >> /home/ubuntu/setup.log
  
 touch /home/ubuntu/cloudsim/setup/done
 
