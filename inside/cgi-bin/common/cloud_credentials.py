@@ -54,7 +54,7 @@ class Testotronics(unittest.TestCase):
     def test_credentials(self):
         cloud = CloudCredentials('key', 'secret', 'us-east-1d', 'toto.cfg' )
         valid = cloud.validate()
-        self.assert_(valid == False, "error: 'key' is not a valid key")
+        self.assert_(not valid , "error: 'key' is not a valid key")
         cloud.save()
         self.assert_(os.path.exists('toto.cfg'), 'no cred!')
     

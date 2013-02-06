@@ -7,7 +7,7 @@ function add_cloud_credentials_widget(place_holder_div_name)
     //var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs");
     //machine_configurations = eval( '(' + x + ')' );
     var launch_div = document.getElementById(place_holder_div_name);
-    var str  = '<h2>Amazon AWS credentials</h2>'; 
+    var str  = '<h2>Amazon Web Services credentials</h2>'; 
     str += '';
     str += 'Access key <input type="text" name="access_key"/>';
     str += 'Secret access key <input type="text" name="secret_access_key"/>';
