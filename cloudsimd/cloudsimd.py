@@ -116,7 +116,7 @@ def launch( username,
         log("cloudsimd.py launch error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
-        terminate(username, constellation_name, credentials_ec2, constellation_directory)
+        #terminate(username, constellation_name, credentials_ec2, constellation_directory)
     
     
 """
@@ -177,7 +177,7 @@ def stop_simulator(username, constellation,  machine):
             
 
 def monitor(username, config, constellation_name, credentials_ec2):
-    
+
     proc = multiprocessing.current_process().name
     log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))   
     try:
