@@ -27,7 +27,6 @@ log("query string %s" % (q_string) )
 
 
 try:    
-    s = urllib2.unquote(q_string)
     d = urlparse.parse_qs(q_string)
     
     r = {}
