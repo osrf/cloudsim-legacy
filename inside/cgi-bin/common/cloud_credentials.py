@@ -37,7 +37,7 @@ ec2_region_endpoint = %s
         from boto.ec2.connection import EC2Connection
         try:
             conn = EC2Connection(self.aws_access_key_id, self.aws_secret_access_key)
-            z = conn.get_all_zones()
+            conn.get_all_zones()
             return True
         except:
             pass

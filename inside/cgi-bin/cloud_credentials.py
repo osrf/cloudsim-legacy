@@ -32,6 +32,7 @@ try:
     
     r = {}
     r['success'] = False
+    r['user'] = email
     r['msg']="Undefined"
     r['aws_access_key_id'] = d['access_key'][0] 
     r['aws_secret_access_key'] = d['secret_access_key'][0] 
