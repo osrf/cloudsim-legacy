@@ -75,13 +75,21 @@ def wait_for_multiple_machines_to_terminate(ec2conn, roles_to_aws_ids, constella
     missing_machines = {}
     for aws_id, role in aws_ids_to_roles.iteritems():
         log("terminate %s %s" % (role, aws_id))
-        terminated = ec2conn.terminate_instances(instance_ids=[aws_id] )
+        try:
+            terminated = ec2conn.terminate_instances(instance_ids=[aws_id] )
+        except Exception, e:
+            log("FAILED to terminate  %s %s : %s"  % (role, aws_id, e) )
+            
+            
         if len(terminated) ==0:
             missing_machines[role] = aws_id
     if len(missing_machines) > 0:    
         msg = "machine(s) %s cannot be terminated" % missing_machines
         if strict:
             raise LaunchException(msg)
+    
+    # todo: recalc the aws_ids_to_roles without the missing machines
+    
     
     while len(aws_ids_to_roles) > 0:
         done = False

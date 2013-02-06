@@ -177,6 +177,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
         constellation.set_value('gmt', tags['GMT'])
     except:
         pass
+    
     constellation.set_value('simulation_aws_state', 'nothing')
     constellation.set_value('constellation_directory', constellation_directory)
     
@@ -313,11 +314,13 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating zip file bundle")
     key_filename = sim_key_pair_name + '.pem'
     fname_ssh_key =  os.path.join(sim_machine_dir, key_filename)
+    os.chmod(fname_ssh_key, 0600)
     
     fname_ssh_sh =  os.path.join(sim_machine_dir,'ssh.bash')
     file_content = create_ssh_connect_file(key_filename, sim_ip)
     with open(fname_ssh_sh, 'w') as f:
             f.write(file_content)
+    os.chmod(fname_ssh_sh, 0755)
             
     fname_zip = os.path.join(sim_machine_dir, "%s.zip" % sim_machine_name)
     #creating zip

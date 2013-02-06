@@ -8,60 +8,44 @@ import vpc_trio
 from launch_utils.launch import get_unique_short_name
 from launch_utils.testing import get_boto_path, get_test_path
 from vpc_trio import OPENVPN_CLIENT_IP, TS_IP,  OPENVPN_SERVER_IP, trio_launch
-from launch_utils.startup_scripts import get_vpc_router_script
+from launch_utils.startup_scripts import get_vpc_router_script, get_vpc_open_vpn
 
 CONFIGURATION = "vpc_micro_trio"
 
 
-def get_micro_sim_script():
-    SIM_SCRIPT = """#!/bin/bash
+def get_micro_sim_script(routing_script):
+    s = """#!/bin/bash
 exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
+set -ex
 
-route add %s gw %s
 
-apt-get install -y ssh
+""" +routing_script+"""
 
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
 touch /home/ubuntu/cloudsim/setup/done
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
-"""%(OPENVPN_CLIENT_IP, TS_IP)
-    return SIM_SCRIPT
-
-def get_micro_robot_script():
-    ROBOT_SCRIPT = """#!/bin/bash
-exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
-
-date > /home/ubuntu/setup.log
-
 """
+    return s
 
-    ROBOT_SCRIPT += """
-
-route add %s gw %s
-
-""" % (OPENVPN_CLIENT_IP, TS_IP)
-    ROBOT_SCRIPT += """
+def get_micro_robot_script(routing_script):
     
-    
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
-touch /home/ubuntu/cloudsim/setup/done
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
-"""
-    return ROBOT_SCRIPT
+    return get_micro_sim_script(routing_script)
 
 def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
 
+    routing_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
+    
     ROBOT_AWS_TYPE  = 't1.micro'
     ROBOT_AWS_IMAGE = "ami-137bcf7a"
-    ROBOT_SCRIPT = get_micro_robot_script()
+    ROBOT_SCRIPT = get_micro_robot_script(routing_script)
     
     SIM_AWS_TYPE  = 't1.micro'
     SIM_AWS_IMAGE = "ami-137bcf7a"
-    SIM_SCRIPT = get_micro_sim_script()
+    SIM_SCRIPT = get_micro_sim_script(routing_script)
+
     
     ROUTER_AWS_TYPE='t1.micro'
     ROUTER_AWS_IMAGE="ami-137bcf7a"

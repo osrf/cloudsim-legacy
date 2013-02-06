@@ -30,11 +30,37 @@ chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
 """
 
+"""
+Create a service that persist out routing rules accross reboots
+"""
 def get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP):
     
     s  = """
-# Add route 
-route add """ + OPENVPN_CLIENT_IP + "  gw " + TS_IP  + """
+
+cat <<DELIM > /etc/init.d/vpcroute
+#! /bin/sh
+
+case "\$1" in
+  start|"")
+        route add """ + OPENVPN_CLIENT_IP+""" gw """ + TS_IP+"""
+    ;;
+  stop)
+        route del """ + OPENVPN_CLIENT_IP+""" gw """ + TS_IP+"""
+    ;;
+  *)
+    echo "Usage: vpcroute start|stop" >&2
+    exit 3
+    ;;
+esac
+
+:
+DELIM
+
+chmod +x  /etc/init.d/vpcroute 
+ln -s /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
+
+# invoke it now to add route to the router
+/etc/init.d/vpcroute start
 
 """ 
     return s 
@@ -162,8 +188,8 @@ echo "unzip installed" >> /home/ubuntu/setup.log
 apt-get install -y mercurial
 echo "mercurial installed" >> /home/ubuntu/setup.log
 
-apt-get install -y cloud-utils
-echo "cloud-utils installed" >> /home/ubuntu/setup.log
+#apt-get install -y cloud-utils
+#echo "cloud-utils installed" >> /home/ubuntu/setup.log
 
 apt-get install -y ntp
 echo "ntp installed" >> /home/ubuntu/setup.log
@@ -175,8 +201,12 @@ echo "apache2 installed" >> /home/ubuntu/setup.log
 # echo "apache2 with mod-python installed" >> /home/ubuntu/setup.log
 
 apt-get install -y redis-server python-pip
-sudo pip install redis
+pip install redis
 echo "redis installed" >> /home/ubuntu/setup.log
+
+sudo pip install --upgrade boto
+echo "boto installed" >> /home/ubuntu/setup.log
+
 
 sudo pip install unittest-xml-reporting
 echo "XmlTestRunner installed" >> /home/ubuntu/setup.log
@@ -206,7 +236,7 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
     
 
-def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name):
+def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51"):
     
     s = """#!/bin/bash
 # Exit on error
@@ -305,6 +335,22 @@ killall -INT roslaunch
 
 DELIM
 
+cat <<DELIM > /home/ubuntu/cloudsim/ros.bash
+
+# To connect via ROS:
+
+# ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path
+oldrpp=$ROS_PACKAGE_PATH
+
+. /usr/share/drcsim/setup.sh
+eval export ROS_PACKAGE_PATH=\$oldrpp:\\$ROS_PACKAGE_PATH
+export ROS_IP=""" + machine_ip +"""
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311 
+
+export GAZEBO_IP=""" + machine_ip +"""
+export GAZEBO_MASTER_URI=http:///""" + ros_master_ip + """:11345
+
+DELIM
 
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim  
 
@@ -386,11 +432,50 @@ touch /home/ubuntu/cloudsim/setup/done
 """
     return s
 
+def create_vpn_connect_file(openvpn_client_ip):
+    return """#!/bin/bash
+set -e
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-def create_vpn_connect_file():
-    return """#!bin/bash
-sudo openvpn --config openvpn.config
+if [ $UID != 0 ]; then
+  echo "You're not root.  Run this script under sudo."
+  exit 1
+fi
 
+echo "Killing other openvpn connections..."
+killall openvpn || true
+openvpn --config  $DIR/openvpn.config >/dev/null 2>&1 &
+
+echo "VPN ready.  To kill it:"
+echo "    sudo killall openvpn"
+"""
+
+def create_vpc_vpn_connect_file(openvpn_client_ip):
+    return """#!/bin/bash
+set -e
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [ $UID != 0 ]; then
+  echo "You're not root.  Run this script under sudo."
+  exit 1
+fi
+
+echo "Killing other openvpn connections..."
+killall openvpn || true
+openvpn --config  $DIR/openvpn.config >/dev/null 2>&1 &
+
+# Wait for tun0 to come up, then add a static route to the 10.0.0.0/24 network, which is the VPC on the other side
+# of the router.
+while ! ifconfig tun0 || test -z "`ifconfig tun0 | grep 'inet addr'`" 2>/dev/null; do
+  echo "Waiting for tun0 to come up..."
+  sleep 1
+done
+
+echo "Adding route to 10.0.0.0/24 network"
+route add -net 10.0.0.0 netmask 255.255.255.0 gw """ + openvpn_client_ip + """
+
+echo "VPN ready.  To kill it:"
+echo "    sudo killall openvpn"
 """
 
 def create_openvpn_client_cfg_file(hostname,
@@ -404,7 +489,7 @@ secret openvpn.key
     """ 
     return s
 
-def create_ros_connect_file(openvpn_client_ip, openvpn_server_ip ):
+def create_ros_connect_file(machine_ip, master_ip ):
     
     s = """
 # To connect via ROS:
@@ -419,11 +504,11 @@ def create_ros_connect_file(openvpn_client_ip, openvpn_server_ip ):
 oldrpp=$ROS_PACKAGE_PATH
 . /opt/ros/fuerte/setup.sh
 eval export ROS_PACKAGE_PATH=$oldrpp:\$ROS_PACKAGE_PATH
-export ROS_IP=""" + openvpn_client_ip + """
-export ROS_MASTER_URI=http://""" + openvpn_server_ip + """:11311 
+export ROS_IP=""" + machine_ip + """
+export ROS_MASTER_URI=http://""" + master_ip + """:11311 
 
-export GAZEBO_IP=""" + openvpn_client_ip + """
-export GAZEBO_MASTER_URI=http://""" + openvpn_server_ip + """:11345
+export GAZEBO_IP=""" + machine_ip + """
+export GAZEBO_MASTER_URI=http://""" + master_ip + """:11345
                 
     """  
     return s
