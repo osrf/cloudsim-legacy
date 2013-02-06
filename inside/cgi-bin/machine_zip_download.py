@@ -5,16 +5,23 @@ from __future__ import print_function
 
 import cgi
 import cgitb
-import json
 import os
 import sys
 import redis
+from common.web import print_http_header
+from common.machine_configuration import get_constellation_data
 
 cgitb.enable()
 
-from common import  authorize, MachineDb
+from common import  authorize
 
 red = redis.Redis()
+
+def get_machine_zip_key(email, constellation_name, machine_name):
+    constellation = get_constellation_data(email, constellation_name)
+    directory = constellation['constellation_directory']
+    path = os.path.join(directory,machine_name,machine_name + ".zip" )
+    return path
 
 def log(msg):
     red.publish("cloudsim_log", "[machine_zip_download.py] " + msg)
@@ -41,18 +48,24 @@ form = cgi.FieldStorage()
 constellation_name = form.getfirst('constellation')
 machine_name = form.getfirst('machine')
 
-log("constellation_name: %s" % constellation_name)
-log("machine_name: %s" % machine_name)
+try:
+    filename = get_machine_zip_key(email, constellation_name, machine_name)
 
-mdb = MachineDb(email)
-filename = mdb.get_zip_fname(constellation_name, machine_name)
-
-log(filename)
-if os.path.exists(filename):
-    download(filename)
-else:
-    print ("Status: 404 Not Found")
-    print ("Content-Type: text/html\n\n")
-    print ("<h1>404 File not found!</h1>" )
+    log("constellation_name: %s" % constellation_name)
+    log("machine_name: %s" % machine_name)
+    log(filename)
     
+    if os.path.exists(filename):
+        download(filename)
+    else:
+      
+        print ("Status: 404 Not Found")
+        print ("Content-Type: text/html\n\n")
+        print ("<h1>404 File not found!</h1>" )
+        print("<br>" + filename + "")
+        
+except Exception, e:   
+    print_http_header()
+    print ("<title>Access Denied</title>")
+    print ("<h1>Access Denied: " + str(e) +"</h1>")
     

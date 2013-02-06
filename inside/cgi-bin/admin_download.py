@@ -8,7 +8,10 @@ import os
 import sys
 cgitb.enable()
 
-from common import  authorize, TEAM_LOGIN_SSH_FNAME
+from common import  authorize
+
+
+TEAM_LOGIN_SSH_FNAME= '/var/www/cloudsim_ssh.zip'
 
 
 email = authorize("admin")

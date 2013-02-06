@@ -9,17 +9,21 @@ import time
 
 import multiprocessing
 from json import loads
-
-
 import redis
+import json
 
-from common import RedisPublisher
+from launchers.launch_utils import RedisPublisher
+
 import launchers
-from common import MACHINES_DIR
-from common import BOTO_CONFIG_FILE_USEAST
-from common import Machine
 
-from common.machine import get_unique_short_name
+
+#from common import Machine
+
+from launchers.launch_utils import get_unique_short_name
+
+MACHINES_DIR = '/var/www-cloudsim-auth/machines'
+
+from common import BOTO_CONFIG_FILE_USEAST
 from common.web import get_cloudsim_version_txt
 
 import traceback
@@ -27,17 +31,35 @@ import traceback
 from launchers import vpc_trio
 from launchers import simulator
 from launchers import vpc_micro_trio
+from launchers import cloudsim
 
-import json
 
 from launchers.launch_utils import get_constellations
 from launchers.launch_utils import get_constellation_data
+from launchers.launch_utils import set_constellation_data
 
 
+def flush_db():
+    r = redis.Redis()
+    r.flushdb()
+
+def list_constellations():
+    r = redis.Redis()
+    x = [json.loads(r.get(x)) for x in r.keys()]
+    
+    return x
+#
+# The plugins contains the function pointers for each type of constellation
+# Don't forget to register new constellations
+#
 plugins = {}
 plugins['vpc_micro_trio'] = {'launch':vpc_micro_trio.launch,    'terminate':vpc_micro_trio.terminate,    'monitor':vpc_micro_trio.monitor,   'start_simulator':vpc_micro_trio.start_simulator,   'stop_simulator':vpc_micro_trio.stop_simulator}
 plugins['vpc_trio'] =       {'launch':vpc_trio.launch,          'terminate':vpc_trio.terminate,          'monitor':vpc_trio.monitor,         'start_simulator':vpc_trio.start_simulator,         'stop_simulator':vpc_trio.stop_simulator}
 plugins['simulator'] =       {'launch':simulator.launch,          'terminate':simulator.terminate,       'monitor':simulator.monitor,         'start_simulator':simulator.start_simulator,         'stop_simulator':simulator.stop_simulator}
+plugins['cloudsim'] =       {'launch':cloudsim.launch,          'terminate':cloudsim.terminate,       'monitor':cloudsim.monitor,         'start_simulator':cloudsim.start_simulator,         'stop_simulator':cloudsim.stop_simulator}
+
+plugins['vpc_trio_prerelease'] =       {'launch':vpc_trio.launch_prerelease,          'terminate':vpc_trio.terminate_prerelease,          'monitor':vpc_trio.monitor_prerelease,         'start_simulator':vpc_trio.start_simulator,         'stop_simulator':vpc_trio.stop_simulator}
+plugins['simulator_prerelease'] =       {'launch':simulator.launch_prerelease,          'terminate':simulator.terminate_prerelease,       'monitor':simulator.monitor_prerelease,         'start_simulator':simulator.start_simulator,         'stop_simulator':simulator.stop_simulator}
 
 
 class LaunchException(Exception):
@@ -57,7 +79,11 @@ def log(msg, chan="cloudsim_log"):
         pass
 
 
-
+def list_constellations():
+    r = redis.Redis()
+    x = [json.loads(r.get(x)) for x in r.keys()]
+    
+    return x
 
 
 def launch( username, 
@@ -89,7 +115,8 @@ def launch( username,
     except Exception, e:
         log("cloudsimd.py launch error: %s" % e)
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb) 
+        log("traceback:  %s" % tb)
+        terminate(username, constellation_name, credentials_ec2, constellation_directory)
     
     
 """
@@ -120,32 +147,36 @@ def terminate(username,
         log("traceback:  %s" % tb) 
     data = get_constellation_data(username, constellation)
     data['constellation_state'] = 'terminated'
-    get_constellation_data(username, constellation, data, 360)
+    set_constellation_data(username, constellation, data, 360)
         
 
-def start_simulator(username, config, constellation, machine_name, package_name, launch_file_name, launch_arg, credentials_ec2, root_directorys):
+def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
 
     try:
-        start_simulator  = plugins[config_name]['start_simulator']
-        start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, credentials_ec2, root_directory)
+        data = get_constellation_data(username, constellation)
+        config = data['configuration']
+        start_simulator  = plugins[config]['start_simulator']
+        start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args)
     except Exception, e:
         log("cloudsimd.py start_simulator error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb) 
 
 
-def stop_simulator(username, config, constellation,  machine):
+def stop_simulator(username, constellation,  machine):
     try:
+        data = get_constellation_data(username, constellation)
+        config = data['configuration']
         root_directory =  MACHINES_DIR
-        stop_simulator  = plugins[config_name]['stop_simulator']
-        stop_simulator(username, constellation, machine, root_directory)
+        stop_simulator  = plugins[config]['stop_simulator']
+        stop_simulator(username, constellation, machine)
     except Exception, e:
         log("cloudsimd.py stop_simulator error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
             
 
-def monitor(username, config, constellation_name, credentials_ec2, constellation_path):
+def monitor(username, config, constellation_name, credentials_ec2):
     
     proc = multiprocessing.current_process().name
     log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))   
@@ -156,7 +187,7 @@ def monitor(username, config, constellation_name, credentials_ec2, constellation
         while not done:
             try:
                 #log("monitor %s (%s)" % (constellation_name, counter) )
-                done = monitor(username, constellation_name, credentials_ec2, constellation_path, counter)
+                done = monitor(username, constellation_name, credentials_ec2, counter)
                 #log("monitor return value %s" % ( done) )
                 counter += 1
             except Exception, e:
@@ -171,11 +202,11 @@ def monitor(username, config, constellation_name, credentials_ec2, constellation
         tb = traceback.format_exc()
         log("traceback:  %s" % tb) 
 
-def async_monitor(username, config, constellation_name, boto_path, constellation_path):
+def async_monitor(username, config, constellation_name, boto_path):
     
     log("cloudsimd async_monitor [config %s] %s/%s"% (config, username, constellation_name) )
     try:
-        p = multiprocessing.Process(target=monitor, args=(username, config, constellation_name, boto_path, constellation_path) )
+        p = multiprocessing.Process(target=monitor, args=(username, config, constellation_name, boto_path) )
         p.start()
     except Exception, e:
         log("cloudsimd async_monitor Error %s" % e)
@@ -203,21 +234,21 @@ def async_terminate(username, constellation, credentials_ec2, constellation_dire
 
 
                 
-def async_start_simulator(username, config, constellation, machine, package_name, launch_file_name,launch_args, credentials_ec2, root_directory ):
+def async_start_simulator(username, constellation, machine, package_name, launch_file_name,launch_args ):
     
     
     log("async start simulator! user %s machine %s, pack %s launch %s args '%s'" % (username, machine, package_name, 
                                                                                     launch_file_name, launch_args ))
     try:
-        p = multiprocessing.Process(target=start_simulator, args=(username, config, constellation, machine, package_name, launch_file_name, launch_args, credentials_ec2, root_directory ) )
+        p = multiprocessing.Process(target=start_simulator, args=(username,  constellation, machine, package_name, launch_file_name, launch_args ) )
         p.start()
     except Exception, e:
         log("Cloudsim daemon Error %s" % e)
 
-def async_stop_simulator(username, config, constellation, machine):
-    log("async stop simulator! user %s machine %s" % (username, machine))
+def async_stop_simulator(username, constellation, machine):
+    log("async stop simulator! user %s constellation %s machine %s" % (username, constellation, machine))
     try:
-        p = multiprocessing.Process(target=stop_simulator, args=(username, config, constellation,  machine) )
+        p = multiprocessing.Process(target=stop_simulator, args=(username,  constellation,  machine) )
         # jobs.append(p)
         p.start()
     except Exception, e:
@@ -255,8 +286,7 @@ def resume_monitoring(boto_path, root_dir):
     log("existing constellations %s" % constellation_names)
     for domain, constellation_name in constellation_names:
         try:
-            constellation_path = os.path.join(root_dir, constellation_name )  
-            log("   constellation %s/%s [%s]" %  (domain, constellation_name, constellation_path) )  
+            log("   constellation %s/%s " %  (domain, constellation_name) )  
             constellation = get_constellation_data(domain,  constellation_name)
             state = constellation['constellation_state']
             config = constellation['configuration']
@@ -264,7 +294,7 @@ def resume_monitoring(boto_path, root_dir):
             log ("      config %s" % config)
             log ("      state %s" % state)
             if state != "terminated":
-                async_monitor(username, config, constellation_name, boto_path, constellation_path)
+                async_monitor(username, config, constellation_name, boto_path)
         except Exception, e:
             print ("MONITOR ERROR %s in constellation : %s" % (e, constellation_name))
             tb = traceback.format_exc()
@@ -304,7 +334,7 @@ def run(boto_path, root_dir, tick_interval):
                 os.makedirs(constellation_path)
                 
                 async_launch(username, config, constellation_name, boto_path, constellation_path)
-                async_monitor(username, config, constellation_name, boto_path, constellation_path)
+                async_monitor(username, config,constellation_name, boto_path)
                 continue
             
             constellation = data['constellation']
@@ -314,16 +344,17 @@ def run(boto_path, root_dir, tick_interval):
                 async_terminate(username, constellation, boto_path, constellation_path )
                 continue
             
+            
             machine = data['machine']
             if cmd == "start_simulator" :
                 package_name = data['package_name']
                 launch_file_name = data['launch_file_name'] 
                 launch_args = data['launch_args']
-                async_start_simulator(username, config, constellation, machine, package_name, launch_file_name, launch_args, boto_path, constellation_path) 
+                async_start_simulator(username, constellation, machine, package_name, launch_file_name, launch_args) 
                 continue
             
             if cmd == "stop_simulator" :
-                async_stop_simulator(username, config, constellation, machine, boto_path, constellation_path)
+                async_stop_simulator(username, constellation, machine)
                 continue
             
             

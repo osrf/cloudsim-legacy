@@ -27,9 +27,9 @@ print('\n')
 
 cdb = ConfigsDb(email)
 
-admin_configs = ['micro_vpn','ros_fuerte','cloudsim', 
-                 'gazebo', 'drc_sim_ami', 'micro_robot',
-                 'micro_sim', 'micro_duo' ]
+admin_configs = ['vpc_micro_trio', # 'cloudsim', 
+                'micro_vpn',
+                'drc_sim_ami']
 
 configs = cdb.get_configs()
 
@@ -44,6 +44,5 @@ str = json.dumps(configs)
     
 
 
-log("Launchers: %s" % cdb.get_config_dir())
 
 print(str)

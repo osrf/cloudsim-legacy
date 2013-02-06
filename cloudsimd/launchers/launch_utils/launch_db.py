@@ -1,15 +1,14 @@
 from __future__ import print_function
 import unittest
-import time
 import logging
-from common import testing
+import testing
 import json
 
-def log(msg):
+def log(msg, channel = "launch"):
     try:
         import redis
         redis_client = redis.Redis()
-        redis_client.publish("launch", msg)
+        redis_client.publish(channel, msg)
         logging.info(msg)
     except:
         print("Warning: redis not installed.")
@@ -27,8 +26,8 @@ def publish_event(username, type, data):
         channel_name = msg['username'].split("@")[1]
         j_msg = json.dumps(msg)
         redis_cli.publish(channel_name, j_msg)
-    except:
-        log("publish_event: channel[%s] msg[%s]" % (msg))
+    except Exception, e:
+        log("publish_event: [%s] type %s msg[%s]" % (username, type, msg))
         
             
 class ConstellationState(object):
@@ -104,8 +103,8 @@ def get_constellation_data(user_or_domain, constellation):
         red = redis.Redis()
         domain = _domain(user_or_domain)
         redis_key = domain+"/"+constellation
-        str = red.get(redis_key)
-        data = json.loads(str)
+        s = red.get(redis_key)
+        data = json.loads(s)
         return data
     except:
         return None    

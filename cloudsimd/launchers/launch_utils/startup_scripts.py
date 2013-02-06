@@ -8,7 +8,9 @@ def get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP):
 set -e
 exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
+apt-get install -y ntp 
 apt-get install -y openvpn
+
 cat <<DELIM > /etc/openvpn/openvpn.conf
 dev tun
 ifconfig """ + OPENVPN_SERVER_IP+ " " + OPENVPN_CLIENT_IP + """
@@ -44,7 +46,7 @@ def get_open_vpn_single(client_ip,
     
 cat <<DELIM >  /home/ubuntu/openvpn.config  
 dev tun
-ifconfig """ + client_ip + " " + server_ip + """
+ifconfig """ + server_ip + " " + client_ip + """
 secret static.key  
 
 DELIM
@@ -68,7 +70,143 @@ echo "openvpn setup complete" >> /home/ubuntu/setup.log
     return s
     
 
-def get_drc_startup_script(open_vpn_script):
+def get_cloudsim_startup_script():
+    s = """#!/bin/bash
+# Exit on error
+set -e
+# Redirect everybody's output to a file
+logfile=/home/ubuntu/launch_stdout_stderr.log
+exec > $logfile 2>&1
+
+
+cat <<DELIM > /etc/apt/sources.list
+
+##
+## cloudsim 
+##
+## Note, this file is written by cloud-init on first boot of an instance
+## modifications made here will not survive a re-bundle.
+## if you wish to make changes you can:
+## a.) add 'apt_preserve_sources_list: true' to /etc/cloud/cloud.cfg
+##     or do the same in user-data
+## b.) add sources in /etc/apt/sources.list.d
+## c.) make changes to template file /etc/cloud/templates/sources.list.tmpl
+#
+
+# See http://help.ubuntu.com/community/UpgradeNotes for how to upgrade to
+# newer versions of the distribution.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
+
+## Major bug fix updates produced after the final release of the
+## distribution.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+## team. Also, please note that software in universe WILL NOT receive any
+## review or updates from the Ubuntu security team.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
+
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
+## team, and may not be under a free licence. Please satisfy yourself as to
+## your rights to use the software. Also, please note that software in 
+## multiverse WILL NOT receive any review or updates from the Ubuntu
+## security team.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+
+## Uncomment the following two lines to add software from the 'backports'
+## repository.
+## N.B. software from this repository may not have been tested as
+## extensively as that contained in the main release, although it includes
+## newer versions of some applications which may provide useful features.
+## Also, please note that software in backports WILL NOT receive any review
+## or updates from the Ubuntu security team.
+# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+# deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+
+## Uncomment the following two lines to add software from Canonical's
+## 'partner' repository.
+## This software is not part of Ubuntu, but is offered by Canonical and the
+## respective vendors as a service to Ubuntu users.
+# deb http://archive.canonical.com/ubuntu precise partner
+# deb-src http://archive.canonical.com/ubuntu precise partner
+
+deb http://security.ubuntu.com/ubuntu precise-security main restricted
+deb-src http://security.ubuntu.com/ubuntu precise-security main restricted
+deb http://security.ubuntu.com/ubuntu precise-security universe
+deb-src http://security.ubuntu.com/ubuntu precise-security universe
+deb http://security.ubuntu.com/ubuntu precise-security multiverse
+deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
+
+DELIM
+
+mkdir /home/ubuntu/cloudsim
+mkdir /home/ubuntu/cloudsim/setup
+chown -R ubuntu:ubuntu /home/ubuntu/
+
+apt-get update
+
+echo "Installing packages" >> /home/ubuntu/setup.log
+
+apt-get install -y unzip zip
+echo "unzip installed" >> /home/ubuntu/setup.log
+
+# install mercurial and fetch latest version of the Team Login website
+apt-get install -y mercurial
+echo "mercurial installed" >> /home/ubuntu/setup.log
+
+apt-get install -y cloud-utils
+echo "cloud-utils installed" >> /home/ubuntu/setup.log
+
+apt-get install -y ntp
+echo "ntp installed" >> /home/ubuntu/setup.log
+
+apt-get install -y apache2
+echo "apache2 installed" >> /home/ubuntu/setup.log
+
+# apt-get install -y libapache2-mod-python
+# echo "apache2 with mod-python installed" >> /home/ubuntu/setup.log
+
+apt-get install -y redis-server python-pip
+sudo pip install redis
+echo "redis installed" >> /home/ubuntu/setup.log
+
+sudo pip install unittest-xml-reporting
+echo "XmlTestRunner installed" >> /home/ubuntu/setup.log
+
+ 
+apt-add-repository -y ppa:rye/ppa
+apt-get update
+echo "ppa:rye/ppa repository added" >> /home/ubuntu/setup.log
+
+apt-get install -y libapache2-mod-auth-openid
+ln -s /etc/apache2/mods-available/authopenid.load /etc/apache2/mods-enabled
+echo "libapache2-mod-auth-openid 0.6 installed from ppa:rye/ppa" >> /home/ubuntu/setup.log
+
+/etc/init.d/apache2 restart
+echo "apache2 restarted" >> /home/ubuntu/setup.log
+
+# to list installed modules  
+# apachectl -t -D DUMP_MODULES
+
+# Make sure that www-data can run programs in the background (used inside CGI scripts)
+echo www-data > /etc/at.allow
+ 
+touch /home/ubuntu/cloudsim/setup/done
+echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
+"""
+
+    return s
+    
+
+def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name):
     
     s = """#!/bin/bash
 # Exit on error
@@ -148,6 +286,26 @@ DELIM
 
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
+
+cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
+
+echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
+
+. /usr/share/drcsim/setup.sh 
+export ROS_IP=""" + machine_ip +""" 
+export GAZEBO_IP=""" + machine_ip +"""
+export DISPLAY=:0 
+roslaunch \$1 \$2 \$3 gzname:=gzserver  &
+
+DELIM
+
+cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
+
+killall -INT roslaunch
+
+DELIM
+
+
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim  
 
 # Add ROS and OSRF repositories
@@ -213,8 +371,10 @@ initctl start lightdm
 
 apt-get install -y ntp 
 
-echo "install drc" >> /home/ubuntu/setup.log
-apt-get install -y drcsim
+echo "install """ + drc_package_name+ """ ">> /home/ubuntu/setup.log
+apt-get install -y """ + drc_package_name+ """
+echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
+echo "export DISPLAY=:0" >> /home/ubuntu/.bashrc
 
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools    
@@ -229,7 +389,7 @@ touch /home/ubuntu/cloudsim/setup/done
 
 def create_vpn_connect_file():
     return """#!bin/bash
-sudo openvpn --config openvpn.config"
+sudo openvpn --config openvpn.config
 
 """
 
@@ -247,12 +407,12 @@ secret openvpn.key
 def create_ros_connect_file(openvpn_client_ip, openvpn_server_ip ):
     
     s = """
-# To connect via ROS And Gazebo:
+# To connect via ROS:
 # 1. Connect via OpenVPN 
 # 2. Download this file: [ros.sh] <- autogenerated with the right IP addresses
 # 3. In a terminal, go to the directory containing that file.
 # 4. Execute the following command:
-#    . ros.sh
+#    . ros.bash
 # 5. Now your environment is configured to connect to a ROS master running on this machine.
 
 # ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path

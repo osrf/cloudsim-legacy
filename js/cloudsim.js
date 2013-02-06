@@ -9,7 +9,7 @@ function create_constellation(div_name, configuration, constellation)
     if(configuration == "micro_vpn") return create_micro_vpn_constellation(constellation_div, constellation);
     if(configuration == "ros_fuerte") return create_ros_fuerte_constellation(constellation_div, constellation);
 
-    if(configuration == "vpc_trio")
+    if(configuration == "vpc_trio" || configuration == "vpc_micro_trio" || configuration == "vpc_trio_prerelease" )
     {
         _create_basic_machine(constellation_div, constellation, "field_computer_" + constellation );
         _create_basic_machine(constellation_div, constellation, "router_" + constellation );
@@ -29,7 +29,7 @@ function create_constellation(div_name, configuration, constellation)
         create_latency_widget(machine_div, constellation, machine_name, "latency");
     }
     
-    if(configuration == "simulator")
+    if(configuration == "simulator" || configuration == "simulator_prerelease")
     {
         var machine_name = "simulator_" +constellation;
         _create_simulator_machine(constellation_div, constellation, machine_name);

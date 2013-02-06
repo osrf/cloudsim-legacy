@@ -7,9 +7,15 @@ import Cookie
 import json
 import unittest
 
-from constants import SESSION_DATABASE, USER_DATABASE, \
-OPENID_SESSION_COOKIE_NAME, HTTP_COOKIE, ADMIN_EMAIL
-from testing import get_test_path
+
+## web, logout, usercheck
+OPENID_SESSION_COOKIE_NAME = 'open_id_session_id'
+## web, usercheck
+HTTP_COOKIE = 'HTTP_COOKIE'
+
+ADMIN_EMAIL = 'cloudsim-info@osrfoundation.org'
+USER_DATABASE = '/var/www-cloudsim-auth/users'
+SESSION_DATABASE = '/var/www-cloudsim-auth/sessions'
 
 
 
@@ -54,10 +60,8 @@ class UserDatabase (object):
     def _write_users(self, users):
         with open(self.fname, 'w') as fp:
             json.dump(users, fp)
-#            for u in users:
-#                f.write("%s\n" % u)
-            
-                
+
+                   
     def remove_user(self, email_address):
         old_guy = email_address.strip()
         users = self.get_users()
@@ -194,7 +198,7 @@ class CloudsimTest(unittest.TestCase):
 class AdminDbTest(unittest.TestCase):
 
     def test_addremove_users(self):
-        db_fname = get_test_path('userdbtest.txt')
+        db_fname = "userdbtest.txt" #get_test_path('userdbtest.txt')
         if(os.path.exists(db_fname)):
             os.remove(db_fname)
         

@@ -21,7 +21,7 @@ function create_machine_launch_monitor_widget(machine_div, constellation_name, m
         if(data.type != 'launch')
         	return;
 
-       	widget_div.innerHTML = "Launch: " + status_img(data.color) + " " + data.text;
+       	widget_div.innerHTML =  status_img(data.color) + "<b>Launch:</b>  " + data.text;
         
     });
 }

@@ -51,9 +51,10 @@ function create_machine_state_widget(machine_div, constellation_name, machine_na
 
 function _update_machine_state(widget_div, color, text)
 {
-    var str = "Machine state: "; // widget_name;
+    var str = ""; // widget_name;
     var status = status_img(color);
     str += status;
+    str += "<b>Machine state:</b> " 
     str += text;
     widget_div.innerHTML = str;
     
