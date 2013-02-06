@@ -37,17 +37,22 @@ ec2_region_endpoint = %s
         from boto.ec2.connection import EC2Connection
         try:
             conn = EC2Connection(self.aws_access_key_id, self.aws_secret_access_key)
-            conn.get_all_zones()
+            z = conn.get_all_zones()
+            return True
         except:
-            return False
-        return True
+            pass
+        return False
         
 
 class Testotronics(unittest.TestCase):
-
-   
+    
+#    def test_acredentials(self):
+#        cloud = CloudCredentials('', '', 'us-east-1b',  fname='toto.cfg' )
+#        valid = cloud.validate()
+#        self.assert_(valid, "yo")
+        
     def test_credentials(self):
-        cloud = CloudCredentials('aws_access_key_id', 'aws_secret_access_key', 'ec2_region_name', 'ec2_region_endpoint', 'toto.cfg' )
+        cloud = CloudCredentials('key', 'secret', 'us-east-1d', 'toto.cfg' )
         valid = cloud.validate()
         self.assert_(valid == False, "valid?")
         cloud.save()

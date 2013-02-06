@@ -37,12 +37,13 @@ function remove_user(user_name)
     console.log(x);
 }
 
-function change_credentials(access_key, secret_access_key)
+function change_credentials(access_key, secret_access_key, availability_zone)
 {
     var key = encodeURIComponent(access_key);
     var secret = encodeURIComponent(secret_access_key);
     var url = '/cloudsim/inside/cgi-bin/cloud_credentials?access_key=';
     url += key+'&secret_access_key=' + secret;
+    url += "&availability_zone="+availability_zone;
     console.log("[PUT] " + url);
     var msg = httpPut(url);
     

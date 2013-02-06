@@ -3,16 +3,16 @@
 from __future__ import with_statement
 from __future__ import print_function
 import os
-import cgi
 import cgitb
 import json
 
 import redis
 from common import  authorize
-import urllib2
+import urlparse
 from common import CloudCredentials
+import urllib2
 
-
+cgitb.enable()
 
 
 def log(msg):
@@ -20,57 +20,29 @@ def log(msg):
     red.publish("cloudsim_log", "cloud_credentials.py > %s" % msg )
     
 
-
-def parse_query_string(str):
-    x = str.replace('&secret_access_key=',' ')
-    x2 = x.replace('access_key=', '')
-    x3 = urllib2.unquote(x2)
-    access, secret =  x3.split(' ')
-    log("access='%s' secret='%s'" %(access, secret) )
-    return access, secret
-
-    
-cgitb.enable()
 email = authorize("admin")
 method = os.environ['REQUEST_METHOD']
 q_string= os.environ['QUERY_STRING']
 log("query string %s" % (q_string) )
 
 
-
-
-
-#try:
-#    log("FORMIDABLE")
-#    log("FORM keys: %s" % form.keys() )
-#    aws_access_key_id = form.getfirst("access_key")
-#    aws_secret_access_key = form.getfirst("secret_access_key")
-#    
-#except Exception, e:
-#    log(e)
-#    pass
-
-
-
-#log("[%s] (%s) (%s)" % (method, aws_access_key_id, aws_secret_access_key ) )
-#
-#db = UserDatabase()
-#
 try:    
-    aws_access_key_id, aws_secret_access_key = parse_query_string(os.environ['QUERY_STRING'])
+    s = urllib2.unquote(q_string)
+    d = urlparse.parse_qs(q_string)
+    
     r = {}
     r['success'] = False
     r['msg']="Undefined"
-    r['aws_access_key_id'] = aws_access_key_id
-    r['aws_secret_access_key'] = aws_secret_access_key
+    r['aws_access_key_id'] = d['access_key'][0] 
+    r['aws_secret_access_key'] = d['secret_access_key'][0] 
+    r['aws_availablity_zone'] = d['availability_zone'][0]
     #
     print('Content-type: application/json')
     print("\n")
     #
     if method == 'PUT':
         log("new credentials")
-        cloud = CloudCredentials(aws_access_key_id, aws_secret_access_key)
-        
+        cloud = CloudCredentials(r['aws_access_key_id'], r['aws_secret_access_key'], ec2_region_name = r['aws_availablity_zone'] )
         
         if cloud.validate():
             cloud.save()
@@ -99,4 +71,5 @@ try:
     
 except Exception, e:
     log(e)
+    
     

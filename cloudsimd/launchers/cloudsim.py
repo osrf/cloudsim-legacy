@@ -182,7 +182,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     constellation.set_value('constellation_directory', constellation_directory)
     
     constellation.set_value('username', username)
-    sim_machine_name = "simulator_"+ constellation_name
+    sim_machine_name = "cloudsim_"+ constellation_name
     constellation.set_value('sim_machine_name', sim_machine_name)
     
     sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
@@ -438,7 +438,7 @@ def terminate(username, constellation_name, credentials_ec2, constellation_direc
 
 def cloudsim_bootstrap(username, credentials_ec2):
     print(__file__)
-    constellation_name = get_unique_short_name('CloudSim_')
+    constellation_name = get_unique_short_name('c')
     tags = {'GMT':'now'}
     constellation_directory = tempfile.mkdtemp("cloudsim")
     
