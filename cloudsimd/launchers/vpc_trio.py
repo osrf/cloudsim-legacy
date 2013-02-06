@@ -50,7 +50,7 @@ def aws_connect(credentials_ec2):
 
 def create_vcp_router_securtity_group(ec2conn, sg_name, constellation_name, vpc_id, vpn_subnet):
     sg = ec2conn.create_security_group(sg_name, 'Security group for constellation %s' % (constellation_name), vpc_id)
-    sg.authorize('udp', 0, 1194, '0.0.0.0/0')   # openvpn
+    sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
     sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
     sg.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
     sg.authorize('udp' , 0, 65535, vpn_subnet)
