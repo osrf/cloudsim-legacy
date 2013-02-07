@@ -385,7 +385,7 @@ gztopic list
     os.chmod(fname_start_vpn, 0755)
 
     fname_ros = os.path.join(sim_machine_dir, "ros.bash")    
-    file_content = create_ros_connect_file(openvpn_client_ip=OPENVPN_CLIENT_IP, openvpn_server_ip=OPENVPN_SERVER_IP)
+    file_content = create_ros_connect_file(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
 
     with open(fname_ros, 'w') as f:
         f.write(file_content)
