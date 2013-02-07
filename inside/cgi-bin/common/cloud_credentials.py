@@ -38,18 +38,23 @@ ec2_region_endpoint = %s
         try:
             conn = EC2Connection(self.aws_access_key_id, self.aws_secret_access_key)
             conn.get_all_zones()
+            return True
         except:
-            return False
-        return True
+            pass
+        return False
         
 
 class Testotronics(unittest.TestCase):
-
-   
+    
+#    def test_acredentials(self):
+#        cloud = CloudCredentials('', '', 'us-east-1b',  fname='toto.cfg' )
+#        valid = cloud.validate()
+#        self.assert_(valid, "yo")
+        
     def test_credentials(self):
-        cloud = CloudCredentials('aws_access_key_id', 'aws_secret_access_key', 'ec2_region_name', 'ec2_region_endpoint', 'toto.cfg' )
+        cloud = CloudCredentials('key', 'secret', 'us-east-1d', 'toto.cfg' )
         valid = cloud.validate()
-        self.assert_(valid == False, "valid?")
+        self.assert_(not valid , "error: 'key' is not a valid key")
         cloud.save()
         self.assert_(os.path.exists('toto.cfg'), 'no cred!')
     
