@@ -107,7 +107,7 @@ echo "openvpn setup complete" >> /home/ubuntu/setup.log
 def get_cloudsim_startup_script():
     s = """#!/bin/bash
 # Exit on error
-set -e
+set -ex
 # Redirect everybody's output to a file
 logfile=/home/ubuntu/launch_stdout_stderr.log
 exec > $logfile 2>&1

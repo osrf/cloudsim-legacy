@@ -106,7 +106,7 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
             
             if(data.color == 'gray' )
             {
-                widget_div.querySelector("img").src = "/js/images/blue_status.png";
+                widget_div.querySelector("img").src = "/js/images/gray_status.png";
                 //stop_button.disabled = true;
                 //start_button.disabled = true;
             }
