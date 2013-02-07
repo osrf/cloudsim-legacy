@@ -1,9 +1,9 @@
 // Units: ms.
 var INITIAL_PACKET_LATENCY = 0;
-var MAX_PACKET_LATENCY = 1000; 
+var MAX_PACKET_LATENCY = 500; 
 
 //Units: percentage
-var MAX_PACKET_LOSS = 100; 
+var MAX_PACKET_LOSS = 40; 
 var INITIAL_PACKET_LOSS = 0;
 
 function create_traffic_shaper_widget(_machineDiv, _constellationName, _machineName, _widgetName)
