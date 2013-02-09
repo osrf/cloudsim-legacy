@@ -119,7 +119,7 @@ function _create_simulator_machine(constellation_div, constellation_name, machin
 function create_cloudsim_constellation(constellation_div, constellation_name)
 {
 	var machine_name = "cloudsim_" +constellation_name;
-    _create_basic_machine(constellation_div, constellation_name);
+    _create_basic_machine(constellation_div, constellation_name, machine_name);
 }
 
 function create_drc_sim_ami_constellation(constellation_div, constellation_name)
