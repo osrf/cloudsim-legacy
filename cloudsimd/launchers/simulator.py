@@ -219,18 +219,6 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
     os.makedirs(sim_machine_dir)
     
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "starting")
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "yellow", "starting")
-    
-#    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "acquiring public ip")
-#    elastic_ip = ec2conn.allocate_address('vpc')
-#    eip_allocation_id = elastic_ip.allocation_id
-#    constellation.set_value('eip_allocation_id', eip_allocation_id)
-#    router_ip = elastic_ip.public_ip
-#    constellation.set_value('router_ip', router_ip)
-#    log("elastic ip %s" % elastic_ip.public_ip)
-#    clean_local_ssh_key_entry(router_ip)
-
     launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "setting up security groups")
     sim_sg_name = 'sim-sg-%s'%(constellation_name) 
     sim_security_group= ec2conn.create_security_group(sim_sg_name, "simulator security group for constellation %s" % constellation_name)
@@ -382,10 +370,10 @@ gztopic list
     file_content = create_vpn_connect_file(OPENVPN_CLIENT_IP)
     with open(fname_start_vpn, 'w') as f:
         f.write(file_content)
-    os.chmod(fname_start_vpn, 0755)
+    os.chmod(fname_start_vpn, 0755) # makes the file executable
 
     fname_ros = os.path.join(sim_machine_dir, "ros.bash")    
-    file_content = create_ros_connect_file(openvpn_client_ip=OPENVPN_CLIENT_IP, openvpn_server_ip=OPENVPN_SERVER_IP)
+    file_content = create_ros_connect_file(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
 
     with open(fname_ros, 'w') as f:
         f.write(file_content)
@@ -398,7 +386,7 @@ gztopic list
     file_content = create_ssh_connect_file(key_filename, sim_ip)
     with open(fname_ssh_sh, 'w') as f:
             f.write(file_content)
-    os.chmod(fname_ssh_sh, 0600)
+    os.chmod(fname_ssh_sh, 0755) # makes the file executable
             
     fname_zip = os.path.join(sim_machine_dir, "%s.zip" % sim_machine_name)
     
@@ -432,9 +420,16 @@ gztopic list
     
     sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'booting' ,max_retries = 1500)
     empty_ssh_queue([sim_setup_done], sleep=2)
-   
+    
+    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "rebooting") 
     ssh_sim.cmd("sudo reboot")
     
+    time.sleep(1)
+    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "yellow", "rebooting") 
+    
+    time.sleep(1)
+    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "rebooting")
+         
     sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 300)
     empty_ssh_queue([sim_setup_done], sleep=2)
     

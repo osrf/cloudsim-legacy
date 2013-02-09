@@ -37,12 +37,13 @@ function remove_user(user_name)
     console.log(x);
 }
 
-function change_credentials(access_key, secret_access_key)
+function change_credentials(access_key, secret_access_key, availability_zone)
 {
     var key = encodeURIComponent(access_key);
     var secret = encodeURIComponent(secret_access_key);
     var url = '/cloudsim/inside/cgi-bin/cloud_credentials?access_key=';
     url += key+'&secret_access_key=' + secret;
+    url += "&availability_zone="+availability_zone;
     console.log("[PUT] " + url);
     var msg = httpPut(url);
     
@@ -83,6 +84,18 @@ function stop_simulator(constellation_name, machine_name)
 
 }
 
+function update_traffic_shaper(_constellationName, _machineName, _targetPacketLatency, _targetPacketLoss)
+{
+	var url = '/cloudsim/inside/cgi-bin/tc_cmd.py?command=update_tc'; 
+    url += '&constellation=' + _constellationName;
+    url += '&machine=' + _machineName;
+    url += '&targetPacketLatency=' + _targetPacketLatency;
+    url += '&targetPacketLoss=' + _targetPacketLoss;
+    
+    console.log(url);
+    msg = httpGet(url);
+    console.log(msg);
+}
 
 ///////////////////////// AJAX
 

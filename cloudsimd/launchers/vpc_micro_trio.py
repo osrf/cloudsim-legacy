@@ -22,6 +22,13 @@ set -ex
 
 """ +routing_script+"""
 
+# Add ROS and OSRF repositories
+echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
+    
+apt-get update
+apt-get install -y cloudsim-client-tools
+
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
 touch /home/ubuntu/cloudsim/setup/done
