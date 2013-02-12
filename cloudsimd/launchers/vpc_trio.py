@@ -26,10 +26,13 @@ from launch_utils.startup_scripts import get_drc_startup_script,\
     get_vpc_router_script, get_vpc_open_vpn, create_openvpn_client_cfg_file,\
     create_vpc_vpn_connect_file, create_ros_connect_file, create_ssh_connect_file
 
-from launch_utils.testing import get_boto_path, get_test_path
+from launch_utils.testing import get_boto_path, get_test_path, get_test_runner,\
+    get_test_dir
 import zipfile
 from shutil import copyfile
 from launch_utils.monitoring import parse_ping_data, get_aws_states
+
+
 
 CONFIGURATION = "vpc_trio"
 
@@ -688,7 +691,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     ping_gazebo = """#!/bin/bash
     
     
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s ". /usr/share/drcsim/setup.sh; gztopic list"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s ". /usr/share/drcsim/setup.sh; timeout 5 gztopic list"
     
     """ % (sim_key_pair_name, SIM_IP)
     ssh_router.create_file(ping_gazebo, "cloudsim/ping_gazebo.bash")
@@ -1062,4 +1065,6 @@ class TrioCase(unittest.TestCase):
         
         
 if __name__ == "__main__":
-    unittest.main()        
+    xmlTestRunner = get_test_runner()   
+    unittest.main(testRunner = xmlTestRunner)
+        
