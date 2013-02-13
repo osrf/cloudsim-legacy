@@ -12,11 +12,31 @@ import redis
 
 
 cgitb.enable()
+r = redis.Redis()
+
+def _domain(email):
+    domain = email.split('@')[1]
+    return domain
+
+def get_constellation_list(email):
+    constellations = []
+    domain = _domain(email)
+    for k in r.keys():
+        # from 'osrfoundation.org/cx45634' to 'cx45634'
+        l = k.split(domain+"/")
+        if len(l) == 2:
+            constellations.append(l[1] )
+    return constellations
+         
 
 
 def get_constellation_from_path():
-    constellation = os.environ['PATH_INFO'].split('/')[1]
-    return constellation
+    try:
+        constellation = os.environ['PATH_INFO'].split('/')[1]
+        return constellation
+    except:
+        return ""
+
 
 def get_query_param(param):
     qs= os.environ['QUERY_STRING']
@@ -32,13 +52,23 @@ print('Content-type: application/json')
 print("\n")
 
 if method == 'GET':
-    r = redis.Redis()
+    s = None
+
     try:    
-        domain = email.split('@')[1]
-        key = domain+"/"+ get_constellation_from_path()
-        s = r.get(key)
-    except:
-        s = "%s" % r.keys()
+        
+        constellation = get_constellation_from_path()
+        
+        if len(constellation) > 0:
+            domain = _domain(email)
+            key = domain+"/"+ constellation
+            s = r.get(key)
+        else:
+            s = get_constellation_list(email) 
+           
+            
+    except Exception, e:
+        s = "%s" % e
+   
     print(s)
     exit(0)
 

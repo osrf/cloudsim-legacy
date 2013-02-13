@@ -2,35 +2,33 @@
 
 from __future__ import with_statement
 from __future__ import print_function
-import cgi
 import cgitb
 import json
 import os
+
+from common.web import get_javascripts, authorize, UserDatabase,\
+    get_cloudsim_version_txt, print_http_header
 cgitb.enable()
 
-from common import  authorize
 
 email = authorize()
 method = os.environ['REQUEST_METHOD']
 
-print('Content-type: application/json')
-print("\n")
 
 if method != 'GET':
-    return
+    exit(0)
 
 email = authorize()
-udb = common.UserDatabase()
+udb = UserDatabase()
 role = udb.get_role(email)
-version = common.get_cloudsim_version_txt()
+version = get_cloudsim_version_txt()
 
 user_info = json.dumps({'user':email, 'role':role})
 scripts = get_javascripts(['machine_view.js', 'jquery-1.8.3.min.js', 'jquery.flot.js' ])
 
-page =  """Content-Type: text/html
+print_http_header()
 
-
-<!DOCTYPE html>
+page =  """<!DOCTYPE html>
 <html>
  <head>
  
@@ -61,12 +59,35 @@ page =  """Content-Type: text/html
         create_constellation_launcher_widget("launcher_div");
         create_constellations_widget("constellations_div");
         
-        update();
+        var delay = 1000;
+        var id = setInterval(update , delay)
+        
     }
     
     var log_events = true;
     
     function update()
+    {
+        console.log("update");
+        constellations = get_constellation_names();
+        for (var i=0; i< constellations.length; i++)
+        {
+            var constellation = constellations[i];
+            var callback = function(str_data)
+            {
+                var data = eval( '(' + str_data + ')' );
+                console.log(constellation);
+                var channel = "/cloudsim";
+                data.constellation_name = constellation;
+                $.publish(channel , data);
+            };
+            
+            async_get_constellation(constellation, callback );
+        } 
+        
+    }
+    
+    function update_old()
     {
         
         var update_url = '/cloudsim/inside/cgi-bin/console_stream.py';
@@ -84,7 +105,6 @@ page =  """Content-Type: text/html
              if(log_events)
              {
                  var type = data.type;
-                 // console.log(type);
                  if( hidden_event_types.indexOf(type) == -1) 
                  {
                      console.log(str_data);
