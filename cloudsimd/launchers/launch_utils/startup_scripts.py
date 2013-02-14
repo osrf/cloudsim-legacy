@@ -356,7 +356,7 @@ export ROS_IP=""" + machine_ip +"""
 export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311 
 
 export GAZEBO_IP=""" + machine_ip +"""
-export GAZEBO_MASTER_URI=http:///""" + ros_master_ip + """:11345
+export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
 
 DELIM
 
