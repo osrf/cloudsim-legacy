@@ -18,6 +18,7 @@ from launchers.launch_utils import SshClient
 #from common import Machine
 
 from launchers.launch_utils import get_unique_short_name
+from launchers.launch_utils.launch_db import ConstellationState
 
 MACHINES_DIR = '/var/www-cloudsim-auth/machines'
 
@@ -110,6 +111,15 @@ def launch( username,
                'CloudSim': v, 
                'GMT': gmt}
         
+        constellation = ConstellationState(username, constellation_name)
+        constellation.set_value('username', username)
+        constellation.set_value('constellation_name', constellation_name)
+        constellation.set_value('gmt', gmt)
+        constellation.set_value('configuration', config)
+        constellation.set_value('constellation_directory', constellation_directory)
+        constellation.set_value('constellation_state', 'launching')
+
+
         launch(username, constellation_name, tags, credentials_ec2, constellation_directory)
         
         log("Launch of constellation %s done" % constellation_name)

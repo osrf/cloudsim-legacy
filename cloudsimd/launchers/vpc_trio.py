@@ -374,18 +374,16 @@ def trio_launch(username,
     ec2conn, vpcconn = aws_connect(credentials_ec2)
     constellation = ConstellationState(username, constellation_name)
     
-    constellation.set_value('configuration', CONFIGURATION)
-    constellation.set_value('constellation_state', 'launching')
     constellation.set_value('router_state', 'nothing')
     constellation.set_value('robot_state', 'nothing')
     constellation.set_value('simulation_state', 'nothing')
-    constellation.set_value('gmt', tags['GMT'])
+
     constellation.set_value('router_aws_state', 'nothing')
     constellation.set_value('robot_aws_state', 'nothing')
     constellation.set_value('simulation_aws_state', 'nothing')
     constellation.set_value('constellation_directory', constellation_directory)
     
-    constellation.set_value('username', username)
+    
     sim_machine_name = "simulator_"+ constellation_name
     constellation.set_value('sim_machine_name', sim_machine_name)
     

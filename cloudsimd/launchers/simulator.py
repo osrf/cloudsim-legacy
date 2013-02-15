@@ -205,12 +205,8 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     ec2conn = aws_connect(credentials_ec2)[0]
     constellation = ConstellationState(username, constellation_name)
    
-    constellation.set_value('configuration', CONFIGURATION)
-    constellation.set_value('constellation_state', 'launching')
     constellation.set_value('simulation_state', 'nothing')
-    constellation.set_value('gmt', tags['GMT'])
     constellation.set_value('simulation_aws_state', 'nothing')
-    constellation.set_value('constellation_directory', constellation_directory)
     
     constellation.set_value('username', username)
     sim_machine_name = "simulator_"+ constellation_name

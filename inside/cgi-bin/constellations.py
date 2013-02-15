@@ -77,7 +77,7 @@ page =  """<!DOCTYPE html>
             {
                 var data = eval( '(' + str_data + ')' );
                 console.log(constellation);
-                var channel = "/cloudsim";
+                var channel = "/constellation";
                 data.constellation_name = constellation;
                 $.publish(channel , data);
             };

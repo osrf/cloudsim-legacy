@@ -1,5 +1,5 @@
 
-function create_machine_state_widget(machine_div, constellation_name, machine_name, widget_name)
+function create_machine_state_widget(machine_div, constellation_name, machine_name, widget_name, key)
 {
     var widget_div = _create_empty_widget(machine_div, widget_name);
 
@@ -9,12 +9,12 @@ function create_machine_state_widget(machine_div, constellation_name, machine_na
     
     var blink = 0;
     // reaction
-    $.subscribe("/cloudsim", function(event, msg)
+    $.subscribe("/constellation", function(event, msg)
     {
     	if(msg.type != 'machine') 
         	return;
         
-    	if(msg.constellation_name != constellation_name) 
+        if(msg.constellation_name != constellation_name) 
         	return;
         
     	if(msg.machine_name != machine_name) 
@@ -44,7 +44,6 @@ function create_machine_state_widget(machine_div, constellation_name, machine_na
         }
         
         _update_machine_state(widget_div, color, machine_state);
-    
         
     });
 }
