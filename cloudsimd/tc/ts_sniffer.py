@@ -3,11 +3,11 @@
 # This script runs as a daemon and measures the latency to reach a host. Every second, 
 # this value is updated and the result is saved in a redis database with a specific key.
 
-import commands
 import sys
 import daemon
 import time
 import redis
+import subprocess
 
 NPACKET = 1
 UNREACHABLE = 99999
@@ -27,9 +27,14 @@ def parse_args(argv):
 def get_ping_time(_host):
      
     cmd = "fping {host} -C {npacket} -q".format(host = _host, npacket = NPACKET)
-    (status, output) = commands.getstatusoutput(cmd)
-    if status:    # Error case
+    try:
+        output = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+        print 'Output: ', output
+    except subprocess.CalledProcessError as e:
+        print e.output
         return -1
+    
+    # Calculate the mean of all the latencies measured for the destination host
     latencies = [float(latency) for latency in output.strip().split(':')[-1].split() if latency != '-']
 
     if len(latencies) > 0:
@@ -41,12 +46,13 @@ def runDaemon(_host):
     with daemon.DaemonContext(stdout=sys.stdout, stderr=sys.stdout):
         while True:
             currentLatency = get_ping_time(_host)
+            print 'Latency: ', str(currentLatency)
             time.sleep(1)
             if currentLatency >= 0:
                 r.set(CURRENT_LATENCY_KEY, currentLatency)                    
             else:
                 r.set(CURRENT_LATENCY_KEY, UNREACHABLE)
-
+    
 if __name__ == "__main__":
     host = parse_args(sys.argv)
     runDaemon(host)
