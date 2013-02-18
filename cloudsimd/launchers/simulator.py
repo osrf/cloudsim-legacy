@@ -353,7 +353,7 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     ping_gazebo = """#!/bin/bash
     
 . /usr/share/drcsim/setup.sh
-timeout 5 gztopic list
+gztopic list
     
     """ 
     ssh_sim.create_file(ping_gazebo, "cloudsim/ping_gazebo.bash")
