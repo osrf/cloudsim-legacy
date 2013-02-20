@@ -470,7 +470,7 @@ def trio_launch(username,
     subnet_id = None
     try:
         VPN_PRIVATE_SUBNET = '10.0.0.0/24'
-        launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "creating virtual private network")
+        router_launch.alert("creating virtual private network")
         vpc_id = vpcconn.create_vpc(VPN_PRIVATE_SUBNET).id
         constellation.set_value('vpc_id',vpc_id)
         log("VPC %s" % vpc_id )
@@ -484,7 +484,7 @@ def trio_launch(username,
     #
     # Security groups
     #
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "setting up security groups")
+    router_launch.alert ( "setting up security groups")
     sim_security_group_id = None
     robot_security_group_id = None
     router_security_group_id = None
@@ -514,12 +514,12 @@ def trio_launch(username,
     #
     # Internet Gateway
     #                        
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "setting up internet gateway")
+    router_launch.alert( "setting up internet gateway")
     igw_id = vpcconn.create_internet_gateway().id
     constellation.set_value('igw_id', igw_id)
     vpcconn.attach_internet_gateway(igw_id, vpc_id)
     
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "creating routing tables")
+    router_launch.alert( "creating routing tables")
     route_table_id = vpcconn.create_route_table(vpc_id).id
     constellation.set_value('route_table_id',route_table_id )
     
@@ -530,14 +530,14 @@ def trio_launch(username,
     #
     # KEY pairs for SSH access
     #
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "creating routing tables")
+    router_launch.alert( "creating routing tables")
     router_key_pair_name = 'key-router-%s'%(constellation_name)
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "creating ssh keys")
+    router_launch.alert("creating ssh keys")
     try:
         key_pair = ec2conn.create_key_pair(router_key_pair_name)
         key_pair.save(constellation_directory)
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "red", "key error: %s" % e)
+        constellation.set_value("key error: %s" % e)
         raise
     
     constellation.set_value('router_key_pair_name', router_key_pair_name)
@@ -566,7 +566,7 @@ def trio_launch(username,
     roles_to_reservations ={}    
     
     try:
-        launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "orange", "booting")
+        robot_launch.alert( "booting")
         res = ec2conn.run_instances(ROBOT_AWS_IMAGE, instance_type=ROBOT_AWS_TYPE,
                                      subnet_id=subnet_id,
                                  private_ip_address=ROBOT_IP,
@@ -579,7 +579,7 @@ def trio_launch(username,
         raise       
 
     try:
-        launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "booting")
+        simulation_launch.alert("booting")
         res = ec2conn.run_instances(SIM_AWS_IMAGE, instance_type=SIM_AWS_TYPE,
                                          subnet_id=subnet_id,
                                          private_ip_address=SIM_IP,
@@ -594,7 +594,7 @@ def trio_launch(username,
 
     
     try:
-        launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "booting")
+        router_launch.alert(  "booting")
         res = ec2conn.run_instances(ROUTER_AWS_IMAGE, instance_type=ROUTER_AWS_TYPE,
                                              subnet_id=subnet_id,
                                              private_ip_address=TS_IP,
@@ -619,7 +619,7 @@ def trio_launch(username,
     simulation_aws_id =  running_machines['simulation_state']
     constellation.set_value('simulation_aws_id', simulation_aws_id)
     
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "setting machine tags")
+    router_launch.alert(  "setting machine tags")
     router_tags = {'Name':router_machine_name}
     router_tags.update(tags)
     
@@ -647,7 +647,7 @@ def trio_launch(username,
         constellation.set_value('error', "%s" % e)
         raise
     
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "assigning elastic IPs")
+    router_launch.alert(  "assigning elastic IPs")
     
     try:
         ec2conn.associate_address(router_aws_id, allocation_id = router_eip_allocation_id)
@@ -765,7 +765,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     
     """ % (robot_key_pair_name , ROBOT_IP)
     ssh_router.create_file(robot_reboot, "cloudsim/robot_reboot.bash")    
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "blue", "creating key zip file bundle")
+    router_launch.alert(  "creating key zip file bundle")
     
     
     #
@@ -827,7 +827,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     os.chmod(fname_ssh_sh, 0755)
 
     # wait (if necessary) for openvpn key to have been generated
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "waiting for key generation") 
+    router_launch.alert(  "waiting for key generation") 
     remote_fname = "/etc/openvpn/static.key"
     router_key_ready = get_ssh_cmd_generator(ssh_router, "ls /etc/openvpn/static.key", "/etc/openvpn/static.key", constellation, "sim_state", 'running' ,max_retries = 100)
     empty_ssh_queue([router_key_ready], sleep=2)
@@ -835,7 +835,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     vpnkey_fname = os.path.join(router_machine_dir, "openvpn.key")
     
     # download it locally for inclusion into the zip file
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "downloading router vpn key to CloudSim server") 
+    router_launch.alert(  "downloading router vpn key to CloudSim server") 
     ssh_router.download_file(vpnkey_fname, remote_fname) 
     os.chmod(vpnkey_fname, 0600)
     
@@ -857,7 +857,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     #  - scripts to connect with ssh, openvpn, ROS setup 
     
     
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating zip file bundle")
+    simulation_launch.alert(  "creating zip file bundle")
 
     
     fname_ssh_sh =  os.path.join(sim_machine_dir,'simulator_ssh.bash')
@@ -880,7 +880,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     #  - openvpn key
     #  - scripts to connect with ssh, openvpn, ROS setup 
     
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating zip file bundle")
+    simulation_launch.alert(  "creating zip file bundle")
     
     fname_ssh_sh =  os.path.join(robot_machine_dir,'robot_ssh.bash')
     file_content = create_ssh_connect_file(robot_key_short_filename, ROBOT_IP)
@@ -895,7 +895,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     create_zip_file(robot_fname_zip, robot_machine_name, files_to_zip)
 
     constellation.set_value('router_state', 'running')
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "blue", "running")
+    router_launch.alert(  "running")
 
     robot_ssh_ready = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_robot.bash launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "robot_state", "packages_setup", max_retries = 500)
     sim_ssh_ready = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "simulation_state", "packages_setup", max_retries = 500)
