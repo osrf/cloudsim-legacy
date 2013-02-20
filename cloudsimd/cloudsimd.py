@@ -72,7 +72,7 @@ class UnknownConfig(LaunchException):
     pass
    
     
-def log(msg, chan="cloudsim_log"):
+def log(msg, chan="trio"):
     try:
         
         print ("LOG: %s" % msg)
@@ -118,16 +118,21 @@ def launch( username,
         constellation.set_value('configuration', config)
         constellation.set_value('constellation_directory', constellation_directory)
         constellation.set_value('constellation_state', 'launching')
-
-
-        launch(username, constellation_name, tags, credentials_ec2, constellation_directory)
+        constellation.set_value('error', '')
+        
+        try:
+            launch(username, constellation_name, tags, credentials_ec2, constellation_directory)
+        except Exception, e:
+            constellation.set_value('error', '%s' %e)
+            tb = traceback.format_exc()
+            log("traceback:  %s" % tb)
+            raise
         
         log("Launch of constellation %s done" % constellation_name)
         
     except Exception, e:
         log("cloudsimd.py launch error: %s" % e)
-        tb = traceback.format_exc()
-        log("traceback:  %s" % tb)
+
         #terminate(username, constellation_name, credentials_ec2, constellation_directory)
     
     

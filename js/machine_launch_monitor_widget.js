@@ -19,10 +19,12 @@ function create_machine_launch_monitor_widget(machine_div,
         if(data.constellation_name != constellation_name)
             return;
         
-        if(data.machine_name != machine_name)
-            return;
-        
-        widget_div.innerHTML =  status_img(data.color) + "<b>Launch:</b>  " + data.text;
+        var error_txt = "";
+        if ( data.error.length)
+        {
+        	error_txt += "<font color='red'><b>" +data.error  +"</b></font><br>";	
+        }
+        widget_div.innerHTML =  status_img(data.color) + error_txt +  "<b>Launch:</b>  " + data.text;
         
     });
 }

@@ -349,6 +349,26 @@ def create_zip_file(zip_file_path, short_name, files_to_zip):
             zip_name = os.path.join(short_name, short_fname)
             fzip.write(fname, zip_name)
 
+
+class LaunchMsg(object):
+    def __init__(self, constellation, role):
+        self.msg_key = role + "_launch_msg"
+        self.color_key = role + "_launch_color"
+        
+        
+        self.colors = ["green","yellow","orange"]
+        self.constellation = constellation
+        self.count = -1
+        
+    def alert(self, msg):
+        self.count +=1
+        color = self.colors[self.count % len(self.colors)]
+        self.constellation.set_value(self.msg_key, msg)
+        self.constellation.set_value(self.color_key, color)
+    
+    
+
+    
 def trio_launch(username, 
                         constellation_name, 
                         tags, 
@@ -374,6 +394,11 @@ def trio_launch(username,
     ec2conn, vpcconn = aws_connect(credentials_ec2)
     constellation = ConstellationState(username, constellation_name)
     
+    router_launch = LaunchMsg(constellation, "router")
+    simulation_launch = LaunchMsg(constellation, "simulation")
+    robot_launch= LaunchMsg(constellation, "robot")
+    
+    
     constellation.set_value('router_state', 'nothing')
     constellation.set_value('robot_state', 'nothing')
     constellation.set_value('simulation_state', 'nothing')
@@ -393,14 +418,13 @@ def trio_launch(username,
     router_machine_name =  "router_" + constellation_name
     constellation.set_value('router_machine_name', router_machine_name)
 
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "???")    
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "orange", "starting")
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "yellow", "starting")
-    launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "yellow", "starting")
+    router_launch.alert ("starting")
+    simulation_launch.alert("starting")
+    robot_launch.alert("starting")
     
     
-#   monitor(username, constellation_name, credentials_ec2, constellation_directory )
-    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "acquiring public ip")
+    #  monitor(username, constellation_name, credentials_ec2, constellation_directory )
+    router_launch.alert ("acquiring public ip")
     
     try:
         router_elastic_ip = ec2conn.allocate_address('vpc')
@@ -411,7 +435,7 @@ def trio_launch(username,
         log("router elastic ip %s" % router_elastic_ip.public_ip)
         clean_local_ssh_key_entry(router_ip)
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "red", "%s" % e)
+        constellation.set_value('error', "%s" % e)
         raise
 
     try:
@@ -423,8 +447,7 @@ def trio_launch(username,
         log("robot elastic ip %s" % robot_elastic_ip.public_ip)
         #clean_local_ssh_key_entry(robot_public_ip)
     except:
-        launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "red", "%s" % e)
-        
+        constellation.set_value('error', "%s" % e)
         raise
     
     try:
@@ -435,7 +458,7 @@ def trio_launch(username,
         constellation.set_value('sim_public_ip', sim_public_ip)
         log("sim elastic ip %s" % sim_elastic_ip.public_ip)        
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "%s" % e)
+        constellation.set_value('error', "%s" % e)
         raise
         
      
@@ -455,7 +478,7 @@ def trio_launch(username,
         subnet_id= vpcconn.create_subnet(vpc_id, VPN_PRIVATE_SUBNET, availability_zone = availability_zone ).id
         constellation.set_value('subnet_id', subnet_id)
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "red", "VPC error: %s" % e)
+        constellation.set_value('error', "%s" % e)
         raise 
     
     #
@@ -471,14 +494,14 @@ def trio_launch(username,
         router_security_group_id = create_vcp_router_securtity_group(ec2conn, router_sg_name, constellation_name, vpc_id, VPN_PRIVATE_SUBNET)
         constellation.set_value('router_security_group_id', router_security_group_id)
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "red", "security group error: %s" % e)
+        constellation.set_value('error',  "security group error: %s" % e)
         raise
     try:
         robot_sg_name = 'robot-sg-%s'%(constellation_name) 
         robot_security_group_id = create_vcp_internal_securtity_group(ec2conn, robot_sg_name, constellation_name, vpc_id, VPN_PRIVATE_SUBNET )
         constellation.set_value('robot_security_group_id', robot_security_group_id)
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "red", "security group error: %s" % e)
+        constellation.set_value('error', "security group error: %s" % e)
         raise
     
     try:
@@ -486,7 +509,7 @@ def trio_launch(username,
         sim_security_group_id = create_vcp_internal_securtity_group(ec2conn, sim_sg_name, constellation_name, vpc_id, VPN_PRIVATE_SUBNET )
         constellation.set_value('sim_security_group_id', sim_security_group_id)
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "security group error: %s" % e)
+        constellation.set_value('error', "security group error: %s" % e)
         raise
     #
     # Internet Gateway
@@ -525,7 +548,7 @@ def trio_launch(username,
         key_pair = ec2conn.create_key_pair(robot_key_pair_name)
         key_pair.save(constellation_directory)
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "red", "key error: %s" % e)
+        constellation.set_value('error', "key error: %s" % e)
         raise
     
     constellation.set_value('robot_key_pair_name', robot_key_pair_name)
@@ -535,7 +558,7 @@ def trio_launch(username,
         key_pair = ec2conn.create_key_pair(sim_key_pair_name)
         key_pair.save(constellation_directory)
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "key error: %s" % e)
+        constellation.set_value('error', "key error: %s" % e)
         raise    
     
     constellation.set_value('sim_key_pair_name', sim_key_pair_name)
@@ -552,7 +575,7 @@ def trio_launch(username,
                                  user_data=ROBOT_SCRIPT)
         roles_to_reservations['robot_state'] = res.id
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, robot_machine_name, "red", "%s" % e)
+        constellation.set_value('error', "%s" % e)
         raise       
 
     try:
@@ -565,7 +588,7 @@ def trio_launch(username,
                                          user_data=SIM_SCRIPT)
         roles_to_reservations['simulation_state'] = res.id
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "%s" % e)
+        constellation.set_value('error', "%s" % e)
         raise       
 
 
@@ -580,7 +603,7 @@ def trio_launch(username,
                                              user_data=ROUTER_SCRIPT)
         roles_to_reservations['router_state'] = res.id
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "red", "%s" % e)
+        constellation.set_value('error', "%s" % e)
         raise     
     
     running_machines = wait_for_multiple_machines_to_run(ec2conn, roles_to_reservations, constellation, max_retries = 500, final_state = 'network_setup')
@@ -599,20 +622,41 @@ def trio_launch(username,
     launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "setting machine tags")
     router_tags = {'Name':router_machine_name}
     router_tags.update(tags)
-    ec2conn.create_tags([router_aws_id ], router_tags)
+    
+    try:
+        ec2conn.create_tags([router_aws_id ], router_tags)
+    except Exception, e:
+        constellation.set_value('error', "%s" % e)
+        raise
     
     sim_tags = {'Name':sim_machine_name}
     sim_tags.update(tags)
-    ec2conn.create_tags([ simulation_aws_id ], sim_tags)
+    
+    try:
+        ec2conn.create_tags([ simulation_aws_id ], sim_tags)
+    except Exception, e:
+        constellation.set_value('error', "%s" % e)
+        raise   
     
     robot_tags = {'Name':robot_machine_name}
     robot_tags.update(tags)
-    ec2conn.create_tags([ robot_aws_id ], robot_tags)
+    
+    try:
+        ec2conn.create_tags([ robot_aws_id ], robot_tags)
+    except Exception, e:
+        constellation.set_value('error', "%s" % e)
+        raise
     
     launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "assigning elastic IPs")
-    ec2conn.associate_address(router_aws_id, allocation_id = router_eip_allocation_id)
-    ec2conn.associate_address(robot_aws_id, allocation_id = robot_eip_allocation_id)
-    ec2conn.associate_address(simulation_aws_id, allocation_id = sim_eip_allocation_id)
+    
+    try:
+        ec2conn.associate_address(router_aws_id, allocation_id = router_eip_allocation_id)
+        ec2conn.associate_address(robot_aws_id, allocation_id = robot_eip_allocation_id)
+        ec2conn.associate_address(simulation_aws_id, allocation_id = sim_eip_allocation_id)
+    except Exception, e:
+        constellation.set_value('error', "%s" % e)
+        raise
+    
     
     router_instance =  get_ec2_instance(ec2conn, router_aws_id)
     router_instance.modify_attribute('sourceDestCheck', False)

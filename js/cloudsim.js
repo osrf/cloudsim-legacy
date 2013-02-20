@@ -13,9 +13,9 @@ function create_constellation(div_name, configuration, constellation)
 
         create_machine_launch_monitor_widget(machine_div, constellation, machine_name,"launch_state", "simulation_launch");
         create_machine_state_widget(machine_div, constellation, machine_name, "cloud_state", "simulation_state");
-        // create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
+        // create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
         create_hostname_widget(machine_div, constellation, machine_name, "hostname", "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_key_ready" );
-        create_latency_widget(machine_div, constellation_name, machine_name, "latency");
+        create_latency_widget(machine_div, constellation, machine_name, "latency");
     }
 
     if(configuration == "vpc_trio" || configuration == "vpc_micro_trio" || configuration == "vpc_trio_prerelease" )
@@ -27,23 +27,23 @@ function create_constellation(div_name, configuration, constellation)
             var machine_name = "field_computer_" + constellation
             var machine_div = create_machine(div, machine_name);
             
-            create_machine_launch_monitor_widget(machine_div, constellation_name, machine_name, "launch_state" );
-            create_machine_state_widget(machine_div,constellation_name, machine_name, "cloud_state");
-            //create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
-            create_hostname_widget(machine_div, constellation_name, machine_name, "hostname");
-            create_latency_widget(machine_div, constellation_name, machine_name, "latency"); 
+            create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "launch_state" );
+            create_machine_state_widget(machine_div,constellation, machine_name, "cloud_state");
+            //create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
+            create_hostname_widget(machine_div, constellation, machine_name, "hostname");
+            create_latency_widget(machine_div, constellation, machine_name, "latency"); 
     	}
         // router computer
         {
             var machine_name = "router_" + constellation
             var machine_div = create_machine(div, machine_name);
             
-            create_machine_launch_monitor_widget(machine_div, constellation_name, machine_name,"launch_state");
-            create_machine_state_widget(machine_div,constellation_name, machine_name, "cloud_state");
-            //create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
-            create_hostname_widget(machine_div, constellation_name, machine_name, "hostname", "router_ip", "router_aws_id");
-            create_traffic_shaper_widget(machine_div, constellation_name, machine_name, "traffic_shaper");
-            create_latency_widget(machine_div, constellation_name, machine_name, "latency"); 
+            create_machine_launch_monitor_widget(machine_div, constellation, machine_name,"launch_state");
+            create_machine_state_widget(machine_div,constellation, machine_name, "cloud_state");
+            //create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
+            create_hostname_widget(machine_div, constellation, machine_name, "hostname", "router_ip", "router_aws_id");
+            create_traffic_shaper_widget(machine_div, constellation, machine_name, "traffic_shaper");
+            create_latency_widget(machine_div, constellation, machine_name, "latency"); 
         }
         
         // simulator computer
@@ -54,7 +54,7 @@ function create_constellation(div_name, configuration, constellation)
             
             create_machine_launch_monitor_widget(machine_div, constellation, machine_name,"launch_state");
             create_machine_state_widget(machine_div, constellation, machine_name,"cloud_state");
-            //create_machine_lifecycle_widget(machine_div,constellation_name, machine_name, "life_cycle");
+            //create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
             create_hostname_widget (machine_div, constellation, machine_name, "hostname");	
             create_glx_state_widget(machine_div, constellation, machine_name, "glx_state");
             create_simulator_state_widget(machine_div, constellation, machine_name, "simulator_state");
