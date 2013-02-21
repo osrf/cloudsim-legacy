@@ -3,10 +3,10 @@
 function create_machine_launch_monitor_widget(machine_div, 
                                               constellation_name, 
                                               machine_name,  
-                                              widget_name,
-                                              key)
+                                              message_key,
+                                              state_key)
 {
-    var widget_div = _create_empty_widget(machine_div, widget_name);
+    var widget_div = _create_empty_widget(machine_div, "launch");
     
     var status = status_img("gray");
     
@@ -24,7 +24,16 @@ function create_machine_launch_monitor_widget(machine_div,
         {
         	error_txt += "<font color='red'><b>" +data.error  +"</b></font><br>";	
         }
-        widget_div.innerHTML =  status_img(data.color) + error_txt +  "<b>Launch:</b>  " + data.text;
+        var colors = ["yellow", "orange"]
+        var color = colors[count % colors.length]
+        count ++;
+        var machine_state = data[state_key];
+        if(machine_state == "running")
+            color = "blue";
+        if(data[state_key] == "terminated")
+            color = "red";
+        
+        widget_div.innerHTML =  status_img(color) + error_txt +  "<b>Launch:</b>  " + data[message_key];
         
     });
 }
