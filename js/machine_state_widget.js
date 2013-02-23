@@ -20,6 +20,11 @@ function create_machine_state_widget(machine_div, constellation_name, machine_na
             color = "orange";
         }
         
+        if(machine_state == 'nothing')
+        {
+            color = "yellow";
+        }
+                
         if(machine_state == 'pending')
         {
             color = "yellow";

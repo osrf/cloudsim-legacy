@@ -1,13 +1,13 @@
 
 
-function create_simulator_state_widget(machine_div, constellation_name, machine_name,  widget_name)
+function create_simulator_state_widget(machine_div, constellation_name, machine_name, glx_key, simulator_key )
 {
 	// roslaunch atlas_utils atlas_position_controllers.launch
     var package_name = "atlas_utils";//"drc_robot_utils";
     var launch_file = "atlas.launch"; // "drc_robot.launch";
     var launch_args = "";
 	
-    var widget_div = _create_empty_widget(machine_div, widget_name);
+    var widget_div = _create_empty_widget(machine_div, "simulator");
     
     var status = status_img("gray");
     widget_div.innerHTML = status;
@@ -81,37 +81,41 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
     widget_div.appendChild(stop_button);
     
 
-    $.subscribe("/cloudsim", function(event, data){
+    $.subscribe("/constellation", function(event, data){
         if(data.constellation_name != constellation_name)
             return;
         
-        if(data.machine_name != machine_name)
-            return
-            
-        if(data.type == 'simulator')
+        var color = "gray";
+        
+        if (data[glx_key] == "running")
         {
-            if(data.color == 'red' )
-            {
-                widget_div.querySelector("img").src = "/js/images/red_status.png";
-                //stop_button.disabled = true;
-                //start_button.disabled = false;
-                
-            }
-            if(data.color == 'blue' )
-            {
-                widget_div.querySelector("img").src = "/js/images/blue_status.png";
-                //stop_button.disabled = false;
-                //start_button.disabled = true;
-            }
-            
-            if(data.color == 'gray' )
-            {
-                widget_div.querySelector("img").src = "/js/images/gray_status.png";
-                //stop_button.disabled = true;
-                //start_button.disabled = true;
-            }
+            if(data[simulator_key] == "running")
+                color = "blue";
+            else
+                color = "red";
+        }
+        if(color == 'red' )
+        {
+            widget_div.querySelector("img").src = "/js/images/red_status.png";
+            //stop_button.disabled = true;
+            //start_button.disabled = false;
             
         }
+        if(color == 'blue' )
+        {
+            widget_div.querySelector("img").src = "/js/images/blue_status.png";
+            //stop_button.disabled = false;
+            //start_button.disabled = true;
+        }
+        
+        if(color == 'gray' )
+        {
+            widget_div.querySelector("img").src = "/js/images/gray_status.png";
+            //stop_button.disabled = true;
+            //start_button.disabled = true;
+        }
+            
+        
     });
 }
 
@@ -126,26 +130,22 @@ function _update_glx_state(widget_div, color, text)
     
 }
 
-function create_glx_state_widget(machine_div, constellation_name, machine_name,  widget_name)
+function create_glx_state_widget(machine_div, constellation_name, machine_name,  glx_key)
 {
-    var widget_div = _create_empty_widget(machine_div, widget_name);
+    var widget_div = _create_empty_widget(machine_div, "glx");
 
     // default behaviour
     _update_glx_state(widget_div, "gray", "[waiting for update]");
     
     // reaction
-    $.subscribe("/cloudsim", function(event, data){
+    $.subscribe("/constellation", function(event, data){
         if(data.constellation_name != constellation_name)
             return;
-        
-        if(data.machine_name != machine_name)
-            return
-            
-        if(data.type == 'graphics')
-        {
-            _update_glx_state(widget_div, data.color, data.text);
-        }
-        
+
+        if(data[glx_key] == "running")
+            _update_glx_state(widget_div, "blue", "running");
+        else
+            _update_glx_state(widget_div, "red", "not running");
     });
 }
 

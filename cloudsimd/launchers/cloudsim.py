@@ -170,37 +170,20 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     ec2conn = aws_connect(credentials_ec2)[0]
     constellation = ConstellationState(username, constellation_name)
    
-    constellation.set_value('configuration', CONFIGURATION)
+    
     constellation.set_value('constellation_state', 'launching')
     constellation.set_value('simulation_state', 'nothing')
-    try:
-        constellation.set_value('gmt', tags['GMT'])
-    except:
-        pass
-    
     constellation.set_value('simulation_aws_state', 'nothing')
-    constellation.set_value('constellation_directory', constellation_directory)
+    constellation.set_value('simulation_launch_msg', "starting")
     
-    constellation.set_value('username', username)
     sim_machine_name = "cloudsim_"+ constellation_name
     constellation.set_value('sim_machine_name', sim_machine_name)
     
     sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
     os.makedirs(sim_machine_dir)
-    
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "starting")
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "yellow", "starting")
-    
-#    launch_event(username, CONFIGURATION, constellation_name, router_machine_name, "yellow", "acquiring public ip")
-#    elastic_ip = ec2conn.allocate_address('vpc')
-#    eip_allocation_id = elastic_ip.allocation_id
-#    constellation.set_value('eip_allocation_id', eip_allocation_id)
-#    router_ip = elastic_ip.public_ip
-#    constellation.set_value('router_ip', router_ip)
-#    log("elastic ip %s" % elastic_ip.public_ip)
-#    clean_local_ssh_key_entry(router_ip)
 
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "setting up security groups")
+
+    constellation.set_value('simulation_launch_msg',  "setting up security groups")
     sim_sg_name = 'sim-sg-%s'%(constellation_name) 
     sim_security_group= ec2conn.create_security_group(sim_sg_name, "simulator security group for constellation %s" % constellation_name)
     sim_security_group.authorize('tcp', 80, 80, '0.0.0.0/0')   # web
@@ -209,7 +192,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     sim_security_group_id = sim_security_group.id
     constellation.set_value('sim_security_group_id', sim_security_group_id)
 
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "yellow", "creating ssh keys")
+    constellation.set_value('simulation_launch_msg', "creating ssh keys")
     sim_key_pair_name = 'key-sim-%s'%(constellation_name)
     constellation.set_value('sim_key_pair_name', sim_key_pair_name)
     key_pair = ec2conn.create_key_pair(sim_key_pair_name)
@@ -231,7 +214,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
         roles_to_reservations['simulation_state'] = res.id
         
     except Exception, e:
-        launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "%s" % e)
+        constellation.set_value("error", "red", "%s" % e)
         raise       
 
     
@@ -253,25 +236,16 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
                     aws_id = r.instances[0].id
                     running_machines['simulation_state'] = aws_id
                     constellation.set_value('simulation_state', 'network_setup')
-                    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, 'network_setup')
                     done = True
-                launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, state)
-                if color == "yellow":
-                    color = "orange"
-                else:
-                    color = "yellow"
-                
-                
-               
-    
-    
+                constellation.set_value("simulation_aws_state", state)
+
     simulation_aws_id =  running_machines['simulation_state']
     constellation.set_value('simulation_aws_id', simulation_aws_id)
     
     sim_tags = {'Name':sim_machine_name}
     sim_tags.update(tags)
     ec2conn.create_tags([ simulation_aws_id ], sim_tags)
-    
+
     # ec2conn.associate_address(router_aws_id, allocation_id = eip_allocation_id)
     sim_instance = get_ec2_instance(ec2conn, simulation_aws_id)
     sim_ip = sim_instance.ip_address
@@ -282,7 +256,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     log("%s simulation machine ip %s" % (constellation_name, sim_ip))
     ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
     
-    networking_done = get_ssh_cmd_generator(ssh_sim,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "sim_state", 'packages_setup' ,max_retries = 1000)
+    networking_done = get_ssh_cmd_generator(ssh_sim,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "simulation_state", 'packages_setup' ,max_retries = 1000)
     #empty_ssh_queue([networking_done], sleep=2)
     
     color = "orange"
@@ -293,7 +267,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
         else:
             color = "yellow"
      
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating monitoring scripts")
+    constellation.set_value('simulation_launch_msg', "creating monitoring scripts")
     find_file_sim = """
     #!/bin/bash
     
@@ -311,7 +285,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     ssh_sim.create_file(dpkg_log_sim, "cloudsim/dpkg_log_sim.bash")
 
 
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", "creating zip file bundle")
+    constellation.set_value('simulation_launch_msg', "creating zip file bundle")
     key_filename = sim_key_pair_name + '.pem'
     fname_ssh_key =  os.path.join(sim_machine_dir, key_filename)
     os.chmod(fname_ssh_key, 0600)
@@ -333,7 +307,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
             zip_name = os.path.join(sim_machine_name, short_fname)
             fzip.write(fname, zip_name)
     
-    sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "sim_state", 'running' ,max_retries = 100)
+    sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 100)
     empty_ssh_queue([sim_setup_done], sleep=2)
 
     short_file_name = os.path.split(website_distribution)[1] 
@@ -342,7 +316,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     
     out = ssh_sim.upload_file(website_distribution, remote_fname)
     log(" upload: %s" % out)
-    upload_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "sim_state", 'running' ,max_retries = 100)
+    upload_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 100)
     empty_ssh_queue([upload_done], sleep=2)
     
     
@@ -401,13 +375,14 @@ def terminate(username, constellation_name, credentials_ec2, constellation_direc
     
     try:
         running_machines =  {}
-        running_machines['simulation_state'] = resources['simulation_aws_id']
+        running_machines['simulation_aws_state'] = resources['simulation_aws_id']
         
         wait_for_multiple_machines_to_terminate(ec2conn, 
                                                 running_machines, 
                                                 constellation, 
-                                                max_retries = 150, 
-                                                final_state = "terminated")
+                                                max_retries = 150)
+        
+        constellation.set_value('simulation_state', "terminated")
         
         print ('Waiting after killing instances...')
         time.sleep(10.0)

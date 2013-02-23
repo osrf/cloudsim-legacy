@@ -107,11 +107,12 @@ def wait_for_multiple_machines_to_terminate(ec2conn, roles_to_aws_ids, constella
                 aws_id = instance.id
                 
                 if aws_id in aws_ids_to_roles:
+                    constellation.set_value(role, instance.state)
                     if instance.state == 'terminated':
                         role = aws_ids_to_roles[aws_id]
                         aws_ids_to_roles.pop(aws_id)
                         log('Terminated %s (AWS %s)'%(role, aws_id) )
-                        constellation.set_value(role, final_state)
+                        
                         done = True
                         break
                     else:

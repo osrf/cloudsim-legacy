@@ -104,9 +104,9 @@ function update_traffic_shaper(_constellationName, _machineName, _targetPacketLa
 function get_constellation_names()
 {
     var url = '/cloudsim/inside/cgi-bin/constellation';
-    console.log(url);
+    // console.log(url);
     msg = httpGet(url);
-    console.log(msg);
+    // console.log(msg);
     var jmsg = eval('(' + msg + ')');
     return jmsg;
 }
@@ -125,7 +125,7 @@ function async_get_constellation(constellation, callback)
 {
 	var url = '/cloudsim/inside/cgi-bin/constellation/';
 	url += constellation;
-    console.log(url);
+    // console.log(url);
     httpAsyncGet(url, callback);
 }
 

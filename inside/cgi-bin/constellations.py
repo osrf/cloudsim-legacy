@@ -76,7 +76,7 @@ page =  """<!DOCTYPE html>
             var callback = function(str_data)
             {
                 var data = eval( '(' + str_data + ')' );
-                console.log(constellation);
+                // console.log(constellation);
                 var channel = "/constellation";
                 data.constellation_name = constellation;
                 $.publish(channel , data);

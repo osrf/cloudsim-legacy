@@ -6,7 +6,7 @@ function create_hostname_widget(machine_div,
                                 key_aws_id, 
                                 key_user, 
                                 key_launch_date, 
-                                key_is_download_ready)
+                                key_zip_file)
 {
     
     var widget_div = _create_empty_widget(machine_div, "hostname");
@@ -37,7 +37,7 @@ function create_hostname_widget(machine_div,
                                 msg[key_aws_id], 
                                 msg[key_user], 
                                 msg[key_launch_date], 
-                                msg[key_is_download_ready]);
+                                msg[key_zip_file]);
        
     });
     
@@ -51,14 +51,14 @@ function _update_hostname_widget(widget_div,
                                  aws_id, 
                                  user, 
                                  launch_date, 
-                                 is_download_ready)
+                                 zip_file)
 {
 		
     var str = "";
     str += "<b>IP</b> " + ip + " ("
     str += "<b>AWS id</b> " + aws_id +") ";
     
-    if(is_download_ready)
+    if(zip_file == 'ready')
     {
         str += '<a href="/cloudsim/inside/cgi-bin/machine_zip_download.py';
         str += '?constellation=' + constellation_name;
