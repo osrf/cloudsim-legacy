@@ -30,9 +30,9 @@ apt-get update
 apt-get install -y cloudsim-client-tools
 
 # start ts_sniffer and ts_controller
-#start ts_sniffer_outbound
-#start ts_controller_inbound
-#start ts_controller_outbound
+start ts_sniffer_outbound
+start ts_controller_inbound
+start ts_controller_outbound
 
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
