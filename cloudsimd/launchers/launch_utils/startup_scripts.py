@@ -19,6 +19,13 @@ apt-get install -y openvpn
 
 apt-get install -y cloudsim-client-tools
 
+# start ts_sniffer and ts_controller
+#start ts_sniffer_outbound
+#start ts_controller_inbound
+#start ts_controller_outbound
+
+
+
 cat <<DELIM > /etc/openvpn/openvpn.conf
 dev tun
 ifconfig """ + OPENVPN_SERVER_IP+ " " + OPENVPN_CLIENT_IP + """

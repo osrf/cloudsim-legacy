@@ -36,8 +36,6 @@ from launchers.launch_utils import get_constellations
 from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
 
-from tc import traffic_shaper
-
 def flush_db():
     r = redis.Redis()
     r.flushdb()
@@ -51,8 +49,6 @@ def list_constellations():
 # The plugins contains the function pointers for each type of constellation
 # Don't forget to register new constellations
 #
-
-trafficShapers = {}
 
 plugins = {}
 plugins['vpc_micro_trio'] = {'launch':vpc_micro_trio.launch,    'terminate':vpc_micro_trio.terminate,    'monitor':vpc_micro_trio.monitor,   'start_simulator':vpc_micro_trio.start_simulator,   'stop_simulator':vpc_micro_trio.stop_simulator}
@@ -303,7 +299,7 @@ def resume_monitoring(boto_path, root_dir):
             log("traceback:  %s" % tb)
             
             
-def run_tc_command(_username, _constellationName, _targetPacketLatency, _targetPacketLoss):  
+def run_tc_command(_username, _constellationName, _targetPacketLatency):  
     constellation = get_constellation_data(_username,  _constellationName)
     config = constellation['configuration']
     keyDirectory = os.path.join(constellation['constellation_directory'])
@@ -319,15 +315,12 @@ def run_tc_command(_username, _constellationName, _targetPacketLatency, _targetP
     else:
         #You should not be here
         log("cloudsim::run_tc_command() Unknown constellation type: (%s)" % (config) )
-        return                     
-        
-    if not _constellationName in trafficShapers:
-        trafficShapers[_constellationName] = traffic_shaper.TrafficShaper(_constellationName, keyDirectory, keyPairName, ip, 'eth0')
-        
-    trafficShaper = trafficShapers[_constellationName]
-    trafficShaper.setTargetPacketLatency(_targetPacketLatency)
-    trafficShaper.setTargetPacketLoss(_targetPacketLoss)
-    trafficShaper.update()
+        return
+    
+    cmd = 'redis-cli set ts_targetLatency ' + str(_targetPacketLatency)
+    ssh = SshClient(keyDirectory, keyPairName, 'ubuntu', ip)
+    ssh.cmd(cmd)                   
+    
          
 def run(boto_path, root_dir, tick_interval):
     
@@ -388,8 +381,7 @@ def run(boto_path, root_dir, tick_interval):
             
             if cmd == 'update_tc' :
                 targetPacketLatency = int(data['targetPacketLatency'])                             
-                targetPacketLoss = int(data['targetPacketLoss'])
-                run_tc_command(username, constellation, targetPacketLatency, targetPacketLoss)                
+                run_tc_command(username, constellation, targetPacketLatency)                
             
         except Exception, e:
             log("Error processing message [%s]" % msg)
