@@ -168,7 +168,7 @@ def start_simulator(username, constellation_name, machine_name, package_name, la
     constellation_dict = get_constellation_data(username,  constellation_name)
     constellation_directory = constellation_dict['constellation_directory']
     router_key_pair_name    = constellation_dict['router_key_pair_name']
-    router_ip    = constellation_dict['router_ip']
+    router_ip    = constellation_dict['router_public_ip']
     
     try:
         c = "bash cloudsim/start_sim.bash " + package_name + " " + launch_file_name + " " + launch_args
@@ -186,7 +186,7 @@ def stop_simulator(username, constellation_name, machine_name):
     constellation_dict = get_constellation_data(username,  constellation_name)
     constellation_directory = constellation_dict['constellation_directory']
     router_key_pair_name    = constellation_dict['router_key_pair_name']
-    router_ip    = constellation_dict['router_ip']
+    router_ip    = constellation_dict['router_public_ip']
     
     try:
         cmd = "bash cloudsim/stop_sim.bash"
@@ -420,7 +420,7 @@ def _launch(username,
         constellation.set_value('robot_public_ip', robot_public_ip)
         log("robot elastic ip %s" % robot_elastic_ip.public_ip)
         #clean_local_ssh_key_entry(robot_public_ip)
-    except:
+    except Exception, e:
         constellation.set_value('error', "%s" % e)
         raise
     
@@ -1072,7 +1072,7 @@ def _terminate(username, constellation_name, credentials_ec2, constellation_dire
     
 
     constellation.set_value('constellation_state', 'terminated')
-    constellation.expire(1 * 60)
+    constellation.expire(1 * 10)
 
 class DbCase(unittest.TestCase):
     
