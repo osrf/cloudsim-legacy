@@ -48,7 +48,6 @@ apt-get install -y cloudsim-client-tools
 # start vrc_sniffer and vrc_controllers
 start vrc_sniffer_outbound
 start vrc_controller_inbound
-start vrc_controller_outbound
 start vrc_bandwidth
 
 mkdir /home/ubuntu/cloudsim
@@ -449,14 +448,6 @@ echo "install """ + drc_package_name+ """ ">> /home/ubuntu/setup.log
 apt-get install -y """ + drc_package_name+ """
 echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
 echo "export DISPLAY=:0" >> /home/ubuntu/.bashrc
-
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-apt-get install -y cloudsim-client-tools
-
-# start ts_sniffer and ts_controller
-# start vrc_sniffer_outbound
-# start vrc_controller_inbound
-# start vrc_controller_outbound
  
 touch /home/ubuntu/cloudsim/setup/done
 
