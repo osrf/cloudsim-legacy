@@ -29,11 +29,6 @@ wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
 apt-get update
 apt-get install -y cloudsim-client-tools
 
-# start ts_sniffer and ts_controller
-start ts_sniffer_outbound
-start ts_controller_inbound
-start ts_controller_outbound
-
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
 touch /home/ubuntu/cloudsim/setup/done

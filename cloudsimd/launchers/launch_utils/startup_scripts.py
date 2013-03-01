@@ -1,34 +1,29 @@
 from __future__ import print_function
 
 
-
-def get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP):    
+def get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP):
     return """#!/bin/bash
 # Exit on error
-set -e
+set -ex
 exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
 
 # Add OSRF repositories
 echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
 wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
+
+# ROS setup
+sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
+wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+
 apt-get update
 
-apt-get install -y ntp 
+apt-get install -y ntp
 apt-get install -y openvpn
-
-apt-get install -y cloudsim-client-tools
-
-# start ts_sniffer and ts_controller
-start ts_sniffer_outbound
-start ts_controller_inbound
-start ts_controller_outbound
-
-
 
 cat <<DELIM > /etc/openvpn/openvpn.conf
 dev tun
-ifconfig """ + OPENVPN_SERVER_IP+ " " + OPENVPN_CLIENT_IP + """
+ifconfig """ + OPENVPN_SERVER_IP + " " + OPENVPN_CLIENT_IP + """
 secret static.key
 DELIM
 openvpn --genkey --secret /etc/openvpn/static.key
@@ -37,6 +32,24 @@ chmod 644 /etc/openvpn/static.key
 sysctl -w net.ipv4.ip_forward=1
 iptables -A FORWARD -i tun0 -o eth0 -j ACCEPT
 iptables -A FORWARD -o tun0 -i eth0 -j ACCEPT
+
+# That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
+sudo apt-get install -y ros-fuerte-ros-comm
+
+# roscore is in simulator's machine
+cat <<DELIM >> /etc/environment
+export ROS_MASTER_URI=10.0.0.51
+export ROS_IP=10.0.0.50
+source /opt/ros/fuerte/setup.sh
+DELIM
+
+apt-get install -y cloudsim-client-tools
+
+# start vrc_sniffer and vrc_controllers
+start vrc_sniffer_outbound
+start vrc_controller_inbound
+start vrc_controller_outbound
+start vrc_bandwidth
 
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
@@ -441,9 +454,9 @@ echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
 
 # start ts_sniffer and ts_controller
-start ts_sniffer_outbound
-start ts_controller_inbound
-start ts_controller_outbound
+# start vrc_sniffer_outbound
+# start vrc_controller_inbound
+# start vrc_controller_outbound
  
 touch /home/ubuntu/cloudsim/setup/done
 
