@@ -50,7 +50,6 @@ sudo chmod 700 /var/www-cloudsim-auth
 sudo rm -rf /var/cloudsimd
 sudo mkdir -p /var/cloudsimd
 sudo cp -a $DIR/cloudsimd/* /var/cloudsimd
-sudo cp -a $DIR/inside/cgi-bin/common /var/cloudsimd
 
 
 sudo cp $DIR/cloudsimd/cloudsimd.conf /etc/init

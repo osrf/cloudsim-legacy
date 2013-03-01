@@ -4,9 +4,12 @@ import logging
 import testing
 import json
 
+import redis
+
+
 def log(msg, channel = "launch"):
     try:
-        import redis
+        
         redis_client = redis.Redis()
         redis_client.publish(channel, msg)
         logging.info(msg)
@@ -21,7 +24,7 @@ def publish_event(username, type, data):
     msg['type'] = type
     msg['username'] = username
     try:
-        import redis
+        
         redis_cli = redis.Redis()
         channel_name = msg['username'].split("@")[1]
         j_msg = json.dumps(msg)
@@ -68,10 +71,10 @@ def _domain(user_or_domain):
   
 def set_constellation_data(user_or_domain, constellation, value, expiration = None):
     try:
-        import redis
+        
         red = redis.Redis()
         domain = _domain(user_or_domain)
-        redis_key = domain+"/" + constellation
+        redis_key = "cloudsim/"domain+"/" + constellation
         
         s = json.dumps(value)
         red.set(redis_key, s)
@@ -84,14 +87,14 @@ def set_constellation_data(user_or_domain, constellation, value, expiration = No
 def get_constellations():
     try:
         data = []
-        import redis
+        
         red = redis.Redis()
         keys = red.keys("*")
         for key in keys:
             toks = key.split("/")
-            if len(toks) == 2:
-                domain = toks[0]
-                constellation = toks[1]
+            if len(toks) == 3:
+                domain = toks[1]
+                constellation = toks[2]
                 data.append( (domain, constellation) )
         return data
     except:
@@ -99,7 +102,7 @@ def get_constellations():
 
 def get_constellation_data(user_or_domain, constellation):
     try:
-        import redis
+        
         red = redis.Redis()
         domain = _domain(user_or_domain)
         redis_key = domain+"/"+constellation
@@ -109,53 +112,24 @@ def get_constellation_data(user_or_domain, constellation):
     except:
         return None    
 
-class RedisPublisher(object):
-    def __init__(self, username, tags):
-        self.username = username
-        self.tags = tags
-        self.channel_name = self.username.split("@")[1]
-        try:
-            import redis
-            self.redis_cli = redis.Redis()
-        except:
-            print("warning, redis not installed")
-        
-        
-    def event(self, data):
-        prefix = ""
-        try:
-            all_data = {}
-            all_data.update(self.tags)
-            all_data.update(data)
-            message = json.dumps(all_data)
-            self.redis_cli.publish(self.channel_name, message)
-        except:
-            prefix = "[redis not installed] "
-            
-        print("%s%s" %(prefix, message ) )
-        
-class TestMach(object):
-    
-    def __init__(self, event):
-        self.event = event
-        
-    def publish(self, data):
-        self._event( data)
-    
-    def _event(self, event_data):    
-        self.event( event_data)
+__CONFIG__KEY__ = "cloudsim_config"
 
-class PublishTest(unittest.TestCase): 
+def set_cloudsim_config(config):
     
-    def test_one(self):
-        
-        redis_pub = RedisPublisher("toto@toto.com")
-        
-        m2 = TestMach(redis_pub.event)
-        m2.publish( {'data':3})
+    r = redis.Redis()
+    s = json.dumps(config)
+    r.set(__CONFIG__KEY__, s)
+    
+def get_cloudsim_config():
+    
+    r = redis.Redis()
+    s = r.get(__CONFIG__KEY__)
+    config = json.loads(s)
+    return config
+
 
 def subscribe(channels):
-    import redis
+    
     redis_client = redis.Redis()
     ps = redis_client.pubsub()
     ps.subscribe(channels)

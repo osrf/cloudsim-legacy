@@ -433,8 +433,6 @@ echo "export DISPLAY=:0" >> /home/ubuntu/.bashrc
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
 
-sudo -u ubuntu /usr/bin/init_tc.py eth0    
-echo "sudo -u ubuntu /usr/bin/init_tc.py eth0" >> /home/ubuntu/setup.log
  
 touch /home/ubuntu/cloudsim/setup/done
 

@@ -60,7 +60,7 @@ if method == 'GET':
         
         if len(constellation) > 0:
             domain = _domain(email)
-            key = domain+"/"+ constellation
+            key = "cloudsim/"+domain+"/"+ constellation
             s = r.get(key)
         else:
             s = get_constellation_list(email) 

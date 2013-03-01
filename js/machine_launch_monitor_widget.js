@@ -19,14 +19,17 @@ function create_machine_launch_monitor_widget(machine_div,
         if(data.constellation_name != constellation_name)
             return;
         
+        count ++;
+        var colors = ["yellow", "orange"]
+        var color = colors[count % colors.length]
+
         var error_txt = "";
         if ( data.error.length)
         {
-        	error_txt += "<font color='red'><b>" +data.error  +"</b></font><br>";	
+            error_txt += "<font color='red'><b>" +data.error  +"</b></font><br>";
+            color = 'red';
         }
-        var colors = ["yellow", "orange"]
-        var color = colors[count % colors.length]
-        count ++;
+
         var machine_state = data[state_key];
         if(machine_state == "running")
             color = "blue";
