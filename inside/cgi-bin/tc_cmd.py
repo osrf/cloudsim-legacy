@@ -22,7 +22,6 @@ try:
     
     if d['command'] == 'update_tc':
         d['targetPacketLatency'] = form.getfirst('targetPacketLatency')
-        d['targetPacketLoss'] = form.getfirst('targetPacketLoss')
     else:
         print ('tc_cmd.py Incorrect command (%s)' % (d['command']))
 except Exception, e:

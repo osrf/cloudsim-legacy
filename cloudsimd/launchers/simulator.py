@@ -32,7 +32,7 @@ from launch_utils.startup_scripts import get_drc_startup_script,\
     create_ros_connect_file, create_ssh_connect_file
 from launch_utils.launch import LaunchException
 
-from launch_utils.testing import get_boto_path, get_test_path
+from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
     
 
@@ -493,28 +493,8 @@ def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, con
     constellation.set_value('constellation_state', 'terminated')
     
     
-   
 
-class DbCase(unittest.TestCase):
-    def atest(self):
-        user = 'hugo@osrfoundation.org'
-        const = 'cxdbcf5cf8'
-        cred = get_boto_path()
-        
-        monitor(user, const, cred, 1)
-        
-    def atest_set_get(self):
-        
-        user_or_domain = "hugo@toto.com"
-        constellation = "constellation"
-        value = {'a':1, 'b':2}
-        expiration = 25
-        set_constellation_data(user_or_domain, constellation, value, expiration)
-        
-        data = get_constellation_data(user_or_domain, constellation)
-        self.assert_(data['a'] == value['a'], "not set")
-
-class TrioCase(unittest.TestCase):
+class SimulatorCase(unittest.TestCase):
     
     
     def test_launch(self):
@@ -532,12 +512,18 @@ class TrioCase(unittest.TestCase):
         os.makedirs(self.constellation_directory)
         
         launch(self.username, self.constellation_name, self.tags, self.credentials_ec2, self.constellation_directory)
-        
+                
         sweep_count = 10
         for i in range(sweep_count):
             print("monitoring %s/%s" % (i,sweep_count) )
             monitor(self.username, self.constellation_name, self.credentials_ec2, i)
             time.sleep(1)
+    
+        #ToDo: Loop 
+        
+        #ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i /home/caguero/workspace/cloudsim/test-reports/test_simulator/test_simulator_6fe051aa/simulator_test_simulator_6fe051aa/key-sim-test_simulator_6fe051aa.pem ubuntu@67.202.40.198 bash cloudsim/ping_gazebo.bash
+
+    
     
     def tearDown(self):
         unittest.TestCase.tearDown(self)
@@ -548,4 +534,5 @@ class TrioCase(unittest.TestCase):
         
         
 if __name__ == "__main__":
-    unittest.main()        
+    xmlTestRunner = get_test_runner()   
+    unittest.main(testRunner = xmlTestRunner)       

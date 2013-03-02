@@ -30,7 +30,7 @@ from launch_utils.startup_scripts import get_cloudsim_startup_script, create_ssh
 
 from launch_utils.launch import LaunchException
 
-from launch_utils.testing import get_boto_path, get_test_path
+from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 from launch_utils.monitoring import parse_ping_data
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
 import tempfile
@@ -287,6 +287,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     
     color = "orange"
     for g in networking_done:
+        time.sleep(2)
         launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, "waiting for setup done")
         if color == "yellow":
             color = "orange"
@@ -385,6 +386,8 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
            
     constellation.set_value('constellation_state', 'running')
     log("provisionning done")
+    
+    return simulation_aws_id, sim_ip, key_filename
 
 
 def terminate(username, constellation_name, credentials_ec2, constellation_directory):
@@ -443,7 +446,7 @@ def cloudsim_bootstrap(username, credentials_ec2):
     constellation_directory = tempfile.mkdtemp("cloudsim")
     
     website_distribution = zip_cloudsim()
-    launch(username, constellation_name, tags,  credentials_ec2, constellation_directory, website_distribution)
+    return launch(username, constellation_name, tags,  credentials_ec2, constellation_directory, website_distribution)
     
     
     
@@ -463,8 +466,8 @@ def zip_cloudsim():
     
 class CloudsimBootStrapTestCase(unittest.TestCase):
     
-    def tearDown(self):
-        pass
+    def setUp(self):
+        self.ec2 = None
        
     def test_cloudsim_zip(self):
         zip_path = zip_cloudsim()
@@ -472,9 +475,15 @@ class CloudsimBootStrapTestCase(unittest.TestCase):
         
     def test_cloudsim_bootstrap(self):
         
-        ec2 = get_boto_path()
-        cloudsim_bootstrap("test@osrfoundation.org", ec2)
+        self.ec2 = get_boto_path()
+        self.simulation_aws_id, sim_ip, key_filename = cloudsim_bootstrap("test@osrfoundation.org", self.ec2)
         
+    def tearDown(self):
+        if self.ec2 != None:
+            c = self.ec2
+            ec2conn = aws_connect(c)[0]
+            ec2conn.terminate_instances(instance_ids=[self.simulation_aws_id])
+
         
 
 class DbCase(unittest.TestCase):
@@ -489,39 +498,9 @@ class DbCase(unittest.TestCase):
         
         data = get_constellation_data(user_or_domain, constellation)
         self.assert_(data['a'] == value['a'], "not set")
-
-class CloudsimCase(unittest.TestCase):
-    
-    
-    def test_launch(self):
-        
-        test_name = "test_" + CONFIGURATION
-        self.constellation_name =  get_unique_short_name(test_name + "_")
-        
-        self.username = "toto@osrfoundation.org"
-        self.credentials_ec2  = get_boto_path()
-        
-        self.tags = {'TestCase':CONFIGURATION, 'configuration': CONFIGURATION, 'constellation' : self.constellation_name, 'user': self.username, 'GMT':"now"}
-        
-        self.constellation_directory = os.path.abspath( os.path.join(get_test_path(test_name), self.constellation_name))
-        print("creating: %s" % self.constellation_directory )
-        os.makedirs(self.constellation_directory)
-        
-        launch(self.username, self.constellation_name, self.tags, self.credentials_ec2, self.constellation_directory)
-        
-        sweep_count = 10
-        for i in range(sweep_count):
-            print("monitoring %s/%s" % (i,sweep_count) )
-            monitor(self.username, self.constellation_name, self.credentials_ec2, i)
-            time.sleep(1)
-    
-    def tearDown(self):
-        unittest.TestCase.tearDown(self)
-        #self.machine.terminate() 
-        # self.constellation_name = 
-        terminate(self.username, self.constellation_name, self.credentials_ec2, self.constellation_directory)
         
         
         
 if __name__ == "__main__":
-    unittest.main()        
+    xmlTestRunner = get_test_runner()   
+    unittest.main(testRunner = xmlTestRunner)       

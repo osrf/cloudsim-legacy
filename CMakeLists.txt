@@ -32,9 +32,10 @@ include(CPack)
 # Testing
 enable_testing()
 set(TEST_SCRIPTS
-  inside/cgi-bin/common/startup_script_builder.py
+  cloudsimd/launchers/vpc_micro_trio.py
+  #cloudsimd/launchers/vpc_trio.py
   cloudsimd/launchers/cloudsim.py
-  cloudsimd/cloudsimd_test.py
+  cloudsimd/launchers/simulator.py
 )
 
 foreach(script ${TEST_SCRIPTS})

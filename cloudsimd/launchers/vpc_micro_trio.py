@@ -6,7 +6,7 @@ import time
 
 import vpc_trio 
 from launch_utils.launch import get_unique_short_name
-from launch_utils.testing import get_boto_path, get_test_path
+from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 from vpc_trio import OPENVPN_CLIENT_IP, TS_IP,  OPENVPN_SERVER_IP, trio_launch
 from launch_utils.startup_scripts import get_vpc_router_script, get_vpc_open_vpn
 
@@ -87,7 +87,7 @@ def start_simulator(username, constellation, machine_name, package_name, launch_
 def stop_simulator(username, constellation, machine):
     vpc_trio.stop_simulator(username, constellation, machine)
 
-class TrioCase(unittest.TestCase):
+class MicroTrioCase(unittest.TestCase):
     
     
     def test_trio(self):
@@ -124,4 +124,5 @@ class TrioCase(unittest.TestCase):
         
         
 if __name__ == "__main__":
-    unittest.main()        
+    xmlTestRunner = get_test_runner()   
+    unittest.main(testRunner = xmlTestRunner)       
