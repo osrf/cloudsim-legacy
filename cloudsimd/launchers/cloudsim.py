@@ -31,7 +31,8 @@ from launch_utils.startup_scripts import get_cloudsim_startup_script, create_ssh
 from launch_utils.launch import LaunchException
 
 from launch_utils.testing import get_boto_path, get_test_path
-from launch_utils.monitoring import parse_ping_data
+from launch_utils.monitoring import record_ping_result, LATENCY_TIME_BUFFER,\
+    machine_states
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
 import tempfile
 import shutil
@@ -52,9 +53,6 @@ def aws_connect(credentials_ec2):
     return ec2conn, vpcconn
 
 
-
-machine_states = [ 'terminated', 'terminating', 'stopped' 'stopping', 'nothing', 'starting', 'booting','network_setup', 'packages_setup', 'running', 'simulation_running']
-constellation_states = ['terminated', 'terminating','launching', 'running']
 
 def get_aws_states(ec2conn, machine_names_to_ids):
 
@@ -80,7 +78,7 @@ def stop_simulator(username, constellation, machine, root_directory):
 def monitor(username, constellation_name, credentials_ec2, counter):
     
     time.sleep(1)
-    constellation = ConstellationState(username, constellation_name)
+    constellation = ConstellationState( constellation_name)
     
     constellation_state = None
     try:
@@ -137,12 +135,12 @@ def monitor(username, constellation_name, credentials_ec2, counter):
             except Exception, e:
                 log("monitor: cloudsim/dpkg_log_sim.bash error: %s" % e )
         
-        o, ping_sim = commands.getstatusoutput("ping -c3 %s" % sim_ip)
+        o, ping_simulator = commands.getstatusoutput("ping -c3 %s" % sim_ip)
         if o == 0:
-            mini, avg, maxi, mdev = parse_ping_data(ping_sim)
-            log('ping simulator %s %s %s %s' % (mini, avg, maxi, mdev) )
-            latency_event(username, CONFIGURATION, constellation_name, sim_machine_name, mini, avg, maxi, mdev)
-         
+            sim_latency = constellation.get_value('simulation_latency')
+            sim_latency = record_ping_result(sim_latency, ping_simulator, LATENCY_TIME_BUFFER)
+            constellation.set_value('simulation_latency', sim_latency)
+            
         
         if sim_state_index >= machine_states.index('running'):
             try:
@@ -168,7 +166,7 @@ def monitor(username, constellation_name, credentials_ec2, counter):
 def launch(username, constellation_name, tags, credentials_ec2, constellation_directory, website_distribution = CLOUDSIM_ZIP_PATH ):
     
     ec2conn = aws_connect(credentials_ec2)[0]
-    constellation = ConstellationState(username, constellation_name)
+    constellation = ConstellationState( constellation_name)
    
     
     constellation.set_value('constellation_state', 'launching')
@@ -361,17 +359,16 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     log("provisionning done")
 
 
-def terminate(username, constellation_name, credentials_ec2, constellation_directory):
+def terminate(username,  constellation_name, credentials_ec2, constellation_directory):
 
-    resources = get_constellation_data(username,  constellation_name)
-    launch_event(username, CONFIGURATION, constellation_name, resources['sim_machine_name'], "orange", "terminating")
+    resources = get_constellation_data( constellation_name)
     
     
     ec2conn = aws_connect(credentials_ec2)[0]
-    constellation = ConstellationState(username, constellation_name)
+    constellation = ConstellationState( constellation_name)
     constellation.set_value('constellation_state', 'terminating')
     
-    log("terminate %s [user=%s, constellation_name=%s" % (CONFIGURATION, username, constellation_name) )
+    log("terminate %s [constellation_name=%s]" % (CONFIGURATION, constellation_name) )
     
     try:
         running_machines =  {}

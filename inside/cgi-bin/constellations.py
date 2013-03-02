@@ -18,16 +18,27 @@ def _domain(email):
     domain = email.split('@')[1]
     return domain
 
-def get_constellation_list(email):
+def get_constellation(email, constellation_name):
+    key = 'cloudsim/' + constellation_name
+    s = r.get(key)
+    c = json.loads(s)
+    domain = _domain(c['username'])
+    authorised_domain = _domain(email)
+    if domain == authorised_domain:
+        return c
+    return None
+
+def list_constellation_names(email):
+    r = redis.Redis()
     constellations = []
-    domain = _domain(email)
-    for k in r.keys():
-        # from 'osrfoundation.org/cx45634' to 'cx45634'
-        l = k.split(domain+"/")
-        if len(l) == 2:
-            constellations.append(l[1] )
-    return constellations
-         
+    for key in r.keys():
+        toks = key.split('cloudsim/')
+        if len(toks) == 2:
+            constellation_name = toks[1]
+            c = get_constellation(email, constellation_name)
+            if c:
+                constellations.append(constellation_name )
+    return constellations          
 
 
 def get_constellation_from_path():
@@ -60,16 +71,16 @@ if method == 'GET':
         
         if len(constellation) > 0:
             domain = _domain(email)
-            key = "cloudsim/"+domain+"/"+ constellation
+            key = "cloudsim/"+ constellation
             s = r.get(key)
         else:
-            s = get_constellation_list(email) 
+            s = list_constellation_names(email) 
            
             
     except Exception, e:
         s = "%s" % e
    
-    print(s)
+    print("%s" % s)
     exit(0)
 
 if method == 'PUT':

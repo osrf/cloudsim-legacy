@@ -36,9 +36,15 @@ def get_constellation_data(user_or_domain, constellation):
         
         red = redis.Redis()
         domain = _domain(user_or_domain)
-        redis_key = domain+"/"+constellation
+        redis_key = "cloudsim/"+constellation
         s = red.get(redis_key)
+        
         data = json.loads(s)
+        domain_data = _domain(data['username'])
+        
+        if domain != domain_data:
+            return None
+        
         return data
     except:
         return None    

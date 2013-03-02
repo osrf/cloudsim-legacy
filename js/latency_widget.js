@@ -7,10 +7,12 @@ var latency_data = {};
 
 
 
-function create_latency_widget(machine_div, constellation_name, machine_name, widget_name)
+function create_latency_widget(machine_div, 
+                               constellation_name, 
+                               machine_name,
+                               data_key)
 {
 	var unique_plot_id = "latency_"+machine_name;
-	
 	var widget_div = _create_empty_widget(machine_div, unique_plot_id);
 	widget_div.style.height = "150px";
 	
@@ -79,16 +81,17 @@ function create_latency_widget(machine_div, constellation_name, machine_name, wi
     		'plot_options' : plot_options,
     		'last_update' : null};
     
-    $.subscribe("/cloudsim", function(event, data){
+    $.subscribe("/constellation", function(event, data){
     	if(data.constellation_name != constellation_name)
     		return;
-    	if(data.machine_name != machine_name)
-    		return;
-    	if(data.type == 'latency')
-        {
-    		_update_graph(unique_plot_id, constellation_name, machine_name, data.min, data.max, data.avg, data.mdev)
+    	
+    	
+    	var values_str = data[data_key];
+    	console.log(values_str);
+    	var values = eval(values_str)
+    	console.log(values.length)
+    		// _update_graph(unique_plot_id, constellation_name, machine_name, data.min, data.max, data.avg, data.mdev)
     		
-        }
         
     });
 }

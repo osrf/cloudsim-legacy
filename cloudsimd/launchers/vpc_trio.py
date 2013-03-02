@@ -5,6 +5,8 @@ import os
 import time
 import commands
 
+import logging
+import redis
 
 import boto
 from boto.pyami.config import Config as BotoConfig
@@ -19,8 +21,7 @@ from launch_utils import get_constellation_data
 from launch_utils import SshClient
 from launch_utils import get_ssh_cmd_generator, empty_ssh_queue # task_list
 from launch_utils import ConstellationState # launch_db
-from launch_utils.launch_events import latency_event, launch_event, gl_event,\
-    simulator_event, machine_state_event, parse_dpkg_line
+from launch_utils.launch_events import parse_dpkg_line
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_drc_startup_script,\
     get_vpc_router_script, get_vpc_open_vpn, create_openvpn_client_cfg_file,\
@@ -29,8 +30,8 @@ from launch_utils.startup_scripts import get_drc_startup_script,\
 from launch_utils.testing import get_boto_path, get_test_path
 import zipfile
 from shutil import copyfile
-from launch_utils.monitoring import parse_ping_data, get_aws_states
-
+from launch_utils.monitoring import get_aws_states, record_ping_result,\
+    LATENCY_TIME_BUFFER, machine_states
 
 ROBOT_IP='10.0.0.52'
 TS_IP='10.0.0.50'
@@ -41,7 +42,7 @@ OPENVPN_CLIENT_IP='11.8.0.2'
 
 def log(msg, channel = "trio"):
     try:
-        import redis
+        
         redis_client = redis.Redis()
         redis_client.publish(channel, msg)
         logging.info(msg)
@@ -78,8 +79,6 @@ def create_vcp_internal_securtity_group(ec2conn, sg_name, constellation_name, vp
     return sg.id
 
 
-machine_states = [ 'terminated', 'terminating', 'stopped' 'stopping', 'nothing', 'starting', 'booting','network_setup', 'packages_setup', 'running', 'simulation_running']
-constellation_states = ['terminated', 'terminating','launching', 'running']
 
 def launch_prerelease(username, constellation_name, tags, credentials_ec2, constellation_directory ):
     # call _launch with small instance machine types with simple scripts and call  
@@ -165,7 +164,7 @@ def monitor(username, constellation_name, credentials_ec2, counter):
 def start_simulator(username, constellation_name, machine_name, package_name, launch_file_name, launch_args, ):
     
     log("vpc_trio start_simulator")
-    constellation_dict = get_constellation_data(username,  constellation_name)
+    constellation_dict = get_constellation_data(  constellation_name)
     constellation_directory = constellation_dict['constellation_directory']
     router_key_pair_name    = constellation_dict['router_key_pair_name']
     router_ip    = constellation_dict['router_public_ip']
@@ -183,7 +182,7 @@ def start_simulator(username, constellation_name, machine_name, package_name, la
 
 def stop_simulator(username, constellation_name, machine_name):
     log("vpc_trio stop_simulator")
-    constellation_dict = get_constellation_data(username,  constellation_name)
+    constellation_dict = get_constellation_data( constellation_name)
     constellation_directory = constellation_dict['constellation_directory']
     router_key_pair_name    = constellation_dict['router_key_pair_name']
     router_ip    = constellation_dict['router_public_ip']
@@ -202,7 +201,7 @@ def stop_simulator(username, constellation_name, machine_name):
 def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION):
     
     time.sleep(1)
-    constellation = ConstellationState(username, constellation_name)
+    constellation = ConstellationState(constellation_name)
     
     constellation_state = None
     try:
@@ -210,6 +209,7 @@ def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATI
         constellation_state = constellation.get_value("constellation_state") 
         # log("constellation %s state %s" % (constellation_name, constellation_state) )
         if constellation_state == "terminated":
+            constellation.expire(10)
             return True
     except:
         log("Can't access constellation  %s data" % constellation_name)
@@ -219,10 +219,6 @@ def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATI
     robot_state = constellation.get_value('robot_state')
     simulation_state = constellation.get_value('simulation_state')
     
-    router_machine_name = constellation.get_value('router_machine_name')
-    robot_machine_name = constellation.get_value('robot_machine_name')
-    sim_machine_name = constellation.get_value('sim_machine_name')
-
     constellation_directory = constellation.get_value('constellation_directory')
     
     router_state_index = machine_states.index(router_state)
@@ -247,25 +243,27 @@ def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATI
         constellation.set_value("robot_aws_state", aws_states["robot"])
 
     if router_state_index >= machine_states.index('packages_setup'):
+        
         router_ip = constellation.get_value('router_public_ip')
         router_key_pair_name = constellation.get_value('router_key_pair_name')
         ssh_router = SshClient(constellation_directory, router_key_pair_name, 'ubuntu', router_ip)
         
         ping_robot = ssh_router.cmd("ping -c3 %s" % ROBOT_IP)
-        mini, avg, maxi, mdev = parse_ping_data(ping_robot)
-        log('ping robot %s %s %s %s' % (mini, avg, maxi, mdev) )
-        latency_event(username, CONFIGURATION, constellation_name, robot_machine_name, mini, avg, maxi, mdev)
+        # latency_event(username, CONFIGURATION, constellation_name, robot_machine_name, mini, avg, maxi, mdev)
+        robot_latency = constellation.get_value('robot_latency')
+        robot_latency = record_ping_result(robot_latency, ping_robot, LATENCY_TIME_BUFFER)
+        constellation.set_value('robot_latency', robot_latency)
         
         ping_simulator = ssh_router.cmd("ping -c3 %s" % SIM_IP)
-        mini, avg, maxi, mdev = parse_ping_data(ping_simulator)
-        log('ping simulator %s %s %s %s' % (mini, avg, maxi, mdev) )
-        latency_event(username, CONFIGURATION, constellation_name, sim_machine_name, mini, avg, maxi, mdev)
+        sim_latency = constellation.get_value('simulation_latency')
+        sim_latency = record_ping_result(sim_latency, ping_simulator, LATENCY_TIME_BUFFER)
+        constellation.set_value('simulation_latency', sim_latency)
         
         o, ping_router = commands.getstatusoutput("ping -c3 %s" % router_ip)
         if o == 0:
-            mini, avg, maxi, mdev = parse_ping_data(ping_router)
-            log('ping router %s %s %s %s' % (mini, avg, maxi, mdev) )
-            latency_event(username, CONFIGURATION, constellation_name, router_machine_name, mini, avg, maxi, mdev)
+            router_latency = constellation.get_value('router_latency')
+            router_latency = record_ping_result(router_latency, ping_router, LATENCY_TIME_BUFFER)
+            constellation.set_value('router_latency', router_latency)
         
         if constellation_state == "running":
             if router_state == "running":
@@ -318,16 +316,18 @@ def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATI
                     constellation.set_value("gazebo", "not running")
             
             
-            gl_is_up = False
-            if gl_is_up:
+             
+            gl_state = constellation.get_value("simulation_glx_state")
+            if gl_state == "running":
                 try:
                     ping_gazebo = ssh_router.cmd("bash cloudsim/ping_gazebo.bash")
                     log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
-                    simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "running")
+                    constellation.set_value("gazebo", "running")
                 except Exception, e:
                     log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
-                    simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "not running")
-    return False
+                    constellation.set_value("gazebo", "not running")
+            
+            return False
 
 
 
@@ -362,7 +362,7 @@ def _launch(username,
     log("new trio constellation: %s" % constellation_name) 
        
     ec2conn, vpcconn = aws_connect(credentials_ec2)
-    constellation = ConstellationState(username, constellation_name)
+    constellation = ConstellationState( constellation_name)
     
     constellation.set_value('sim_ip', SIM_IP)
     constellation.set_value('router_ip', TS_IP)
@@ -389,6 +389,10 @@ def _launch(username,
     constellation.set_value('router_zip_file', 'not ready')
     constellation.set_value('sim_zip_file', 'not ready')
     
+    constellation.set_value('router_latency','[]')
+    constellation.set_value('robot_latency','[]')
+    constellation.set_value('simulation_latency','[]')
+                            
     sim_machine_name = "simulator_"+ constellation_name
     constellation.set_value('sim_machine_name', sim_machine_name)
     
@@ -878,7 +882,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     #
     # REBOOT the 2 large machines
     #
-    constellation.set_value('simulation_state', "rebootinng")
+    constellation.set_value('simulation_state', "rebooting")
     constellation.set_value('simulation_launch_msg', "rebooting")
     ssh_router.cmd("bash cloudsim/sim_reboot.bash")
     
@@ -892,14 +896,19 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     robot_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_robot.bash cloudsim/setup/done", "cloudsim/setup/done",  constellation, "robot_state", "running",  max_retries = 500)
     sim_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", "running",max_retries = 500)
     empty_ssh_queue([robot_done, sim_done], 2)
-
-    try:
-        ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
-        log("cloudsim/ping_gl.bash = %s" % ping_gl )
-        constellation.set_value('simulation_glx_state', "running")
-    except Exception, e:
-        constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
-        raise       
+    
+    time.sleep(2)
+    
+    if CONFIGURATION == "vpc_micro_trio":
+        constellation.set_value('simulation_glx_state', "n/a")
+    else:
+        try:
+            ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
+            log("cloudsim/ping_gl.bash = %s" % ping_gl )
+            constellation.set_value('simulation_glx_state', "running")
+        except Exception, e:
+            constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
+            raise       
                 
     constellation.set_value('constellation_state', 'running')
     
@@ -910,9 +919,8 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     
 def _terminate(username, constellation_name, credentials_ec2, constellation_directory, CONFIGURATION):
 
-    resources = get_constellation_data(username,  constellation_name)
-    
-    constellation = ConstellationState(username, constellation_name)
+    resources = get_constellation_data( constellation_name)
+    constellation = ConstellationState( constellation_name)
     
     
     constellation.set_value('router_launch_msg', "terminating")
@@ -1072,7 +1080,7 @@ def _terminate(username, constellation_name, credentials_ec2, constellation_dire
     
 
     constellation.set_value('constellation_state', 'terminated')
-    constellation.expire(1 * 10)
+
 
 class DbCase(unittest.TestCase):
     
@@ -1082,9 +1090,9 @@ class DbCase(unittest.TestCase):
         constellation = "constellation"
         value = {'a':1, 'b':2}
         expiration = 25
-        set_constellation_data(user_or_domain, constellation, value, expiration)
+        set_constellation_data( constellation, value, expiration)
         
-        data = get_constellation_data(user_or_domain, constellation)
+        data = get_constellation_data( constellation)
         self.assert_(data['a'] == value['a'], "not set")
 
 class TrioCase(unittest.TestCase):

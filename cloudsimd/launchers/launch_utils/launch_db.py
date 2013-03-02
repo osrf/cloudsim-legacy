@@ -35,29 +35,28 @@ def publish_event(username, type, data):
             
 class ConstellationState(object):
     
-    def __init__(self, username, constellation_name):
-        self.username = username
+    def __init__(self, constellation_name):
         self.constellation_name = constellation_name
         
     def has_value(self, name):
-        resources = get_constellation_data(self.username,  self.constellation_name)
+        resources = get_constellation_data(  self.constellation_name)
         return resources.has_key(name)
         
     def get_value(self, name):
-        resources = get_constellation_data(self.username,  self.constellation_name)
+        resources = get_constellation_data( self.constellation_name)
         return resources[name]
     
     def set_value(self, name, value):
-        resources = get_constellation_data(self.username,  self.constellation_name)
+        resources = get_constellation_data(  self.constellation_name)
         if not resources:
             resources = {}
         resources[name] = value
         expiration = None
-        set_constellation_data(self.username, self.constellation_name, resources, expiration)
+        set_constellation_data(self.constellation_name, resources, expiration)
     
     def expire(self, nb_of_secs):
-        resources  = get_constellation_data(self.username,  self.constellation_name)
-        set_constellation_data(self.username, self.constellation_name, resources, nb_of_secs)
+        resources  = get_constellation_data(self.constellation_name)
+        set_constellation_data(self.constellation_name, resources, nb_of_secs)
 
 
 
@@ -69,12 +68,11 @@ def _domain(user_or_domain):
 
 
   
-def set_constellation_data(user_or_domain, constellation, value, expiration = None):
+def set_constellation_data(constellation, value, expiration = None):
     try:
         
         red = redis.Redis()
-        domain = _domain(user_or_domain)
-        redis_key = "cloudsim/"domain+"/" + constellation
+        redis_key = "cloudsim/"+ constellation
         
         s = json.dumps(value)
         red.set(redis_key, s)
@@ -84,28 +82,26 @@ def set_constellation_data(user_or_domain, constellation, value, expiration = No
         log("can't set constellation data: %s" % e)
         
 
-def get_constellations():
+def get_constellation_names():
     try:
         data = []
         
         red = redis.Redis()
         keys = red.keys("*")
         for key in keys:
-            toks = key.split("/")
-            if len(toks) == 3:
-                domain = toks[1]
-                constellation = toks[2]
-                data.append( (domain, constellation) )
+            toks = key.split("cloudsim/")
+            if len(toks) == 2:
+                constellation = toks[1]
+                data.append( constellation )
         return data
     except:
         return None        
 
-def get_constellation_data(user_or_domain, constellation):
+def get_constellation_data(constellation):
     try:
         
         red = redis.Redis()
-        domain = _domain(user_or_domain)
-        redis_key = domain+"/"+constellation
+        redis_key = "cloudsim/" + constellation
         s = red.get(redis_key)
         data = json.loads(s)
         return data

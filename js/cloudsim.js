@@ -16,7 +16,7 @@ function create_constellation(div_name, configuration, constellation)
         // create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file" );
         
-        create_latency_widget(machine_div, constellation, machine_name, "latency");
+        create_latency_widget(machine_div, constellation, machine_name, "simulation_latency");
     }
 
     if(configuration == "vpc_trio" || configuration == "vpc_micro_trio" || configuration == "vpc_trio_prerelease" )
@@ -33,7 +33,7 @@ function create_constellation(div_name, configuration, constellation)
             //create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
             create_hostname_widget(machine_div, constellation, machine_name, "robot_ip", "robot_aws_id", "username", "gmt", "robot_zip_file");
             
-            create_latency_widget(machine_div, constellation, machine_name, "latency"); 
+            create_latency_widget(machine_div, constellation, machine_name, "robot_latency"); 
     	}
         // router computer
         {
@@ -46,7 +46,7 @@ function create_constellation(div_name, configuration, constellation)
             create_hostname_widget(machine_div, constellation, machine_name, "router_public_ip", "router_aws_id", "username", "gmt", "router_zip_file");
             create_traffic_shaper_widget(machine_div, constellation, machine_name, "traffic_shaper");
             
-            create_latency_widget(machine_div, constellation, machine_name, "latency"); 
+            create_latency_widget(machine_div, constellation, machine_name, "router_latency"); 
         }
         
         // simulator computer
@@ -62,7 +62,7 @@ function create_constellation(div_name, configuration, constellation)
             create_glx_state_widget(machine_div, constellation, machine_name, "simulation_glx_state");
             
             create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
-            create_latency_widget(machine_div, constellation, machine_name, "latency");
+            create_latency_widget(machine_div, constellation, machine_name, "simulation_latency");
         }
     }
     
@@ -80,7 +80,7 @@ function create_constellation(div_name, configuration, constellation)
         
         create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
         create_traffic_shaper_widget(machine_div, constellation, machine_name, "traffic_shaper");
-        create_latency_widget(machine_div, constellation, machine_name, "latency");
+        create_latency_widget(machine_div, constellation, machine_name, "simulation_latency");
     }
     
 }

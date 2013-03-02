@@ -34,6 +34,8 @@ from launch_utils.launch import LaunchException
 
 from launch_utils.testing import get_boto_path, get_test_path
 from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
+from launch_utils.monitoring import LATENCY_TIME_BUFFER, record_ping_result,\
+    machine_states
     
 
 
@@ -49,8 +51,6 @@ def get_ping_data(ping_str):
     mini, avg, maxi, mdev  =  [float(x) for x in ping_str.split()[-2].split('/')]
     return (mini, avg, maxi, mdev)
 
-machine_states = [ 'terminated', 'terminating', 'stopped' 'stopping', 'nothing', 'starting', 'booting','network_setup', 'packages_setup', 'rebooting', 'running', 'simulation_running']
-constellation_states = ['terminated', 'terminating','launching', 'running']
 
 def get_aws_states(ec2conn, machine_names_to_ids):
 
@@ -69,7 +69,7 @@ def get_aws_states(ec2conn, machine_names_to_ids):
 
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
 
-    constellation_dict = get_constellation_data(username,  constellation)
+    constellation_dict = get_constellation_data(  constellation)
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_pair_name    = constellation_dict['sim_key_pair_name']
     sim_ip    = constellation_dict['simulation_ip']
@@ -84,7 +84,7 @@ def start_simulator(username, constellation, machine_name, package_name, launch_
 
 def stop_simulator(username, constellation, machine):
     
-    constellation_dict = get_constellation_data(username,  constellation)
+    constellation_dict = get_constellation_data( constellation)
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_pair_name    = constellation_dict['sim_key_pair_name']
     sim_ip    = constellation_dict['simulation_ip']
@@ -110,7 +110,7 @@ def _monitor( username,
              counter):
     
     time.sleep(1)
-    constellation = ConstellationState(username, constellation_name)
+    constellation = ConstellationState( constellation_name)
     
     constellation_state = None
     try:
@@ -154,11 +154,11 @@ def _monitor( username,
             except Exception, e:
                 log("monitor: cloudsim/dpkg_log_sim.bash error: %s" % e )
 
-        o, ping_sim = commands.getstatusoutput("ping -c3 %s" % sim_ip)
+        o, ping_simulator = commands.getstatusoutput("ping -c3 %s" % sim_ip)
         if o == 0:
-            mini, avg, maxi, mdev = get_ping_data(ping_sim)
-            log('ping simulator %s %s %s %s' % (mini, avg, maxi, mdev) )
-            latency_event(username, CONFIGURATION, constellation_name, sim_machine_name, mini, avg, maxi, mdev)
+            sim_latency = constellation.get_value('simulation_latency')
+            sim_latency = record_ping_result(sim_latency, ping_simulator, LATENCY_TIME_BUFFER)
+            constellation.set_value('simulation_latency', sim_latency)
             
         if sim_state_index >= machine_states.index('running'):
             constellation.set_value('simulation_launch_msg', "complete")
@@ -186,7 +186,7 @@ def launch_prerelease(username, constellation_name, tags, credentials_ec2, const
 def _launch(username, constellation_name, tags, credentials_ec2, constellation_directory, CONFIGURATION, drc_package_name):
 
     ec2conn = aws_connect(credentials_ec2)[0]
-    constellation = ConstellationState(username, constellation_name)
+    constellation = ConstellationState( constellation_name)
 
     constellation.set_value('simulation_state', 'nothing')
     constellation.set_value('simulation_aws_state', 'nothing')
@@ -194,7 +194,8 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     constellation.set_value('simulation_launch_msg', "starting")
     constellation.set_value('simulation_glx_state', "not running")
     constellation.set_value('sim_zip_file', 'not ready')
-
+    constellation.set_value('simulation_latency','[]')
+    
     constellation.set_value('username', username)
     sim_machine_name = "simulator_"+ constellation_name
     constellation.set_value('sim_machine_name', sim_machine_name)
@@ -439,13 +440,13 @@ def terminate_prerelease(username, constellation_name, credentials_ec2, constell
 
 def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, constellation_directory):
 
-    resources = get_constellation_data(username,  constellation_name)
+    resources = get_constellation_data( constellation_name)
     
     
     error_msg =""
     
     ec2conn = aws_connect(credentials_ec2)[0]
-    constellation = ConstellationState(username, constellation_name)
+    constellation = ConstellationState( constellation_name)
     constellation.set_value('constellation_state', 'terminating')
     constellation.set_value('simulation_state', 'terminating')
     constellation.set_value('simulation_launch_msg', "terminating")
@@ -505,9 +506,9 @@ class DbCase(unittest.TestCase):
         constellation = "constellation"
         value = {'a':1, 'b':2}
         expiration = 25
-        set_constellation_data(user_or_domain, constellation, value, expiration)
+        set_constellation_data( constellation, value, expiration)
         
-        data = get_constellation_data(user_or_domain, constellation)
+        data = get_constellation_data(constellation)
         self.assert_(data['a'] == value['a'], "not set")
 
 class TrioCase(unittest.TestCase):

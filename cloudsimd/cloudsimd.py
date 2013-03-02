@@ -29,7 +29,7 @@ from launchers import vpc_micro_trio
 from launchers import cloudsim
 
 
-from launchers.launch_utils import get_constellations
+from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
 
@@ -38,15 +38,21 @@ from tc import traffic_shaper
 def del_constellations():
     r = redis.Redis()
     for k in r.keys():
-        
-        r.delete(k)
+        if k.find('cloudsim/') == 0:
+            r.delete(k)
     # r.flushdb()
 
 def list_constellations():
     r = redis.Redis()
-    x = [json.loads(r.get(x)) for x in r.keys()]
+    constellations = []
+    for key in r.keys():
+        s = r.get(key)
+        if key.find('cloudsim/') == 0:
+            c = json.loads(s)
+            constellations.append(c)
+    return constellations 
     
-    return x
+    
 #
 # The plugins contains the function pointers for each type of constellation
 # Don't forget to register new constellations
@@ -88,7 +94,7 @@ def launch( username,
             constellation_directory):
     
 
-    constellation = ConstellationState(username, constellation_name)
+    constellation = ConstellationState(constellation_name)
     try:
         proc = multiprocessing.current_process().name
         
@@ -150,7 +156,7 @@ def terminate(username,
 
     try:
         
-        data = get_constellation_data(username, constellation)
+        data = get_constellation_data( constellation)
         config = data['configuration']
         log("    configuration is '%s'" % (config))
         
@@ -162,7 +168,7 @@ def terminate(username,
         log("cloudsimd.py terminate error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb) 
-    data = get_constellation_data(username, constellation)
+    data = get_constellation_data( constellation)
     data['constellation_state'] = 'terminated'
     set_constellation_data(username, constellation, data, 360)
         
@@ -170,7 +176,7 @@ def terminate(username,
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
 
     try:
-        data = get_constellation_data(username, constellation)
+        data = get_constellation_data( constellation)
         config = data['configuration']
         start_simulator  = plugins[config]['start_simulator']
         start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args)
@@ -182,7 +188,7 @@ def start_simulator(username, constellation, machine_name, package_name, launch_
 
 def stop_simulator(username, constellation,  machine):
     try:
-        data = get_constellation_data(username, constellation)
+        data = get_constellation_data( constellation)
         config = data['configuration']
         root_directory =  MACHINES_DIR
         stop_simulator  = plugins[config]['stop_simulator']
@@ -299,12 +305,12 @@ def async_tick_monitor(tick_interval):
 
 def resume_monitoring(boto_path, root_dir): 
     log("resume_monitoring")
-    constellation_names  = get_constellations()
+    constellation_names  = get_constellation_names()
     log("existing constellations %s" % constellation_names)
-    for domain, constellation_name in constellation_names:
+    for constellation_name in constellation_names:
         try:
-            log("   constellation %s/%s " %  (domain, constellation_name) )  
-            constellation = get_constellation_data(domain,  constellation_name)
+            log("   constellation %s " %  (constellation_name) )  
+            constellation = get_constellation_data( constellation_name)
             state = constellation['constellation_state']
             config = constellation['configuration']
             username = constellation['username']
@@ -319,7 +325,7 @@ def resume_monitoring(boto_path, root_dir):
             
             
 def run_tc_command(_username, _constellationName, _targetPacketLatency, _targetPacketLoss):  
-    constellation = get_constellation_data(_username,  _constellationName)
+    constellation = get_constellation_data( _constellationName)
     config = constellation['configuration']
     keyDirectory = os.path.join(constellation['constellation_directory'])
         
