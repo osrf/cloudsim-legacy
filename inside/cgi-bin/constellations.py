@@ -105,3 +105,4 @@ if method == 'POST':
 s = json.dumps(d)
 redis_client = redis.Redis()
 redis_client.publish('cloudsim_cmds', s)
+print("%s" % s)

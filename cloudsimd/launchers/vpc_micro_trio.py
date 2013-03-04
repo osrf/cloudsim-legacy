@@ -92,8 +92,7 @@ class TrioCase(unittest.TestCase):
     
     def test_trio(self):
         
-        self.constellation_name =  get_unique_short_name("test_%s_" % CONFIGURATION)
-        
+        self.constellation_name =  get_unique_short_name("test_%s_" % CONFIGURATION)        
         self.username = "toto@osrfoundation.org"
         self.credentials_ec2  = get_boto_path()
         

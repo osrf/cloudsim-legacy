@@ -1,7 +1,7 @@
 
 function launch_constellation(configuration)
 {
-    var url = '/cloudsim/inside/cgi-bin/constellation?configuration=' + configuration;
+    var url = '/cloudsim/inside/cgi-bin/constellations?configuration=' + configuration;
     
     console.log("[POST]" + url);
     msg = httpPost(url);
@@ -10,7 +10,7 @@ function launch_constellation(configuration)
 
 function terminate_constellation(constellation_name)
 {
-    var url = '/cloudsim/inside/cgi-bin/constellation';
+    var url = '/cloudsim/inside/cgi-bin/constellations';
     url += '/' + constellation_name;
         
     console.log("[DELETE] " + url);
@@ -113,7 +113,7 @@ function get_constellation_names()
 
 function get_constellation(constellation)
 {
-    var url = '/cloudsim/inside/cgi-bin/constellation/';
+    var url = '/cloudsim/inside/cgi-bin/constellations/';
     url += constellation;
     console.log(url);
     msg = httpGet(url);
