@@ -61,17 +61,6 @@ function _get_constellation_div_str(div_name, configuration_name, constellation_
     return str;
 }
 
-function _constellation_terminate(div_name, constellation_name)
-{
-    var r = confirm("terminate " + constellation_name + "?");
-    if (r==false)
-    {
-        return;
-    }
-    terminate_constellation(constellation_name);
-}
-
-
 function insert_constellation_div(div_name, configuration, constellation)
 {
     var div = document.getElementById(div_name);
@@ -101,10 +90,36 @@ function insert_constellation_div(div_name, configuration, constellation)
     var const_div = document.createElement("div");
     const_div.id = constellation;
     _set_const_style(const_div.style);
-    const_div.innerHTML = _get_constellation_div_str(div_name, configuration, constellation);
+    
+    var top_div = document.createElement("div");
+    top_div.id = "top";
+//    div.insertBefore(top_div, node);
+    
+    var title_div = document.createElement("div");
+    title_div.id = "title";
+    const_div.appendChild(top_div);
+    
+    var machines_div = document.createElement("div");
+    machines_div.id = "machines";
+    const_div.appendChild(machines_div);
+     
+
+    // const_div.innerHTML = _get_constellation_div_str(div_name, configuration, constellation);
     div.insertBefore(const_div, node);
     return const_div;
 }
+
+
+function _constellation_terminate(div_name, constellation_name)
+{
+    var r = confirm("terminate " + constellation_name + "?");
+    if (r==false)
+    {
+        return;
+    }
+    terminate_constellation(constellation_name);
+}
+
 
 function constellation_remove(div_name, constellation_name)
 {

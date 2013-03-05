@@ -26,7 +26,8 @@ from launch_utils.launch_events import latency_event, launch_event, gl_event,\
     simulator_event, machine_state_event
     
 from launch_utils.sshclient import clean_local_ssh_key_entry
-from launch_utils.startup_scripts import get_cloudsim_startup_script, create_ssh_connect_file
+from launch_utils.startup_scripts import get_cloudsim_startup_script, \
+    create_ssh_connect_file
 
 from launch_utils.launch import LaunchException
 

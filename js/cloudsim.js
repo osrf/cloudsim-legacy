@@ -5,11 +5,12 @@ function create_constellation(div_name, configuration, constellation)
 {
     var constellation_div = insert_constellation_div(div_name, configuration, constellation);
     
+    var machines_div =  constellation_div.querySelector("#machines" );
+    
     if(configuration == "cloudsim")
     {
-        var div =  constellation_div.querySelector("#machines" );
         var machine_name = "cloudsim_" + constellation
-        var machine_div = create_machine(div, machine_name);
+        var machine_div = create_machine(machines_div, machine_name);
 
         create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "simulation_launch_msg", "simulation_state");
         create_machine_state_widget(machine_div, constellation, machine_name, "simulation_aws_state", "simulation_state");
@@ -26,7 +27,7 @@ function create_constellation(div_name, configuration, constellation)
             var div =  constellation_div.querySelector("#machines" );
             
             var machine_name = "field_computer_" + constellation
-            var machine_div = create_machine(div, machine_name);
+            var machine_div = create_machine(machines_div, machine_name);
             
             create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "robot_launch_msg", "robot_state");
             create_machine_state_widget(machine_div,constellation, machine_name, "robot_aws_state");
@@ -38,7 +39,7 @@ function create_constellation(div_name, configuration, constellation)
         // router computer
         {
             var machine_name = "router_" + constellation
-            var machine_div = create_machine(div, machine_name);
+            var machine_div = create_machine(machines_div, machine_name);
             
             create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "router_launch_msg", "router_state");
             create_machine_state_widget(machine_div,constellation, machine_name, "router_aws_state");
@@ -51,9 +52,9 @@ function create_constellation(div_name, configuration, constellation)
         
         // simulator computer
         {
-            var div =  constellation_div.querySelector("#machines" );
+            
             var machine_name = "simulator_" + constellation;
-            var machine_div = create_machine(div, machine_name);
+            var machine_div = create_machine(machines_div, machine_name);
             
             create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "simulation_launch_msg", "simulation_state");
             create_machine_state_widget(machine_div, constellation, machine_name,"simulation_aws_state");
@@ -70,8 +71,8 @@ function create_constellation(div_name, configuration, constellation)
     {
         var machine_name = "simulator_" +constellation;
     	
-        var div =  constellation_div.querySelector("#machines" );
-        var machine_div = create_machine(div, machine_name);
+        
+        var machine_div = create_machine(machines_div, machine_name);
         
         create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "simulation_launch_msg", "simulation_state");
         create_machine_state_widget(machine_div, constellation, machine_name,"simulation_aws_state");
