@@ -31,7 +31,9 @@ def aws_connect(credentials_ec2):
     return ec2conn, vpcconn
 
 
-machine_states = ['terminated', 'terminating', 'stopped' 'stopping', 'nothing', 'starting', 'booting', 'network_setup', 'packages_setup', 'running', 'simulation_running']
+machine_states = ['terminated', 'terminating', 'stopped' 'stopping', 'nothing',
+                  'starting', 'booting', 'network_setup', 'packages_setup',
+                  'running', 'simulation_running']
 constellation_states = ['terminated', 'terminating', 'launching', 'running']
 
 
@@ -51,7 +53,8 @@ def get_aws_states(ec2conn, machine_names_to_ids):
     return aws_states
 
 
-def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, root_directory):
+def start_simulator(username, constellation, machine_name, package_name,
+                    launch_file_name, launch_args, root_directory):
     pass
 
 
@@ -97,21 +100,34 @@ def monitor(username, constellation_name, credentials_ec2, counter):
             pass
 
         # todo: is download ready
-        launch_events.machine_state_event(username, CONFIGURATION, constellation_name, sim_machine_name, {'state': aws_states["sim"], 'ip': sim_ip, 'aws_id': aws_ids["sim"], 'gmt': gmt, 'username': username, 'key_download_ready': True})
+        launch_events.machine_state_event(username, CONFIGURATION,
+                                          constellation_name, sim_machine_name,
+                                          {'state': aws_states["sim"],
+                                           'ip': sim_ip,
+                                           'aws_id': aws_ids["sim"],
+                                           'gmt': gmt, 'username': username,
+                                           'key_download_ready': True})
 
     if sim_state_index >= machine_states.index('packages_setup'):
         constellation_directory = constellation.get_value('constellation_directory')
         sim_key_pair_name = constellation.get_value('sim_key_pair_name')
-        ssh_sim = sshclient.SshClient(constellation_directory, sim_key_pair_name, 'ubuntu', sim_ip)
+        ssh_sim = sshclient.SshClient(constellation_directory,
+                                      sim_key_pair_name, 'ubuntu',
+                                      sim_ip)
 
         if sim_state_index >= machine_states.index('running'):
-            launch_events.launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "complete")
+            launch_events.launch_event(username, CONFIGURATION,
+                                       constellation_name, sim_machine_name,
+                                       "blue", "complete")
 
         if simulation_state == 'packages_setup':
             try:
                 simulation_package = ssh_sim.cmd("cloudsim/dpkg_log_sim.bash")
 
-                launch_events.launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", simulation_package)
+                launch_events.launch_event(username, CONFIGURATION,
+                                           constellation_name,
+                                           sim_machine_name, "orange",
+                                           simulation_package)
             except Exception, e:
                 launch_db.log("monitor: cloudsim/dpkg_log_sim.bash error: %s" % e)
 
