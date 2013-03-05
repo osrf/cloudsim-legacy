@@ -55,6 +55,14 @@ page =  """<!DOCTYPE html>
     function on_load_page()
     {
         var user_info = """ + user_info + """;
+        if(user_info.role == "admin")
+        {
+            $('.admin_only').show();
+        }
+        
+        create_server_monitor_widget("server_monitor_div");
+        add_cloud_credentials_widget("credentials_div");
+        add_users_admin_widget("users_div");
         
         create_constellation_launcher_widget("launcher_div");
         create_constellations_widget("constellations_div");
@@ -64,6 +72,7 @@ page =  """<!DOCTYPE html>
         
     }
     
+    var count = 0;
     var log_events = true;
     
     function update()
@@ -85,8 +94,23 @@ page =  """<!DOCTYPE html>
             async_get_constellation(constellation, callback );
         } 
         
+        // user list update
+        count ++;
+        if (count % 3 ==0)
+        {
+           var callback = function(str_data)
+           {
+               var data = eval( '(' + str_data + ')' );
+               // console.log(str_data);
+               var channel = "/users";
+                $.publish(channel , data); 
+           };
+           async_get_users( callback );
+           
+        }
     }
-    
+
+/*    
     function update_old()
     {
         
@@ -111,7 +135,7 @@ page =  """<!DOCTYPE html>
                  }
              }
              
-             $.publish("/cloudsim", data);
+             $.publish("/stream", data);
              
          }, false);
          
@@ -121,7 +145,7 @@ page =  """<!DOCTYPE html>
             es.close();
         },false);
     }
-    
+*/    
     
     
     </script>
@@ -150,7 +174,16 @@ Welcome, """ + email + """<br>
 
 
 <div style="width:100%; float:left;"><br><hr><br></div>
+
     
+    <div class="admin_only" style="display:none;" >
+        <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">
+        </div>
+        <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
+        </div>
+    </div>
+        
+
     
     <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  background-color:#f1f1f2;">
     </div>
@@ -160,6 +193,8 @@ Welcome, """ + email + """<br>
 
     <div> 
     </div>
+    
+    <div id="task-view-form"></div>
     
 <div id="footer" style="width:100%; float:left; ">
 <br>

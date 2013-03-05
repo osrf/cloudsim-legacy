@@ -61,7 +61,11 @@ function _get_constellation_div_str(div_name, configuration_name, constellation_
     return str;
 }
 
+<<<<<<< local
+function insert_constellation_div(div_name, configuration_name, constellation_name)
+=======
 function insert_constellation_div(div_name, configuration, constellation)
+>>>>>>> other
 {
     var div = document.getElementById(div_name);
     var nodes = div.childNodes;
@@ -72,7 +76,7 @@ function insert_constellation_div(div_name, configuration, constellation)
         var constellation_iter = node.id;
         if(constellation_iter == undefined)
             continue;
-        var cmp = constellation_iter.localeCompare(constellation);
+        var cmp = constellation_iter.localeCompare(constellation_name);
         // console.log(constellation_iter+ " comp " + constellation + " = " + cmp);
 
         // Found it :-) 
@@ -88,17 +92,38 @@ function insert_constellation_div(div_name, configuration, constellation)
     }
     
     var const_div = document.createElement("div");
-    const_div.id = constellation;
+    const_div.id = constellation_name;
     _set_const_style(const_div.style);
     
     var top_div = document.createElement("div");
     top_div.id = "top";
+<<<<<<< local
+=======
 //    div.insertBefore(top_div, node);
+>>>>>>> other
     
+<<<<<<< local
+    var title_str = " <h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
+    title_str    +=   constellation_name + " [" + configuration_name + "]</center></h3>";
+    
+    top_div.innerHTML = title_str;
+=======
     var title_div = document.createElement("div");
     title_div.id = "title";
+>>>>>>> other
     const_div.appendChild(top_div);
     
+<<<<<<< local
+    // div.insertBefore(top_div, node);
+    
+    var tasks_div = document.createElement("div");
+    tasks_div.id = "tasks";
+    const_div.appendChild(tasks_div);
+       
+    
+    
+=======
+>>>>>>> other
     var machines_div = document.createElement("div");
     machines_div.id = "machines";
     const_div.appendChild(machines_div);

@@ -128,6 +128,12 @@ function async_get_constellation(constellation, callback)
     httpAsyncGet(url, callback);
 }
 
+function async_get_users(callback)
+{
+	var url = '/cloudsim/inside/cgi-bin/users/';
+    // console.log(url);
+    httpAsyncGet(url, callback);
+}
 ///////////////////////// AJAX
 
 

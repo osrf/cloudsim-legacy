@@ -448,13 +448,7 @@ echo "install """ + drc_package_name+ """ ">> /home/ubuntu/setup.log
 apt-get install -y """ + drc_package_name+ """
 echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
 echo "export DISPLAY=:0" >> /home/ubuntu/.bashrc
-<<<<<<< local
-=======
 
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-apt-get install -y cloudsim-client-tools
-
->>>>>>> other
  
 touch /home/ubuntu/cloudsim/setup/done
 
