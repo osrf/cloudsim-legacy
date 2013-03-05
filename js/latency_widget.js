@@ -7,10 +7,12 @@ var latency_data = {};
 
 
 
-function create_latency_widget(machine_div, constellation_name, machine_name, widget_name)
+function create_latency_widget(machine_div, 
+                               constellation_name, 
+                               machine_name,
+                               data_key)
 {
 	var unique_plot_id = "latency_"+machine_name;
-	
 	var widget_div = _create_empty_widget(machine_div, unique_plot_id);
 	widget_div.style.height = "150px";
 	
@@ -71,7 +73,8 @@ function create_latency_widget(machine_div, constellation_name, machine_name, wi
 
     		}
     };
-
+    
+  
 
     // var j_plot = $.plot($('#' + plot_div_name), latency_plot_data, plot_options);
     latency_data[unique_plot_id] = { 'plot_data': latency_plot_data,
@@ -79,22 +82,54 @@ function create_latency_widget(machine_div, constellation_name, machine_name, wi
     		'plot_options' : plot_options,
     		'last_update' : null};
     
-    $.subscribe("/cloudsim", function(event, data){
+    $.subscribe("/constellation", function(event, data){
     	if(data.constellation_name != constellation_name)
     		return;
-    	if(data.machine_name != machine_name)
-    		return;
-    	if(data.type == 'latency')
-        {
-    		_update_graph(unique_plot_id, constellation_name, machine_name, data.min, data.max, data.avg, data.mdev)
-    		
-        }
-        
+    	
+    	
+    	var values_str = data[data_key];
+//    	console.log(values_str);
+    	var values = eval(values_str)
+//    	console.log(values.length)
+   	
+    	var latency_plot_data = latency_data[unique_plot_id]['plot_data'];
+    	_set_latency_data(latency_plot_data, values);
+    	
+        var plot_options = latency_data[unique_plot_id]['plot_options']
+        document.getElementById(unique_plot_id).innerHTML = "";
+        latency_data[unique_plot_id]['plot'] = $.plot($('#' + unique_plot_id), latency_plot_data, plot_options);
+
     });
 }
 
 
- 
+function _set_latency_data(latency_plot_data, values)
+{
+	if(values.length ==0)
+		return;
+	
+    var min_latency = [];
+    var max_latency = [];
+    var avg = [];
+   
+    var t_latest = values[0][0];
+    for (var i = values.length-1; i >=0 ; i--)
+    {	
+    	var t_value = values[i][0];
+    	var min = values[i][1];
+    	var max = values[i][2];
+    	var ave = values[i][3];
+    	var t = t_latest - t_value;
+        min_latency.push( [t,min] ); 
+        max_latency.push( [t,max]);
+        avg.push ( [t, ave ]);
+    }
+    latency_plot_data[0].data = min_latency;
+    latency_plot_data[1].data = max_latency;
+    latency_plot_data[2].data = avg;
+}
+
+/* 
 function _update_graph(plot_div_name, constellation_name, machine_name, min, max, avg, mdev)
 {
 	var unique_plot_id = "latency_"+machine_name;
@@ -104,16 +139,18 @@ function _update_graph(plot_div_name, constellation_name, machine_name, min, max
     var t = Date.now() * 0.001;
     latency_data[unique_plot_id]['last_update'] = t;
     
+    
     add_latency_widget_sample(latency_plot_data, t, last_update , min, max, avg, mdev);
-     
+    
+    
     var plot_options = latency_data[unique_plot_id]['plot_options']
     document.getElementById(unique_plot_id).innerHTML = "";
     latency_data[unique_plot_id]['plot'] = $.plot($('#' + plot_div_name), latency_plot_data, plot_options);
 
 }
 
-
-function add_latency_widget_sample(latency_plot_data, t, last_update, min_latency_sample, max_latency_sample, avg_sample, mdev_sample)
+function old_add_latency_widget_sample(latency_plot_data, t, last_update, 
+									min_latency_sample, max_latency_sample, avg_sample, mdev_sample)
 {
     var elapsed = 0;
 
@@ -127,6 +164,8 @@ function add_latency_widget_sample(latency_plot_data, t, last_update, min_latenc
     var min_latency = latency_plot_data[0].data;
     var max_latency = latency_plot_data[1].data;
     var avg = latency_plot_data[2].data;
+    
+    
 //   var mdev = latency_plot_data[3].data;
 
 
@@ -158,4 +197,4 @@ function add_latency_widget_sample(latency_plot_data, t, last_update, min_latenc
 //  mdev = mdev.slice(first_fresh_data);   
 
 }
-
+*/

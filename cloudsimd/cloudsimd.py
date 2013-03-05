@@ -12,17 +12,14 @@ from json import loads
 import redis
 import json
 
-from launchers.launch_utils import RedisPublisher
 from launchers.launch_utils import SshClient
 
 #from common import Machine
 
 from launchers.launch_utils import get_unique_short_name
+from launchers.launch_utils.launch_db import ConstellationState
+from launchers.launch_utils.launch_db import get_cloudsim_config, set_cloudsim_config
 
-MACHINES_DIR = '/var/www-cloudsim-auth/machines'
-
-from common import BOTO_CONFIG_FILE_USEAST
-from common.web import get_cloudsim_version_txt
 
 import traceback
 
@@ -32,19 +29,29 @@ from launchers import vpc_micro_trio
 from launchers import cloudsim
 
 
-from launchers.launch_utils import get_constellations
+from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
 
-def flush_db():
+
+def del_constellations():
     r = redis.Redis()
-    r.flushdb()
+    for k in r.keys():
+        if k.find('cloudsim/') == 0:
+            r.delete(k)
+    # r.flushdb()
 
 def list_constellations():
     r = redis.Redis()
-    x = [json.loads(r.get(x)) for x in r.keys()]
+    constellations = []
+    for key in r.keys():
+        s = r.get(key)
+        if key.find('cloudsim/') == 0:
+            c = json.loads(s)
+            constellations.append(c)
+    return constellations 
     
-    return x
+    
 #
 # The plugins contains the function pointers for each type of constellation
 # Don't forget to register new constellations
@@ -67,7 +74,7 @@ class UnknownConfig(LaunchException):
     pass
    
     
-def log(msg, chan="cloudsim_log"):
+def log(msg, chan="trio"):
     try:
         
         print ("LOG: %s" % msg)
@@ -77,43 +84,58 @@ def log(msg, chan="cloudsim_log"):
         pass
 
 
-def list_constellations():
-    r = redis.Redis()
-    x = [json.loads(r.get(x)) for x in r.keys()]
-    
-    return x
-
-
 def launch( username, 
             config, 
             constellation_name,
             credentials_ec2, 
             constellation_directory):
     
-    red = redis.Redis()
-        
+
+    constellation = ConstellationState(constellation_name)
     try:
         proc = multiprocessing.current_process().name
+        
+        cloudsim_config = get_cloudsim_config()
+        version = cloudsim_config['cloudsim_version']
+        
         #log("cloudsimd.py launch")
-        log("Launching constellation %s, config '%s' for user '%s' from proc '%s'" % (constellation_name, config,  username, proc)) 
+        log("CloudSim [%s] Launching constellation [%s], config [%s] for user [%s] from proc [%s]" % (version, constellation_name, config,  username, proc)) 
         
         launch = plugins[config]['launch']
-        v = get_cloudsim_version_txt()
+        
         gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
         
         tags = {'username': username, 
                'constellation_name':constellation_name, 
-               'CloudSim': v, 
+               'CloudSim': version, 
                'GMT': gmt}
         
-        launch(username, constellation_name, tags, credentials_ec2, constellation_directory)
+        
+        constellation.set_value('username', username)
+        constellation.set_value('constellation_name', constellation_name)
+        constellation.set_value('gmt', gmt)
+        constellation.set_value('configuration', config)
+        constellation.set_value('constellation_directory', constellation_directory)
+        constellation.set_value('constellation_state', 'launching')
+        constellation.set_value('error', '')
+        
+        try:
+            launch(username, constellation_name, tags, credentials_ec2, constellation_directory)
+        except Exception, e:
+            tb = traceback.format_exc()
+            log("traceback:  %s" % tb)
+            terminate(username, constellation_name, credentials_ec2, constellation_directory)
+            constellation.set_value('error', '%s' %e)
+            raise
         
         log("Launch of constellation %s done" % constellation_name)
         
     except Exception, e:
+        
         log("cloudsimd.py launch error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
+
         #terminate(username, constellation_name, credentials_ec2, constellation_directory)
     
     
@@ -131,7 +153,7 @@ def terminate(username,
 
     try:
         
-        data = get_constellation_data(username, constellation)
+        data = get_constellation_data( constellation)
         config = data['configuration']
         log("    configuration is '%s'" % (config))
         
@@ -143,7 +165,7 @@ def terminate(username,
         log("cloudsimd.py terminate error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb) 
-    data = get_constellation_data(username, constellation)
+    data = get_constellation_data( constellation)
     data['constellation_state'] = 'terminated'
     set_constellation_data(username, constellation, data, 360)
         
@@ -151,7 +173,7 @@ def terminate(username,
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
 
     try:
-        data = get_constellation_data(username, constellation)
+        data = get_constellation_data( constellation)
         config = data['configuration']
         start_simulator  = plugins[config]['start_simulator']
         start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args)
@@ -163,7 +185,7 @@ def start_simulator(username, constellation, machine_name, package_name, launch_
 
 def stop_simulator(username, constellation,  machine):
     try:
-        data = get_constellation_data(username, constellation)
+        data = get_constellation_data( constellation)
         config = data['configuration']
         root_directory =  MACHINES_DIR
         stop_simulator  = plugins[config]['stop_simulator']
@@ -212,7 +234,7 @@ def async_monitor(username, config, constellation_name, boto_path):
     
 def async_launch(username, config, constellation_name, credentials_ec2, constellation_directory):
     
-    log("cloudsimd async_launch %s [config %s for user %s]"% (constellation_name, config, username) )
+    log("cloudsimd async_launch '%s' [config '%s' for user '%s']"% (constellation_name, config, username) )
     try:
         p = multiprocessing.Process(target=launch, args=(username, config, constellation_name, credentials_ec2, constellation_directory ))
         p.start()
@@ -280,12 +302,12 @@ def async_tick_monitor(tick_interval):
 
 def resume_monitoring(boto_path, root_dir): 
     log("resume_monitoring")
-    constellation_names  = get_constellations()
+    constellation_names  = get_constellation_names()
     log("existing constellations %s" % constellation_names)
-    for domain, constellation_name in constellation_names:
+    for constellation_name in constellation_names:
         try:
-            log("   constellation %s/%s " %  (domain, constellation_name) )  
-            constellation = get_constellation_data(domain,  constellation_name)
+            log("   constellation %s " %  (constellation_name) )  
+            constellation = get_constellation_data( constellation_name)
             state = constellation['constellation_state']
             config = constellation['configuration']
             username = constellation['username']
@@ -300,7 +322,8 @@ def resume_monitoring(boto_path, root_dir):
             
             
 def run_tc_command(_username, _constellationName, _targetPacketLatency):  
-    constellation = get_constellation_data(_username,  _constellationName)
+
+    constellation = get_constellation_data( _constellationName)
     config = constellation['configuration']
     keyDirectory = os.path.join(constellation['constellation_directory'])
         
@@ -392,20 +415,25 @@ def run(boto_path, root_dir, tick_interval):
 if __name__ == "__main__":
     
     try:
-        
         log("Cloudsim daemon started pid %s" %  os.getpid())
         log("args: %s" % sys.argv)
         
         tick_interval = 5
         
-        boto_path = os.path.abspath(BOTO_CONFIG_FILE_USEAST)
-        root_dir  = os.path.abspath(MACHINES_DIR)
-        
+        boto_path = '/var/www-cloudsim-auth/boto-useast'
+        root_dir  = '/var/www-cloudsim-auth/machines'
+
         if len(sys.argv) > 1:
            boto_path = os.path.abspath(sys.argv[1])
         if len(sys.argv) > 2:
            root_dir = os.path.abspath(sys.argv[2])
-
+           
+        config = {}
+        config['boto_path'] = boto_path
+        config['machines_directory'] = root_dir
+        config['cloudsim_version'] = '1.x.x'
+        set_cloudsim_config(config)
+        
         run(boto_path, root_dir, tick_interval)
         
     except Exception, e:

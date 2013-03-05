@@ -7,15 +7,12 @@ function create_constellations_widget(div_name)
     var div = document.getElementById(div_name);
     div.innerHTML = "<h2>Constellations</h2>";
     
-    $.subscribe("/cloudsim", function(event, data){
+    $.subscribe("/constellation", function(event, data){
         if(data.constellation_name)
         {
-        	var constellation = data.constellation_name;
-        	var configuration = data.configuration; 
-        	
-        	//data.constellation_config;
-            
-        	
+            var constellation = data.constellation_name;
+            var configuration = data.configuration; 
+            //data.constellation_config;
             var constellation_div =  div.querySelector("#"+constellation);
             if( constellation_div == null)
             {

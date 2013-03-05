@@ -2,6 +2,16 @@ from __future__ import print_function
 from launch_db import publish_event
 
 
+
+def parse_dpkg_line(s):
+    """
+    remove the date part of the file for readability
+    """
+    r = s.split("status ")[1]
+    if len(r) ==  0:
+        return s
+    return r
+
 def simulator_event(username, configuration, constellation_name, machine_name, color, text):
     msg = {'configuration':configuration, 
            'constellation_name':constellation_name, 

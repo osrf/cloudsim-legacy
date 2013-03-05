@@ -1,7 +1,7 @@
 
 function launch_constellation(configuration)
 {
-    var url = '/cloudsim/inside/cgi-bin/constellation?configuration=' + configuration;
+    var url = '/cloudsim/inside/cgi-bin/constellations?configuration=' + configuration;
     
     console.log("[POST]" + url);
     msg = httpPost(url);
@@ -10,7 +10,7 @@ function launch_constellation(configuration)
 
 function terminate_constellation(constellation_name)
 {
-    var url = '/cloudsim/inside/cgi-bin/constellation';
+    var url = '/cloudsim/inside/cgi-bin/constellations';
     url += '/' + constellation_name;
         
     console.log("[DELETE] " + url);
@@ -35,6 +35,7 @@ function remove_user(user_name)
     console.log("[DELETE] "+url);
     var x = httpDelete(url);
     console.log(x);
+    return x;
 }
 
 function change_credentials(access_key, secret_access_key, availability_zone)
@@ -68,7 +69,8 @@ function start_simulator(constellation_name, machine_name, package_name, launch_
 
     console.log(url);
     msg = httpGet(url);
-    console.log(msg);	
+    console.log(msg);
+    return msg;
 }
 
 function stop_simulator(constellation_name, machine_name)
@@ -81,7 +83,7 @@ function stop_simulator(constellation_name, machine_name)
     console.log(url);
     msg = httpGet(url);
     console.log(msg);
-
+    return msg;
 }
 
 function update_traffic_shaper(_constellationName, _machineName, _targetPacketLatency)
@@ -94,9 +96,56 @@ function update_traffic_shaper(_constellationName, _machineName, _targetPacketLa
     console.log(url);
     msg = httpGet(url);
     console.log(msg);
+    return msg;
+}
+
+
+function get_constellation_names()
+{
+    var url = '/cloudsim/inside/cgi-bin/constellations';
+    // console.log(url);
+    var msg = httpGet(url);
+    // console.log(msg);
+    var jmsg = eval('(' + msg + ')');
+    return jmsg;
+}
+
+function get_constellation(constellation)
+{
+    var url = '/cloudsim/inside/cgi-bin/constellations/';
+    url += constellation;
+    console.log(url);
+    msg = httpGet(url);
+    console.log(msg);
+    return msg;
+}
+
+function async_get_constellation(constellation, callback)
+{
+	var url = '/cloudsim/inside/cgi-bin/constellations/';
+	url += constellation;
+    // console.log(url);
+    httpAsyncGet(url, callback);
 }
 
 ///////////////////////// AJAX
+
+
+
+httpAsyncGet = function(url, callback) 
+{
+    var request = new XMLHttpRequest();
+    request.onreadystatechange = function()
+    {
+        if (request.readyState == 4 && request.status == 200)
+        {
+            callback(request.responseText); 
+        }    
+    }
+    request.open('GET', url);
+    request.send();
+}
+
 
 function httpGet(theUrl)
 {

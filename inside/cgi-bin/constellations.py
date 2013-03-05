@@ -6,150 +6,103 @@ import cgi
 import cgitb
 import json
 import os
-cgitb.enable()
-
+import urlparse
 from common import  authorize
+import redis
+
+
+cgitb.enable()
+r = redis.Redis()
+
+def _domain(email):
+    domain = email.split('@')[1]
+    return domain
+
+def get_constellation(email, constellation_name):
+    key = 'cloudsim/' + constellation_name
+    s = r.get(key)
+    c = json.loads(s)
+    domain = _domain(c['username'])
+    authorised_domain = _domain(email)
+    if domain == authorised_domain:
+        return c
+    return None
+
+def list_constellation_names(email):
+    r = redis.Redis()
+    constellations = []
+    for key in r.keys():
+        toks = key.split('cloudsim/')
+        if len(toks) == 2:
+            constellation_name = toks[1]
+            c = get_constellation(email, constellation_name)
+            if c:
+                constellations.append(constellation_name )
+    return constellations          
+
+
+def get_constellation_from_path():
+    try:
+        constellation = os.environ['PATH_INFO'].split('/')[1]
+        return constellation
+    except:
+        return ""
+
+
+def get_query_param(param):
+    qs= os.environ['QUERY_STRING']
+    params = urlparse.parse_qs(qs)
+    p = params[param][0]
+    return p
 
 email = authorize()
 method = os.environ['REQUEST_METHOD']
 
+
 print('Content-type: application/json')
 print("\n")
 
-if method != 'GET':
-    return
+if method == 'GET':
+    s = None
 
-email = authorize()
-udb = common.UserDatabase()
-role = udb.get_role(email)
-version = common.get_cloudsim_version_txt()
-
-user_info = json.dumps({'user':email, 'role':role})
-scripts = get_javascripts(['machine_view.js', 'jquery-1.8.3.min.js', 'jquery.flot.js' ])
-
-page =  """Content-Type: text/html
-
-
-<!DOCTYPE html>
-<html>
- <head>
- 
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Cloudsim console</title>
-
-
-    
-<link href="/js/layout.css" rel="stylesheet" type="text/css">
-<link rel="stylesheet" href="/js/jquery-ui.css" />
-
-
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
-
-<script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
-
-
-""" + scripts +"""
-    
-    
-<script language="javascript">
-
-    function on_load_page()
-    {
-        var user_info = """ + user_info + """;
+    try:    
         
-        create_constellation_launcher_widget("launcher_div");
-        create_constellations_widget("constellations_div");
+        constellation = get_constellation_from_path()
         
-        update();
-    }
-    
-    var log_events = true;
-    
-    function update()
-    {
-        
-        var update_url = '/cloudsim/inside/cgi-bin/console_stream.py';
-        console.log(stream_url);
-        
-        var es = new EventSource(stream_url);
-        
-        var hidden_event_types = [];
-        
-        es.addEventListener("cloudsim", function(event)
-        {
-             var str_data = event.data;
-             var data = eval( '(' + str_data + ')' );
-             
-             if(log_events)
-             {
-                 var type = data.type;
-                 // console.log(type);
-                 if( hidden_event_types.indexOf(type) == -1) 
-                 {
-                     console.log(str_data);
-                 }
-             }
-             
-             $.publish("/cloudsim", data);
-             
-         }, false);
-         
-        es.addEventListener("done", function(event)
-        {
-            alert("Unexpected 'done' msg received");
-            es.close();
-        },false);
-    }
-    
-    
-    
-    </script>
-    
-    
-    
-</head>
-<body onload = "on_load_page()">
+        if len(constellation) > 0:
+            domain = _domain(email)
+            key = "cloudsim/"+ constellation
+            s = r.get(key)
+        else:
+            s = list_constellation_names(email) 
+           
+            
+    except Exception, e:
+        s = "%s" % e
+   
+    print("%s" % s)
+    exit(0)
 
+if method == 'PUT':
+    # todo unsupported
+    exit(0)
 
+d = {}
+d['username'] = email
+d['type'] = 'launchers'
 
-    <div style="float:left;">
-        <img src="/js/images/osrf.png" width="200px"/>
-        <!-- img src="/js/images/DARPA_Logo.jpg" width="200px"/ -->
-        
-    </div>
-
-<div style="float:right;">
-
-Welcome, """ + email + """<br>
-<a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-<div class="admin_only" style="display:none;">
-    <a href="/cloudsim/inside/cgi-bin/admin_download">SSH key download</a><br>
-</div>
-</div>    
-
-
-<div style="width:100%; float:left;"><br><hr><br></div>
+if method == 'DELETE':
+    d['command'] = 'terminate'
+    d['constellation'] = get_constellation_from_path()
     
+  
+if method == 'POST':
+    d = {}
+    d['username'] = email
+    d['command'] = 'launch'
+    d['configuration'] = get_query_param('configuration')
     
-    <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  background-color:#f1f1f2;">
-    </div>
-    
-    <div id="constellations_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
-    </div>
-
-    <div> 
-    </div>
-    
-<div id="footer" style="width:100%; float:left; ">
-<br>
-<hr>
-<i>    <div id="server_monitor_div" style="float:left"></div> CloudSim """ + version + """ is provided by the <b>Open Source Robotics Foundation</b>. (Your frame rate may vary. Electric sheep not included)</i>
-</div>
-    
-</body>
-</html>
-
-"""
-
-print(page)
+s = json.dumps(d)
+redis_client = redis.Redis()
+redis_client.publish('cloudsim_cmds', s)
+print("%s" % s)

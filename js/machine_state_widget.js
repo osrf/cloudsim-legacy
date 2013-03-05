@@ -1,26 +1,18 @@
 
-function create_machine_state_widget(machine_div, constellation_name, machine_name, widget_name)
+function create_machine_state_widget(machine_div, constellation_name, machine_name, key)
 {
-    var widget_div = _create_empty_widget(machine_div, widget_name);
-
+    var widget_div = _create_empty_widget(machine_div, "state");
     // default behaviour
     _update_machine_state(widget_div, "gray", "[waiting for update]");
     
-    
-    var blink = 0;
     // reaction
-    $.subscribe("/cloudsim", function(event, msg)
+    $.subscribe("/constellation", function(event, msg)
     {
-    	if(msg.type != 'machine') 
-        	return;
         
-    	if(msg.constellation_name != constellation_name) 
-        	return;
+        if(msg.constellation_name != constellation_name) 
+            return;
         
-    	if(msg.machine_name != machine_name) 
-        	return;
-        
-        var machine_state = msg.data.state;
+        var machine_state = msg[key];
         var color = "red";
         
         if(machine_state == 'shutting-down')
@@ -28,9 +20,14 @@ function create_machine_state_widget(machine_div, constellation_name, machine_na
             color = "orange";
         }
         
+        if(machine_state == 'nothing')
+        {
+            color = "yellow";
+        }
+                
         if(machine_state == 'pending')
         {
-        	color = "yellow";
+            color = "yellow";
         }
         	
         if(machine_state == 'terminated')
@@ -44,7 +41,6 @@ function create_machine_state_widget(machine_div, constellation_name, machine_na
         }
         
         _update_machine_state(widget_div, color, machine_state);
-    
         
     });
 }

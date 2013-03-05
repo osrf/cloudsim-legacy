@@ -10,15 +10,19 @@ echo
 
 sudo cp $DIR/distfiles/apache2.conf /etc/apache2/apache2.conf
 
-sudo rm -rf /var/cloudsimd
-sudo mkdir -p   /var/cloudsimd
-
 sudo rm -rf /var/www
 sudo mkdir -p /var/www
 
+#
+# Copy dev files to website directory
+#
 sudo cp -a $DIR/* /var/www/
+
+#
+# Change 
+#
 sudo rm -rf /var/www/distfiles
-sudo chown -R www-data:www-data /var/www
+# sudo chown -R www-data:www-data /var/www
 sudo mkdir -p /var/www-cloudsim-auth/machines
 
 sudo cp -f $DIR/../boto.ini /var/www-cloudsim-auth/boto-useast
@@ -46,7 +50,6 @@ sudo chmod 700 /var/www-cloudsim-auth
 sudo rm -rf /var/cloudsimd
 sudo mkdir -p /var/cloudsimd
 sudo cp -a $DIR/cloudsimd/* /var/cloudsimd
-sudo cp -a $DIR/inside/cgi-bin/common /var/cloudsimd
 
 
 sudo cp $DIR/cloudsimd/cloudsimd.conf /etc/init

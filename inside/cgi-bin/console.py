@@ -1,35 +1,34 @@
 #!/usr/bin/env python
+
 from __future__ import with_statement
 from __future__ import print_function
-
 import cgitb
 import json
 import os
-from common import get_javascripts
+
+from common.web import get_javascripts, authorize, UserDatabase,\
+    get_cloudsim_version_txt, print_http_header
 cgitb.enable()
-
-import common
-from common import  authorize
-
-
-
 
 
 email = authorize()
-udb = common.UserDatabase()
+method = os.environ['REQUEST_METHOD']
+
+
+if method != 'GET':
+    exit(0)
+
+email = authorize()
+udb = UserDatabase()
 role = udb.get_role(email)
-version = common.get_cloudsim_version_txt()
+version = get_cloudsim_version_txt()
 
 user_info = json.dumps({'user':email, 'role':role})
 scripts = get_javascripts(['machine_view.js', 'jquery-1.8.3.min.js', 'jquery.flot.js' ])
 
-print("Content-Type: text/html")
-print("\n")
+print_http_header()
 
-
-# <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-
-template = """<!DOCTYPE html>
+page =  """<!DOCTYPE html>
 <html>
  <head>
  
@@ -56,27 +55,42 @@ template = """<!DOCTYPE html>
     function on_load_page()
     {
         var user_info = """ + user_info + """;
-        if(user_info.role == "admin")
-        {
-            $('.admin_only').show();
-        }
-        
-        create_server_monitor_widget("server_monitor_div");
-    
-        add_cloud_credentials_widget("credentials_div");
-        add_users_admin_widget("users_div");
         
         create_constellation_launcher_widget("launcher_div");
         create_constellations_widget("constellations_div");
-        stream();
+        
+        var delay = 1000;
+        var id = setInterval(update , delay)
+        
     }
     
     var log_events = true;
     
-    function stream()
+    function update()
+    {
+        console.log("update");
+        constellations = get_constellation_names();
+        for (var i=0; i< constellations.length; i++)
+        {
+            var constellation = constellations[i];
+            var callback = function(str_data)
+            {
+                var data = eval( '(' + str_data + ')' );
+                // console.log(constellation);
+                var channel = "/constellation";
+                data.constellation_name = constellation;
+                $.publish(channel , data);
+            };
+            
+            async_get_constellation(constellation, callback );
+        } 
+        
+    }
+    
+    function update_old()
     {
         
-        var stream_url = '/cloudsim/inside/cgi-bin/console_stream.py';
+        var update_url = '/cloudsim/inside/cgi-bin/console_stream.py';
         console.log(stream_url);
         
         var es = new EventSource(stream_url);
@@ -91,7 +105,6 @@ template = """<!DOCTYPE html>
              if(log_events)
              {
                  var type = data.type;
-                 // console.log(type);
                  if( hidden_event_types.indexOf(type) == -1) 
                  {
                      console.log(str_data);
@@ -138,17 +151,14 @@ Welcome, """ + email + """<br>
 
 <div style="width:100%; float:left;"><br><hr><br></div>
     
-    <div class="admin_only" style="display:none;" >
-        <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">
-        </div>
-        <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
-        </div>
-    </div>
     
     <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  background-color:#f1f1f2;">
     </div>
     
     <div id="constellations_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
+    </div>
+
+    <div> 
     </div>
     
 <div id="footer" style="width:100%; float:left; ">
@@ -162,5 +172,4 @@ Welcome, """ + email + """<br>
 
 """
 
-page = template 
-print(page )
+print(page)

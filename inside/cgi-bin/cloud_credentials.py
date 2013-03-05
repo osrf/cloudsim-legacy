@@ -51,8 +51,7 @@ try:
             
         else:
             r['msg'] = "The credentials are not valid."
-            
-    
+
     if method == 'POST':
         # not supported
         pass
