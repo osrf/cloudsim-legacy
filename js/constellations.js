@@ -13,8 +13,7 @@ function create_constellations_widget(div_name)
     
     //var dialog_div = document.createElement("div");
     //dialog_div.id = "task-view-form";
-    
-    
+
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name)
         {
@@ -28,7 +27,7 @@ function create_constellations_widget(div_name)
             }
         }
     });
-    
+
     // initialise the form that shows the tasks properties
     $( "#task-view-form" ).dialog({
       autoOpen: false,
@@ -99,25 +98,6 @@ function get_constellation_names(div_name)
     return constellations;
 }
 
-function _get_constellation_div_str(div_name, configuration_name, constellation_name)
-{
-    var str = "";
-    str += '<div id="top" style="';
-    str += 'width = 100%; float:left; border-top-left-radius:10px; border-top-right-radius:15px;';
-    str += ' background-color: #44497a; ';
-    str += ' width:100%; float:left;" ">' 
-    str += " <h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
-    str +=   constellation_name + " [" + configuration_name + "]</center></h3>";    
-    str += ' </div>' // top
-    str += "<button ";
-    str += ' style="border-radius: 5px;" ';
-    str += "onclick=\"_constellation_terminate('"+div_name+"', '"+constellation_name+"');\">Terminate</button>";
-    str += "<div id='machines' ";
-    str += 'style="clear:left; width=100%"';
-    str += '></div>'; // machines
-    return str;
-}
-
 function insert_constellation_div(div_name, configuration_name, constellation_name)
 {
     var div = document.getElementById(div_name);
@@ -139,7 +119,7 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
         // found where to create it :-)
         if(cmp > 0)
             break;
-        
+
         // makes insertBefore at the end
         node = null;
     }
@@ -186,6 +166,17 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     
     const_div.appendChild(terminate_button);
 
+    var add_task_button =document.createElement('input');
+    add_task_button.setAttribute('type','button');
+    add_task_button.setAttribute('value','Add task...');
+    add_task_button.onclick =  function()
+    {
+         $( "#task-view-form" ).dialog( "open" );
+    }
+    
+    const_div.appendChild(add_task_button);
+    
+
     var tasks_div = document.createElement("div");
     tasks_div.id = "tasks";
     const_div.appendChild(tasks_div);
@@ -198,42 +189,44 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     // const_div.innerHTML = _get_constellation_div_str(div_name, configuration, constellation);
     div.insertBefore(const_div, node);
     
-    
-    
     return const_div;
 }
 
-function add_task_widget(constellation_name, task_name )
+function add_task_widget(constellation_name, task_id, color, task_title, task_data )
 {
     var const_div = document.getElementById(constellation_name);
     var tasks_div = const_div.querySelector("#tasks");
-    
-    
+
     var task_div = document.createElement("div");
     task_div.id = "task";
+    task_div.style.float = "left"
+    task_div.style.width = "100%"
     tasks_div.appendChild(task_div);
-    
-    
+
+    var x_button= document.createElement('input');
+    x_button.setAttribute('type','button');
+    x_button.setAttribute('value','X');    
+
     var start_button= document.createElement('input');
     start_button.setAttribute('type','button');
     start_button.setAttribute('value','Start');
-    
+
     var stop_button= document.createElement('input');
     stop_button.setAttribute('type','button');
     stop_button.setAttribute('value','Stop');
-    
+
     var edit_button= document.createElement('input');
     edit_button.setAttribute('type','button');
     edit_button.setAttribute('value','Edit');
-    
-    
-    task_div.appendChild(start_button);
-    task_div.appendChild(stop_button);
-    task_div.appendChild(edit_button);
-    
+
+    x_button.onclick =  function()
+    {
+        alert("no way! " + task_id);
+    };
+
     edit_button.onclick =  function()
     {
-        //alert("edit"); 
+        
         $( "#task-view-form" ).dialog( "open" );
     };
 
@@ -247,11 +240,27 @@ function add_task_widget(constellation_name, task_name )
         alert("start");
     };
     
+    var task_buttons_div = document.createElement("div");
+    task_buttons_div.style.cssFloat = "right";
+    task_buttons_div.style.width = "20%";
+    task_buttons_div.id = "buttons";
+    task_buttons_div.appendChild(start_button);
+    task_buttons_div.appendChild(stop_button);
+    task_buttons_div.appendChild(edit_button);
+    task_buttons_div.appendChild(x_button);
+    
+    
     var task_title_div = document.createElement("div");
+    task_title_div.style.cssFloat = "left";
+    task_title_div.style.width = "80%";
+    
     task_title_div.id = "task_title";
-    task_title_div.innerHTML = task_name;
-    task_title_div.style.backgroundColor = "gray";
+    task_title_div.innerHTML = task_title;
+    task_title_div.style.backgroundColor = "#f1f1f2";
+    
+    
     task_div.appendChild(task_title_div);
+    task_div.appendChild(task_buttons_div);
     // attach to page
     
     
