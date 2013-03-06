@@ -418,10 +418,24 @@ def terminate(username,  constellation_name, credentials_ec2, constellation_dire
 def cloudsim_bootstrap(username, credentials_ec2):
     print(__file__)
     constellation_name = get_unique_short_name('c')
-    tags = {'GMT':'now'}
-    constellation_directory = tempfile.mkdtemp("cloudsim")
     
+    gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+    tags = {'GMT': gmt, 
+            'username':username,
+            }
+    
+    constellation_directory = tempfile.mkdtemp("cloudsim")
     website_distribution = zip_cloudsim()
+    
+    constellation = ConstellationState(constellation_name)
+    constellation.set_value('username', username)
+    constellation.set_value('constellation_name', constellation_name)
+    constellation.set_value('gmt', gmt)
+    constellation.set_value('configuration', 'cloudsim')
+    constellation.set_value('constellation_directory', constellation_directory)
+    constellation.set_value('constellation_state', 'launching')
+    constellation.set_value('error', '')
+    
     return launch(username, constellation_name, tags,  credentials_ec2, constellation_directory, website_distribution)
     
     
