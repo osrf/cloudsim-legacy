@@ -42,7 +42,7 @@ page =  """<!DOCTYPE html>
 
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.1/jquery-ui.min.js"></script>
 
 <script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
 
@@ -194,7 +194,7 @@ Welcome, """ + email + """<br>
     <div> 
     </div>
     
-    <div id="task-view-form"></div>
+    
     
 <div id="footer" style="width:100%; float:left; ">
 <br>

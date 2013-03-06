@@ -5,7 +5,15 @@ function create_constellations_widget(div_name)
     console.log("constellations_on_load_page " + div_name);
     
     var div = document.getElementById(div_name);
-    div.innerHTML = "<h2>Constellations</h2>";
+    
+    var str = "<h2>Constellations</h2>";
+    str += '<div id="task-view-form" title="Task properties"></div>';
+    
+    div.innerHTML = str;
+    
+    //var dialog_div = document.createElement("div");
+    //dialog_div.id = "task-view-form";
+    
     
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name)
@@ -19,6 +27,55 @@ function create_constellations_widget(div_name)
                 create_constellation(div_name, configuration, constellation);
             }
         }
+    });
+    
+    // initialise the form that shows the tasks properties
+    $( "#task-view-form" ).dialog({
+      autoOpen: false,
+      height: 300,
+      width: 350,
+      modal: true,
+      buttons: {
+        "Update": function() {
+          var bValid = true;
+          
+          // allFields.removeClass( "ui-state-error" );
+          bValid = true;
+          
+          /*
+          bValid = bValid && checkLength( name, "username", 3, 16 );
+          bValid = bValid && checkLength( email, "email", 6, 80 );
+          bValid = bValid && checkLength( password, "password", 5, 16 );
+ 
+          bValid = bValid && checkRegexp( name, /^[a-z]([0-9a-z_])+$/i, "Username may consist of a-z, 0-9, underscores, begin with a letter." );
+          // From jquery.validate.js (by joern), contributed by Scott Gonzalez: http://projects.scottsplayground.com/email_address_validation/
+          bValid = bValid && checkRegexp( email, /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?$/i, "eg. ui@jquery.com" );
+          bValid = bValid && checkRegexp( password, /^([0-9a-zA-Z])+$/, "Password field only allow : a-z 0-9" );
+          */
+        	  
+          if ( bValid ) 
+          {
+            $( "#users tbody" ).append( "<tr>" +
+              "<td>" + name.val() + "</td>" +
+              "<td>" + email.val() + "</td>" +
+              "<td>" + password.val() + "</td>" +
+            "</tr>" );
+            $( this ).dialog( "close" );
+          }
+        },
+        
+        "Delete" : function() {
+            alert("What the hell are you trying to do?");
+        }
+        
+      //  Cancel: function() {
+      //    $( this ).dialog( "close" );
+      //  }
+      },
+      close: function() {
+       //    allFields.val( "" ).removeClass( "ui-state-error" );
+    	  console.log("gone");
+      }
     });
 }
 
@@ -140,6 +197,9 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
 
     // const_div.innerHTML = _get_constellation_div_str(div_name, configuration, constellation);
     div.insertBefore(const_div, node);
+    
+    
+    
     return const_div;
 }
 
@@ -148,7 +208,10 @@ function add_task_widget(constellation_name, task_name )
     var const_div = document.getElementById(constellation_name);
     var tasks_div = const_div.querySelector("#tasks");
     
+    
     var task_div = document.createElement("div");
+    task_div.id = "task";
+    tasks_div.appendChild(task_div);
     
     
     var start_button= document.createElement('input');
@@ -170,14 +233,27 @@ function add_task_widget(constellation_name, task_name )
     
     edit_button.onclick =  function()
     {
-        alert("yesss!");
+        //alert("edit"); 
+        $( "#task-view-form" ).dialog( "open" );
+    };
+
+    stop_button.onclick =  function()
+    {
+        alert("stop");
     };
     
+    start_button.onclick =  function()
+    {
+        alert("start");
+    };
     
-    task_div.innerHTML += "" + task_name;
-    
+    var task_title_div = document.createElement("div");
+    task_title_div.id = "task_title";
+    task_title_div.innerHTML = task_name;
+    task_title_div.style.backgroundColor = "gray";
+    task_div.appendChild(task_title_div);
     // attach to page
-    tasks_div.appendChild(task_div);
+    
     
 }
 
@@ -209,51 +285,5 @@ function _set_const_style(style)
     style.margin = "1%";
     style.backgroundColor = "#a8a7a7"; // f1f1f2
 }
-
-
-$( "#task-view-form" ).dialog({
-      autoOpen: false,
-      height: 300,
-      width: 350,
-      modal: true,
-      buttons: {
-        "Create an account": function() {
-          var bValid = true;
-          allFields.removeClass( "ui-state-error" );
- 
-          bValid = bValid && checkLength( name, "username", 3, 16 );
-          bValid = bValid && checkLength( email, "email", 6, 80 );
-          bValid = bValid && checkLength( password, "password", 5, 16 );
- 
-          bValid = bValid && checkRegexp( name, /^[a-z]([0-9a-z_])+$/i, "Username may consist of a-z, 0-9, underscores, begin with a letter." );
-          // From jquery.validate.js (by joern), contributed by Scott Gonzalez: http://projects.scottsplayground.com/email_address_validation/
-          bValid = bValid && checkRegexp( email, /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?$/i, "eg. ui@jquery.com" );
-          bValid = bValid && checkRegexp( password, /^([0-9a-zA-Z])+$/, "Password field only allow : a-z 0-9" );
- 
-          if ( bValid ) {
-            $( "#users tbody" ).append( "<tr>" +
-              "<td>" + name.val() + "</td>" +
-              "<td>" + email.val() + "</td>" +
-              "<td>" + password.val() + "</td>" +
-            "</tr>" );
-            $( this ).dialog( "close" );
-          }
-        },
-        Cancel: function() {
-          $( this ).dialog( "close" );
-        }
-      },
-      close: function() {
-        allFields.val( "" ).removeClass( "ui-state-error" );
-      }
-    
-/* 
-    $( "#create-user" )
-      .button()
-      .click(function() {
-        $( "#task-view-form" ).dialog( "open" );
-      });
-  */    
-});
 
 
