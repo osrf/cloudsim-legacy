@@ -267,7 +267,7 @@ def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_ma
     
     s = """#!/bin/bash
 # Exit on error
-set -e
+set -ex
 # Redirect everybody's output to a file
 logfile=/home/ubuntu/launch_stdout_stderr.log
 exec > $logfile 2>&1
@@ -448,13 +448,12 @@ echo "install """ + drc_package_name+ """ ">> /home/ubuntu/setup.log
 apt-get install -y """ + drc_package_name+ """
 echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
 echo "export DISPLAY=:0" >> /home/ubuntu/.bashrc
-<<<<<<< local
-=======
+echo "export ROS_IP=""" + machine_ip +"""  >> /home/ubuntu/.bashrc
+echo "export GAZEBO_IP=""" + machine_ip +""" >> /home/ubuntu/.bashrc
 
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
 
->>>>>>> other
  
 touch /home/ubuntu/cloudsim/setup/done
 
