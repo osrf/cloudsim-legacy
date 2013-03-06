@@ -15,9 +15,9 @@ basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 # Modify PYTHONPATH variable with relative directories to basepath
 new_path = os.path.join(basepath, "inside", "cgi-bin")
-sys.path.append(new_path)
+sys.path.insert(0,new_path)
 new_path = os.path.join(basepath, "cloudsimd", "launchers")
-sys.path.append(new_path)
+sys.path.insert(0,new_path)
 
 import common
 import cloudsim
