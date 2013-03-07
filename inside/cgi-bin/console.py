@@ -86,11 +86,12 @@ page =  """<!DOCTYPE html>
                var constellation = constellations[i];
                $.publish("/constellation" , constellation);
            } 
-           
-           constellations = async_get_constellations(callback);
+           // that was fun, let's do it again in 500 ms
            setTimeout(update , 500);
         };
         
+        // lets do it when we get the constellations data
+        async_get_constellations(callback);
     }
 
 /*    
