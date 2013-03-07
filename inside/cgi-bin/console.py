@@ -42,7 +42,7 @@ page =  """<!DOCTYPE html>
 
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.1/jquery-ui.min.js"></script>
 
 <script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
 
@@ -55,38 +55,45 @@ page =  """<!DOCTYPE html>
     function on_load_page()
     {
         var user_info = """ + user_info + """;
+        if(user_info.role == "admin")
+        {
+            $('.admin_only').show();
+        }
+        
+        create_server_monitor_widget("server_monitor_div");
+        add_cloud_credentials_widget("credentials_div");
+        add_users_admin_widget("users_div");
         
         create_constellation_launcher_widget("launcher_div");
         create_constellations_widget("constellations_div");
         
-        var delay = 1000;
-        var id = setInterval(update , delay)
+        update();
         
     }
     
+    var count = 0;
     var log_events = true;
     
     function update()
     {
         console.log("update");
-        constellations = get_constellation_names();
-        for (var i=0; i< constellations.length; i++)
-        {
-            var constellation = constellations[i];
-            var callback = function(str_data)
-            {
-                var data = eval( '(' + str_data + ')' );
-                // console.log(constellation);
-                var channel = "/constellation";
-                data.constellation_name = constellation;
-                $.publish(channel , data);
-            };
-            
-            async_get_constellation(constellation, callback );
-        } 
         
+        var callback = function(str_data)
+        {
+           var constellations = eval( '(' + str_data + ')' );
+           for (var i=0; i< constellations.length; i++)
+           {
+               var constellation = constellations[i];
+               $.publish("/constellation" , constellation);
+           } 
+        };
+        
+        
+        constellations = async_get_constellations(callback);
+        setTimeout(update , 500);
     }
-    
+
+/*    
     function update_old()
     {
         
@@ -111,7 +118,7 @@ page =  """<!DOCTYPE html>
                  }
              }
              
-             $.publish("/cloudsim", data);
+             $.publish("/stream", data);
              
          }, false);
          
@@ -121,7 +128,7 @@ page =  """<!DOCTYPE html>
             es.close();
         },false);
     }
-    
+*/    
     
     
     </script>
@@ -150,7 +157,16 @@ Welcome, """ + email + """<br>
 
 
 <div style="width:100%; float:left;"><br><hr><br></div>
+
     
+    <div class="admin_only" style="display:none;" >
+        <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">
+        </div>
+        <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
+        </div>
+    </div>
+        
+
     
     <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  background-color:#f1f1f2;">
     </div>
@@ -160,6 +176,8 @@ Welcome, """ + email + """<br>
 
     <div> 
     </div>
+    
+    
     
 <div id="footer" style="width:100%; float:left; ">
 <br>

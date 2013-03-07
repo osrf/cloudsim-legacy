@@ -42,9 +42,11 @@ def get_micro_robot_script(routing_script):
     
     return get_micro_sim_script(routing_script)
 
-def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
+def launch(username, constellation_name, tags, credentials_ec2, 
+           constellation_directory ):
 
-    routing_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
+    routing_script = get_vpc_open_vpn(vpc_trio.OPENVPN_CLIENT_IP, 
+                                      vpc_trio.TS_IP)
     
     ROBOT_AWS_TYPE  = 't1.micro'
     ROBOT_AWS_IMAGE = "ami-137bcf7a"
@@ -57,10 +59,12 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     
     ROUTER_AWS_TYPE='t1.micro'
     ROUTER_AWS_IMAGE="ami-137bcf7a"
-    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP) 
+    ROUTER_SCRIPT = get_vpc_router_script(vpc_trio.OPENVPN_SERVER_IP, 
+                                          vpc_trio.OPENVPN_CLIENT_IP) 
     
 
-    vpc_trio._launch(username, constellation_name, tags, credentials_ec2, constellation_directory,
+    vpc_trio._launch(username, constellation_name, tags, credentials_ec2, 
+                     constellation_directory,
                         ROUTER_AWS_TYPE,
                         ROUTER_AWS_IMAGE,
                         ROUTER_SCRIPT,
@@ -75,15 +79,20 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
                         CONFIGURATION)
 
 def monitor(username, constellation_name, credentials_ec2, counter):
-    return vpc_trio._monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION)
+    return vpc_trio._monitor(username, constellation_name, credentials_ec2, 
+                             counter, CONFIGURATION)
 
 
-def terminate(username, constellation_name, credentials_ec2, constellation_directory):
-    vpc_trio._terminate(username, constellation_name, credentials_ec2, constellation_directory, CONFIGURATION)
+def terminate(username, constellation_name, credentials_ec2, 
+              constellation_directory):
+    vpc_trio._terminate(username, constellation_name, credentials_ec2, 
+                        constellation_directory, CONFIGURATION)
                            
     
-def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, ):
-    vpc_trio.start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args)
+def start_simulator(username, constellation, machine_name, package_name, 
+                    launch_file_name, launch_args, ):
+    vpc_trio.start_simulator(username, constellation, machine_name, 
+                             package_name, launch_file_name, launch_args)
 
 def stop_simulator(username, constellation, machine):
     vpc_trio.stop_simulator(username, constellation, machine)

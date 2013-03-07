@@ -446,14 +446,15 @@ apt-get install -y ntp
 
 echo "install """ + drc_package_name+ """ ">> /home/ubuntu/setup.log
 apt-get install -y """ + drc_package_name+ """
-echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
-echo "export DISPLAY=:0" >> /home/ubuntu/.bashrc
-echo "export ROS_IP=""" + machine_ip +"""  >> /home/ubuntu/.bashrc
-echo "export GAZEBO_IP=""" + machine_ip +""" >> /home/ubuntu/.bashrc
 
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
 
+echo "Updating bashrc file">> /home/ubuntu/setup.log
+echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
+echo "export DISPLAY=:0" >> /home/ubuntu/.bashrc
+echo "export ROS_IP=""" + machine_ip +"""  >> /home/ubuntu/.bashrc
+echo "export GAZEBO_IP=""" + machine_ip +""" >> /home/ubuntu/.bashrc
  
 touch /home/ubuntu/cloudsim/setup/done
 
@@ -559,3 +560,19 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/""" + key_file + " ubuntu@" + ip + """
     """ 
     return s
+
+
+if __name__ == "__main__":
+    
+    print("MAIN")
+    
+    OPENVPN_SERVER_IP='11.8.0.1'
+    OPENVPN_CLIENT_IP='11.8.0.2'
+    drc_package_name = 'drcsim'
+    open_vpn_script = get_open_vpn_single(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
+    SIM_SCRIPT = get_drc_startup_script(open_vpn_script, OPENVPN_SERVER_IP, drc_package_name)
+
+    print(SIM_SCRIPT)
+    
+    
+    

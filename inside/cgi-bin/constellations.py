@@ -14,30 +14,45 @@ import redis
 cgitb.enable()
 r = redis.Redis()
 
+
+
+def log(msg):
+    r.publish('constellations', msg)
+
 def _domain(email):
     domain = email.split('@')[1]
     return domain
 
 def get_constellation(email, constellation_name):
-    key = 'cloudsim/' + constellation_name
-    s = r.get(key)
-    c = json.loads(s)
-    domain = _domain(c['username'])
-    authorised_domain = _domain(email)
-    if domain == authorised_domain:
-        return c
-    return None
+
+    try:
+        key = 'cloudsim/' + constellation_name
+       
+        s = r.get(key)
+        c = json.loads(s)
+        log("c %s" % c)
+        
+        domain = _domain(c['username'])
+        authorised_domain = _domain(email)
+        
+        x = None
+        if domain == authorised_domain:
+            x = c
+        return x
+    except:
+        return None
 
 def list_constellation_names(email):
-    r = redis.Redis()
     constellations = []
     for key in r.keys():
+        
         toks = key.split('cloudsim/')
         if len(toks) == 2:
             constellation_name = toks[1]
             c = get_constellation(email, constellation_name)
             if c:
-                constellations.append(constellation_name )
+                log(constellation_name)
+                constellations.append(c )
     return constellations          
 
 
@@ -64,22 +79,26 @@ print("\n")
 
 if method == 'GET':
     s = None
-
+    log("Constellations")
     try:    
         
         constellation = get_constellation_from_path()
+        
         
         if len(constellation) > 0:
             domain = _domain(email)
             key = "cloudsim/"+ constellation
             s = r.get(key)
         else:
-            s = list_constellation_names(email) 
-           
+            log("listing all constellations")
+            l = list_constellation_names(email)
+            s = json.dumps(l)
+            
+        
             
     except Exception, e:
         s = "%s" % e
-   
+        
     print("%s" % s)
     exit(0)
 
@@ -103,6 +122,5 @@ if method == 'POST':
     d['configuration'] = get_query_param('configuration')
     
 s = json.dumps(d)
-redis_client = redis.Redis()
-redis_client.publish('cloudsim_cmds', s)
+r.publish('cloudsim_cmds', s)
 print("%s" % s)
