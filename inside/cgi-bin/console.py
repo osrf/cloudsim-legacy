@@ -86,11 +86,11 @@ page =  """<!DOCTYPE html>
                var constellation = constellations[i];
                $.publish("/constellation" , constellation);
            } 
+           
+           constellations = async_get_constellations(callback);
+           setTimeout(update , 500);
         };
         
-        
-        constellations = async_get_constellations(callback);
-        setTimeout(update , 500);
     }
 
 /*    
