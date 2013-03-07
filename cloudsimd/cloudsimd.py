@@ -74,7 +74,7 @@ class UnknownConfig(LaunchException):
     pass
    
     
-def log(msg, chan="trio"):
+def log(msg, chan="cloudsimd"):
     try:
         
         print ("LOG: %s" % msg)
@@ -122,10 +122,12 @@ def launch( username,
         try:
             launch(username, constellation_name, tags, credentials_ec2, constellation_directory)
         except Exception, e:
+            error_msg = constellation.get_value('error')
+            
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
-            terminate(username, constellation_name, credentials_ec2, constellation_directory)
-            constellation.set_value('error', '%s' %e)
+            #terminate(username, constellation_name, credentials_ec2, constellation_directory)
+            #constellation.set_value('error', '%s' % error_msg)
             raise
         
         log("Launch of constellation %s done" % constellation_name)

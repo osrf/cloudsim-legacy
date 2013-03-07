@@ -90,7 +90,7 @@ if method == 'GET':
             log("listing all constellations")
             s = list_constellation_names(email)
             log("constellations %s" % s) 
-        r.publish('cloudsim_cmds', s)
+        
             
     except Exception, e:
         s = "%s" % e
