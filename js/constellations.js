@@ -80,23 +80,23 @@ function create_constellations_widget(div_name)
 
 
 
-function get_constellation_names(div_name)
-{
-    var constellations = [];
-    // look at the children 'div' they are named after the
-    // constellation
-    var div = document.getElementById(div_name);
-    var nodes = div.childNodes; // getElementsByTagName('div');
-    for(var i=0; i<nodes.length; i++) {
-        var node = nodes[i];
-        var title = node.id;
-        if(title != undefined)
-        {
-            constellations.push(title);
-        }
-    }
-    return constellations;
-}
+//function get_constellation_names(div_name)
+//{
+//    var constellations = [];
+//    // look at the children 'div' they are named after the
+//    // constellation
+//    var div = document.getElementById(div_name);
+//    var nodes = div.childNodes; // getElementsByTagName('div');
+//    for(var i=0; i<nodes.length; i++) {
+//        var node = nodes[i];
+//        var title = node.id;
+//        if(title != undefined)
+//        {
+//            constellations.push(title);
+//        }
+//    }
+//    return constellations;
+//}
 
 function insert_constellation_div(div_name, configuration_name, constellation_name)
 {

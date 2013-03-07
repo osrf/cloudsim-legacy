@@ -560,3 +560,19 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/""" + key_file + " ubuntu@" + ip + """
     """ 
     return s
+
+
+if __name__ == "__main__":
+    
+    print("MAIN")
+    
+    OPENVPN_SERVER_IP='11.8.0.1'
+    OPENVPN_CLIENT_IP='11.8.0.2'
+    drc_package_name = 'drcsim'
+    open_vpn_script = get_open_vpn_single(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
+    SIM_SCRIPT = get_drc_startup_script(open_vpn_script, OPENVPN_SERVER_IP, drc_package_name)
+
+    print(SIM_SCRIPT)
+    
+    
+    

@@ -67,8 +67,7 @@ page =  """<!DOCTYPE html>
         create_constellation_launcher_widget("launcher_div");
         create_constellations_widget("constellations_div");
         
-        var delay = 1000;
-        var id = setInterval(update , delay)
+        update();
         
     }
     
@@ -78,36 +77,20 @@ page =  """<!DOCTYPE html>
     function update()
     {
         console.log("update");
-        constellations = get_constellation_names();
-        for (var i=0; i< constellations.length; i++)
-        {
-            var constellation = constellations[i];
-            var callback = function(str_data)
-            {
-                var data = eval( '(' + str_data + ')' );
-                // console.log(constellation);
-                var channel = "/constellation";
-                data.constellation_name = constellation;
-                $.publish(channel , data);
-            };
-            
-            async_get_constellation(constellation, callback );
-        } 
         
-        // user list update
-        count ++;
-        if (count % 3 ==0)
+        var callback = function(str_data)
         {
-           var callback = function(str_data)
+           var constellations = eval( '(' + str_data + ')' );
+           for (var i=0; i< constellations.length; i++)
            {
-               var data = eval( '(' + str_data + ')' );
-               // console.log(str_data);
-               var channel = "/users";
-                $.publish(channel , data); 
-           };
-           async_get_users( callback );
-           
-        }
+               var constellation = constellations[i];
+               $.publish("/constellation" , constellation);
+           } 
+        };
+        
+        
+        constellations = async_get_constellations(callback);
+        setTimeout(update , 500);
     }
 
 /*    

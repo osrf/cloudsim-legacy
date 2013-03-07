@@ -25,7 +25,7 @@ function create_server_monitor_widget(div_name)
     
     var count = 0;
     
-    $.subscribe("/cloudsim", function(event, data){
+    $.subscribe("/constellation", function(event, data){
        
        if(!data.type)
     	   return;

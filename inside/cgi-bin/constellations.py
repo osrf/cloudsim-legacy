@@ -24,20 +24,23 @@ def _domain(email):
     return domain
 
 def get_constellation(email, constellation_name):
-    key = 'cloudsim/' + constellation_name
-    
-   
-    s = r.get(key)
-    c = json.loads(s)
-    log("c %s" % c)
-    domain = _domain(c['username'])
-    authorised_domain = _domain(email)
-    
-    x = None
-    if domain == authorised_domain:
-        x = c
-    log("RRRRR %s" % x)
-    return x
+
+    try:
+        key = 'cloudsim/' + constellation_name
+       
+        s = r.get(key)
+        c = json.loads(s)
+        log("c %s" % c)
+        
+        domain = _domain(c['username'])
+        authorised_domain = _domain(email)
+        
+        x = None
+        if domain == authorised_domain:
+            x = c
+        return x
+    except:
+        return None
 
 def list_constellation_names(email):
     constellations = []
@@ -49,7 +52,7 @@ def list_constellation_names(email):
             c = get_constellation(email, constellation_name)
             if c:
                 log(constellation_name)
-                constellations.append(constellation_name )
+                constellations.append(c )
     return constellations          
 
 
@@ -88,8 +91,9 @@ if method == 'GET':
             s = r.get(key)
         else:
             log("listing all constellations")
-            s = list_constellation_names(email)
-            log("constellations %s" % s) 
+            l = list_constellation_names(email)
+            s = json.dumps(l)
+            
         
             
     except Exception, e:
