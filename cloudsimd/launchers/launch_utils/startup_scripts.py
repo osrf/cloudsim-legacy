@@ -379,6 +379,13 @@ export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
 
 DELIM
 
+cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
+
+DISPLAY=localhost:0 timeout 10 glxinfo
+
+DELIM
+
+
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim  
 
 # Add ROS and OSRF repositories

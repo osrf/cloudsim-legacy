@@ -416,14 +416,15 @@ gztopic list
     sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 300)
     empty_ssh_queue([sim_setup_done], sleep=2)
 
-
-    try:
-        ping_gl = ssh_sim.cmd("bash cloudsim/ping_gl.bash")
-        log("cloudsim/ping_gl.bash = %s" % ping_gl )
-        constellation.set_value('simulation_glx_state', "running")
-    except Exception, e:
-        constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
-        raise        
+    constellation.set_value('simulation_glx_state', "running")
+    
+#    try:
+#        ping_gl = ssh_sim.cmd("bash cloudsim/ping_gl.bash")
+#        log("cloudsim/ping_gl.bash = %s" % ping_gl )
+#        constellation.set_value('simulation_glx_state', "running")
+#    except Exception, e:
+#        constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
+#        raise        
     
     constellation.set_value('simulation_launch_msg', "reboot complete")
     constellation.set_value('simulation_state', "running")

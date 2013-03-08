@@ -126,8 +126,9 @@ def launch( username,
             
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
-            #terminate(username, constellation_name, credentials_ec2, constellation_directory)
-            #constellation.set_value('error', '%s' % error_msg)
+            terminate(username, constellation_name, credentials_ec2, constellation_directory)
+            constellation.set_value('error', '%s' % error_msg)
+            constellation.expire(10)
             raise
         
         log("Launch of constellation %s done" % constellation_name)
@@ -167,10 +168,10 @@ def terminate(username,
         log("cloudsimd.py terminate error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb) 
-    data = get_constellation_data( constellation)
-    data['constellation_state'] = 'terminated'
-    set_constellation_data(username, constellation, data, 360)
         
+    constellation = ConstellationState(constellation)
+    constellation.set_value('constellation_state', 'terminated')    
+    constellation.expire(10)    
 
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
 
