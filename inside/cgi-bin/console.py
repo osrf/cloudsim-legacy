@@ -93,45 +93,6 @@ page =  """<!DOCTYPE html>
         // lets do it when we get the constellations data
         async_get_constellations(callback);
     }
-
-/*    
-    function update_old()
-    {
-        
-        var update_url = '/cloudsim/inside/cgi-bin/console_stream.py';
-        console.log(stream_url);
-        
-        var es = new EventSource(stream_url);
-        
-        var hidden_event_types = [];
-        
-        es.addEventListener("cloudsim", function(event)
-        {
-             var str_data = event.data;
-             var data = eval( '(' + str_data + ')' );
-             
-             if(log_events)
-             {
-                 var type = data.type;
-                 if( hidden_event_types.indexOf(type) == -1) 
-                 {
-                     console.log(str_data);
-                 }
-             }
-             
-             $.publish("/stream", data);
-             
-         }, false);
-         
-        es.addEventListener("done", function(event)
-        {
-            alert("Unexpected 'done' msg received");
-            es.close();
-        },false);
-    }
-*/    
-    
-    
     </script>
     
     
