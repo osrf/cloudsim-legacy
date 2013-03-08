@@ -450,7 +450,9 @@ apt-get update
 echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
 apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
     
-
+#
+# The BusID is given by lspci (but lspci gives it in hex, and BusID needs dec)
+# This value is required for Tesla cards
 cat <<DELIM > etc/X11/xorg.conf
 Section "ServerLayout"
     Identifier     "Layout0"

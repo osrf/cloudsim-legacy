@@ -1,13 +1,32 @@
 
 
+function task_dialog(task_form_div)
+{
+    this.form_div = task_form_div;
+    
+    this.create_form = create_form;
+    function create_form()
+    {
+        
+    }
+}
+
+
 function create_constellations_widget(div_name)
 {
     console.log("constellations_on_load_page " + div_name);
     
     var div = document.getElementById(div_name);
     
+    var task_dlg =  task_dialog(div);
+    
+    task_dlg.create_form();
+    
     var str = "<h2>Constellations</h2>";
-    str += '<div id="task-view-form" title="Task properties"></div>';
+    str += '<div id="task-view-form" title="Task properties">';
+    str += '<>';
+    str += '</div>';
+    str += '<div id="task-add-form" title="Add task"></div>';
     
     div.innerHTML = str;
     

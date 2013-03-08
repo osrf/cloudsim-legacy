@@ -60,7 +60,7 @@ function create_constellation(div_name, configuration, constellation)
             create_machine_state_widget(machine_div, constellation, machine_name,"simulation_aws_state");
             //create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
             create_hostname_widget (machine_div, constellation, machine_name, "sim_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file");	
-            create_glx_state_widget(machine_div, constellation, machine_name, "simulation_glx_state");
+            // create_glx_state_widget(machine_div, constellation, machine_name, "simulation_glx_state");
             
             create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
             create_latency_widget(machine_div, constellation, machine_name, "simulation_latency");
