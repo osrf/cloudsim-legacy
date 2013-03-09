@@ -67,14 +67,24 @@ page =  """<!DOCTYPE html>
         create_constellation_launcher_widget("launcher_div");
         create_constellations_widget("constellations_div");
         
-        update();
+        setTimeout(constellation_update , 500);
+        setTimeout(users_update , 1500);
         
     }
     
-    var count = 0;
-    var log_events = true;
+    function users_update()
+    {
+        var callback = function(str_data)
+        {
+            var users = eval( '(' + str_data + ')' );
+            $.publish('/users',users);
+            setTimeout(users_update , 1500);
+        };
+        
+        async_get_users(callback);
+    }
     
-    function update()
+    function constellation_update()
     {
         console.log("update");
         
@@ -87,7 +97,7 @@ page =  """<!DOCTYPE html>
                $.publish("/constellation" , constellation);
            } 
            // that was fun, let's do it again in 500 ms
-           setTimeout(update , 500);
+           setTimeout(constellation_update , 500);
         };
         
         // lets do it when we get the constellations data
