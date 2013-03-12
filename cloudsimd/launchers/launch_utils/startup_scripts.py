@@ -45,9 +45,54 @@ DELIM
 
 apt-get install -y cloudsim-client-tools
 
+# Create upstart vrc_sniffer job
+cat <<DELIM > /etc/init/vrc_sniffer.conf
+# /etc/init/vrc_sniffer.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero <caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_sniffer.py -t 11.8.0.2 -l vrc_current_outbound_latency > /var/log/vrc_sniffer.log 2>&1
+
+respawn
+DELIM
+
+# Create upstart vrc_controller job
+cat <<DELIM > /etc/init/vrc_controller.conf
+# /etc/init/vrc_controller.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero <caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -s 0.5 -v -d eth0 > /var/log/vrc_controller.log 2>&1
+
+respawn
+DELIM
+
+# Create upstart vrc_bandwidth job
+cat <<DELIM > /etc/init/vrc_bandwidth.conf
+# /etc/init/vrc_bandwidth.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero<caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_wrapper.sh vrc_bandwidth.py -d /tmp > /var/log/vrc_bandwidth.log 2>&1
+
+respawn
+DELIM
+
 # start vrc_sniffer and vrc_controllers
-start vrc_sniffer_outbound
-start vrc_controller_inbound
+start vrc_sniffer
+start vrc_controller
 start vrc_bandwidth
 
 mkdir /home/ubuntu/cloudsim
@@ -379,6 +424,13 @@ export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
 
 DELIM
 
+cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
+
+DISPLAY=localhost:0 timeout 10 glxinfo
+
+DELIM
+
+
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim  
 
 # Add ROS and OSRF repositories
@@ -398,7 +450,9 @@ apt-get update
 echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
 apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
     
-
+#
+# The BusID is given by lspci (but lspci gives it in hex, and BusID needs dec)
+# This value is required for Tesla cards
 cat <<DELIM > etc/X11/xorg.conf
 Section "ServerLayout"
     Identifier     "Layout0"
@@ -447,14 +501,50 @@ apt-get install -y ntp
 echo "install """ + drc_package_name+ """ ">> /home/ubuntu/setup.log
 apt-get install -y """ + drc_package_name+ """
 
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-apt-get install -y cloudsim-client-tools
-
 echo "Updating bashrc file">> /home/ubuntu/setup.log
 echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
 echo "export DISPLAY=:0" >> /home/ubuntu/.bashrc
 echo "export ROS_IP=""" + machine_ip +"""  >> /home/ubuntu/.bashrc
 echo "export GAZEBO_IP=""" + machine_ip +""" >> /home/ubuntu/.bashrc
+
+echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
+apt-get install -y cloudsim-client-tools
+
+# Create upstart vrc_sniffer job
+cat <<DELIM > /etc/init/vrc_sniffer.conf
+# /etc/init/vrc_sniffer.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero <caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_sniffer.py -t 11.8.0.2 -l vrc_current_outbound_latency > /var/log/vrc_sniffer.log 2>&1
+
+respawn
+DELIM
+
+# Create upstart vrc_controller job
+cat <<DELIM > /etc/init/vrc_controller.conf
+# /etc/init/vrc_controller.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero <caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -v -d eth0 > /var/log/vrc_controller.log 2>&1
+
+respawn
+DELIM
+
+# start vrc_sniffer and vrc_controllers
+start vrc_sniffer
+start vrc_controller
+
+rm `which vrc_bandwidth.py`
  
 touch /home/ubuntu/cloudsim/setup/done
 

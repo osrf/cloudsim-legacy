@@ -900,19 +900,21 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     sim_done = get_ssh_cmd_generator(ssh_router,"bash cloudsim/find_file_sim.bash cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", "running",max_retries = 500)
     empty_ssh_queue([robot_done, sim_done], 2)
     
-    time.sleep(2)
     
-    if CONFIGURATION == "vpc_micro_trio":
-        constellation.set_value('simulation_glx_state', "n/a")
-    else:
-        try:
-            ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
-            log("cloudsim/ping_gl.bash = %s" % ping_gl )
-            constellation.set_value('simulation_glx_state', "running")
-        except Exception, e:
-            constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
-            raise       
-                
+    constellation.set_value('simulation_glx_state', "running")
+    
+#    if CONFIGURATION == "vpc_micro_trio":
+#        constellation.set_value('simulation_glx_state', "n/a")
+#    else:
+#        try:
+#            ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
+#            log("cloudsim/ping_gl.bash = %s" % ping_gl )
+#            constellation.set_value('simulation_glx_state', "running")
+#            done = True
+#        except Exception, e:
+#            constellation.set_value('error', "%s" % "OpenGL diagnostic failed: %s" % e)
+#            raise       
+            
     constellation.set_value('constellation_state', 'running')
     
     constellation.set_value('simulation_launch_msg', "running")
