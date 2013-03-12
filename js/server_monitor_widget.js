@@ -25,23 +25,9 @@ function create_server_monitor_widget(div_name)
     
     var count = 0;
     
-    $.subscribe("/cloudsim", function(event, data){
+    $.subscribe("/constellation", function(event, data){
        
-       if(!data.type)
-    	   return;
-       
-       var str = "<br><b><i> --- " + data.type + " --- </b></i><br>";
-       for (var key in data )
-       {
-           if (key == "type") continue;
-           
-    	   var value = data[key]; 
-           str += "<b>   " + key + "</b>: " + value + "<br>";
-       }
-       
-       //log_div.innerHTML += str;
        	
-       var msg = data.type;
        var colors = ["gray", "blue"];
        count ++;
        if(count >= colors.length)
@@ -49,7 +35,7 @@ function create_server_monitor_widget(div_name)
            count =0;
        }
        var color = colors[count];
-       status_div.innerHTML =  status_img(color); // + " " + msg;
+       status_div.innerHTML =  status_img(color);
 
     });
 }

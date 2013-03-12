@@ -100,7 +100,7 @@ function update_traffic_shaper(_constellationName, _machineName, _targetPacketLa
 }
 
 
-function get_constellation_names()
+function get_constellations()
 {
     var url = '/cloudsim/inside/cgi-bin/constellations';
     // console.log(url);
@@ -120,6 +120,14 @@ function get_constellation(constellation)
     return msg;
 }
 
+function async_get_constellations(callback)
+{
+	var url = '/cloudsim/inside/cgi-bin/constellations/';
+	
+    // console.log(url);
+    httpAsyncGet(url, callback);
+}
+
 function async_get_constellation(constellation, callback)
 {
 	var url = '/cloudsim/inside/cgi-bin/constellations/';
@@ -128,6 +136,12 @@ function async_get_constellation(constellation, callback)
     httpAsyncGet(url, callback);
 }
 
+function async_get_users(callback)
+{
+	var url = '/cloudsim/inside/cgi-bin/users/';
+    // console.log(url);
+    httpAsyncGet(url, callback);
+}
 ///////////////////////// AJAX
 
 
@@ -170,7 +184,6 @@ function httpPut(theUrl)
 function httpPost(theUrl)
 {
     var xmlHttp = null;
-
     xmlHttp = new XMLHttpRequest();
     xmlHttp.open( "POST", theUrl, false );
     xmlHttp.send( null );

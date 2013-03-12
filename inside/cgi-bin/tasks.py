@@ -17,13 +17,13 @@ r = redis.Redis()
 
 
 def log(msg):
-    r.publish('constellations', msg)
+    r.publish('tasks', msg)
 
 def _domain(email):
     domain = email.split('@')[1]
     return domain
 
-def get_constellation(email, constellation_name):
+def get_task(email, constellation_name, task_id):
 
     try:
         key = 'cloudsim/' + constellation_name
@@ -41,27 +41,19 @@ def get_constellation(email, constellation_name):
         return x
     except:
         return None
-
-def list_constellation_names(email):
-    constellations = []
-    for key in r.keys():
         
-        toks = key.split('cloudsim/')
-        if len(toks) == 2:
-            constellation_name = toks[1]
-            c = get_constellation(email, constellation_name)
-            if c:
-                log(constellation_name)
-                constellations.append(c )
-    return constellations          
 
 
-def get_constellation_from_path():
+def parse_path():
     try:
-        constellation = os.environ['PATH_INFO'].split('/')[1]
-        return constellation
+        toks = os.environ['PATH_INFO'].split('/')
+        constellation = toks[1]
+        if len(toks) == 2:
+            return constellation, None
+        task_id = toks[2]
+        return constellation, task_id
     except:
-        return ""
+        return None, None
 
 
 def get_query_param(param):
@@ -77,49 +69,54 @@ method = os.environ['REQUEST_METHOD']
 print('Content-type: application/json')
 print("\n")
 
+
+constellation, task_id = parse_path()
+
+
 if method == 'GET':
     s = None
-    log("Constellations")
-    try:    
-        
-        constellation = get_constellation_from_path()
-        
-        
+    log("tasks")
+    try:
         if len(constellation) > 0:
             domain = _domain(email)
             key = "cloudsim/"+ constellation
             s = r.get(key)
-        else:
-            log("listing all constellations")
-            l = list_constellation_names(email)
-            s = json.dumps(l)
-            
-        
+            s = "constellation %s, task_id %s" % (constellation, task_id)
             
     except Exception, e:
         s = "%s" % e
         
-    print("%s" % s)
+    print("GET %s" % s)
     exit(0)
 
-if method == 'PUT':
-    # todo unsupported
-    exit(0)
+
 
 d = {}
-d['username'] = email
-d['type'] = 'launchers'
 
 if method == 'DELETE':
-    d['command'] = 'terminate'
-    d['constellation'] = get_constellation_from_path()
-    
+    d['command'] = 'delete_task'
+    d['constellation'] = constellation
+    d['task_id'] = task_id    
+
   
+    
+d['constellation'] = constellation
+d['package'] = get_query_param('package')
+d['launch'] = get_query_param('launch')
+d['args'] = get_query_param('args')
+d['latency'] = get_query_param('latency')
+
+
+if method == 'PUT':
+    d['command'] = 'update_task'
+    d['task_id'] = task_id  
+
 if method == 'POST':
-    d = {}
-    d['username'] = email
-    d['command'] = 'launch'
-    d['configuration'] = get_query_param('configuration')
+    d['command'] = 'create_task'
+    
+
+
+    
     
 s = json.dumps(d)
 r.publish('cloudsim_cmds', s)

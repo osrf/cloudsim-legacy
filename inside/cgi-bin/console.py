@@ -42,7 +42,7 @@ page =  """<!DOCTYPE html>
 
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.1/jquery-ui.min.js"></script>
 
 <script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
 
@@ -55,75 +55,54 @@ page =  """<!DOCTYPE html>
     function on_load_page()
     {
         var user_info = """ + user_info + """;
+        if(user_info.role == "admin")
+        {
+            $('.admin_only').show();
+        }
+        
+        create_server_monitor_widget("server_monitor_div");
+        add_cloud_credentials_widget("credentials_div");
+        add_users_admin_widget("users_div");
         
         create_constellation_launcher_widget("launcher_div");
         create_constellations_widget("constellations_div");
         
-        var delay = 1000;
-        var id = setInterval(update , delay)
+        setTimeout(constellation_update , 500);
+        setTimeout(users_update , 1500);
         
     }
     
-    var log_events = true;
+    function users_update()
+    {
+        var callback = function(str_data)
+        {
+            var users = eval( '(' + str_data + ')' );
+            $.publish('/users',users);
+            setTimeout(users_update , 1500);
+        };
+        
+        async_get_users(callback);
+    }
     
-    function update()
+    function constellation_update()
     {
         console.log("update");
-        constellations = get_constellation_names();
-        for (var i=0; i< constellations.length; i++)
-        {
-            var constellation = constellations[i];
-            var callback = function(str_data)
-            {
-                var data = eval( '(' + str_data + ')' );
-                // console.log(constellation);
-                var channel = "/constellation";
-                data.constellation_name = constellation;
-                $.publish(channel , data);
-            };
-            
-            async_get_constellation(constellation, callback );
-        } 
         
+        var callback = function(str_data)
+        {
+           var constellations = eval( '(' + str_data + ')' );
+           for (var i=0; i< constellations.length; i++)
+           {
+               var constellation = constellations[i];
+               $.publish("/constellation" , constellation);
+           } 
+           // that was fun, let's do it again in 500 ms
+           setTimeout(constellation_update , 500);
+        };
+        
+        // lets do it when we get the constellations data
+        async_get_constellations(callback);
     }
-    
-    function update_old()
-    {
-        
-        var update_url = '/cloudsim/inside/cgi-bin/console_stream.py';
-        console.log(stream_url);
-        
-        var es = new EventSource(stream_url);
-        
-        var hidden_event_types = [];
-        
-        es.addEventListener("cloudsim", function(event)
-        {
-             var str_data = event.data;
-             var data = eval( '(' + str_data + ')' );
-             
-             if(log_events)
-             {
-                 var type = data.type;
-                 if( hidden_event_types.indexOf(type) == -1) 
-                 {
-                     console.log(str_data);
-                 }
-             }
-             
-             $.publish("/cloudsim", data);
-             
-         }, false);
-         
-        es.addEventListener("done", function(event)
-        {
-            alert("Unexpected 'done' msg received");
-            es.close();
-        },false);
-    }
-    
-    
-    
     </script>
     
     
@@ -150,7 +129,16 @@ Welcome, """ + email + """<br>
 
 
 <div style="width:100%; float:left;"><br><hr><br></div>
+
     
+    <div class="admin_only" style="display:none;" >
+        <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">
+        </div>
+        <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
+        </div>
+    </div>
+        
+
     
     <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  background-color:#f1f1f2;">
     </div>
@@ -160,6 +148,8 @@ Welcome, """ + email + """<br>
 
     <div> 
     </div>
+    
+    
     
 <div id="footer" style="width:100%; float:left; ">
 <br>
