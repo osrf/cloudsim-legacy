@@ -347,6 +347,38 @@ def run_tc_command(_username, _constellationName, _targetPacketLatency):
     ssh = SshClient(keyDirectory, keyPairName, 'ubuntu', ip)
     ssh.cmd(cmd)                   
     
+def async_create_task(constellation_name, 
+                    task_title, ros_package, ros_launch, ros_args, latency):
+    
+    p = multiprocessing.Process(target=create_task, 
+                                args=(constellation_name, 
+                    task_title, ros_package, ros_launch, ros_args, latency ) )
+    p.start()
+
+def async_update_task(constellation_name, task_id, 
+                      task_title, ros_package, ros_launch, ros_args, latency):
+    p = multiprocessing.Process(target=update_task, 
+                                args=(constellation_name, 
+                    task_id, task_title, ros_package, ros_launch, ros_args, latency ) )
+    p.start()
+
+def async_delete_task(constellation_name, task_id):
+    p = multiprocessing.Process(target=delete_task, 
+                                args=(constellation_name, 
+                    task_id ) )
+    p.start()
+
+def async_start_task(constellation_name, task_id):
+    p = multiprocessing.Process(target=start_task, 
+                                args=(constellation_name, 
+                    task_id ) )
+    p.start()
+
+def async_stop_task(constellation_name, task_id):
+    p = multiprocessing.Process(target=stop_task, 
+                                args=(constellation_name, 
+                    task_id ) )
+    p.start()
          
 def run(boto_path, root_dir, tick_interval):
     
@@ -392,6 +424,41 @@ def run(boto_path, root_dir, tick_interval):
                 async_terminate(username, constellation, boto_path, constellation_path )
                 continue
             
+            if cmd == 'create_task':
+                task_title = data['task_title']
+                ros_pack = data['ros_package']
+                ros_launch = data['ros_launch']
+                ros_args = data['ros_args']
+                latency = data['latency']
+                async_create_task(task_title, ros_pack, ros_launch, ros_args, 
+                                latency)
+            
+            if cmd == "update_task":
+                task_title = data['task_title']
+                ros_pack = data['ros_package']
+                ros_launch = data['ros_launch']
+                ros_args = data['ros_args']
+                latency = data['latency']
+                task_id = data['task_id']
+                async_update_task(constellation, task_id, 
+                                task_title, 
+                                ros_pack, 
+                                ros_launch, 
+                                ros_args, 
+                                latency)
+            
+            if cmd == 'delete_task':
+                task_id = data['task_id']
+                async_delete_task(constellation, task_id)
+            
+            if cmd == 'start_task':
+                task_id = data['task_id']
+                async_start_task(constellation, task_id)
+            
+            if cmd == 'stop_task':
+                task_id = data['task_id']
+                aync_stop_task(constellation, task_id)
+                
             
             machine = data['machine']
             if cmd == "start_simulator" :

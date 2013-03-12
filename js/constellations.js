@@ -193,7 +193,7 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
          $( "#task-view-form" ).dialog( "open" );
     }
     
-    const_div.appendChild(add_task_button);
+    // const_div.appendChild(add_task_button);
     
 
     var tasks_div = document.createElement("div");
