@@ -215,8 +215,6 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     
     sim_security_group.authorize('icmp', -1, -1, '0.0.0.0/0')    # ping        
     sim_security_group.authorize('udp', 1194, 1194, '0.0.0.0/0') # OpenVPN
-    
-    
 
     sim_security_group_id = sim_security_group.id
     constellation.set_value('sim_security_group_id', sim_security_group_id)
