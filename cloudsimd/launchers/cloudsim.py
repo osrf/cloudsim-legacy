@@ -22,14 +22,14 @@ from launch_utils import SshClient
 
 
 from launch_utils import ConstellationState # launch_db
-from launch_utils.launch_events import latency_event, launch_event, gl_event,\
+from launch_utils.launch_events import launch_event, gl_event,\
     simulator_event, machine_state_event
     
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_cloudsim_startup_script, \
     create_ssh_connect_file
 
-from launch_utils.launch import LaunchException
+from launch_utils.launch import LaunchException, aws_connect
 
 
 from launch_utils.testing import get_test_runner
@@ -40,24 +40,23 @@ from launch_utils.monitoring import record_ping_result, LATENCY_TIME_BUFFER,\
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
 import tempfile
 import shutil
-    
+import redis
+import logging
 
 CONFIGURATION = "cloudsim"
 
 CLOUDSIM_ZIP_PATH= '/var/www-cloudsim-auth/cloudsim.zip'
 
-
-
-
-def aws_connect(credentials_ec2):    
-    boto.config = BotoConfig(credentials_ec2)
-    #boto.config = boto.pyami.config.Config(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn =  boto.connect_vpc()    
-    return ec2conn, vpcconn
-
-
-
+def log(msg, channel = "cloudsim"):
+    try:
+        
+        redis_client = redis.Redis()
+        redis_client.publish(channel, msg)
+        logging.info(msg)
+    except:
+        print("Warning: redis not installed.")
+    print("cloudsim log> %s" % msg)
+    
 def get_aws_states(ec2conn, machine_names_to_ids):
 
     aws_states = {}

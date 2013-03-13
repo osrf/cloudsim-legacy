@@ -34,6 +34,7 @@ from shutil import copyfile
 
 from launch_utils.monitoring import get_aws_states, record_ping_result,\
     LATENCY_TIME_BUFFER, machine_states
+from launch_utils.launch import aws_connect
 
 
 ROBOT_IP='10.0.0.52'
@@ -52,13 +53,6 @@ def log(msg, channel = "trio"):
     except:
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
-
-def aws_connect(credentials_ec2):    
-    boto.config = BotoConfig(credentials_ec2)
-    # boto.config = boto.pyami.config.Config(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn =  boto.connect_vpc()    
-    return ec2conn, vpcconn
 
 def create_vcp_router_securtity_group(ec2conn, sg_name, constellation_name, vpc_id, vpn_subnet):
     sg = ec2conn.create_security_group(sg_name, 'Security group for constellation %s' % (constellation_name), vpc_id)
