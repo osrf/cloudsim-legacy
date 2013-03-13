@@ -436,6 +436,7 @@ gztopic list
             constellation.set_value('simulation_glx_state', "running")
             break
         except Exception, e:
+            log("cloudsim/ping_gl.bash = %s" % e )
             if gl_retries > 30:
                 constellation.set_value('simulation_glx_state', "not running")
                 constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
