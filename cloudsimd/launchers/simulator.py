@@ -217,6 +217,10 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     sim_security_group= ec2conn.create_security_group(sim_sg_name, "simulator security group for constellation %s" % constellation_name)
     sim_security_group.authorize('tcp', 80, 80, '0.0.0.0/0')     # web
     sim_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')     # ssh
+    
+    sim_security_group.authorize('tcp', 8080, 8080, '0.0.0.0/0') # ros bridge
+    sim_security_group.authorize('tcp', 9090, 9090, '0.0.0.0/0') # ros bridge
+    
     sim_security_group.authorize('icmp', -1, -1, '0.0.0.0/0')    # ping        
     sim_security_group.authorize('udp', 1194, 1194, '0.0.0.0/0') # OpenVPN
 
