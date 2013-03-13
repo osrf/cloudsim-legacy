@@ -15,12 +15,12 @@ def log(msg):
 
 """
 Removes the key for this ip, in case we connect to a different machine with the
-same key in the future. This avoids ssh messages
+same key in the future. This avoids ssh warning messages
 """
 def clean_local_ssh_key_entry( hostname):
     www_ssh_host_file = "/var/www/.ssh/known_hosts" 
     if os.path.exists(www_ssh_host_file):
-        cmd = 'sudo ssh-keygen -f %s -R %s' % (www_ssh_host_file, hostname)
+        cmd = 'ssh-keygen -f %s -R %s' % (www_ssh_host_file, hostname)
         s,o = commands.getstatusoutput(cmd)
     
         print("clean_local_ssh_key_entry for %s" % hostname)
@@ -36,6 +36,9 @@ class SshClientException(Exception):
 
 class SshClient(object):
     def __init__(self, constellation_directory, key_name, username, ip, ):
+        
+        clean_local_ssh_key_entry(ip)
+        
         self.key_fname = os.path.join(constellation_directory, "%s.pem" % key_name) 
         self.user = '%s@%s' % (username, ip)
         self.ssh_connect_timeout = 5
