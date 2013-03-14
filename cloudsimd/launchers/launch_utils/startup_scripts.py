@@ -1,7 +1,8 @@
 from __future__ import print_function
 
 
-def get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP):
+def get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP, machine_ip, ros_master_ip):
+    
     return """#!/bin/bash
 # Exit on error
 set -ex
@@ -38,8 +39,8 @@ sudo apt-get install -y ros-fuerte-ros-comm
 
 # roscore is in simulator's machine
 cat <<DELIM >> /etc/environment
-export ROS_MASTER_URI=http://10.0.0.51:11311
-export ROS_IP=10.0.0.50
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
+export ROS_IP=""" + machine_ip + """
 source /opt/ros/fuerte/setup.sh
 DELIM
 

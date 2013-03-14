@@ -93,7 +93,10 @@ def launch_prerelease(username, constellation_name, tags, credentials_ec2, const
     SIM_SCRIPT = get_drc_startup_script(open_vpn_script, SIM_IP, drc_package_name = "drcsim-prerelease")
     ROUTER_AWS_TYPE='t1.micro'
     ROUTER_AWS_IMAGE="ami-137bcf7a"
-    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP) 
+    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, 
+                                          OPENVPN_CLIENT_IP,
+                                          TS_IP,
+                                          SIM_IP) 
     
     
     _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,
@@ -125,7 +128,8 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     SIM_SCRIPT = get_drc_startup_script(open_vpn_script, SIM_IP, "drcsim")
     ROUTER_AWS_TYPE='t1.micro'
     ROUTER_AWS_IMAGE="ami-137bcf7a"
-    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP) 
+    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP,
+                                          TS_IP, SIM_IP) 
     
     
     _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,
