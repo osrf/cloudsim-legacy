@@ -36,6 +36,9 @@ from launchers.launch_utils.launch import aws_connect
 
 
 def del_constellations():
+    """
+    Removes all constellations from the Redis db
+    """
     r = redis.Redis()
     for k in r.keys():
         if k.find('cloudsim/') == 0:
@@ -43,6 +46,9 @@ def del_constellations():
     # r.flushdb()
 
 def list_constellations():
+    """
+    Returns a list that contains all the constellations in the Redis db
+    """
     r = redis.Redis()
     constellations = []
     for key in r.keys():
@@ -56,6 +62,7 @@ def list_constellations():
 def get_aws_instance_by_name(instance_name, boto_path="../../boto.ini"):
     """
     Interactive command to get a bot instance of a running machine
+    Raises exceptions if the credentials are not there or invalid
     """
     ec2conn = aws_connect(boto_path)[0]
     reservations = ec2conn.get_all_instances()
@@ -69,7 +76,8 @@ def get_aws_instance_by_name(instance_name, boto_path="../../boto.ini"):
 
 def get_aws_instance(instance, boto_path="../../boto.ini"):
     """
-    Interactive command to get a bot instance of a running machine
+    Interactive command to get a boto instance of a running machine
+    instance: a string that contains the AWS instance id
     """
     ec2conn = aws_connect(boto_path)[0]
     reservations = ec2conn.get_all_instances()
