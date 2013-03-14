@@ -78,6 +78,7 @@ def get_aws_instance(instance, boto_path="../../boto.ini"):
     """
     Interactive command to get a boto instance of a running machine
     instance: a string that contains the AWS instance id
+    Raises exceptions if the credentials are not there or invalid
     """
     ec2conn = aws_connect(boto_path)[0]
     reservations = ec2conn.get_all_instances()
