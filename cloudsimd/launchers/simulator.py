@@ -503,7 +503,6 @@ class SimulatorCase(unittest.TestCase):
         
     def atest_set_get(self):
         
-        user_or_domain = "hugo@toto.com"
         constellation = "constellation"
         value = {'a':1, 'b':2}
         expiration = 25

@@ -459,35 +459,34 @@ class CloudsimBootStrapTestCase(unittest.TestCase):
     def setUp(self):
         self.ec2 = None
        
-    def test_cloudsim_zip(self):
-        zip_path = zip_cloudsim()
-        self.assert_(os.path.exists(zip_path), "no zip done!")
+    #def test_cloudsim_zip(self):
+    #    print ('zip cloudsim')
         
-    def test_cloudsim_bootstrap(self):
+    #    zip_path = zip_cloudsim()
+    #    self.assert_(os.path.exists(zip_path), "no zip done!")
+    #    shutil.rmtree(os.path.dirname(zip_path))
         
+    def test_cloudsim_bootstrap(self):        
         self.ec2 = get_boto_path()
-        self.simulation_aws_id, sim_ip, key_filename = cloudsim_bootstrap("test@osrfoundation.org", self.ec2)
+        self.simulation_aws_id, sim_ip, key_filename = cloudsim_bootstrap("test@osrfoundation.org", self.ec2)        
         
-    def tearDown(self):
+    def tearDown(self):       
         if self.ec2 != None:
             c = self.ec2
             ec2conn = aws_connect(c)[0]
             ec2conn.terminate_instances(instance_ids=[self.simulation_aws_id])
 
-        
 
 class DbCase(unittest.TestCase):
     
     def test_set_get(self):
-        
-        user_or_domain = "hugo@toto.com"
         constellation = "constellation"
         value = {'a':1, 'b':2}
         expiration = 25
-        set_constellation_data(user_or_domain, constellation, value, expiration)
+        set_constellation_data(constellation, value, expiration)
         
-        data = get_constellation_data(user_or_domain, constellation)
-        self.assert_(data['a'] == value['a'], "not set")
+        data = get_constellation_data(constellation)
+        self.assert_(data['a'] == value['a'], "redis db value not set")
         
         
         
