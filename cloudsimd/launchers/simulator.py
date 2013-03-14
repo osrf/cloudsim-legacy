@@ -6,46 +6,28 @@ import time
 import commands
 import zipfile
 
-import boto
-from boto.pyami.config import Config as BotoConfig
-
-
 from launch_utils import get_unique_short_name
-#from launch_utils import wait_for_multiple_machines_to_run 
 from launch_utils import wait_for_multiple_machines_to_terminate
 from launch_utils import get_ec2_instance 
 from launch_utils import log
 from launch_utils import set_constellation_data
 from launch_utils import get_constellation_data
 from launch_utils import SshClient
-
-
-
 from launch_utils import get_ssh_cmd_generator, empty_ssh_queue # task_list
 from launch_utils import ConstellationState # launch_db
-from launch_utils.launch_events import latency_event, launch_event, gl_event,\
-    simulator_event, machine_state_event, parse_dpkg_line
+from launch_utils.launch_events import parse_dpkg_line
 
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_drc_startup_script,\
     get_open_vpn_single, create_openvpn_client_cfg_file, create_vpn_connect_file,\
     create_ros_connect_file, create_ssh_connect_file
-from launch_utils.launch import LaunchException
+from launch_utils.launch import LaunchException, aws_connect
 
 from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
 from launch_utils.monitoring import LATENCY_TIME_BUFFER, record_ping_result,\
     machine_states
     
-
-
-
-def aws_connect(credentials_ec2):    
-    boto.config = BotoConfig(credentials_ec2)
-    #boto.config = boto.pyami.config.Config(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn =  boto.connect_vpc()    
-    return ec2conn, vpcconn
 
 def get_ping_data(ping_str):
     mini, avg, maxi, mdev  =  [float(x) for x in ping_str.split()[-2].split('/')]
@@ -226,11 +208,10 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
 
     SIM_AWS_TYPE = 'cg1.4xlarge'
     SIM_AWS_IMAGE= 'ami-98fa58f1'
-    
+
     open_vpn_script = get_open_vpn_single(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
     SIM_SCRIPT = get_drc_startup_script(open_vpn_script, OPENVPN_SERVER_IP, drc_package_name)
-    
-    
+
     running_machines = {} 
     try:
         constellation.set_value('simulation_state', 'booting')
@@ -246,9 +227,7 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
                                      user_data=SIM_SCRIPT)
         
         roles_to_reservations['simulation_state'] = res.id
-        
 
-        
             # running_machines = wait_for_multiple_machines_to_run(ec2conn, roles_to_reservations, constellation, max_retries = 150, final_state = 'network_setup')
         count =200
         done = False
@@ -299,18 +278,12 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     networking_done = get_ssh_cmd_generator(ssh_sim,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "simulation_state", 'packages_setup' ,max_retries = 1000)
     #empty_ssh_queue([networking_done], sleep=2)
     
-    color = "orange"
     for g in networking_done:
         time.sleep(1)
-        launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, "waiting for network")
-        if color == "yellow":
-            color = "orange"
-        else:
-            color = "yellow"
-            
-    constellation.set_value('simulation_state', 'packages_setup')    
+        constellation.set_value('simulation_launch_msg', "waiting for ip")
+
+    constellation.set_value('simulation_state', 'packages_setup')
     constellation.set_value('simulation_launch_msg', "setting up scripts")
-    launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, color, "packages setup")
                 
     find_file_sim = """
     #!/bin/bash
@@ -417,18 +390,10 @@ gztopic list
     empty_ssh_queue([sim_setup_done], sleep=2)
 
     constellation.set_value('simulation_glx_state', "running")
-    
-#    try:
-#        ping_gl = ssh_sim.cmd("bash cloudsim/ping_gl.bash")
-#        log("cloudsim/ping_gl.bash = %s" % ping_gl )
-#        constellation.set_value('simulation_glx_state', "running")
-#    except Exception, e:
-#        constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
-#        raise        
-    
     constellation.set_value('simulation_launch_msg', "reboot complete")
     constellation.set_value('simulation_state', "running")
     constellation.set_value('constellation_state', 'running')
+
     log("provisionning done")
 
 
@@ -442,10 +407,7 @@ def terminate_prerelease(username, constellation_name, credentials_ec2, constell
 def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, constellation_directory):
 
     resources = get_constellation_data( constellation_name)
-    
-    
     error_msg =""
-    
     ec2conn = aws_connect(credentials_ec2)[0]
     constellation = ConstellationState( constellation_name)
     constellation.set_value('constellation_state', 'terminating')

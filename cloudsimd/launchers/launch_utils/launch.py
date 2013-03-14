@@ -1,5 +1,7 @@
 import time
 import uuid
+import boto
+from boto.pyami.config import Config as BotoConfig
 
 from launch_db import log
 
@@ -7,7 +9,12 @@ from launch_db import log
 class LaunchException(Exception):
     pass
 
-
+def aws_connect(credentials_ec2):    
+    boto.config = BotoConfig(credentials_ec2)
+    # boto.config = boto.pyami.config.Config(credentials_ec2)
+    ec2conn = boto.connect_ec2()
+    vpcconn =  boto.connect_vpc()    
+    return ec2conn, vpcconn
 
 def get_unique_short_name(prefix = 'x'):
     s = str(uuid.uuid1()).split('-')[0]
