@@ -58,10 +58,8 @@ def log(msg, channel = "cloudsim"):
     print("cloudsim log> %s" % msg)
     
 def get_aws_states(ec2conn, machine_names_to_ids):
-
     aws_states = {}
     ids_to_machine_names = dict((v,k) for k,v in machine_names_to_ids.iteritems())
-    
     reservations = ec2conn.get_all_instances()
     instances = [i for r in reservations for i in r.instances]
     for instance in instances:
