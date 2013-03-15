@@ -413,9 +413,7 @@ timeout 5 gztopic list
     sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 300)
     empty_ssh_queue([sim_setup_done], sleep=2)
 
-<<<<<<< local
-    constellation.set_value('simulation_glx_state', "running")
-=======
+
     constellation.set_value('simulation_glx_state', "pending")
     
     gl_retries = 0
@@ -434,7 +432,6 @@ timeout 5 gztopic list
                 constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
                 raise
     
->>>>>>> other
     constellation.set_value('simulation_launch_msg', "reboot complete")
     constellation.set_value('simulation_state', "running")
     constellation.set_value('constellation_state', 'running')
