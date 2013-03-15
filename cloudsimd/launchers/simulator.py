@@ -311,7 +311,7 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     ping_gazebo = """#!/bin/bash
     
 . /usr/share/drcsim/setup.sh
-gztopic list
+timeout 5 gztopic list
     
     """ 
     ssh_sim.create_file(ping_gazebo, "cloudsim/ping_gazebo.bash")
@@ -465,7 +465,6 @@ class SimulatorCase(unittest.TestCase):
         
     def atest_set_get(self):
         
-        user_or_domain = "hugo@toto.com"
         constellation = "constellation"
         value = {'a':1, 'b':2}
         expiration = 25
@@ -497,12 +496,6 @@ class TrioCase(unittest.TestCase):
             print("monitoring %s/%s" % (i,sweep_count) )
             monitor(self.username, self.constellation_name, self.credentials_ec2, i)
             time.sleep(1)
-    
-        #ToDo: Loop 
-        
-        #ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i /home/caguero/workspace/cloudsim/test-reports/test_simulator/test_simulator_6fe051aa/simulator_test_simulator_6fe051aa/key-sim-test_simulator_6fe051aa.pem ubuntu@67.202.40.198 bash cloudsim/ping_gazebo.bash
-
-    
     
     def tearDown(self):
         unittest.TestCase.tearDown(self)
