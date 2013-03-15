@@ -60,7 +60,7 @@ page =  """<!DOCTYPE html>
             $('.admin_only').show();
         }
         
-        create_server_monitor_widget("server_monitor_div");
+        // create_server_monitor_widget("server_monitor_div");
         add_cloud_credentials_widget("credentials_div");
         add_users_admin_widget("users_div");
         
@@ -74,32 +74,44 @@ page =  """<!DOCTYPE html>
     
     function users_update()
     {
-        var callback = function(str_data)
+        try
         {
-            var users = eval( '(' + str_data + ')' );
-            $.publish('/users',users);
-            setTimeout(users_update , 1500);
-        };
-        
+            var callback = function(str_data)
+            {
+                var users = eval( '(' + str_data + ')' );
+                $.publish('/users',users);
+                setTimeout(users_update , 1500);
+            };
+        }
+        catch(err)
+        {
+            console.log("update error: " + err.messagae);
+        }
         async_get_users(callback);
     }
     
     function constellation_update()
     {
-        console.log("update");
-        
-        var callback = function(str_data)
+        try
         {
-           var constellations = eval( '(' + str_data + ')' );
-           for (var i=0; i< constellations.length; i++)
-           {
-               var constellation = constellations[i];
-               $.publish("/constellation" , constellation);
-           } 
-           // that was fun, let's do it again in 500 ms
-           setTimeout(constellation_update , 500);
-        };
-        
+            console.log("update");
+            
+            var callback = function(str_data)
+            {
+               var constellations = eval( '(' + str_data + ')' );
+               for (var i=0; i< constellations.length; i++)
+               {
+                   var constellation = constellations[i];
+                   $.publish("/constellation" , constellation);
+               } 
+               // that was fun, let's do it again in 500 ms
+               setTimeout(constellation_update , 500);
+            };
+        }
+        catch(err)
+        {
+            console.log("update error: " + err.messagae);
+        }
         // lets do it when we get the constellations data
         async_get_constellations(callback);
     }
@@ -113,8 +125,12 @@ page =  """<!DOCTYPE html>
 
 
     <div style="float:left;">
-        <img src="/js/images/osrf.png" width="200px"/>
+        <!-- img src="/js/images/osrf.png" width="200px"/ -->
+        <img src="/js/images/CloudSim_Logo.png" width="200px"/>
+        <div  id="server_monitor_div" style="float:left">
+        
         <!-- img src="/js/images/DARPA_Logo.jpg" width="200px"/ -->
+        <!-- HOLA -->
         
     </div>
 
@@ -132,10 +148,13 @@ Welcome, """ + email + """<br>
 
     
     <div class="admin_only" style="display:none;" >
+
         <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">
         </div>
+
         <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
         </div>
+
     </div>
         
 
@@ -146,16 +165,27 @@ Welcome, """ + email + """<br>
     <div id="constellations_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
     </div>
 
-    <div> 
+
+<div id="footer" style="width:100%; float:left; ">
+
+
+
+    
+    <br>
+    <hr>
+    
+    <div style="width:50%; float:left; margin-top:5px;">
+            CloudSim Version """ + version + """
     </div>
     
-    
-    
-<div id="footer" style="width:100%; float:left; ">
-<br>
-<hr>
-<i>    <div id="server_monitor_div" style="float:left"></div> CloudSim """ + version + """ is provided by the <b>Open Source Robotics Foundation</b>. (Your frame rate may vary. Electric sheep not included)</i>
+    <div style="width:50%; float:right; " align="right">
+     <img src="/js/images/osrf-pos-horz-cmyk.png" height="30px"/>
+    </div>
 </div>
+
+
+
+
     
 </body>
 </html>
