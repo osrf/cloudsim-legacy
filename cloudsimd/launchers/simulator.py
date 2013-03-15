@@ -177,6 +177,8 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     constellation.set_value('simulation_glx_state', "not running")
     constellation.set_value('sim_zip_file', 'not ready')
     constellation.set_value('simulation_latency','[]')
+    constellation.set_value('constellation_directory', constellation_directory)
+
     
     constellation.set_value('username', username)
     sim_machine_name = "simulator_"+ constellation_name
