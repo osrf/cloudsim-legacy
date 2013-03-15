@@ -207,7 +207,8 @@ def terminate(username,
         
     constellation = ConstellationState(constellation)
     constellation.set_value('constellation_state', 'terminated')    
-    constellation.expire(10)    
+    log("Deleting %s from the database" % constellation)
+    constellation.expire(30)    
 
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
 

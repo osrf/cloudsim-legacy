@@ -74,32 +74,44 @@ page =  """<!DOCTYPE html>
     
     function users_update()
     {
-        var callback = function(str_data)
+        try
         {
-            var users = eval( '(' + str_data + ')' );
-            $.publish('/users',users);
-            setTimeout(users_update , 1500);
-        };
-        
+            var callback = function(str_data)
+            {
+                var users = eval( '(' + str_data + ')' );
+                $.publish('/users',users);
+                setTimeout(users_update , 1500);
+            };
+        }
+        catch(err)
+        {
+            console.log("update error: " + err.messagae);
+        }
         async_get_users(callback);
     }
     
     function constellation_update()
     {
-        console.log("update");
-        
-        var callback = function(str_data)
+        try
         {
-           var constellations = eval( '(' + str_data + ')' );
-           for (var i=0; i< constellations.length; i++)
-           {
-               var constellation = constellations[i];
-               $.publish("/constellation" , constellation);
-           } 
-           // that was fun, let's do it again in 500 ms
-           setTimeout(constellation_update , 500);
-        };
-        
+            console.log("update");
+            
+            var callback = function(str_data)
+            {
+               var constellations = eval( '(' + str_data + ')' );
+               for (var i=0; i< constellations.length; i++)
+               {
+                   var constellation = constellations[i];
+                   $.publish("/constellation" , constellation);
+               } 
+               // that was fun, let's do it again in 500 ms
+               setTimeout(constellation_update , 500);
+            };
+        }
+        catch(err)
+        {
+            console.log("update error: " + err.messagae);
+        }
         // lets do it when we get the constellations data
         async_get_constellations(callback);
     }

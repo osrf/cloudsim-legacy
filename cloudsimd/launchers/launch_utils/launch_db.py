@@ -32,7 +32,7 @@ def publish_event(username, type, data):
     except Exception, e:
         log("publish_event: [%s] type %s msg[%s]" % (username, type, msg))
         
-            
+
 class ConstellationState(object):
     
     def __init__(self, constellation_name):
