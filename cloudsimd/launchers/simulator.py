@@ -43,13 +43,6 @@ def log(msg, channel = "simulator"):
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
 
-def aws_connect(credentials_ec2):    
-    boto.config = BotoConfig(credentials_ec2)
-    #boto.config = boto.pyami.config.Config(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn =  boto.connect_vpc()    
-    return ec2conn, vpcconn
-
 def get_ping_data(ping_str):
     mini, avg, maxi, mdev  =  [float(x) for x in ping_str.split()[-2].split('/')]
     return (mini, avg, maxi, mdev)
