@@ -130,7 +130,11 @@ def _check_auth():
     # Compare email to user db
     udb = UserDatabase()
     users = udb.get_users()
-    if email not in users:
+    
+    lower_case_email = email.lower()
+    lower_case_users =  [x.lower().strip() for x in users] 
+    
+    if lower_case_email not in lower_case_users:
         raise AuthException("Access denied (email address %s not found in db)"%(email) )
     
     return email
