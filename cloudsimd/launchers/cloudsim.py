@@ -35,7 +35,7 @@ from launch_utils.launch import LaunchException, aws_connect
 from launch_utils.testing import get_test_runner
 from launch_utils.testing import get_boto_path, get_test_path
 from launch_utils.monitoring import record_ping_result, LATENCY_TIME_BUFFER,\
-    machine_states
+    machine_states, get_aws_states
 
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
 import tempfile
@@ -56,19 +56,7 @@ def log(msg, channel = "cloudsim"):
     except:
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
-    
-def get_aws_states(ec2conn, machine_names_to_ids):
-    aws_states = {}
-    ids_to_machine_names = dict((v,k) for k,v in machine_names_to_ids.iteritems())
-    reservations = ec2conn.get_all_instances()
-    instances = [i for r in reservations for i in r.instances]
-    for instance in instances:
-        aws_is = instance.id
-        if aws_is in ids_to_machine_names:
-            state = instance.state
-            machine = ids_to_machine_names[aws_is]
-            aws_states[machine] = state
-    return aws_states
+
 
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, root_directory):
     pass
