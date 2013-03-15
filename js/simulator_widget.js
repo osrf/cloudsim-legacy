@@ -143,9 +143,20 @@ function create_glx_state_widget(machine_div, constellation_name, machine_name, 
             return;
 
         if(data[glx_key] == "running")
+        {
             _update_glx_state(widget_div, "blue", "running");
-        else
+           
+        }
+        
+        if(data[glx_key] == "pending")
+        {
+            _update_glx_state(widget_div, "orange", "testing");
+        }
+        
+        if(data[glx_key] == "not running")
+        {
             _update_glx_state(widget_div, "red", "not running");
+        }
     });
 }
 

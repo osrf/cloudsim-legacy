@@ -32,7 +32,7 @@ def publish_event(username, type, data):
     except Exception, e:
         log("publish_event: [%s] type %s msg[%s]" % (username, type, msg))
         
-            
+
 class ConstellationState(object):
     
     def __init__(self, constellation_name):
@@ -47,6 +47,7 @@ class ConstellationState(object):
         return resources[name]
     
     def set_value(self, name, value):
+        log("%s/%s = %s " % (self.constellation_name, name, value) )
         resources = get_constellation_data(  self.constellation_name)
         if not resources:
             resources = {}

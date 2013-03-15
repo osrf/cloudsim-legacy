@@ -6,10 +6,14 @@ import time
 import commands
 import zipfile
 
+import boto
+from boto.pyami.config import Config as BotoConfig
+import redis
+import logging
+
 from launch_utils import get_unique_short_name
 from launch_utils import wait_for_multiple_machines_to_terminate
 from launch_utils import get_ec2_instance 
-from launch_utils import log
 from launch_utils import set_constellation_data
 from launch_utils import get_constellation_data
 from launch_utils import SshClient
@@ -28,6 +32,23 @@ from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
 from launch_utils.monitoring import LATENCY_TIME_BUFFER, record_ping_result,\
     machine_states
     
+
+def log(msg, channel = "simulator"):
+    try:
+        
+        redis_client = redis.Redis()
+        redis_client.publish(channel, msg)
+        logging.info(msg)
+    except:
+        print("Warning: redis not installed.")
+    print("cloudsim log> %s" % msg)
+
+def aws_connect(credentials_ec2):    
+    boto.config = BotoConfig(credentials_ec2)
+    #boto.config = boto.pyami.config.Config(credentials_ec2)
+    ec2conn = boto.connect_ec2()
+    vpcconn =  boto.connect_vpc()    
+    return ec2conn, vpcconn
 
 def get_ping_data(ping_str):
     mini, avg, maxi, mdev  =  [float(x) for x in ping_str.split()[-2].split('/')]
@@ -101,9 +122,11 @@ def _monitor( username,
         # log("constellation %s state %s" % (constellation_name, constellation_state) )
         if constellation_state == "terminated":
             log("constellation_state terminated for  %s " % constellation_name)
+            constellation.expire(30)
             return True
     except:
         log("Can't access constellation  %s data" % constellation_name)
+        constellation.expire(30)
         return True
     
     simulation_state = constellation.get_value('simulation_state')
@@ -191,6 +214,10 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     sim_security_group= ec2conn.create_security_group(sim_sg_name, "simulator security group for constellation %s" % constellation_name)
     sim_security_group.authorize('tcp', 80, 80, '0.0.0.0/0')     # web
     sim_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')     # ssh
+    
+    sim_security_group.authorize('tcp', 8080, 8080, '0.0.0.0/0') # ros bridge
+    sim_security_group.authorize('tcp', 9090, 9090, '0.0.0.0/0') # ros bridge
+    
     sim_security_group.authorize('icmp', -1, -1, '0.0.0.0/0')    # ping        
     sim_security_group.authorize('udp', 1194, 1194, '0.0.0.0/0') # OpenVPN
 
@@ -315,7 +342,7 @@ gztopic list
     
     """ 
     ssh_sim.create_file(ping_gazebo, "cloudsim/ping_gazebo.bash")
-    
+
 
     hostname = sim_ip
     file_content = create_openvpn_client_cfg_file(hostname, client_ip = OPENVPN_CLIENT_IP, server_ip = OPENVPN_SERVER_IP)
@@ -389,7 +416,25 @@ gztopic list
     sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 300)
     empty_ssh_queue([sim_setup_done], sleep=2)
 
-    constellation.set_value('simulation_glx_state', "running")
+
+    constellation.set_value('simulation_glx_state', "pending")
+    
+    gl_retries = 0
+    while True:
+        gl_retries += 1
+        time.sleep(10)
+        try:
+            ping_gl = ssh_sim.cmd("bash cloudsim/ping_gl.bash")
+            log("cloudsim/ping_gl.bash = %s" % ping_gl )
+            constellation.set_value('simulation_glx_state', "running")
+            break
+        except Exception, e:
+            log("cloudsim/ping_gl.bash = %s" % e )
+            if gl_retries > 30:
+                constellation.set_value('simulation_glx_state', "not running")
+                constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
+                raise
+    
     constellation.set_value('simulation_launch_msg', "reboot complete")
     constellation.set_value('simulation_state', "running")
     constellation.set_value('constellation_state', 'running')
@@ -413,6 +458,7 @@ def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, con
     constellation.set_value('constellation_state', 'terminating')
     constellation.set_value('simulation_state', 'terminating')
     constellation.set_value('simulation_launch_msg', "terminating")
+    constellation.set_value('simulation_glx_state', "not running")
     
     log("terminate %s [user=%s, constellation_name=%s" % (CONFIGURATION, username, constellation_name) )
     
@@ -451,14 +497,14 @@ def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, con
         log("error cleaning up sim security group %s: %s" % (security_group_id, e))       
     
     constellation.set_value('constellation_state', 'terminated')
-    
+    constellation.expire(30)
 
     
 
 class SimulatorCase(unittest.TestCase):
-    def atest(self):
+    def test(self):
         user = 'hugo@osrfoundation.org'
-        const = 'cxdbcf5cf8'
+        const = 'cxb49a97c4'
         cred = get_boto_path()
         
         monitor(user, const, cred, 1)

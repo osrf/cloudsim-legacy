@@ -210,10 +210,11 @@ def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATI
         constellation_state = constellation.get_value("constellation_state") 
         # log("constellation %s state %s" % (constellation_name, constellation_state) )
         if constellation_state == "terminated":
-            constellation.expire(10)
+            constellation.expire(30)
             return True
     except:
         log("Can't access constellation  %s data" % constellation_name)
+        constellation.expire(30)
         return True
     
     router_state = constellation.get_value('router_state')
@@ -278,8 +279,9 @@ def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATI
         
         if router_state == 'packages_setup':
             try:
-                router_package = ssh_router.cmd("bash cloudsim/dpkg_log_router.bash")
+                dpkg_line = ssh_router.cmd("bash cloudsim/dpkg_log_router.bash")
                 #log("cloudsim/dpkg_log_router.bash = %s" % router_package )
+                router_package = parse_dpkg_line(dpkg_line) 
                 constellation.set_value('router_launch_msg', router_package)
                 
             except Exception, e:
@@ -899,22 +901,27 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     empty_ssh_queue([robot_done, sim_done], 2)
     
     
-    constellation.set_value('simulation_glx_state', "running")
+    constellation.set_value('simulation_glx_state', "pending")
     
-#    if CONFIGURATION == "vpc_micro_trio":
-#        constellation.set_value('simulation_glx_state', "n/a")
-#    else:
-#        try:
-#            ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
-#            log("cloudsim/ping_gl.bash = %s" % ping_gl )
-#            constellation.set_value('simulation_glx_state', "running")
-#            done = True
-#        except Exception, e:
-#            constellation.set_value('error', "%s" % "OpenGL diagnostic failed: %s" % e)
-#            raise       
+    if CONFIGURATION == "vpc_micro_trio":
+        constellation.set_value('simulation_glx_state', "not running")
+    else:
+        gl_retries = 0
+        while True:
+            gl_retries += 1
+            time.sleep(10)
+            try:
+                ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
+                log("bash cloudsim/ping_gl.bash = %s" % ping_gl )
+                constellation.set_value('simulation_glx_state', "running")
+                break
+            except Exception, e:
+                if gl_retries > 30:
+                    constellation.set_value('simulation_glx_state', "not running")
+                    constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
+                    raise
             
     constellation.set_value('constellation_state', 'running')
-    
     constellation.set_value('simulation_launch_msg', "running")
     constellation.set_value('robot_launch_msg', "running")
     log("provisionning done")
@@ -932,7 +939,7 @@ def _terminate(username, constellation_name, credentials_ec2, constellation_dire
     constellation.set_value('router_state', "terminating")
     constellation.set_value('simulation_state', "terminating")
     constellation.set_value('robot_state', "terminating")
-    
+    constellation.set_value('simulation_glx_state', "not running")
     ec2conn, vpcconn = aws_connect(credentials_ec2)
 
     log("terminate_vpc_trio [user=%s, constellation_name=%s" % (username, constellation_name) )

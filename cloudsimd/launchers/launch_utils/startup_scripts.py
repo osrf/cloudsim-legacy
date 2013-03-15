@@ -503,10 +503,15 @@ echo "install """ + drc_package_name+ """ ">> /home/ubuntu/setup.log
 apt-get install -y """ + drc_package_name+ """
 
 echo "Updating bashrc file">> /home/ubuntu/setup.log
-echo ". /usr/share/drcsim/setup.sh" >> /home/ubuntu/.bashrc
-echo "export DISPLAY=:0" >> /home/ubuntu/.bashrc
-echo "export ROS_IP=""" + machine_ip +"""  >> /home/ubuntu/.bashrc
-echo "export GAZEBO_IP=""" + machine_ip +""" >> /home/ubuntu/.bashrc
+
+cat <<DELIM >> /home/ubuntu/.bashrc
+# CloudSim
+. /usr/share/drcsim/setup.sh
+export DISPLAY=:0 
+export ROS_IP="""    + machine_ip + """
+export GAZEBO_IP=""" + machine_ip + """
+
+DELIM
 
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
