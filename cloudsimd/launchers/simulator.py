@@ -103,11 +103,11 @@ def _monitor( username,
         # log("constellation %s state %s" % (constellation_name, constellation_state) )
         if constellation_state == "terminated":
             log("constellation_state terminated for  %s " % constellation_name)
-            constellation.expire(30)
+            # constellation.expire(30)
             return True
     except:
         log("Can't access constellation  %s data" % constellation_name)
-        constellation.expire(30)
+        # constellation.expire(30)
         return True
     
     simulation_state = constellation.get_value('simulation_state')
