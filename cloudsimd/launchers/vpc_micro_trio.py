@@ -45,6 +45,7 @@ def get_micro_robot_script(routing_script):
 def launch(username, constellation_name, tags, credentials_ec2, 
            constellation_directory ):
 
+
     routing_script = get_vpc_open_vpn(vpc_trio.OPENVPN_CLIENT_IP, 
                                       vpc_trio.TS_IP)
     
@@ -91,13 +92,15 @@ def terminate(username, constellation_name, credentials_ec2,
                         constellation_directory, CONFIGURATION)
                            
     
-def start_simulator(username, constellation, machine_name, package_name, 
+def start_simulator(username, constellation_name, machine_name, package_name, 
                     launch_file_name, launch_args, ):
-    vpc_trio.start_simulator(username, constellation, machine_name, 
+    vpc_trio.start_simulator(username, constellation_name, machine_name, 
                              package_name, launch_file_name, launch_args)
+    
+    
 
-def stop_simulator(username, constellation, machine):
-    vpc_trio.stop_simulator(username, constellation, machine)
+def stop_simulator(username, constellation_name, machine):
+    vpc_trio.stop_simulator(username, constellation_name, machine)
 
 class MicroTrioCase(unittest.TestCase):
     

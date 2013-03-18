@@ -34,6 +34,7 @@ from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
 from launchers.launch_utils.launch import aws_connect
 
+import simulation_tasks
 
 def del_constellations():
     """
@@ -155,6 +156,18 @@ def launch( username,
         constellation.set_value('constellation_state', 'launching')
         constellation.set_value('error', '')
         
+        constellation.set_value('task_state', "ready")
+        constellation.set_value('tasks', [])
+        
+        for i in range(15):
+            task_title = "task_%s" % (i)
+            ros_package = "ros_%s" % (i) 
+            ros_launch = "launch_%s" % (i)
+            ros_args = "arg"
+            latency  = i * 100
+            max_data = i * 1000
+            simulation_tasks.create_task(constellation_name, task_title, ros_package, ros_launch, ros_args, latency, max_data)
+
         try:
             launch(username, constellation_name, tags, credentials_ec2, constellation_directory)
         except Exception, e:
