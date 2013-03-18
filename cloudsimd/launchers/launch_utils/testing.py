@@ -2,14 +2,13 @@ from __future__ import with_statement
 from __future__ import print_function
 
 
-
 import os
 import boto
 
 def get_test_dir():
     
-    d = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-    test_dir = os.path.join(d,'test-reports')
+    d = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    test_dir = os.path.join(d, 'test-reports')
     r = os.path.abspath(test_dir)
     return r
 
@@ -40,8 +39,7 @@ def get_boto_path():
     return r
 
 if __name__ == "__main__":   
-    print(get_test_dir())
 
-    boto  = boto.pyami.config.Config(get_boto_path())
+    boto.config  = boto.pyami.config.Config(get_boto_path())
     ec2 = boto.connect_ec2()
     kill_all_ec2_instances(ec2)

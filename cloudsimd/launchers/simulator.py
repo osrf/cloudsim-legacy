@@ -30,7 +30,7 @@ from launch_utils.launch import LaunchException, aws_connect
 from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
 from launch_utils.monitoring import LATENCY_TIME_BUFFER, record_ping_result,\
-    machine_states
+    machine_states, get_aws_states
     
 
 def log(msg, channel = "simulator"):
@@ -43,32 +43,12 @@ def log(msg, channel = "simulator"):
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
 
-def aws_connect(credentials_ec2):    
-    boto.config = BotoConfig(credentials_ec2)
-    #boto.config = boto.pyami.config.Config(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn =  boto.connect_vpc()    
-    return ec2conn, vpcconn
 
 def get_ping_data(ping_str):
     mini, avg, maxi, mdev  =  [float(x) for x in ping_str.split()[-2].split('/')]
     return (mini, avg, maxi, mdev)
 
 
-def get_aws_states(ec2conn, machine_names_to_ids):
-
-    aws_states = {}
-    ids_to_machine_names = dict((v,k) for k,v in machine_names_to_ids.iteritems())
-    
-    reservations = ec2conn.get_all_instances()
-    instances = [i for r in reservations for i in r.instances]
-    for instance in instances:
-        aws_is = instance.id
-        if aws_is in ids_to_machine_names:
-            state = instance.state
-            machine = ids_to_machine_names[aws_is]
-            aws_states[machine] = state
-    return aws_states
 
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
 
@@ -122,11 +102,11 @@ def _monitor( username,
         # log("constellation %s state %s" % (constellation_name, constellation_state) )
         if constellation_state == "terminated":
             log("constellation_state terminated for  %s " % constellation_name)
-            constellation.expire(30)
+            # constellation.expire(30)
             return True
     except:
         log("Can't access constellation  %s data" % constellation_name)
-        constellation.expire(30)
+        # constellation.expire(30)
         return True
     
     simulation_state = constellation.get_value('simulation_state')
@@ -200,6 +180,8 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     constellation.set_value('simulation_glx_state', "not running")
     constellation.set_value('sim_zip_file', 'not ready')
     constellation.set_value('simulation_latency','[]')
+    constellation.set_value('constellation_directory', constellation_directory)
+
     
     constellation.set_value('username', username)
     sim_machine_name = "simulator_"+ constellation_name
@@ -338,7 +320,7 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     ping_gazebo = """#!/bin/bash
     
 . /usr/share/drcsim/setup.sh
-gztopic list
+timeout 5 gztopic list
     
     """ 
     ssh_sim.create_file(ping_gazebo, "cloudsim/ping_gazebo.bash")
@@ -511,7 +493,6 @@ class SimulatorCase(unittest.TestCase):
         
     def atest_set_get(self):
         
-        user_or_domain = "hugo@toto.com"
         constellation = "constellation"
         value = {'a':1, 'b':2}
         expiration = 25
@@ -543,12 +524,6 @@ class TrioCase(unittest.TestCase):
             print("monitoring %s/%s" % (i,sweep_count) )
             monitor(self.username, self.constellation_name, self.credentials_ec2, i)
             time.sleep(1)
-    
-        #ToDo: Loop 
-        
-        #ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i /home/caguero/workspace/cloudsim/test-reports/test_simulator/test_simulator_6fe051aa/simulator_test_simulator_6fe051aa/key-sim-test_simulator_6fe051aa.pem ubuntu@67.202.40.198 bash cloudsim/ping_gazebo.bash
-
-    
     
     def tearDown(self):
         unittest.TestCase.tearDown(self)

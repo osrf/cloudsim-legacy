@@ -35,7 +35,7 @@ from launch_utils.launch import LaunchException, aws_connect
 from launch_utils.testing import get_test_runner
 from launch_utils.testing import get_boto_path, get_test_path
 from launch_utils.monitoring import record_ping_result, LATENCY_TIME_BUFFER,\
-    machine_states
+    machine_states, get_aws_states
 
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
 import tempfile
@@ -56,19 +56,6 @@ def log(msg, channel = "cloudsim"):
     except:
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
-    
-def get_aws_states(ec2conn, machine_names_to_ids):
-    aws_states = {}
-    ids_to_machine_names = dict((v,k) for k,v in machine_names_to_ids.iteritems())
-    reservations = ec2conn.get_all_instances()
-    instances = [i for r in reservations for i in r.instances]
-    for instance in instances:
-        aws_is = instance.id
-        if aws_is in ids_to_machine_names:
-            state = instance.state
-            machine = ids_to_machine_names[aws_is]
-            aws_states[machine] = state
-    return aws_states
 
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, root_directory):
     pass
@@ -456,35 +443,34 @@ class CloudsimBootStrapTestCase(unittest.TestCase):
     def setUp(self):
         self.ec2 = None
        
-    def test_cloudsim_zip(self):
-        zip_path = zip_cloudsim()
-        self.assert_(os.path.exists(zip_path), "no zip done!")
+    #def test_cloudsim_zip(self):
+    #    print ('zip cloudsim')
         
-    def test_cloudsim_bootstrap(self):
+    #    zip_path = zip_cloudsim()
+    #    self.assert_(os.path.exists(zip_path), "no zip done!")
+    #    shutil.rmtree(os.path.dirname(zip_path))
         
+    def test_cloudsim_bootstrap(self):        
         self.ec2 = get_boto_path()
-        self.simulation_aws_id, sim_ip, key_filename = cloudsim_bootstrap("test@osrfoundation.org", self.ec2)
+        self.simulation_aws_id, sim_ip, key_filename = cloudsim_bootstrap("test@osrfoundation.org", self.ec2)        
         
-    def tearDown(self):
+    def tearDown(self):       
         if self.ec2 != None:
             c = self.ec2
             ec2conn = aws_connect(c)[0]
             ec2conn.terminate_instances(instance_ids=[self.simulation_aws_id])
 
-        
 
 class DbCase(unittest.TestCase):
     
     def test_set_get(self):
-        
-        user_or_domain = "hugo@toto.com"
         constellation = "constellation"
         value = {'a':1, 'b':2}
         expiration = 25
-        set_constellation_data(user_or_domain, constellation, value, expiration)
+        set_constellation_data(constellation, value, expiration)
         
-        data = get_constellation_data(user_or_domain, constellation)
-        self.assert_(data['a'] == value['a'], "not set")
+        data = get_constellation_data(constellation)
+        self.assert_(data['a'] == value['a'], "redis db value not set")
         
         
         

@@ -374,7 +374,7 @@ def run_tc_command(_username, _constellationName, _targetPacketLatency):
     elif (config == 'vpc_trio_prerelease') or (config == 'vpc_trio') or (config == 'vpc_micro_trio'):
         keyDirectory = os.path.join(keyDirectory, 'router_' + _constellationName)
         keyPairName = constellation['router_key_pair_name']
-        ip = constellation['router_ip']
+        ip = constellation['router_public_ip']
     else:
         #You should not be here
         log("cloudsim::run_tc_command() Unknown constellation type: (%s)" % (config) )
