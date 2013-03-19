@@ -1,10 +1,37 @@
-function add_task_widget(constellation_name, task_id, color, task_title, task_data )
+function create_task_list_widget(const_div, constellation_name)
+{ 
+    var tasks_div = create_section(const_div, "tasks", "Simulation tasks");
+    
+    $.subscribe("/constellation", function(event, data){
+        if(data.constellation_name != constellation_name)
+            return;
+        {
+            var tasks = data.tasks;
+            for (var i=0; i < tasks.length; i++ )
+            {
+                var task = tasks[i];
+                var task_widget = tasks_div.querySelector("#" + task.task_id);
+                if(task_widget)
+                {
+                    	
+                }
+                else
+                {
+                    add_task_widget(const_div, task.task_id, "red", "run #");
+                }
+            }
+        }
+    });    
+    
+}
+
+function add_task_widget(const_div, task_id, color, task_title, task_data )
 {
-    var const_div = document.getElementById(constellation_name);
+    //var const_div = document.getElementById(constellation_name);
     var tasks_div = const_div.querySelector("#tasks");
 
     var task_div = document.createElement("div");
-    task_div.id = "task";
+    task_div.id = task_id;
     task_div.style.float = "left"
     task_div.style.width = "100%"
     tasks_div.appendChild(task_div);
@@ -52,8 +79,8 @@ function add_task_widget(constellation_name, task_id, color, task_title, task_da
     };
     
     var task_buttons_div = document.createElement("div");
-    task_buttons_div.style.cssFloat = "right";
-    task_buttons_div.style.width = "20%";
+    task_buttons_div.style.cssFloat = "left";
+    //task_buttons_div.style.width = "20%";
     task_buttons_div.id = "buttons";
     task_buttons_div.appendChild(start_button);
 
@@ -64,7 +91,7 @@ function add_task_widget(constellation_name, task_id, color, task_title, task_da
     
     var task_title_div = document.createElement("div");
     task_title_div.style.cssFloat = "left";
-    task_title_div.style.width = "77%";
+    //task_title_div.style.width = "77%";
     
     task_title_div.id = "task_title";
     task_title_div.innerHTML = task_title;
@@ -74,12 +101,12 @@ function add_task_widget(constellation_name, task_id, color, task_title, task_da
     var task_status_div = document.createElement("div");
     task_status_div.appendChild(state_widget);
     task_status_div.style.cssFloat = "left";
-    task_status_div.style.width = "3%";
+    //task_status_div.style.width = "3%";
     
     task_div.appendChild(task_status_div);
-    task_div.appendChild(task_title_div);
     task_div.appendChild(task_buttons_div);
-    // attach to page
+    task_div.appendChild(task_title_div);
     
     
+
 }

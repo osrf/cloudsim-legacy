@@ -148,6 +148,7 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     _set_const_style(const_div.style);
     
     var top_div = document.createElement("div");
+    
     top_div.id = "top";
     
     var title_str = " <h3 style=' margin-top:0; margin-bottom:0;'><center>";
@@ -159,14 +160,20 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     top_div.style.color = "white";
     top_div.style.marginTop = "0";
     top_div.style.color = "0";
-    
+    top_div.style.float = "left";
+    top_div.style.width = "100%";
+    top_div.style.height = "100%";
     top_div.innerHTML = title_str;
+    
     const_div.appendChild(top_div);
     
     // div.insertBefore(top_div, node);
+
+
     var msg_div = document.createElement("div");
     msg_div.id = "error";
-    msg_div.style.color = "red";
+    msg_div.style.color = "red"; 
+    msg_div.style.float = "left";
     const_div.appendChild(msg_div);
 
     var terminate_button= document.createElement('input');
@@ -193,12 +200,11 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
          $( "#task-view-form" ).dialog( "open" );
     }
     
-    // const_div.appendChild(add_task_button);
+    const_div.appendChild(add_task_button);
     
 
-    var tasks_div = document.createElement("div");
-    tasks_div.id = "tasks";
-    const_div.appendChild(tasks_div);
+
+    create_task_list_widget(const_div, constellation_name);
 
     var machines_div = document.createElement("div");
     machines_div.id = "machines";
