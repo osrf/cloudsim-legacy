@@ -6,7 +6,15 @@ import launchers.launch_utils.launch_db as launch_db
 import launchers.launch_utils.launch as launch
 
 
-r = redis.Redis()
+def log(msg, channel = "tasks"):
+    try:
+        r = redis.Redis()
+        r.publish(channel, msg)
+        logging.info(msg)
+    except:
+        print("Warning: redis not installed.")
+    print("cloudsim log> %s" % msg)
+  
 
 def _find_task(tasks, task_id):
     for task in tasks:
@@ -37,6 +45,9 @@ def create_task(constellation_name,
 
 def update_task(constellation_name, task_id, 
                       task_title, ros_package, ros_launch, ros_args, latency, max_data):
+
+    log("update_task %s/%s" % (constellation_name, task_id))
+
     cs = launch_db.ConstellationState(constellation_name)
     tasks = cs.get_value('tasks')
     
@@ -50,13 +61,15 @@ def update_task(constellation_name, task_id,
     
     
 def delete_task(constellation_name, task_id):
+    log("delete_task %s/%s" % (constellation_name, task_id))
     cs = launch_db.ConstellationState(constellation_name)
     tasks = cs.get_value('tasks')
     task = _find_task(tasks, task_id)
     tasks.remove(task)
-    
+    cs.set_value("tasks", tasks)
 
 def start_task(constellation_name, task_id):
+    log("start_task %s/%s" % (constellation_name, task_id))
     cs = launch_db.ConstellationState(constellation_name)
     task_state = cs.get_value('task_state')
     if task_state == "ready":
@@ -68,6 +81,7 @@ def start_task(constellation_name, task_id):
         
     
 def stop_task(constellation_name, task_id):
+    log("stop_task %s/%s" % (constellation_name, task_id))
     cs = launch_db.ConstellationState(constellation_name)
     task_state = cs.get_value('task_state')
     if task_state  == "running %s" % task_id:

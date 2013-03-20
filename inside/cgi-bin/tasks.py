@@ -10,11 +10,8 @@ import urlparse
 from common import  authorize
 import redis
 
-
 cgitb.enable()
 r = redis.Redis()
-
-
 
 def log(msg):
     r.publish('tasks', msg)
@@ -35,14 +32,15 @@ def get_task(email, constellation_name, task_id):
         domain = _domain(c['username'])
         authorised_domain = _domain(email)
         
-        x = None
+        
         if domain == authorised_domain:
-            x = c
-        return x
+            tasks = c['tasks']
+            for task in tasks:
+                if task['task_id'] == task_id:
+                    return task
+        return None
     except:
         return None
-        
-
 
 def parse_path():
     try:
@@ -65,13 +63,10 @@ def get_query_param(param):
 email = authorize()
 method = os.environ['REQUEST_METHOD']
 
-
 print('Content-type: application/json')
 print("\n")
 
-
 constellation, task_id = parse_path()
-
 
 if method == 'GET':
     s = None
@@ -80,16 +75,13 @@ if method == 'GET':
         if len(constellation) > 0:
             domain = _domain(email)
             key = "cloudsim/"+ constellation
-            s = r.get(key)
-            s = "constellation %s, task_id %s" % (constellation, task_id)
-            
+            task = get_task(email, constellation, task_id)
+            s = json.dumps(task)
     except Exception, e:
         s = "%s" % e
         
-    print("GET %s" % s)
+    print( s)
     exit(0)
-
-
 
 d = {}
 
@@ -98,13 +90,6 @@ if method == 'DELETE':
     d['constellation'] = constellation
     d['task_id'] = task_id    
 
-  
-    
-d['constellation'] = constellation
-d['package'] = get_query_param('package')
-d['launch'] = get_query_param('launch')
-d['args'] = get_query_param('args')
-d['latency'] = get_query_param('latency')
 
 
 if method == 'PUT':
@@ -113,11 +98,7 @@ if method == 'PUT':
 
 if method == 'POST':
     d['command'] = 'create_task'
-    
 
-
-    
-    
 s = json.dumps(d)
 r.publish('cloudsim_cmds', s)
 print("%s" % s)

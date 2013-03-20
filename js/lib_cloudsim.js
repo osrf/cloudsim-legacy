@@ -120,6 +120,15 @@ function get_constellation(constellation)
     return msg;
 }
 
+function delete_task(constellation, task_id)
+{
+    var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
+    console.log(url);
+    msg = httpDelete(url);
+    console.log(msg);
+    return msg;
+}
+
 function async_get_constellations(callback)
 {
 	var url = '/cloudsim/inside/cgi-bin/constellations/';
@@ -142,6 +151,9 @@ function async_get_users(callback)
     // console.log(url);
     httpAsyncGet(url, callback);
 }
+
+
+
 ///////////////////////// AJAX
 
 

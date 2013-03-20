@@ -400,32 +400,32 @@ def run_tc_command(_username, _constellationName, _targetPacketLatency):
 def async_create_task(constellation_name, 
                     task_title, ros_package, ros_launch, ros_args, latency):
     
-    p = multiprocessing.Process(target=create_task, 
+    p = multiprocessing.Process(target=simulation_tasks.create_task, 
                                 args=(constellation_name, 
                     task_title, ros_package, ros_launch, ros_args, latency ) )
     p.start()
 
 def async_update_task(constellation_name, task_id, 
                       task_title, ros_package, ros_launch, ros_args, latency):
-    p = multiprocessing.Process(target=update_task, 
+    p = multiprocessing.Process(target=simulation_tasks.update_task, 
                                 args=(constellation_name, 
                     task_id, task_title, ros_package, ros_launch, ros_args, latency ) )
     p.start()
 
 def async_delete_task(constellation_name, task_id):
-    p = multiprocessing.Process(target=delete_task, 
+    p = multiprocessing.Process(target=simulation_tasks.delete_task, 
                                 args=(constellation_name, 
                     task_id ) )
     p.start()
 
 def async_start_task(constellation_name, task_id):
-    p = multiprocessing.Process(target=start_task, 
+    p = multiprocessing.Process(target=simulation_tasks.start_task, 
                                 args=(constellation_name, 
                     task_id ) )
     p.start()
 
 def async_stop_task(constellation_name, task_id):
-    p = multiprocessing.Process(target=stop_task, 
+    p = multiprocessing.Process(target=simulation_tasks.stop_task, 
                                 args=(constellation_name, 
                     task_id ) )
     p.start()
@@ -442,7 +442,7 @@ def run(boto_path, root_dir, tick_interval):
     
     log("CLOUDSIMD STARTED boto_path=%s root_dir=%s" % (boto_path, root_dir ))
     for msg in ps.listen():
-        log("CLOUDSIMD EVENT") 
+        log("=== CLOUDSIMD EVENT ===") 
         try:
             try:
                 data = loads(msg['data'])
@@ -450,12 +450,13 @@ def run(boto_path, root_dir, tick_interval):
                 continue
             
             cmd = data['command']
-            username = data['username']
+            
             # config = data['configuration']
 
-            log("             CMD= \"%s\" DATA=\"%s\" " % (cmd,data) )
+            log("CMD= \"%s\" DATA=\"%s\" " % (cmd,data) )
      
             if cmd == 'launch':
+                username = data['username']
                 config = data['configuration']
                 # log("CLOUDSIM Launch %s" % config)
                 constellation_name =  "c" + get_unique_short_name()
@@ -471,6 +472,7 @@ def run(boto_path, root_dir, tick_interval):
             constellation_path = os.path.join(root_dir, constellation )
             
             if cmd == 'terminate':
+                username = data['username']
                 async_terminate(username, constellation, boto_path, constellation_path )
                 continue
             
@@ -510,8 +512,9 @@ def run(boto_path, root_dir, tick_interval):
                 aync_stop_task(constellation, task_id)
                 
             
-            machine = data['machine']
+            
             if cmd == "start_simulator" :
+                machine = data['machine']
                 package_name = data['package_name']
                 launch_file_name = data['launch_file_name'] 
                 launch_args = data['launch_args']
@@ -519,6 +522,7 @@ def run(boto_path, root_dir, tick_interval):
                 continue
             
             if cmd == "stop_simulator" :
+                machine = data['machine']
                 async_stop_simulator(username, constellation, machine)
                 continue
             

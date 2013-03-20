@@ -1,40 +1,134 @@
+
+function _find_task_data(task_id, tasks)
+{
+	for(var i=0; i < tasks.length; i++)
+    {
+        var task = tasks[i];
+        var id = task.task_id;
+        if (id == task_id)
+        {
+            return task;
+        }
+    }
+    return null;
+}
+
+
+function _split_tasks(task_div_list, 
+                      tasks, 
+                      new_tasks,
+                      divs_to_update,
+                      tasks_to_update, 
+                      divs_to_delete)
+{
+    for(var i=0; i < task_div_list.length; i++)
+    {
+        var task_div = task_div_list[i];
+        var task_id  = task_div.id;
+        
+        var task = _find_task_data(tasks);
+        if (!task)
+        {
+        	divs_to_delete.push(task_div);
+        }
+        else
+        {
+            divs_to_update(task_div);
+            tasks_to_update.push(task);
+           
+        }
+    }
+    
+    for(var i=0; i < 5; i++)
+    {
+        console.log(i);
+    }
+    
+	
+    for(var i=0; i < tasks.length; i++)
+    {
+        var task = tasks[i];
+        var task_id = task.task_id;
+        
+        if(_find_task_data(task_id, tasks_to_update) == null)
+        {
+            new_tasks.push(task);
+        }
+    }
+    
+}
+
+
 function create_task_list_widget(const_div, constellation_name)
 { 
     var tasks_div = create_section(const_div, "tasks", "Simulation tasks");
-    
+
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name != constellation_name)
             return;
         {
+            var task_div_list = tasks_div.querySelector("#widgets").children;
+            var new_tasks = [];
             var tasks = data.tasks;
-            for (var i=0; i < tasks.length; i++ )
+            var divs_to_update = [];
+            var deleted_task_divs = [];
+            var tasks_to_update = [];
+            
+            _split_tasks(task_div_list, tasks, new_tasks, divs_to_update,
+                tasks_to_update, deleted_task_divs);
+            // add new divs
+            for (var i=0; i < new_tasks.length; i++ )
             {
-                var task = tasks[i];
-                var task_widget = tasks_div.querySelector("#" + task.task_id);
-                if(task_widget)
-                {
-                    	
-                }
-                else
-                {
-                    add_task_widget(const_div, task.task_id, "red", "run #");
-                }
+            	var task = new_tasks[i];
+                add_task_widget(const_div, constellation_name, task.task_id, "gray", task.task_title);
+                
+            }
+
+            // update existing divs
+            for(var i=0; i < tasks_to_update.length; i++ )
+            {
+            	var task = tasks_to_update[i];
+                var task_title = task.task_title;
+                var task_div = divs_to_update[i];
+                var div_title = task_div.querySelector("#task_title");
+                
+            }
+
+            // remove deleted divs
+            for (var i=0; i < deleted_task_divs.length; i++)
+            {
+                var div = deleted_task_divs[i];
+                tasks_div.removeChild(div);
             }
         }
-    });    
+    });
     
 }
 
-function add_task_widget(const_div, task_id, color, task_title, task_data )
+
+function _set_task_style(style)
+{   
+    style.border = "1px solid black";
+    style.width = "98%";
+    style.float = "left";
+    style.borderRadius= "8px";
+    style.margin = "2px";
+    //style.margin = "1%";
+    // style.backgroundColor = "#f1f1f2";
+}
+
+function add_task_widget(const_div, constellation_name, task_id, color, task_title, task_data )
 {
     //var const_div = document.getElementById(constellation_name);
     var tasks_div = const_div.querySelector("#tasks");
-
+    var widgets_div = tasks_div.querySelector("#widgets");
+    
     var task_div = document.createElement("div");
     task_div.id = task_id;
-    task_div.style.float = "left"
-    task_div.style.width = "100%"
-    tasks_div.appendChild(task_div);
+    _set_task_style(task_div.style);
+    //task_div.style.float = "left";
+    //task_div.style.width = "100%";
+    widgets_div.appendChild(task_div);
 
     var state_widget = document.createElement('img');
     state_widget.src = "/js/images/red_status.png";
@@ -59,7 +153,12 @@ function add_task_widget(const_div, task_id, color, task_title, task_data )
 
     x_button.onclick =  function()
     {
-        alert("no way! " + task_id);
+    	var r=confirm('Delete task: "' + task_title + '?'  );
+        if (r==false)
+        {
+            return;
+        }
+        delete_task(constellation_name, task_id);
     };
 
     edit_button.onclick =  function()
@@ -79,7 +178,7 @@ function add_task_widget(const_div, task_id, color, task_title, task_data )
     };
     
     var task_buttons_div = document.createElement("div");
-    task_buttons_div.style.cssFloat = "left";
+    task_buttons_div.style.cssFloat = "right";
     //task_buttons_div.style.width = "20%";
     task_buttons_div.id = "buttons";
     task_buttons_div.appendChild(start_button);
