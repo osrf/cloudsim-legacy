@@ -926,7 +926,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     constellation.set_value('constellation_state', 'running')
     constellation.set_value('simulation_launch_msg', "running")
     constellation.set_value('robot_launch_msg', "running")
-    log("provisionning done")
+    log("provisioning done")
     
     
 def _terminate(username, constellation_name, credentials_ec2, constellation_directory, CONFIGURATION):

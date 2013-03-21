@@ -449,7 +449,7 @@ gztopic list
     constellation.set_value('simulation_launch_msg', "reboot complete")
     constellation.set_value('simulation_state', "running")
     constellation.set_value('constellation_state', 'running')
-    log("provisionning done")
+    log("provisioning done")
 
 
 def terminate(username, constellation_name, credentials_ec2, constellation_directory):

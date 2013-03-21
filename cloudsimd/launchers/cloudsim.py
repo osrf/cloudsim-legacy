@@ -361,7 +361,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     log("http://%s"% sim_ip)
            
     constellation.set_value('constellation_state', 'running')
-    log("provisionning done")
+    log("provisioning done")
     
     return simulation_aws_id, sim_ip, key_filename
 
