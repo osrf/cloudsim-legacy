@@ -159,15 +159,6 @@ def launch( username,
         constellation.set_value('task_state', "ready")
         constellation.set_value('tasks', [])
         
-        for i in range(15):
-            task_title = "task_%s" % (i)
-            ros_package = "ros_%s" % (i) 
-            ros_launch = "launch_%s" % (i)
-            ros_args = "arg"
-            latency  = i * 100
-            max_data = i * 1000
-            simulation_tasks.create_task(constellation_name, task_title, ros_package, ros_launch, ros_args, latency, max_data)
-
         try:
             launch(username, constellation_name, tags, credentials_ec2, constellation_directory)
         except Exception, e:
@@ -398,11 +389,18 @@ def run_tc_command(_username, _constellationName, _targetPacketLatency):
     ssh.cmd(cmd)                   
     
 def async_create_task(constellation_name, 
-                    task_title, ros_package, ros_launch, ros_args, latency):
-    
+                     task_title, 
+                     ros_package, 
+                     ros_launch, 
+                     timeout,
+                     ros_args, 
+                     latency,
+                     data_cap):
+    log('async_create_task')
     p = multiprocessing.Process(target=simulation_tasks.create_task, 
                                 args=(constellation_name, 
-                    task_title, ros_package, ros_launch, ros_args, latency ) )
+                    task_title, ros_package, ros_launch, timeout, 
+                    ros_args, latency, data_cap ) )
     p.start()
 
 def async_update_task(constellation_name, task_id, 
@@ -475,7 +473,9 @@ def run(boto_path, root_dir, tick_interval):
                 username = data['username']
                 async_terminate(username, constellation, boto_path, constellation_path )
                 continue
-            
+            #
+            # tasks stuff
+            #
             if cmd == 'create_task':
                 task_title = data['task_title']
                 ros_pack = data['ros_package']
@@ -484,8 +484,15 @@ def run(boto_path, root_dir, tick_interval):
                 latency = data['latency']
                 timeout = data['timeout']
                 data_cap = data['data_cap']
-                async_create_task(task_title, ros_pack, ros_launch, timeout, ros_args, 
-                                latency, data_cap)
+                
+                async_create_task(constellation, 
+                                  task_title, 
+                                  ros_pack, 
+                                  ros_launch, 
+                                  timeout, 
+                                  ros_args, 
+                                  latency, 
+                                  data_cap)
             
             if cmd == "update_task":
                 task_title = data['task_title']
@@ -516,8 +523,6 @@ def run(boto_path, root_dir, tick_interval):
             if cmd == 'stop_task':
                 task_id = data['task_id']
                 aync_stop_task(constellation, task_id)
-                
-            
             
             if cmd == "start_simulator" :
                 machine = data['machine']

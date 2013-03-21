@@ -94,11 +94,31 @@ if method == 'DELETE':
 
 if method == 'PUT':
     d['command'] = 'update_task'
+    d['constellation'] = constellation
     d['task_id'] = task_id  
-
+    d['command'] = 'create_task'
+    d['task_title'] =  get_query_param('task_title')
+    d['ros_package'] =  get_query_param('ros_package')
+    d['ros_launch'] =  get_query_param('ros_launch')
+    d['ros_args'] =  get_query_param('ros_args')
+    d['latency'] =  get_query_param('latency')
+    d['timeout'] =  get_query_param('timeout')
+    d['data_cap'] =  get_query_param('data_cap')
+    log("Update (put) tasks: %s" % d)
+    
+# see lib_cloudsim.js
 if method == 'POST':
     d['command'] = 'create_task'
-
+    d['constellation'] = constellation
+    d['task_title'] =  get_query_param('task_title')
+    d['ros_package'] =  get_query_param('ros_package')
+    d['ros_launch'] =  get_query_param('ros_launch')
+    d['ros_args'] =  get_query_param('ros_args')
+    d['latency'] =  get_query_param('latency')
+    d['timeout'] =  get_query_param('timeout')
+    d['data_cap'] =  get_query_param('data_cap')
+    log("Create (post) tasks: %s" % d)
+    
 s = json.dumps(d)
 r.publish('cloudsim_cmds', s)
 print("%s" % s)

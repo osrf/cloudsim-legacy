@@ -26,12 +26,12 @@ def create_task(constellation_name,
                     task_title, ros_package, ros_launch, 
                     timeout,
                     ros_args, latency, data_cap):
-    
+    log('create_task')
     cs = launch_db.ConstellationState(constellation_name)
     tasks = cs.get_value('tasks')
-    
+
     task_id = "t" + launch.get_unique_short_name()
-    
+    log('create_task2')
     task = {'task_id' : task_id,
             'task_state' : 'not started',
             'task_title': task_title, 
@@ -40,11 +40,13 @@ def create_task(constellation_name,
             'timeout' : timeout,
             'ros_args' : ros_args,
             'latency':latency,
-            'data_cap' : max_data}
+            'data_cap' : data_cap}
+    log('create_task3')
     tasks.append(task)
     
+    log('%s' % tasks)
     cs.set_value('tasks', tasks)
-     
+    log('DoNE') 
 
 
 def update_task(constellation_name, task_id, 

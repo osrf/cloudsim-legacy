@@ -8,41 +8,7 @@ function create_constellations_widget(div_name)
     
     
     var str = "<h2>Constellations</h2>";
-    str += '<div id="task-view-form" title="Task  properties">';
-    //str += '<p>Hola</p>';
-    str += 'Task name<br><input size="35" type="text" name="title"></input><br>';
-    str += '<b>Simulation properties</b><br>';
-    str += 'ROS Package<br><input size="35" type="text" name="package"></input><br>';
-    str += 'Launch file<br><input size="35" type="text" name="launch"></input><br>';
-    str += 'Arguments<br><input size="35" type="text" name="args"></input><br>';
-    str += 'Timeout (min)<br><input size="35" type="text" name="timeout"></input><br>';
-    str += '<b>Network properties</b><br>';
-    str += 'Target latency (ms)<br><input size="35" type="text" name="latency"></input><br>';
-    str += 'Maximum data (MB)<br><input size="35" type="text" name="max_data"></input><br>';
-    str += '</div>';
-
-//    str += '<div id="task-add-form" title="Add task">';
-//    str += '<input type="text"></input>'
-//    str += '</div>';
-
     div.innerHTML = str;
-
-//    var task_form_div = document.createElement("div");
-//    task_form_div.id = "task-add-form";
-//    task_form_div.title = "Add task";
-//
-//    var ipack = document.createElement("input"); //input element, text
-//
-//    var txtNode = document.createTextNode("Hello");
-//    ipack.setAttribute('type',"text");
-//    ipack.setAttribute('name',"package");
-//    
-//    task_form_div.appendChild(txtNode);
-//    task_form_div.appendChild(ipack);
-//    
-//    div.appendChild(task_form_div);
-    
-
 
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name)
@@ -58,59 +24,7 @@ function create_constellations_widget(div_name)
         }
     });
 
-    // initialise the form that shows the tasks properties
-    $( "#task-view-form" ).dialog({
-      autoOpen: false,
-      height: 560,
-      width: 450,
-      modal: true,
-      buttons: {
-         "Save": function() {
-         var dlg = document.querySelector("#task-view-form");
-         var inputs = dlg.querySelectorAll("input");
-         
-         var title = inputs[0].value;
-         var ros_package = inputs[1].value;
-         var launch = inputs[2].value;
-         var args = inputs[3].value;
-         var timeout = inputs[4].value; 
-         var latency = inputs[5].value;
-         var data_cap = inputs[6].value;
-         
-         
-         
-//         var ros_package = inputs[0].value;
-//         var launch = inputs[1].value;
-//         var args = inputs[2].value;
-//         var latency = inputs[3].value;
-         
-         /*
-         alert("#task-view-form: " 
-                 + task_data.ros_package + ", " 
-                 + task_data.launch + ", " 
-                 + task_data.args  + ", "
-                 + task_data.timeout + ", " 
-                 + task_data.latency + ", "
-                 + task_data.data_cap );
-         */
-         
-         $( this ).dialog( "close" );
-          }
-        },
-        
-//        "Delete" : function() {
-//            alert("What the hell are you trying to do?");
-//        },
-        
-      //  Cancel: function() {
-      //    $( this ).dialog( "close" );
-      //  }
-      //	},
-      close: function() {
-       //    allFields.val( "" ).removeClass( "ui-state-error" );
-    	  console.log("gone");
-      }
-    });
+
 }
 
 
@@ -192,16 +106,6 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     
     const_div.appendChild(terminate_button);
 
-    var add_task_button =document.createElement('input');
-    add_task_button.setAttribute('type','button');
-    add_task_button.setAttribute('value','Add task...');
-    add_task_button.onclick =  function()
-    {
-         $( "#task-view-form" ).dialog( "open" );
-    }
-    
-    const_div.appendChild(add_task_button);
-    
 
 
     create_task_list_widget(const_div, constellation_name);

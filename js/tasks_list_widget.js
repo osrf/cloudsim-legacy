@@ -60,118 +60,13 @@ function _split_tasks(task_div_list,
     
 }
 
-
-function create_task_list_widget(const_div, constellation_name)
-{ 
-    var tasks_div = create_section(const_div, "tasks", "Simulation tasks");
-    var widgets_div = tasks_div.querySelector("#widgets");
-    var task_div_list = widgets_div.children;
-    
-    $.subscribe("/constellation", function(event, data){
-        if(data.constellation_name != constellation_name)
-            return;
-        {
-            
-            var new_tasks = [];
-            var tasks = data.tasks;
-            var divs_to_update = [];
-            var deleted_task_divs = [];
-            var tasks_to_update = [];
-            
-            _split_tasks(task_div_list, tasks, new_tasks, divs_to_update,
-                tasks_to_update, deleted_task_divs);
-            // add new divs
-            for (var i=0; i < new_tasks.length; i++ )
-            {
-            	var task = new_tasks[i];
-                add_task_widget(const_div, constellation_name, task.task_id, "not started", task.task_title);
-                
-            }
-
-            // update existing divs
-            for(var i=0; i < tasks_to_update.length; i++ )
-            {
-            	var task = tasks_to_update[i];
-                var task_title = task.task_title;
-                var task_div = divs_to_update[i];
-                var title_div = task_div.querySelector("#task_title");
-                var div_title = title_div.innerHTML;
-                
-                if(task_title != task_title)
-                {
-                    console.log("" + task_title + " != " + div_title);
-                    title_div.innerHTML = task_title;
-                }
-            }
-
-            // remove deleted divs
-            for (var i=0; i < deleted_task_divs.length; i++)
-            {
-                var div = deleted_task_divs[i];
-                widgets_div.removeChild(div);
-            }
-        }
-    });
-    
-}
-
-
-function _set_task_style(style)
-{   
-    style.border = "1px solid black";
-    style.width = "98%";
-    style.float = "left";
-    style.borderRadius= "8px";
-    style.margin = "2px";
-    //style.margin = "1%";
-    // style.backgroundColor = "#f1f1f2";
-}
-
-function _image(task_state)
+function _create_task_form(form_id)
 {
-    
-}
-
-function _set_button_state(action_button, task_state)
-{
-    action_button.setAttribute();
-}
-
-function add_task_widget(const_div, constellation_name, task_id, state, task_title, task_data )
-{
-    //var const_div = document.getElementById(constellation_name);
-    var tasks_div = const_div.querySelector("#tasks");
-    var widgets_div = tasks_div.querySelector("#widgets");
-    
-    var task_div = document.createElement("div");
-    task_div.id = task_id;
-    _set_task_style(task_div.style);
-    //task_div.style.float = "left";
-    //task_div.style.width = "100%";
-    widgets_div.appendChild(task_div);
-    
     var form_div = document.createElement("div");
-    var form_id = "form_" +task_id;
+
     form_div.id = form_id;
-    var str = "";
-    
-    /*
-    str += '<div id="task-view-form" title="Task  properties">';
-    str += 'Task name<br><input size="35" type="text" name="title"></input><br>';
-    str += '<b>Simulation properties</b><br>';
-    str += 'ROS Package<br><input size="35" type="text" name="package"></input><br>';
-    str += 'Launch file<br><input size="35" type="text" name="launch"></input><br>';
-    str += 'Arguments<br><input size="35" type="text" name="args"></input><br>';
-    str += 'Timeout (min)<br><input size="35" type="text" name="timeout"></input><br>';
-    str += '<b>Network properties</b><br>';
-    str += 'Target latency (ms)<br><input size="35" type="text" name="latency"></input><br>';
-    str += 'Maximum data (MB)<br><input size="35" type="text" name="max_data"></input><br>';
-    str += '</div>';
-    form_div.innerHTML = str;
-    */
 	
     form_div.title = "Task properties";
-
     var task_title_input = document.createElement("input");
     task_title_input.size = "35";
     form_div.appendChild(document.createTextNode("Task title"));
@@ -232,6 +127,169 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     form_div.appendChild(document.createElement("br"));
     form_div.appendChild(data_cap);
     
+    return form_div;
+}
+
+
+function create_task_list_widget(const_div, constellation_name)
+{ 
+
+    var dlg_options = {
+            autoOpen: false,
+            height: 580,
+            width: 450,
+            modal: true,
+            buttons: {
+               "Create": function() {
+	               var dlg = document.querySelector( "#" + form_id);
+	               var inputs = dlg.querySelectorAll("input");
+	               var title = inputs[0].value;
+	               var ros_package = inputs[1].value;
+	               var launch = inputs[2].value;
+	               var args = inputs[3].value;
+	               var timeout = inputs[4].value; 
+	               var latency = inputs[5].value;
+	               var data_cap = inputs[6].value;
+	               $( this ).dialog( "close" );
+	               
+	               create_task(constellation_name, title, 
+	            		   ros_package, launch, timeout,
+	            		   latency, data_cap);
+	               
+                }
+              },
+
+            close: function() {
+          	  console.log("gone");
+            }
+    };
+
+    
+
+	var tasks_div = create_section(const_div, "tasks", "Simulation tasks");
+    //
+    // create a form for the content 
+    //
+
+     
+    var add_task_button =document.createElement('input');
+    add_task_button.setAttribute('type','button');
+    add_task_button.setAttribute('value','Add task...');
+    add_task_button.onclick =  function()
+    {
+    	
+    	$( "#task-view-form" ).dialog( "open" );
+    }
+
+    var widgets_div = tasks_div.querySelector("#widgets");
+    var p = widgets_div.parentElement;
+    p.insertBefore(add_task_button, widgets_div);
+    
+
+    var form_id = "task-view-form";
+    var form_div = _create_task_form(form_id);
+    p.insertBefore(form_div, widgets_div);
+    
+    setTimeout(function(){ $( "#task-view-form" ).dialog(dlg_options );} 
+    	, 0);
+    
+
+    
+    var task_div_list = widgets_div.children;
+    
+    
+    $.subscribe("/constellation", function(event, data){
+        if(data.constellation_name != constellation_name)
+            return;
+        {
+            
+            var new_tasks = [];
+            var tasks = data.tasks;
+            var divs_to_update = [];
+            var deleted_task_divs = [];
+            var tasks_to_update = [];
+            
+            _split_tasks(task_div_list, tasks, new_tasks, divs_to_update,
+                tasks_to_update, deleted_task_divs);
+            // add new divs
+            for (var i=0; i < new_tasks.length; i++ )
+            {
+            	var task = new_tasks[i];
+                add_task_widget(const_div, constellation_name, task.task_id, "not started", task.task_title);
+                
+            }
+
+            // update existing divs
+            for(var i=0; i < tasks_to_update.length; i++ )
+            {
+            	var task = tasks_to_update[i];
+                var task_title = task.task_title;
+                var task_div = divs_to_update[i];
+                var title_div = task_div.querySelector("#task_title");
+                var div_title = title_div.innerHTML;
+                
+                if(task_title != task_title)
+                {
+                    console.log("" + task_title + " != " + div_title);
+                    title_div.innerHTML = task_title;
+                }
+            }
+
+            // remove deleted divs
+            for (var i=0; i < deleted_task_divs.length; i++)
+            {
+                var div = deleted_task_divs[i];
+                widgets_div.removeChild(div);
+            }
+        }
+    });
+
+}
+
+
+function _set_task_style(style)
+{   
+    style.border = "1px solid black";
+    style.width = "98%";
+    style.float = "left";
+    style.borderRadius= "8px";
+    style.margin = "2px";
+    //style.margin = "1%";
+    // style.backgroundColor = "#f1f1f2";
+}
+
+function _image(task_state)
+{
+    
+}
+
+function _set_button_state(action_button, task_state)
+{
+    action_button.setAttribute();
+}
+
+
+function add_task_widget(const_div, constellation_name, task_id, state, task_title, task_data )
+{
+    //var const_div = document.getElementById(constellation_name);
+    var tasks_div = const_div.querySelector("#tasks");
+    
+    var widgets_div = tasks_div.querySelector("#widgets");
+    
+    var task_div = document.createElement("div");
+    task_div.id = task_id;
+    _set_task_style(task_div.style);
+    //task_div.style.float = "left";
+    //task_div.style.width = "100%";
+    widgets_div.appendChild(task_div);
+    
+    //
+    // create a form for the content 
+    //
+    
+    var form_id = "form_" +task_id;
+    var form_div = _create_task_form(form_id);
+
     task_div.appendChild(form_div);
     
      $( "#" + form_id ).dialog({
@@ -241,7 +299,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
       modal: true,
       buttons: {
          "Save": function() {
-         var dlg = document.querySelector("#task-view-form");
+         var dlg = document.querySelector( "#" + form_id);
          var inputs = dlg.querySelectorAll("input");
          
          var title = inputs[0].value;
@@ -303,6 +361,16 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     edit_button.onclick =  function()
     {
         
+    	var dlg = document.querySelector( "#" + form_id);
+        var inputs = dlg.querySelectorAll("input");
+        var task_title_input = inputs[0];
+        var ros_package = inputs[1];
+        var launch_file = inputs[2];
+        var launch_arguments = inputs[3];
+        var timeout = inputs[4]; 
+        var latency = inputs[5];
+        var data_cap = inputs[6];
+        
         task = get_task(constellation_name, task_id);
         task_title_input.value = task.task_title;
         ros_package.value = task.ros_package;
@@ -314,10 +382,6 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         $("#" + form_id ).dialog( "open" );
     };
 
-//    stop_button.onclick =  function()
-//    {
-//        alert("stop");
-//    };
     
     action_button.onclick =  function()
     {
