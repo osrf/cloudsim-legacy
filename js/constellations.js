@@ -3,19 +3,22 @@
 
 function create_constellations_widget(div_name)
 {
-    console.log("constellations_on_load_page " + div_name);
+    console.log("create_constellations_widget " + div_name);
     var div = document.getElementById(div_name);
     
     
     var str = "<h2>Constellations</h2>";
-    str += '<div id="task-view-form" title="Task properties">';
+    str += '<div id="task-view-form" title="Task  properties">';
     //str += '<p>Hola</p>';
+    str += 'Task name<br><input size="35" type="text" name="title"></input><br>';
     str += '<b>Simulation properties</b><br>';
-    str += 'ROS Package<br><input type="text" name="package"></input><br>';
-    str += 'Launch file<br><input type="text" name="launch"></input><br>';
-    str += 'Arguments<br><input type="text" name="args"></input><br>';
+    str += 'ROS Package<br><input size="35" type="text" name="package"></input><br>';
+    str += 'Launch file<br><input size="35" type="text" name="launch"></input><br>';
+    str += 'Arguments<br><input size="35" type="text" name="args"></input><br>';
+    str += 'Timeout (min)<br><input size="35" type="text" name="timeout"></input><br>';
     str += '<b>Network properties</b><br>';
-    str += 'Target latency (ms)<br><input type="text" name="latency"></input><br>';
+    str += 'Target latency (ms)<br><input size="35" type="text" name="latency"></input><br>';
+    str += 'Maximum data (MB)<br><input size="35" type="text" name="max_data"></input><br>';
     str += '</div>';
 
 //    str += '<div id="task-add-form" title="Add task">';
@@ -58,25 +61,38 @@ function create_constellations_widget(div_name)
     // initialise the form that shows the tasks properties
     $( "#task-view-form" ).dialog({
       autoOpen: false,
-      height: 400,
-      width: 350,
+      height: 560,
+      width: 450,
       modal: true,
       buttons: {
          "Save": function() {
          var dlg = document.querySelector("#task-view-form");
          var inputs = dlg.querySelectorAll("input");
-         var task_data = {
-            'ros_package' : inputs[0].value,
-            'launch' : inputs[1].value,
-            'args' : inputs[2].value,
-            'latency' : inputs[3].value
-         }
+         
+         var title = inputs[0].value;
+         var ros_package = inputs[1].value;
+         var launch = inputs[2].value;
+         var args = inputs[3].value;
+         var timeout = inputs[4].value; 
+         var latency = inputs[5].value;
+         var data_cap = inputs[6].value;
+         
+         
+         
 //         var ros_package = inputs[0].value;
 //         var launch = inputs[1].value;
 //         var args = inputs[2].value;
 //         var latency = inputs[3].value;
          
-         alert(task_data.ros_package + ", " + task_data.launch + ", " + task_data.args  + ", " + task_data.latency);
+         /*
+         alert("#task-view-form: " 
+                 + task_data.ros_package + ", " 
+                 + task_data.launch + ", " 
+                 + task_data.args  + ", "
+                 + task_data.timeout + ", " 
+                 + task_data.latency + ", "
+                 + task_data.data_cap );
+         */
          
          $( this ).dialog( "close" );
           }
@@ -99,23 +115,7 @@ function create_constellations_widget(div_name)
 
 
 
-//function get_constellation_names(div_name)
-//{
-//    var constellations = [];
-//    // look at the children 'div' they are named after the
-//    // constellation
-//    var div = document.getElementById(div_name);
-//    var nodes = div.childNodes; // getElementsByTagName('div');
-//    for(var i=0; i<nodes.length; i++) {
-//        var node = nodes[i];
-//        var title = node.id;
-//        if(title != undefined)
-//        {
-//            constellations.push(title);
-//        }
-//    }
-//    return constellations;
-//}
+
 
 function insert_constellation_div(div_name, configuration_name, constellation_name)
 {

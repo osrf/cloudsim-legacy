@@ -482,8 +482,10 @@ def run(boto_path, root_dir, tick_interval):
                 ros_launch = data['ros_launch']
                 ros_args = data['ros_args']
                 latency = data['latency']
-                async_create_task(task_title, ros_pack, ros_launch, ros_args, 
-                                latency)
+                timeout = data['timeout']
+                data_cap = data['data_cap']
+                async_create_task(task_title, ros_pack, ros_launch, timeout, ros_args, 
+                                latency, data_cap)
             
             if cmd == "update_task":
                 task_title = data['task_title']
@@ -492,12 +494,16 @@ def run(boto_path, root_dir, tick_interval):
                 ros_args = data['ros_args']
                 latency = data['latency']
                 task_id = data['task_id']
-                async_update_task(constellation, task_id, 
+                timeout = data['timeout']
+                data_cap = data['data_cap']
+                async_update_task(constellation, task_id,
                                 task_title, 
                                 ros_pack, 
-                                ros_launch, 
+                                ros_launch,
+                                timeout, 
                                 ros_args, 
-                                latency)
+                                latency,
+                                data_cap)
             
             if cmd == 'delete_task':
                 task_id = data['task_id']

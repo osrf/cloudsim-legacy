@@ -23,6 +23,20 @@ def _domain(email):
     domain = email.split('@')[1]
     return domain
 
+
+def clean_constellation_data(constellation):
+    """
+    Remove data from the constellation to avoid cheating in the VRC
+    """
+    constellation.pop("constellation_directory")
+    censored_tasks = []
+    for task in constellation.tasks:
+        t = {'task_title':task['task_title'], 
+             'task_state': task['task_state'],
+             'task_id' : task['task_id']}
+        censored_tasks.append(t)
+        
+
 def get_constellation(email, constellation_name):
 
     try:
@@ -38,11 +52,13 @@ def get_constellation(email, constellation_name):
         x = None
         if domain == authorised_domain:
             x = c
-        return x
+        constellation = clean_constellation_data(x)
+        return constellation
+    
     except:
         return None
 
-def list_constellation_names(email):
+def list_constellations(email):
     constellations = []
     for key in r.keys():
         
@@ -53,6 +69,8 @@ def list_constellation_names(email):
             if c:
                 log(constellation_name)
                 constellations.append(c )
+    
+    
     return constellations          
 
 
@@ -91,7 +109,7 @@ if method == 'GET':
             s = r.get(key)
         else:
             log("listing all constellations")
-            l = list_constellation_names(email)
+            l = list_constellations(email)
             s = json.dumps(l)
             
         

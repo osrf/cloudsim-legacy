@@ -23,7 +23,9 @@ def _find_task(tasks, task_id):
     return None
 
 def create_task(constellation_name, 
-                    task_title, ros_package, ros_launch, ros_args, latency, max_data):
+                    task_title, ros_package, ros_launch, 
+                    timeout,
+                    ros_args, latency, data_cap):
     
     cs = launch_db.ConstellationState(constellation_name)
     tasks = cs.get_value('tasks')
@@ -31,12 +33,14 @@ def create_task(constellation_name,
     task_id = "t" + launch.get_unique_short_name()
     
     task = {'task_id' : task_id,
+            'task_state' : 'not started',
             'task_title': task_title, 
             'ros_package': ros_package,
             'ros_launch': ros_launch,
+            'timeout' : timeout,
             'ros_args' : ros_args,
             'latency':latency,
-            'max_data' : max_data}
+            'data_cap' : max_data}
     tasks.append(task)
     
     cs.set_value('tasks', tasks)
@@ -44,7 +48,13 @@ def create_task(constellation_name,
 
 
 def update_task(constellation_name, task_id, 
-                      task_title, ros_package, ros_launch, ros_args, latency, max_data):
+                      task_title, 
+                      ros_package, 
+                      ros_launch, 
+                      timeout,
+                      ros_args, 
+                      latency, 
+                      data_cap,):
 
     log("update_task %s/%s" % (constellation_name, task_id))
 
@@ -57,8 +67,9 @@ def update_task(constellation_name, task_id,
     task['ros_launch'] = ros_launch
     task['ros_args'] = ros_args
     task['latency'] = latency
-    task['max_data'] = max_data 
-    
+    task['task_state'] = task_state
+    task['timeout'] = timeout
+    task['data_cap'] = data_cap
     
 def delete_task(constellation_name, task_id):
     log("delete_task %s/%s" % (constellation_name, task_id))

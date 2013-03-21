@@ -123,10 +123,39 @@ function get_constellation(constellation)
 function delete_task(constellation, task_id)
 {
     var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
-    console.log(url);
+    console.log("[DELETE] "+ url);
     msg = httpDelete(url);
     console.log(msg);
     return msg;
+}
+
+function add_task(constellation, task_title, 
+                  ros_package, launch_file, 
+                  launch_args, timeout, latency, data_cap)
+{
+    var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + "?";
+    url += 'title=' + encodeURIComponent(task_title);
+    url += '&ros_package=' + encodeURIComponent(ros_package);
+    url += '&launch_file=' + encodeURIComponent(launch_file);
+    url += '&launch_args=' + encodeURIComponent(launch_args);
+    url += '&timeout=' + encodeURIComponent(timeout);
+    url += '&latency=' + encodeURIComponent(latency);
+    url += '&data_cap=' + encodeURIComponent(data_cap);
+    
+    console.log("[POST]" + url);
+    msg = httpPost(url);
+    console.log(msg);
+    return msg;
+}
+
+function get_task(constellation, task_id)
+{
+    var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
+    console.log("[GET] "+ url);
+    msg = httpGet(url);
+    console.log(msg);
+    var jmsg = eval('(' + msg + ')');
+    return jmsg;
 }
 
 function async_get_constellations(callback)

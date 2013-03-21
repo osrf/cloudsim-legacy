@@ -1,14 +1,22 @@
 
 function _find_task_data(task_id, tasks)
 {
-	for(var i=0; i < tasks.length; i++)
+    try
     {
-        var task = tasks[i];
-        var id = task.task_id;
-        if (id == task_id)
+        for(var i=0; i < tasks.length; i++)
         {
-            return task;
+            var task = tasks[i];
+            var id = task.task_id;
+            if (id == task_id)
+            {
+                return task;
+            }
         }
+        
+    }
+    catch(e)
+    {
+        return null;
     }
     return null;
 }
@@ -26,25 +34,19 @@ function _split_tasks(task_div_list,
         var task_div = task_div_list[i];
         var task_id  = task_div.id;
         
-        var task = _find_task_data(tasks);
+        var task = _find_task_data(task_id, tasks);
         if (!task)
         {
         	divs_to_delete.push(task_div);
         }
         else
         {
-            divs_to_update(task_div);
+            divs_to_update.push(task_div);
             tasks_to_update.push(task);
            
         }
     }
-    
-    for(var i=0; i < 5; i++)
-    {
-        console.log(i);
-    }
-    
-	
+
     for(var i=0; i < tasks.length; i++)
     {
         var task = tasks[i];
@@ -62,12 +64,14 @@ function _split_tasks(task_div_list,
 function create_task_list_widget(const_div, constellation_name)
 { 
     var tasks_div = create_section(const_div, "tasks", "Simulation tasks");
-
+    var widgets_div = tasks_div.querySelector("#widgets");
+    var task_div_list = widgets_div.children;
+    
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name != constellation_name)
             return;
         {
-            var task_div_list = tasks_div.querySelector("#widgets").children;
+            
             var new_tasks = [];
             var tasks = data.tasks;
             var divs_to_update = [];
@@ -80,7 +84,7 @@ function create_task_list_widget(const_div, constellation_name)
             for (var i=0; i < new_tasks.length; i++ )
             {
             	var task = new_tasks[i];
-                add_task_widget(const_div, constellation_name, task.task_id, "gray", task.task_title);
+                add_task_widget(const_div, constellation_name, task.task_id, "not started", task.task_title);
                 
             }
 
@@ -90,15 +94,21 @@ function create_task_list_widget(const_div, constellation_name)
             	var task = tasks_to_update[i];
                 var task_title = task.task_title;
                 var task_div = divs_to_update[i];
-                var div_title = task_div.querySelector("#task_title");
+                var title_div = task_div.querySelector("#task_title");
+                var div_title = title_div.innerHTML;
                 
+                if(task_title != task_title)
+                {
+                    console.log("" + task_title + " != " + div_title);
+                    title_div.innerHTML = task_title;
+                }
             }
 
             // remove deleted divs
             for (var i=0; i < deleted_task_divs.length; i++)
             {
                 var div = deleted_task_divs[i];
-                tasks_div.removeChild(div);
+                widgets_div.removeChild(div);
             }
         }
     });
@@ -117,7 +127,17 @@ function _set_task_style(style)
     // style.backgroundColor = "#f1f1f2";
 }
 
-function add_task_widget(const_div, constellation_name, task_id, color, task_title, task_data )
+function _image(task_state)
+{
+    
+}
+
+function _set_button_state(action_button, task_state)
+{
+    action_button.setAttribute();
+}
+
+function add_task_widget(const_div, constellation_name, task_id, state, task_title, task_data )
 {
     //var const_div = document.getElementById(constellation_name);
     var tasks_div = const_div.querySelector("#tasks");
@@ -129,6 +149,129 @@ function add_task_widget(const_div, constellation_name, task_id, color, task_tit
     //task_div.style.float = "left";
     //task_div.style.width = "100%";
     widgets_div.appendChild(task_div);
+    
+    var form_div = document.createElement("div");
+    var form_id = "form_" +task_id;
+    form_div.id = form_id;
+    var str = "";
+    
+    /*
+    str += '<div id="task-view-form" title="Task  properties">';
+    str += 'Task name<br><input size="35" type="text" name="title"></input><br>';
+    str += '<b>Simulation properties</b><br>';
+    str += 'ROS Package<br><input size="35" type="text" name="package"></input><br>';
+    str += 'Launch file<br><input size="35" type="text" name="launch"></input><br>';
+    str += 'Arguments<br><input size="35" type="text" name="args"></input><br>';
+    str += 'Timeout (min)<br><input size="35" type="text" name="timeout"></input><br>';
+    str += '<b>Network properties</b><br>';
+    str += 'Target latency (ms)<br><input size="35" type="text" name="latency"></input><br>';
+    str += 'Maximum data (MB)<br><input size="35" type="text" name="max_data"></input><br>';
+    str += '</div>';
+    form_div.innerHTML = str;
+    */
+	
+    form_div.title = "Task properties";
+
+    var task_title_input = document.createElement("input");
+    task_title_input.size = "35";
+    form_div.appendChild(document.createTextNode("Task title"));
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(task_title_input);
+    form_div.appendChild(document.createElement("br"));
+    
+    var section = document.createElement("b");
+    section.appendChild(document.createTextNode("Simulation parameters"));
+    form_div.appendChild(section);
+    
+    var ros_package = document.createElement("input");
+    ros_package.size = "35";
+    
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(document.createTextNode("ROS package"));
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(ros_package);
+    
+    var launch_file = document.createElement("input");
+    launch_file.size = "35";
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(document.createTextNode("Launch file"));
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(launch_file);
+
+    var timeout = document.createElement("input");
+    timeout.size = "35";
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(document.createTextNode("Timeout (min)"));
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(timeout);
+    
+    var launch_arguments = document.createElement("input");
+    launch_arguments.size = "35";
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(document.createTextNode("Arguments"));
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(launch_arguments);
+    
+    form_div.appendChild(document.createElement("br"));
+    section = document.createElement("b");
+    section.appendChild(document.createTextNode("Network parameters"));
+    form_div.appendChild(section);
+    form_div.appendChild(document.createElement("br"));
+    
+    var latency = document.createElement("input");
+    latency.size = "35";
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(document.createTextNode("Target round trip latency (ms)"));
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(latency);
+    
+    var data_cap = document.createElement("input");
+    data_cap.size = "35";
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(document.createTextNode("Maximum data transfer (MB)"));
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(data_cap);
+    
+    task_div.appendChild(form_div);
+    
+     $( "#" + form_id ).dialog({
+      autoOpen: false,
+      height: 580,
+      width: 450,
+      modal: true,
+      buttons: {
+         "Save": function() {
+         var dlg = document.querySelector("#task-view-form");
+         var inputs = dlg.querySelectorAll("input");
+         
+         var title = inputs[0].value;
+         var ros_package = inputs[1].value;
+         var launch = inputs[2].value;
+         var args = inputs[3].value;
+         var timeout = inputs[4].value; 
+         var latency = inputs[5].value;
+         var data_cap = inputs[6].value;
+         
+
+         $( this ).dialog( "close" );
+          }
+        },
+        
+//        "Delete" : function() {
+//            alert("What the hell are you trying to do?");
+//        },
+        
+      //  Cancel: function() {
+      //    $( this ).dialog( "close" );
+      //  }
+      //	},
+      close: function() {
+       //    allFields.val( "" ).removeClass( "ui-state-error" );
+    	  console.log("gone");
+      }
+    });
+
+
 
     var state_widget = document.createElement('img');
     state_widget.src = "/js/images/red_status.png";
@@ -137,15 +280,11 @@ function add_task_widget(const_div, constellation_name, task_id, color, task_tit
     
     var x_button= document.createElement('input');
     x_button.setAttribute('type','button');
-    x_button.setAttribute('value','X');    
+    x_button.setAttribute('value','X');
 
-    var start_button= document.createElement('input');
-    start_button.setAttribute('type','button');
-    start_button.setAttribute('value','Start');
-
-//    var stop_button= document.createElement('input');
-//    stop_button.setAttribute('type','button');
-//    stop_button.setAttribute('value','Stop');
+    var action_button= document.createElement('input');
+    action_button.setAttribute('type','button');
+    action_button.setAttribute('value','Start');
 
     var edit_button= document.createElement('input');
     edit_button.setAttribute('type','button');
@@ -164,7 +303,15 @@ function add_task_widget(const_div, constellation_name, task_id, color, task_tit
     edit_button.onclick =  function()
     {
         
-        $( "#task-view-form" ).dialog( "open" );
+        task = get_task(constellation_name, task_id);
+        task_title_input.value = task.task_title;
+        ros_package.value = task.ros_package;
+        launch_file.value = task.ros_launch;
+        timeout.value = task.timeout;
+        launch_arguments.value = task.ros_args;
+        latency.value = task.latency;
+        data_cap.value = task.data_cap;
+        $("#" + form_id ).dialog( "open" );
     };
 
 //    stop_button.onclick =  function()
@@ -172,7 +319,7 @@ function add_task_widget(const_div, constellation_name, task_id, color, task_tit
 //        alert("stop");
 //    };
     
-    start_button.onclick =  function()
+    action_button.onclick =  function()
     {
         alert("start");
     };
@@ -181,7 +328,7 @@ function add_task_widget(const_div, constellation_name, task_id, color, task_tit
     task_buttons_div.style.cssFloat = "right";
     //task_buttons_div.style.width = "20%";
     task_buttons_div.id = "buttons";
-    task_buttons_div.appendChild(start_button);
+    task_buttons_div.appendChild(action_button);
 
     // task_buttons_div.appendChild(stop_button);
     task_buttons_div.appendChild(edit_button);
@@ -205,7 +352,6 @@ function add_task_widget(const_div, constellation_name, task_id, color, task_tit
     task_div.appendChild(task_status_div);
     task_div.appendChild(task_buttons_div);
     task_div.appendChild(task_title_div);
-    
-    
-
 }
+
+
