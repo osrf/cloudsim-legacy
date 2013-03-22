@@ -42,6 +42,20 @@ def get_micro_robot_script(routing_script):
     
     return get_micro_sim_script(routing_script)
 
+
+def start_task(constellation, package_name, launch_file_name,
+               timeout, launch_args, latency, data_cap):
+    
+    for i in range(10):
+        log("*****")
+    log(" start_task constellation %s, package_name %s, launch_file_name %s, timeout %s, launch_args %s, latency %s, data_cap %s" % 
+        (constellation, package_name, launch_file_name, timeout, launch_args, latency, data_cap) )
+    
+    
+def stop_task(constellation):
+    for i in range(10):
+        log("** STOP TASK %s ***" % constellation)
+
 def launch(username, constellation_name, tags, credentials_ec2, 
            constellation_directory ):
 

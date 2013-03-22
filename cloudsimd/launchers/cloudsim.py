@@ -57,11 +57,18 @@ def log(msg, channel = "cloudsim"):
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
 
-def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, root_directory):
-    pass
-
-def stop_simulator(username, constellation, machine, root_directory):
-    pass
+def start_task(constellation, package_name, launch_file_name,
+               timeout, launch_args, latency, data_cap):
+    
+    for i in range(10):
+        log("*****")
+    log(" start_task constellation %s, package_name %s, launch_file_name %s, timeout %s, launch_args %s, latency %s, data_cap %s" % 
+        (constellation, package_name, launch_file_name, timeout, launch_args, latency, data_cap) )
+    
+    
+def stop_task(constellation):
+    for i in range(10):
+        log("** STOP TASK %s ***" % constellation)
             
 def monitor(username, constellation_name, credentials_ec2, counter):
     

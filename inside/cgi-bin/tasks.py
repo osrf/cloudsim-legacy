@@ -14,7 +14,7 @@ cgitb.enable()
 r = redis.Redis()
 
 def log(msg):
-    r.publish('tasks', msg)
+    r.publish('cgi_tasks', msg)
 
 def _domain(email):
     domain = email.split('@')[1]
@@ -27,7 +27,6 @@ def get_task(email, constellation_name, task_id):
        
         s = r.get(key)
         c = json.loads(s)
-        log("c %s" % c)
         
         domain = _domain(c['username'])
         authorised_domain = _domain(email)
@@ -96,7 +95,7 @@ if method == 'PUT':
     d['command'] = 'update_task'
     d['constellation'] = constellation
     d['task_id'] = task_id  
-    d['command'] = 'create_task'
+    d['command'] = 'update_task'
     d['task_title'] =  get_query_param('task_title')
     d['ros_package'] =  get_query_param('ros_package')
     d['ros_launch'] =  get_query_param('ros_launch')

@@ -31,7 +31,7 @@ def clean_constellation_data(constellation):
     constellation.pop("constellation_directory")
     # remove tasks data 
     tasks = constellation.pop('tasks')
-    
+    # log("clean %s" % constellation['constellation_name'])
     # and replace with a censored version
     constellation['tasks'] = []
     for task in tasks:
@@ -39,6 +39,7 @@ def clean_constellation_data(constellation):
              'task_state': task['task_state'],
              'task_id' : task['task_id']}
         constellation['tasks'].append(t)
+        
     return constellation
 
 def get_constellation(email, constellation_name):
@@ -56,7 +57,7 @@ def get_constellation(email, constellation_name):
             constellation = clean_constellation_data(c)
             return constellation
     except Exception, e:
-        log("%s" % e)
+        log("Get const error: %s" % e)
         return None
     return None
 
@@ -68,7 +69,7 @@ def list_constellations(email):
             constellation_name = toks[1]
             c = get_constellation(email, constellation_name)
             if c:
-                log(constellation_name)
+                #log(constellation_name)
                 constellations.append(c )
     return constellations          
 
@@ -96,7 +97,7 @@ print("\n")
 
 if method == 'GET':
     s = None
-    log("Constellations")
+    # log("[GET] Constellations")
     try:    
         
         constellation = get_constellation_from_path()

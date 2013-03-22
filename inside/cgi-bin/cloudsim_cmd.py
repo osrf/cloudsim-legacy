@@ -32,8 +32,16 @@ if d['command'] == 'stop_simulator':
     d['constellation'] = form.getfirst('constellation')
     d['machine'] = form.getfirst('machine')
 
-s = dumps(d)
+if d['command'] == 'start_task':
+    d['constellation'] = form.getfirst('constellation')
+    d['task_id'] = form.getfirst('task_id')
+ 
+if d['command'] == 'stop_task':
+    d['constellation'] = form.getfirst('constellation')
+    # d['task_id'] = form.getfirst('task_id')
 
+
+s = dumps(d)
 redis_client = redis.Redis()
 redis_client.publish('cloudsim_cmds', s)
 

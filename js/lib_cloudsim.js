@@ -120,15 +120,6 @@ function get_constellation(constellation)
     return msg;
 }
 
-function delete_task(constellation, task_id)
-{
-    var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
-    console.log("[DELETE] "+ url);
-    msg = httpDelete(url);
-    console.log(msg);
-    return msg;
-}
-
 function create_task(constellation, task_title, 
                   ros_package, launch_file, 
                   timeout, launch_args, latency, data_cap)
@@ -148,26 +139,7 @@ function create_task(constellation, task_title,
     return msg;
 }
 
-function update_task(constellation, task_id, task_title, 
-        ros_package, launch_file, 
-        launch_args, timeout, latency, data_cap)
-{
-	var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + "?";
-	url += 'task_title=' + encodeURIComponent(task_title);
-	url += '&ros_package=' + encodeURIComponent(ros_package);
-	url += '&ros_launch=' + encodeURIComponent(launch_file);
-	url += '&ros_args=' + encodeURIComponent(launch_args);
-	url += '&timeout=' + encodeURIComponent(timeout);
-	url += '&latency=' + encodeURIComponent(latency);
-	url += '&data_cap=' + encodeURIComponent(data_cap);
-	
-	console.log("[PUT (update)]" + url);
-	msg = httpPut(url);
-	console.log(msg);
-	return msg;
-}
-
-function get_task(constellation, task_id)
+function read_task(constellation, task_id)
 {
     var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
     console.log("[GET] "+ url);
@@ -175,6 +147,60 @@ function get_task(constellation, task_id)
     console.log(msg);
     var jmsg = eval('(' + msg + ')');
     return jmsg;
+}
+
+function update_task(constellation, task_id, task_title, 
+        ros_package, launch_file, 
+        timeout, launch_args,  latency, data_cap)
+{
+//    if(timeout == "") timeout = -1; 
+    var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
+    url += "?";
+    url += 'task_title=' + encodeURIComponent(task_title);
+    console.log("task_title " + task_title)
+    url += '&ros_package=' + encodeURIComponent(ros_package);
+    console.log("ros_package " + ros_package)
+    url += '&ros_launch=' + encodeURIComponent(launch_file);
+    console.log("launch_file " + launch_file)
+    url += '&ros_args=' + encodeURIComponent(launch_args);
+    console.log("launch_args " + launch_args)
+    url += '&timeout=' + encodeURIComponent(timeout);
+    console.log("timeout " + timeout)
+    url += '&latency=' + encodeURIComponent(latency);
+    console.log("latency " + latency)
+    url += '&data_cap=' + encodeURIComponent(data_cap);
+    console.log("data_cap " + data_cap)
+
+    console.log("[PUT (update)]" + url);
+    msg = httpPut(url);
+    console.log(msg);
+    return msg;
+}
+
+function delete_task(constellation, task_id)
+{
+    var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
+    console.log("[DELETE] "+ url);
+    msg = httpDelete(url);
+    console.log(msg);
+    return msg;
+}
+
+function start_task(constellation_name, task_id)
+{
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=start_task';
+    url += '&constellation=' + constellation_name;
+    url += '&task_id=' +task_id
+
+    console.log(url);
+    msg = httpGet(url);
+    console.log(msg);
+    return msg;
+}
+
+function stop_simulator(constellation_name, task_id)
+{
+    
 }
 
 function async_get_constellations(callback)

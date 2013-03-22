@@ -34,7 +34,7 @@ from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
 from launchers.launch_utils.launch import aws_connect
 
-import simulation_tasks
+
 
 def del_constellations():
     """
@@ -95,13 +95,12 @@ def get_aws_instance(instance, boto_path="../../boto.ini"):
 #
 
 plugins = {}
-plugins['vpc_micro_trio'] = {'launch':vpc_micro_trio.launch,    'terminate':vpc_micro_trio.terminate,    'monitor':vpc_micro_trio.monitor,   'start_simulator':vpc_micro_trio.start_simulator,   'stop_simulator':vpc_micro_trio.stop_simulator}
-plugins['vpc_trio'] =       {'launch':vpc_trio.launch,          'terminate':vpc_trio.terminate,          'monitor':vpc_trio.monitor,         'start_simulator':vpc_trio.start_simulator,         'stop_simulator':vpc_trio.stop_simulator}
-plugins['simulator'] =       {'launch':simulator.launch,          'terminate':simulator.terminate,       'monitor':simulator.monitor,         'start_simulator':simulator.start_simulator,         'stop_simulator':simulator.stop_simulator}
-plugins['cloudsim'] =       {'launch':cloudsim.launch,          'terminate':cloudsim.terminate,       'monitor':cloudsim.monitor,         'start_simulator':cloudsim.start_simulator,         'stop_simulator':cloudsim.stop_simulator}
-
-plugins['vpc_trio_prerelease'] =       {'launch':vpc_trio.launch_prerelease,          'terminate':vpc_trio.terminate_prerelease,          'monitor':vpc_trio.monitor_prerelease,         'start_simulator':vpc_trio.start_simulator,         'stop_simulator':vpc_trio.stop_simulator}
-plugins['simulator_prerelease'] =       {'launch':simulator.launch_prerelease,          'terminate':simulator.terminate_prerelease,       'monitor':simulator.monitor_prerelease,         'start_simulator':simulator.start_simulator,         'stop_simulator':simulator.stop_simulator}
+plugins['vpc_micro_trio'] = {'launch':vpc_micro_trio.launch,    'terminate':vpc_micro_trio.terminate,    'monitor':vpc_micro_trio.monitor,   'start_task':vpc_micro_trio.start_task,   'stop_task':vpc_micro_trio.stop_task}
+plugins['vpc_trio'] =       {'launch':vpc_trio.launch,          'terminate':vpc_trio.terminate,          'monitor':vpc_trio.monitor,         'start_task':vpc_trio.start_task,         'stop_task':vpc_trio.stop_task}
+plugins['simulator'] =       {'launch':simulator.launch,          'terminate':simulator.terminate,       'monitor':simulator.monitor,         'start_task':simulator.start_task,         'stop_task':simulator.stop_task}
+plugins['cloudsim'] =       {'launch':cloudsim.launch,          'terminate':cloudsim.terminate,       'monitor':cloudsim.monitor,         'start_task':cloudsim.start_task,         'stop_task':cloudsim.stop_task}
+plugins['vpc_trio_prerelease'] =       {'launch':vpc_trio.launch_prerelease,          'terminate':vpc_trio.terminate_prerelease,          'monitor':vpc_trio.monitor_prerelease,         'start_task':vpc_trio.start_simulator,         'stop_task':vpc_trio.stop_task}
+plugins['simulator_prerelease'] =       {'launch':simulator.launch_prerelease,          'terminate':simulator.terminate_prerelease,       'monitor':simulator.monitor_prerelease,         'start_task':simulator.start_simulator,         'stop_task':simulator.stop_task}
 
 
 class LaunchException(Exception):
@@ -126,7 +125,6 @@ def launch( username,
             constellation_name,
             credentials_ec2, 
             constellation_directory):
-    
 
     constellation = ConstellationState(constellation_name)
     try:
@@ -146,8 +144,7 @@ def launch( username,
                'constellation_name':constellation_name, 
                'CloudSim': version, 
                'GMT': gmt}
-        
-        
+
         constellation.set_value('username', username)
         constellation.set_value('constellation_name', constellation_name)
         constellation.set_value('gmt', gmt)
@@ -214,32 +211,147 @@ def terminate(username,
     log("Deleting %s from the database" % constellation)
     constellation.expire(30)    
 
-def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
+#def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
+#
+#    try:
+#        data = get_constellation_data( constellation)
+#        config = data['configuration']
+#        start_simulator  = plugins[config]['start_simulator']
+#        start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args)
+#    except Exception, e:
+#        log("cloudsimd.py start_simulator error: %s" % e)
+#        tb = traceback.format_exc()
+#        log("traceback:  %s" % tb) 
+#
+#
+#def stop_simulator(username, constellation,  machine):
+#    try:
+#        data = get_constellation_data( constellation)
+#        config = data['configuration']
+#        root_directory =  MACHINES_DIR
+#        stop_simulator  = plugins[config]['stop_simulator']
+#        stop_simulator(username, constellation, machine)
+#    except Exception, e:
+#        log("cloudsimd.py stop_simulator error: %s" % e)
+#        tb = traceback.format_exc()
+#        log("traceback:  %s" % tb)
+
+def _find_task(tasks, task_id):
+    for task in tasks:
+        if task['task_id'] == task_id:
+            return task
+    return None
+
+def create_task(constellation_name, 
+                    task_title, ros_package, ros_launch, 
+                    timeout,
+                    ros_args, latency, data_cap):
+    task_id = "t" + launch.get_unique_short_name()
+
+    log('create_task %s/%s' % (constellation_name, task_id))
+    cs = launch_db.ConstellationState(constellation_name)
+    tasks = cs.get_value('tasks')
+
+    task = {'task_id' : task_id,
+            'task_state' : 'not started',
+            'task_title': task_title, 
+            'ros_package': ros_package,
+            'ros_launch': ros_launch,
+            'timeout' : timeout,
+            'ros_args' : ros_args,
+            'latency':latency,
+            'data_cap' : data_cap}
+    
+    tasks.append(task)
+    log('%s' % tasks)
+    cs.set_value('tasks', tasks)
+     
+
+
+def update_task(constellation_name, task_id, 
+                      task_title, 
+                      ros_package, 
+                      ros_launch, 
+                      timeout,
+                      ros_args, 
+                      latency, 
+                      data_cap,):
+
 
     try:
-        data = get_constellation_data( constellation)
-        config = data['configuration']
-        start_simulator  = plugins[config]['start_simulator']
-        start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args)
+        log("update_task %s/%s" % (constellation_name, task_id))
+        cs = ConstellationState(constellation_name)
+        tasks = cs.get_value('tasks')
+        
+        task = _find_task(tasks, task_id)
+        task['task_title'] = task_title
+        task['ros_package'] = ros_package
+        task['ros_launch'] = ros_launch
+        task['ros_args'] = ros_args
+        task['latency'] = latency
+        #task['task_state'] = task_state
+        task['timeout'] = timeout
+        task['data_cap'] = data_cap
+        cs.set_value('tasks', tasks)
+        log("updated: %s" % task)
     except Exception, e:
-        log("cloudsimd.py start_simulator error: %s" % e)
-        tb = traceback.format_exc()
-        log("traceback:  %s" % tb) 
-
-
-def stop_simulator(username, constellation,  machine):
-    try:
-        data = get_constellation_data( constellation)
-        config = data['configuration']
-        root_directory =  MACHINES_DIR
-        stop_simulator  = plugins[config]['stop_simulator']
-        stop_simulator(username, constellation, machine)
-    except Exception, e:
-        log("cloudsimd.py stop_simulator error: %s" % e)
+        log("update_task error %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
-            
+    
+    
+def delete_task(constellation_name, task_id):
+    try:
+        log("delete_task %s/%s" % (constellation_name, task_id))
+        cs = launch_db.ConstellationState(constellation_name)
+        tasks = cs.get_value('tasks')
+        task = _find_task(tasks, task_id)
+        tasks.remove(task)
+        cs.set_value("tasks", tasks)
+    except Exception, e:
+        log("delete_task error %s" % e)
+        tb = traceback.format_exc()
+        log("traceback:  %s" % tb)
 
+def start_task(constellation_name, task_id):
+    try:
+        log("start_task %s/%s" % (constellation_name, task_id))
+        cs = launch_db.ConstellationState(constellation_name)
+        
+        tasks = cs.get_value('tasks')
+        task = _find_task(tasks, task_id)
+        if task_state == "ready":
+            tasks = cs.get_value('tasks')
+            task = _find_task(tasks, task_id)
+            cs.set_value("task_state", "starting %s" % task_id)
+            # start gazebo
+            # start traffic shaper
+            #        data = get_constellation_data( constellation)
+            
+            config = cs.get_value('configuration')
+            start_task  = plugins[config]['start_task']
+            start_task()
+            
+    except Exception, e:
+        log("start_task error %s" % e)
+        tb = traceback.format_exc()
+        log("traceback:  %s" % tb)
+                
+    
+def stop_task(constellation_name):
+    try:
+        log("stop_task %s" % (constellation_name))
+        cs = launch_db.ConstellationState(constellation_name)
+        task_state = cs.get_value('task_state')
+        if task_state  == "running %s" % task_id:
+            # stop gazebo
+            # stop traffic shaper
+            cs.set_value("task_state", "stopping %s" % task_id)
+    except Exception, e:
+        log("stop_task error %s" % e)
+        tb = traceback.format_exc()
+        log("traceback:  %s" % tb)      
+        
 def monitor(username, config, constellation_name, credentials_ec2):
     
     proc = multiprocessing.current_process().name
@@ -298,25 +410,25 @@ def async_terminate(username, constellation, credentials_ec2, constellation_dire
 
 
                 
-def async_start_simulator(username, constellation, machine, package_name, launch_file_name,launch_args ):
-    
-    
-    log("async start simulator! user %s machine %s, pack %s launch %s args '%s'" % (username, machine, package_name, 
-                                                                                    launch_file_name, launch_args ))
-    try:
-        p = multiprocessing.Process(target=start_simulator, args=(username,  constellation, machine, package_name, launch_file_name, launch_args ) )
-        p.start()
-    except Exception, e:
-        log("Cloudsim daemon Error %s" % e)
-
-def async_stop_simulator(username, constellation, machine):
-    log("async stop simulator! user %s constellation %s machine %s" % (username, constellation, machine))
-    try:
-        p = multiprocessing.Process(target=stop_simulator, args=(username,  constellation,  machine) )
-        # jobs.append(p)
-        p.start()
-    except Exception, e:
-        log("Cloudsim daemon Error %s" % e)
+#def async_start_simulator(username, constellation, machine, package_name, launch_file_name,launch_args ):
+#    
+#    
+#    log("async start simulator! user %s machine %s, pack %s launch %s args '%s'" % (username, machine, package_name, 
+#                                                                                    launch_file_name, launch_args ))
+#    try:
+#        p = multiprocessing.Process(target=start_simulator, args=(username,  constellation, machine, package_name, launch_file_name, launch_args ) )
+#        p.start()
+#    except Exception, e:
+#        log("Cloudsim daemon Error %s" % e)
+#
+#def async_stop_simulator(username, constellation, machine):
+#    log("async stop simulator! user %s constellation %s machine %s" % (username, constellation, machine))
+#    try:
+#        p = multiprocessing.Process(target=stop_simulator, args=(username,  constellation,  machine) )
+#        # jobs.append(p)
+#        p.start()
+#    except Exception, e:
+#        log("Cloudsim daemon Error %s" % e)
     
     
 def tick_monitor(tick_interval):
@@ -397,35 +509,42 @@ def async_create_task(constellation_name,
                      latency,
                      data_cap):
     log('async_create_task')
-    p = multiprocessing.Process(target=simulation_tasks.create_task, 
+    p = multiprocessing.Process(target= create_task, 
                                 args=(constellation_name, 
                     task_title, ros_package, ros_launch, timeout, 
                     ros_args, latency, data_cap ) )
     p.start()
 
 def async_update_task(constellation_name, task_id, 
-                      task_title, ros_package, ros_launch, ros_args, latency):
-    p = multiprocessing.Process(target=simulation_tasks.update_task, 
+                      task_title, 
+                      ros_package, 
+                      ros_launch, 
+                      timeout, 
+                      ros_args, 
+                      latency,
+                      data_cap):
+    log('async_update_task')
+    p = multiprocessing.Process(target= update_task, 
                                 args=(constellation_name, 
-                    task_id, task_title, ros_package, ros_launch, ros_args, latency ) )
+                    task_id, task_title, ros_package, timeout, ros_launch, 
+                    ros_args, latency, data_cap ) )
     p.start()
 
 def async_delete_task(constellation_name, task_id):
-    p = multiprocessing.Process(target=simulation_tasks.delete_task, 
+    p = multiprocessing.Process(target= delete_task, 
                                 args=(constellation_name, 
                     task_id ) )
     p.start()
 
 def async_start_task(constellation_name, task_id):
-    p = multiprocessing.Process(target=simulation_tasks.start_task, 
+    p = multiprocessing.Process(target= start_task, 
                                 args=(constellation_name, 
                     task_id ) )
     p.start()
 
-def async_stop_task(constellation_name, task_id):
-    p = multiprocessing.Process(target=simulation_tasks.stop_task, 
-                                args=(constellation_name, 
-                    task_id ) )
+def async_stop_task(constellation_name):
+    p = multiprocessing.Process(target= stop_task, 
+                                args=(constellation_name, ))
     p.start()
          
 def run(boto_path, root_dir, tick_interval):
@@ -465,7 +584,7 @@ def run(boto_path, root_dir, tick_interval):
                 async_launch(username, config, constellation_name, boto_path, constellation_path)
                 async_monitor(username, config,constellation_name, boto_path)
                 continue
-            
+
             constellation = data['constellation']
             constellation_path = os.path.join(root_dir, constellation )
             
@@ -503,14 +622,15 @@ def run(boto_path, root_dir, tick_interval):
                 task_id = data['task_id']
                 timeout = data['timeout']
                 data_cap = data['data_cap']
-                async_update_task(constellation, task_id,
-                                task_title, 
-                                ros_pack, 
-                                ros_launch,
-                                timeout, 
-                                ros_args, 
-                                latency,
-                                data_cap)
+                async_update_task(constellation, 
+                                task_id = task_id,
+                                task_title = task_title, 
+                                ros_package = ros_pack, 
+                                ros_launch = ros_launch,
+                                timeout = timeout, 
+                                latency = latency,
+                                ros_args = ros_args, 
+                                data_cap = data_cap)
             
             if cmd == 'delete_task':
                 task_id = data['task_id']
@@ -521,8 +641,7 @@ def run(boto_path, root_dir, tick_interval):
                 async_start_task(constellation, task_id)
             
             if cmd == 'stop_task':
-                task_id = data['task_id']
-                aync_stop_task(constellation, task_id)
+                async_stop_task(constellation)
             
             if cmd == "start_simulator" :
                 machine = data['machine']

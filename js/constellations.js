@@ -1,6 +1,4 @@
 
-
-
 function create_constellations_widget(div_name)
 {
     console.log("create_constellations_widget " + div_name);
@@ -23,12 +21,7 @@ function create_constellations_widget(div_name)
             }
         }
     });
-
-
 }
-
-
-
 
 
 function insert_constellation_div(div_name, configuration_name, constellation_name)

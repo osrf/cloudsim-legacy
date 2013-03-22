@@ -72,8 +72,9 @@ function _create_task_form(form_id)
     form_div.appendChild(document.createTextNode("Task title"));
     form_div.appendChild(document.createElement("br"));
     form_div.appendChild(task_title_input);
-    form_div.appendChild(document.createElement("br"));
     
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(document.createElement("br"));
     var section = document.createElement("b");
     section.appendChild(document.createTextNode("Simulation parameters"));
     form_div.appendChild(section);
@@ -108,6 +109,7 @@ function _create_task_form(form_id)
     form_div.appendChild(launch_arguments);
     
     form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(document.createElement("br"));
     section = document.createElement("b");
     section.appendChild(document.createTextNode("Network parameters"));
     form_div.appendChild(section);
@@ -123,7 +125,7 @@ function _create_task_form(form_id)
     var data_cap = document.createElement("input");
     data_cap.size = "35";
     form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Maximum data transfer (MB)"));
+    form_div.appendChild(document.createTextNode("Maximum data transfer (KB)"));
     form_div.appendChild(document.createElement("br"));
     form_div.appendChild(data_cap);
     
@@ -153,8 +155,8 @@ function create_task_list_widget(const_div, constellation_name)
 	               $( this ).dialog( "close" );
 	               
 	               create_task(constellation_name, title, 
-	            		   ros_package, launch, timeout,
-	            		   latency, data_cap);
+	                       ros_package, launch, timeout,
+	                       args, latency, data_cap);
 	               
                 }
               },
@@ -171,37 +173,43 @@ function create_task_list_widget(const_div, constellation_name)
     // create a form for the content 
     //
 
-     
-    var add_task_button =document.createElement('input');
+    var add_task_button = document.createElement('input');
     add_task_button.setAttribute('type','button');
-    add_task_button.setAttribute('value','Add task...');
+    add_task_button.setAttribute('value','Create task...');
     add_task_button.onclick =  function()
     {
     	
     	$( "#task-view-form" ).dialog( "open" );
     }
+    
+    var stop_current_task_button = document.createElement('input');
+    stop_current_task_button.setAttribute('type','button');
+    stop_current_task_button.setAttribute('value','Stop current task...');
+    stop_current_task_button.onclick =  function()
+    {
+        alert("STOP!")
+    }
 
     var widgets_div = tasks_div.querySelector("#widgets");
     var p = widgets_div.parentElement;
     p.insertBefore(add_task_button, widgets_div);
-    
+    p.insertBefore(stop_current_task_button, widgets_div);
+
+
 
     var form_id = "task-view-form";
     var form_div = _create_task_form(form_id);
     p.insertBefore(form_div, widgets_div);
     
     setTimeout(function(){ $( "#task-view-form" ).dialog(dlg_options );} 
-    	, 0);
-    
+    , 0);
 
-    
     var task_div_list = widgets_div.children;
-    
-    
+
     $.subscribe("/constellation", function(event, data){
-        if(data.constellation_name != constellation_name)
-            return;
-        {
+            if(data.constellation_name != constellation_name)
+                return;
+            
             
             var new_tasks = [];
             var tasks = data.tasks;
@@ -214,35 +222,52 @@ function create_task_list_widget(const_div, constellation_name)
             // add new divs
             for (var i=0; i < new_tasks.length; i++ )
             {
-            	var task = new_tasks[i];
+                var task = new_tasks[i];
                 add_task_widget(const_div, constellation_name, task.task_id, "not started", task.task_title);
-                
             }
-
-            // update existing divs
-            for(var i=0; i < tasks_to_update.length; i++ )
-            {
-            	var task = tasks_to_update[i];
-                var task_title = task.task_title;
-                var task_div = divs_to_update[i];
-                var title_div = task_div.querySelector("#task_title");
-                var div_title = title_div.innerHTML;
-                
-                if(task_title != task_title)
-                {
-                    console.log("" + task_title + " != " + div_title);
-                    title_div.innerHTML = task_title;
-                }
-            }
-
-            // remove deleted divs
-            for (var i=0; i < deleted_task_divs.length; i++)
-            {
-                var div = deleted_task_divs[i];
-                widgets_div.removeChild(div);
-            }
-        }
-    });
+        });
+    
+        
+//            
+//            var new_tasks = [];
+//            var tasks = data.tasks;
+//            var divs_to_update = [];
+//            var deleted_task_divs = [];
+//            var tasks_to_update = [];
+//
+//            _split_tasks(task_div_list, tasks, new_tasks, divs_to_update,
+//                tasks_to_update, deleted_task_divs);
+//            // add new divs
+//            for (var i=0; i < new_tasks.length; i++ )
+//            {
+//                var task = new_tasks[i];
+//                add_task_widget(const_div, constellation_name, task.task_id, "not started", task.task_title);
+//            }
+//
+//             update existing divs
+//            for(var i=0; i < tasks_to_update.length; i++ )
+//            {
+//            	var task = tasks_to_update[i];
+//                var task_title = task.task_title;
+//                var task_div = divs_to_update[i];
+//                var title_div = task_div.querySelector("#task_title");
+//                var div_title = title_div.innerHTML;
+//                
+//                if(task_title != task_title)
+//                {
+//                    console.log("" + task_title + " != " + div_title);
+//                    title_div.innerHTML = task_title;
+//                }
+//            }
+//
+//            // remove deleted divs
+//            for (var i=0; i < deleted_task_divs.length; i++)
+//            {
+//                var div = deleted_task_divs[i];
+//                widgets_div.removeChild(div);
+//            }
+//        }
+//    });
 
 }
 
@@ -258,8 +283,9 @@ function _set_task_style(style)
     // style.backgroundColor = "#f1f1f2";
 }
 
-function _image(task_state)
+function _set_state_widget(state_widget, task_state)
 {
+    state_widget.src = "/js/images/gray_status.png";
     
 }
 
@@ -291,6 +317,10 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     var form_div = _create_task_form(form_id);
 
     task_div.appendChild(form_div);
+
+    var dlg = document.querySelector( "#" + form_id);
+    var inputs = dlg.querySelectorAll("input");
+    var title_input = inputs[0];
     
      $( "#" + form_id ).dialog({
       autoOpen: false,
@@ -298,47 +328,38 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
       width: 450,
       modal: true,
       buttons: {
-         "Save": function() {
-         var dlg = document.querySelector( "#" + form_id);
-         var inputs = dlg.querySelectorAll("input");
-         
+         "Update": function() {
+         console.log("Update " + constellation_name + "/" + task_id);
+
          var title = inputs[0].value;
          var ros_package = inputs[1].value;
          var launch = inputs[2].value;
-         var args = inputs[3].value;
-         var timeout = inputs[4].value; 
+         var timeout = inputs[3].value; 
+         var args = inputs[4].value;
          var latency = inputs[5].value;
          var data_cap = inputs[6].value;
          
-
+         update_task(constellation_name, task_id,
+                title, ros_package,launch, timeout, args, latency, data_cap); 
+         
          $( this ).dialog( "close" );
           }
         },
-        
-//        "Delete" : function() {
-//            alert("What the hell are you trying to do?");
-//        },
-        
-      //  Cancel: function() {
-      //    $( this ).dialog( "close" );
-      //  }
-      //	},
+
       close: function() {
-       //    allFields.val( "" ).removeClass( "ui-state-error" );
-    	  console.log("gone");
+          console.log("gone");
       }
     });
 
-
-
     var state_widget = document.createElement('img');
-    state_widget.src = "/js/images/red_status.png";
+    state_widget.src = "/js/images/gray_status.png";
     state_widget.width='18';
     state_widget.style.marginTop = "2px"
-    
+
     var x_button= document.createElement('input');
     x_button.setAttribute('type','button');
     x_button.setAttribute('value','X');
+
 
     var action_button= document.createElement('input');
     action_button.setAttribute('type','button');
@@ -348,15 +369,6 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     edit_button.setAttribute('type','button');
     edit_button.setAttribute('value','...');
 
-    x_button.onclick =  function()
-    {
-    	var r=confirm('Delete task: "' + task_title + '?'  );
-        if (r==false)
-        {
-            return;
-        }
-        delete_task(constellation_name, task_id);
-    };
 
     edit_button.onclick =  function()
     {
@@ -366,12 +378,12 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         var task_title_input = inputs[0];
         var ros_package = inputs[1];
         var launch_file = inputs[2];
-        var launch_arguments = inputs[3];
-        var timeout = inputs[4]; 
+        var launch_arguments = inputs[4];
+        var timeout = inputs[3]; 
         var latency = inputs[5];
         var data_cap = inputs[6];
         
-        task = get_task(constellation_name, task_id);
+        task = read_task(constellation_name, task_id);
         task_title_input.value = task.task_title;
         ros_package.value = task.ros_package;
         launch_file.value = task.ros_launch;
@@ -385,7 +397,14 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     
     action_button.onclick =  function()
     {
-        alert("start");
+        task = read_task(constellation_name, task_id);
+        var state =task.task_state; 
+        console.log(state);
+        if(state == 'not started')
+        {
+            var r = confirm('Start task "' + task.task_title + '"?')
+            start_task(constellation_name, task.task_id);
+        }
     };
     
     var task_buttons_div = document.createElement("div");
@@ -397,12 +416,22 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     // task_buttons_div.appendChild(stop_button);
     task_buttons_div.appendChild(edit_button);
     task_buttons_div.appendChild(x_button);
-    
-    
+
     var task_title_div = document.createElement("div");
     task_title_div.style.cssFloat = "left";
     //task_title_div.style.width = "77%";
-    
+
+    x_button.onclick =  function()
+    {
+        var title = task_title_div.innerHTML;
+        var r=confirm('Delete task: "' + title + '"?'  );
+        if (r==false)
+        {
+            return;
+        }
+        delete_task(constellation_name, task_id);
+    };
+
     task_title_div.id = "task_title";
     task_title_div.innerHTML = task_title;
     task_title_div.style.marginTop="3px";
@@ -416,6 +445,40 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     task_div.appendChild(task_status_div);
     task_div.appendChild(task_buttons_div);
     task_div.appendChild(task_title_div);
+    
+    var cb = function(event, data)
+    {
+    	
+        if(data.constellation_name != constellation_name)
+            return;
+        
+        var tasks = data.tasks;
+        var task = _find_task_data(task_id, tasks);
+        if(task)
+        {
+            if(task.task_title != task_title_div.innerHTML)
+            {
+                console.log("title change " + task_id);
+                console.log("task state " + task.state);
+                task_title_div.innerHTML = task.task_title;
+            }
+        }
+        else
+        {
+            // task does not exist anymore
+            if(task_div)
+            {
+                widgets_div.removeChild(task_div);
+                task_div = null;
+                $.unsubscribe("/constellation", cb);
+            }
+            else
+            {
+            	console.log("double delete");
+            }
+        }
+    };
+    $.subscribe("/constellation", cb);
 }
 
 
