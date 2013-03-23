@@ -45,12 +45,14 @@ function create_constellations_widget(div_name)
         if(data.constellation_name)
         {
             var constellation = data.constellation_name;
-            var configuration = data.configuration; 
+            var configuration = data.configuration;
+            var username = data.username;
+            var gmt = data.gmt
             //data.constellation_config;
             var constellation_div =  div.querySelector("#"+constellation);
             if( constellation_div == null)
             {
-                create_constellation(div_name, configuration, constellation);
+                create_constellation(div_name, configuration, constellation, username, gmt);
             }
         }
     });
@@ -117,7 +119,7 @@ function create_constellations_widget(div_name)
 //    return constellations;
 //}
 
-function insert_constellation_div(div_name, configuration_name, constellation_name)
+function insert_constellation_div(div_name, configuration_name, constellation_name, username, gmt)
 {
     var div = document.getElementById(div_name);
     var nodes = div.childNodes;
@@ -150,8 +152,8 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     var top_div = document.createElement("div");
     top_div.id = "top";
     
-    var title_str = " <h3 style=' margin-top:0; margin-bottom:0;'><center>";
-    title_str    +=   constellation_name + " [" + configuration_name + "]</center></h3>";
+    var title_str = " <h3 style=' margin-top:0; margin-bottom:0;'><table width='100%'><tr><td align='left'>";
+    title_str    +=   constellation_name + "</td><td align='right'><FONT SIZE=2> Launched by " + username + "</FONT></td></tr><tr><td><FONT SIZE=2>" + configuration_name + "</FONT></td><td align='right'><FONT SIZE=2> at GMT " + gmt + "</FONT></td></tr></table></h3>";
     
     top_div.style.backgroundColor ="#44497a";
     top_div.style.borderTopLeftRadius = "15px";
@@ -183,7 +185,7 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
         terminate_constellation(constellation_name);
     };
     
-    const_div.appendChild(terminate_button);
+    top_div.appendChild(terminate_button);
 
     var add_task_button =document.createElement('input');
     add_task_button.setAttribute('type','button');
@@ -210,7 +212,6 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     
     return const_div;
 }
-
 
 
 function _constellation_terminate(div_name, constellation_name)

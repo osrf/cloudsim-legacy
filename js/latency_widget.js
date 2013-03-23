@@ -15,6 +15,12 @@ function create_latency_widget(machine_div,
     var unique_plot_id = "latency_"+machine_name;
     var widget_div = _create_empty_widget(machine_div, unique_plot_id);
     widget_div.style.height = "150px";
+    
+    // Set widget's title
+    var title_div = document.createElement("div")
+    title_div.setAttribute("id", "latency_" + machine_name + "_title");
+    title_div.innerHTML = "<center>Round Trip Latency</center>";
+    widget_div.parentElement.insertBefore(title_div, widget_div);
 
     var latency_plot_data = [   
                              { label:"min", color: min_color, data:[] }, 
@@ -27,7 +33,13 @@ function create_latency_widget(machine_div,
 
     		yaxis: {
     		        min: 0,
-    		        max: 500
+    		        max: 550,
+    		        tickFormatter : function (v, yaxis) 
+        			{ 
+        				//var v = (xaxis.max -v);   
+        				var str = v.toFixed(0) + " ms"; 
+        				return  str;
+        			},
     		   },
 
     		xaxis: { 

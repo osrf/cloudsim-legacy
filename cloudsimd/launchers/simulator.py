@@ -147,7 +147,7 @@ def _monitor( username,
             constellation.set_value('simulation_latency', sim_latency)
             
         if sim_state_index >= machine_states.index('running'):
-            constellation.set_value('simulation_launch_msg', "complete")
+            constellation.set_value('simulation_launch_msg', "Complete")
             gl_state = constellation.get_value("simulation_glx_state")
             if gl_state == "running":
                 try:
@@ -418,7 +418,7 @@ timeout 5 gztopic list
                 constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
                 raise
     
-    constellation.set_value('simulation_launch_msg', "reboot complete")
+    constellation.set_value('simulation_launch_msg', "reboot Complete")
     constellation.set_value('simulation_state', "running")
     constellation.set_value('constellation_state', 'running')
 

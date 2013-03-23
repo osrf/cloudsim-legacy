@@ -269,13 +269,13 @@ def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATI
         
         if constellation_state == "running":
             if router_state == "running":
-                constellation.set_value('router_launch_msg', "complete")
+                constellation.set_value('router_launch_msg', "Complete")
             
             if robot_state == "running":
-                constellation.set_value('robot_launch_msg', "complete")
+                constellation.set_value('robot_launch_msg', "Complete")
             
             if simulation_state == "running":
-                constellation.set_value('simulation_launch_msg', "complete")
+                constellation.set_value('simulation_launch_msg', "Complete")
         
         if router_state == 'packages_setup':
             try:
