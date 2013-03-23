@@ -53,11 +53,16 @@ def parse_path():
         return None, None
 
 
-def get_query_param(param):
+def get_query_param(param, default = "N/A"):
     qs= os.environ['QUERY_STRING']
     params = urlparse.parse_qs(qs)
-    p = params[param][0]
+    p = None
+    try:
+        p = params[param][0]
+    except:
+        p = default
     return p
+    
 
 email = authorize()
 method = os.environ['REQUEST_METHOD']
@@ -99,10 +104,11 @@ if method == 'PUT':
     d['task_title'] =  get_query_param('task_title')
     d['ros_package'] =  get_query_param('ros_package')
     d['ros_launch'] =  get_query_param('ros_launch')
-    d['ros_args'] =  get_query_param('ros_args')
+    d['ros_args'] =  get_query_param('ros_args',"")
     d['latency'] =  get_query_param('latency')
     d['timeout'] =  get_query_param('timeout')
-    d['data_cap'] =  get_query_param('data_cap')
+    d['uplink_data_cap'] =  get_query_param('uplink_data_cap')
+    d['downlink_data_cap'] =  get_query_param('downlink_data_cap')
     log("Update (put) tasks: %s" % d)
     
 # see lib_cloudsim.js
@@ -112,10 +118,11 @@ if method == 'POST':
     d['task_title'] =  get_query_param('task_title')
     d['ros_package'] =  get_query_param('ros_package')
     d['ros_launch'] =  get_query_param('ros_launch')
-    d['ros_args'] =  get_query_param('ros_args')
+    d['ros_args'] =  get_query_param('ros_args',"")
     d['latency'] =  get_query_param('latency')
     d['timeout'] =  get_query_param('timeout')
-    d['data_cap'] =  get_query_param('data_cap')
+    d['uplink_data_cap'] =  get_query_param('uplink_data_cap')
+    d['downlink_data_cap'] =  get_query_param('downlink_data_cap')
     log("Create (post) tasks: %s" % d)
     
 s = json.dumps(d)

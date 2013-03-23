@@ -34,7 +34,9 @@ def publish_event(username, type, data):
         
 
 class ConstellationState(object):
-    
+    """
+    This class is the access point to the constellation information in Redis
+    """
     def __init__(self, constellation_name):
         self.constellation_name = constellation_name
         
@@ -55,6 +57,30 @@ class ConstellationState(object):
         expiration = None
         set_constellation_data(self.constellation_name, resources, expiration)
     
+    def get_task(self, task_id):
+        tasks = self.get_value('tasks')
+        for task in tasks:
+            if task['task_id'] == task_id:
+                return task
+        raise KeyError(task_id)
+
+    def update_task(self, task_id, updated_task):
+        tasks = self.get_value('tasks')
+        for task in tasks:
+            if task['task_id'] == task_id:
+                task.update(updated_task)
+                return
+        raise KeyError(task_id)
+    
+    def delete_task(self, task_id):
+        tasks = self.get_value('tasks')
+        for task in tasks:
+            if task['task_id'] == task_id:
+                tasks.remove(task)
+                self.set_value('tasks', tasks)
+                return
+        raise KeyError(task_id)
+
     def expire(self, nb_of_secs):
         resources  = get_constellation_data(self.constellation_name)
         set_constellation_data(self.constellation_name, resources, nb_of_secs)

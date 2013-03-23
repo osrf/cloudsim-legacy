@@ -21,17 +21,6 @@ if['command'] == "cloudseed":
     d['key'] = form.getfirst('key')
     d['secret'] = form.getfirst('secret')
 
-if d['command'] == 'start_simulator':
-    d['constellation'] = form.getfirst('constellation')
-    d['machine'] = form.getfirst('machine')
-    d['package_name'] = form.getfirst('package')
-    d['launch_file_name'] = form.getfirst('launch_file_name')
-    d['launch_args'] = form.getfirst('launch_args', default = '')
-
-if d['command'] == 'stop_simulator':
-    d['constellation'] = form.getfirst('constellation')
-    d['machine'] = form.getfirst('machine')
-
 if d['command'] == 'start_task':
     d['constellation'] = form.getfirst('constellation')
     d['task_id'] = form.getfirst('task_id')

@@ -236,63 +236,46 @@ def terminate(username,
 #        tb = traceback.format_exc()
 #        log("traceback:  %s" % tb)
 
-def _find_task(tasks, task_id):
-    for task in tasks:
-        if task['task_id'] == task_id:
-            return task
-    return None
-
-def create_task(constellation_name, 
-                    task_title, ros_package, ros_launch, 
-                    timeout,
-                    ros_args, latency, data_cap):
-    task_id = "t" + launch.get_unique_short_name()
-
-    log('create_task %s/%s' % (constellation_name, task_id))
-    cs = launch_db.ConstellationState(constellation_name)
-    tasks = cs.get_value('tasks')
-
-    task = {'task_id' : task_id,
-            'task_state' : 'not started',
-            'task_title': task_title, 
-            'ros_package': ros_package,
-            'ros_launch': ros_launch,
-            'timeout' : timeout,
-            'ros_args' : ros_args,
-            'latency':latency,
-            'data_cap' : data_cap}
-    
-    tasks.append(task)
-    log('%s' % tasks)
-    cs.set_value('tasks', tasks)
-     
 
 
-def update_task(constellation_name, task_id, 
-                      task_title, 
-                      ros_package, 
-                      ros_launch, 
-                      timeout,
-                      ros_args, 
-                      latency, 
-                      data_cap,):
+task_states = ['ready', 'setup', 'running', 'teardown', 'finished']
 
-
+def create_task(constellation_name, data):
     try:
-        log("update_task %s/%s" % (constellation_name, task_id))
+        log('create_task')
+        task_id = "t" + get_unique_short_name()
+        data['task_id'] = task_id
+        data['task_state'] = "ready"
+        data['task_message'] = 'Ready to run'
+        
+    #    for k,v in data.iteritems():
+    #        log('  %s = %s' % (k,v))
+        
         cs = ConstellationState(constellation_name)
         tasks = cs.get_value('tasks')
+        tasks.append(data)
         
-        task = _find_task(tasks, task_id)
-        task['task_title'] = task_title
-        task['ros_package'] = ros_package
-        task['ros_launch'] = ros_launch
-        task['ros_args'] = ros_args
-        task['latency'] = latency
-        #task['task_state'] = task_state
-        task['timeout'] = timeout
-        task['data_cap'] = data_cap
+        # save new task list in db
         cs.set_value('tasks', tasks)
+        log('task %s/%s created' % (constellation_name, task_id))
+    except Exception, e:
+        log("update_task error %s" % e)
+        tb = traceback.format_exc()
+        log("traceback:  %s" % tb)
+
+def update_task(constellation_name, data):
+
+    #    for k,v in data.iteritems():
+    #        log('  %s = %s' % (k,v))
+    try:
+        task_id = data['task_id']
+        log("update_task %s/%s" % (constellation_name, task_id))
+        cs = ConstellationState(constellation_name)
+        cs.update_task(task_id, data)
+#        tasks = cs.get_value('tasks')
+#        task = cs.get_task(tasks, task_id)
+#        task.update(data)
+#        cs.set_value('tasks', tasks)
         log("updated: %s" % task)
     except Exception, e:
         log("update_task error %s" % e)
@@ -301,13 +284,12 @@ def update_task(constellation_name, task_id,
     
     
 def delete_task(constellation_name, task_id):
+    log('delete task')
     try:
         log("delete_task %s/%s" % (constellation_name, task_id))
-        cs = launch_db.ConstellationState(constellation_name)
-        tasks = cs.get_value('tasks')
-        task = _find_task(tasks, task_id)
-        tasks.remove(task)
-        cs.set_value("tasks", tasks)
+        cs = ConstellationState(constellation_name)
+        cs.delete_task(task_id)
+
     except Exception, e:
         log("delete_task error %s" % e)
         tb = traceback.format_exc()
@@ -316,21 +298,15 @@ def delete_task(constellation_name, task_id):
 def start_task(constellation_name, task_id):
     try:
         log("start_task %s/%s" % (constellation_name, task_id))
-        cs = launch_db.ConstellationState(constellation_name)
+        cs = ConstellationState(constellation_name)
+        config = cs.get_value('configuration')
+        start_task = plugins[config]['start_task']
+        #tasks = cs.get_value('tasks')
+        #task = _find_task(tasks, task_id)
+        #log("Ze task is %s" % task)
+        #if task['task_state'] == "not started":
         
-        tasks = cs.get_value('tasks')
-        task = _find_task(tasks, task_id)
-        if task_state == "ready":
-            tasks = cs.get_value('tasks')
-            task = _find_task(tasks, task_id)
-            cs.set_value("task_state", "starting %s" % task_id)
-            # start gazebo
-            # start traffic shaper
-            #        data = get_constellation_data( constellation)
-            
-            config = cs.get_value('configuration')
-            start_task  = plugins[config]['start_task']
-            start_task()
+        start_task(constellation_name, task_id)
             
     except Exception, e:
         log("start_task error %s" % e)
@@ -341,12 +317,16 @@ def start_task(constellation_name, task_id):
 def stop_task(constellation_name):
     try:
         log("stop_task %s" % (constellation_name))
-        cs = launch_db.ConstellationState(constellation_name)
-        task_state = cs.get_value('task_state')
-        if task_state  == "running %s" % task_id:
+        cs = ConstellationState(constellation_name)
+        config = cs.get_value('configuration')
+        stop_task = plugins[config]['stop_task']
+        # task_state = cs.get_value('task_state')
+        # if task_state  == "running %s" % task_id:
             # stop gazebo
             # stop traffic shaper
-            cs.set_value("task_state", "stopping %s" % task_id)
+        #cs.set_value("task_state", "stopping %s" % task_id)
+        stop_task(constellation_name)
+            
     except Exception, e:
         log("stop_task error %s" % e)
         tb = traceback.format_exc()
@@ -500,34 +480,19 @@ def run_tc_command(_username, _constellationName, _targetPacketLatency):
     ssh = SshClient(keyDirectory, keyPairName, 'ubuntu', ip)
     ssh.cmd(cmd)                   
     
-def async_create_task(constellation_name, 
-                     task_title, 
-                     ros_package, 
-                     ros_launch, 
-                     timeout,
-                     ros_args, 
-                     latency,
-                     data_cap):
+def async_create_task(constellation_name, data):
     log('async_create_task')
+#    for k,v in data.iteritems():
+#        log('  %s = %s' % (k,v))
+            
     p = multiprocessing.Process(target= create_task, 
-                                args=(constellation_name, 
-                    task_title, ros_package, ros_launch, timeout, 
-                    ros_args, latency, data_cap ) )
+                                args=(constellation_name, data ) )
     p.start()
 
-def async_update_task(constellation_name, task_id, 
-                      task_title, 
-                      ros_package, 
-                      ros_launch, 
-                      timeout, 
-                      ros_args, 
-                      latency,
-                      data_cap):
+def async_update_task(constellation_name, data):
     log('async_update_task')
     p = multiprocessing.Process(target= update_task, 
-                                args=(constellation_name, 
-                    task_id, task_title, ros_package, timeout, ros_launch, 
-                    ros_args, latency, data_cap ) )
+                                args=(constellation_name, data ) )
     p.start()
 
 def async_delete_task(constellation_name, task_id):
@@ -586,58 +551,34 @@ def run(boto_path, root_dir, tick_interval):
                 continue
 
             constellation = data['constellation']
-            constellation_path = os.path.join(root_dir, constellation )
+            
             
             if cmd == 'terminate':
                 username = data['username']
+                constellation_path = os.path.join(root_dir, constellation )
                 async_terminate(username, constellation, boto_path, constellation_path )
                 continue
             #
             # tasks stuff
             #
             if cmd == 'create_task':
-                task_title = data['task_title']
-                ros_pack = data['ros_package']
-                ros_launch = data['ros_launch']
-                ros_args = data['ros_args']
-                latency = data['latency']
-                timeout = data['timeout']
-                data_cap = data['data_cap']
-                
-                async_create_task(constellation, 
-                                  task_title, 
-                                  ros_pack, 
-                                  ros_launch, 
-                                  timeout, 
-                                  ros_args, 
-                                  latency, 
-                                  data_cap)
+                data.pop('constellation')
+                data.pop('command')
+                async_create_task(constellation, data)
             
             if cmd == "update_task":
-                task_title = data['task_title']
-                ros_pack = data['ros_package']
-                ros_launch = data['ros_launch']
-                ros_args = data['ros_args']
-                latency = data['latency']
-                task_id = data['task_id']
-                timeout = data['timeout']
-                data_cap = data['data_cap']
-                async_update_task(constellation, 
-                                task_id = task_id,
-                                task_title = task_title, 
-                                ros_package = ros_pack, 
-                                ros_launch = ros_launch,
-                                timeout = timeout, 
-                                latency = latency,
-                                ros_args = ros_args, 
-                                data_cap = data_cap)
+                data.pop('constellation')
+                data.pop('command')
+                async_update_task(constellation ,data)
             
             if cmd == 'delete_task':
                 task_id = data['task_id']
                 async_delete_task(constellation, task_id)
             
             if cmd == 'start_task':
+                log('start_task')
                 task_id = data['task_id']
+                log('start_task %s' % task_id)
                 async_start_task(constellation, task_id)
             
             if cmd == 'stop_task':

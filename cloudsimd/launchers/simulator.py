@@ -50,7 +50,7 @@ def get_ping_data(ping_str):
 
 
 
-def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
+def start_simulator(constellation, package_name, launch_file_name, launch_args):
 
     constellation_dict = get_constellation_data(  constellation)
     constellation_directory = constellation_dict['constellation_directory']
@@ -79,19 +79,29 @@ def stop_simulator(username, constellation, machine):
     log('stop_simulator %s' % r)
 
 
-def start_task(constellation, package_name, launch_file_name,
-               timeout, launch_args, latency, data_cap):
+def start_task(constellation, task_id):
     
-    for i in range(10):
+    for i in range(5):
+        log("** SIMULATOR ***")
+        
+    log("start_task %s" % task_id)
+
+    for i in range(5):
         log("*****")
-    log(" start_task constellation %s, package_name %s, launch_file_name %s, timeout %s, launch_args %s, latency %s, data_cap %s" % 
-        (constellation, package_name, launch_file_name, timeout, launch_args, latency, data_cap) )
+    
+    cs = ConstellationState( constellation)
+    task = cs.get_task(task_id)
+    
+    package_name = task['ros_package']
+    launch_file_name = task['ros_launch']
+    launch_args = task['ros_args']
+    start_simulator(constellation, package_name, launch_file_name, launch_args)
     
     
 def stop_task(constellation):
     for i in range(10):
         log("** STOP TASK %s ***" % constellation)
-
+    
 
 
 def monitor(username, constellation_name, credentials_ec2, counter):

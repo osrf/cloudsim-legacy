@@ -78,7 +78,7 @@ function _create_task_form(form_id)
     var section = document.createElement("b");
     section.appendChild(document.createTextNode("Simulation parameters"));
     form_div.appendChild(section);
-    
+
     var ros_package = document.createElement("input");
     ros_package.size = "35";
     
@@ -97,10 +97,11 @@ function _create_task_form(form_id)
     var timeout = document.createElement("input");
     timeout.size = "35";
     form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Timeout (min)"));
+    form_div.appendChild(document.createTextNode("Maximum time (sec)"));
     form_div.appendChild(document.createElement("br"));
+    timeout.value = "1800";
     form_div.appendChild(timeout);
-    
+
     var launch_arguments = document.createElement("input");
     launch_arguments.size = "35";
     form_div.appendChild(document.createElement("br"));
@@ -118,18 +119,33 @@ function _create_task_form(form_id)
     var latency = document.createElement("input");
     latency.size = "35";
     form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Target round trip latency (ms)"));
+    form_div.appendChild(document.createTextNode("Minimum latency (ms, round trip)"));
     form_div.appendChild(document.createElement("br"));
     form_div.appendChild(latency);
     
-    var data_cap = document.createElement("input");
-    data_cap.size = "35";
+    var uplink_data_cap = document.createElement("input");
+    uplink_data_cap.size = "35";
     form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Maximum data transfer (KB)"));
+    form_div.appendChild(document.createTextNode("Uplink cap (bits for each s of run time)"));
     form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(data_cap);
-    
+    form_div.appendChild(uplink_data_cap);
+
+    var downlink_data_cap = document.createElement("input");
+    downlink_data_cap.size = "35";
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(document.createTextNode("Downlink cap (bits for each s of run time)"));
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(downlink_data_cap);    
+
+    ros_package.value = "atlas_utils";
+    launch_file.value = "atlas.launch";
+    timeout.value = "1800";
+    launch_arguments.value ="";
+    latency.value ="0";
+    uplink_data_cap.value="1000000";
+    downlink_data_cap.value="1000000";
     return form_div;
+
 }
 
 
@@ -148,21 +164,24 @@ function create_task_list_widget(const_div, constellation_name)
 	               var title = inputs[0].value;
 	               var ros_package = inputs[1].value;
 	               var launch = inputs[2].value;
-	               var args = inputs[3].value;
-	               var timeout = inputs[4].value; 
+	               var timeout = inputs[3].value; 
+	               var args = inputs[4].value;
 	               var latency = inputs[5].value;
-	               var data_cap = inputs[6].value;
-	               $( this ).dialog( "close" );
+	               var uplink_data_cap = inputs[6].value;
+	               var downlink_data_cap = inputs[7].value;
 	               
+	               console.log("timeout is " + timeout);
 	               create_task(constellation_name, title, 
 	                       ros_package, launch, timeout,
-	                       args, latency, data_cap);
+	                       args, latency, uplink_data_cap,
+	                       downlink_data_cap);
 	               
+	               $( this ).dialog( "close" );
                 }
               },
 
             close: function() {
-          	  console.log("gone");
+          	  console.log("create_task_list_widget close");
             }
     };
 
@@ -187,7 +206,8 @@ function create_task_list_widget(const_div, constellation_name)
     stop_current_task_button.setAttribute('value','Stop current task...');
     stop_current_task_button.onclick =  function()
     {
-        alert("STOP!")
+        console.log("STOP!")
+        stop_task(constellation_name);
     }
 
     var widgets_div = tasks_div.querySelector("#widgets");
@@ -201,8 +221,8 @@ function create_task_list_widget(const_div, constellation_name)
     var form_div = _create_task_form(form_id);
     p.insertBefore(form_div, widgets_div);
     
-    setTimeout(function(){ $( "#task-view-form" ).dialog(dlg_options );} 
-    , 0);
+    // this is necessary, otherwise the form does not form
+    setTimeout(function(){ $( "#task-view-form" ).dialog(dlg_options );}, 0);
 
     var task_div_list = widgets_div.children;
 
@@ -228,46 +248,7 @@ function create_task_list_widget(const_div, constellation_name)
         });
     
         
-//            
-//            var new_tasks = [];
-//            var tasks = data.tasks;
-//            var divs_to_update = [];
-//            var deleted_task_divs = [];
-//            var tasks_to_update = [];
-//
-//            _split_tasks(task_div_list, tasks, new_tasks, divs_to_update,
-//                tasks_to_update, deleted_task_divs);
-//            // add new divs
-//            for (var i=0; i < new_tasks.length; i++ )
-//            {
-//                var task = new_tasks[i];
-//                add_task_widget(const_div, constellation_name, task.task_id, "not started", task.task_title);
-//            }
-//
-//             update existing divs
-//            for(var i=0; i < tasks_to_update.length; i++ )
-//            {
-//            	var task = tasks_to_update[i];
-//                var task_title = task.task_title;
-//                var task_div = divs_to_update[i];
-//                var title_div = task_div.querySelector("#task_title");
-//                var div_title = title_div.innerHTML;
-//                
-//                if(task_title != task_title)
-//                {
-//                    console.log("" + task_title + " != " + div_title);
-//                    title_div.innerHTML = task_title;
-//                }
-//            }
-//
-//            // remove deleted divs
-//            for (var i=0; i < deleted_task_divs.length; i++)
-//            {
-//                var div = deleted_task_divs[i];
-//                widgets_div.removeChild(div);
-//            }
-//        }
-//    });
+
 
 }
 
@@ -324,8 +305,8 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     
      $( "#" + form_id ).dialog({
       autoOpen: false,
-      height: 580,
-      width: 450,
+      height: 600,
+      width: 500,
       modal: true,
       buttons: {
          "Update": function() {
@@ -337,10 +318,12 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
          var timeout = inputs[3].value; 
          var args = inputs[4].value;
          var latency = inputs[5].value;
-         var data_cap = inputs[6].value;
+         var uplink_data_cap = inputs[6].value;
+         var downlink_data_cap = inputs[7].value;
          
          update_task(constellation_name, task_id,
-                title, ros_package,launch, timeout, args, latency, data_cap); 
+                title, ros_package,launch, timeout, args, latency, 
+                uplink_data_cap, downlink_data_cap); 
          
          $( this ).dialog( "close" );
           }
@@ -360,20 +343,19 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     x_button.setAttribute('type','button');
     x_button.setAttribute('value','X');
 
-
     var action_button= document.createElement('input');
     action_button.setAttribute('type','button');
     action_button.setAttribute('value','Start');
 
     var edit_button= document.createElement('input');
     edit_button.setAttribute('type','button');
-    edit_button.setAttribute('value','...');
+    edit_button.setAttribute('value','View');
 
 
     edit_button.onclick =  function()
     {
         
-    	var dlg = document.querySelector( "#" + form_id);
+        var dlg = document.querySelector( "#" + form_id);
         var inputs = dlg.querySelectorAll("input");
         var task_title_input = inputs[0];
         var ros_package = inputs[1];
@@ -381,7 +363,8 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         var launch_arguments = inputs[4];
         var timeout = inputs[3]; 
         var latency = inputs[5];
-        var data_cap = inputs[6];
+        var uplink_data_cap = inputs[6];
+        var downlink_data_cap = inputs[7];
         
         task = read_task(constellation_name, task_id);
         task_title_input.value = task.task_title;
@@ -390,19 +373,19 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         timeout.value = task.timeout;
         launch_arguments.value = task.ros_args;
         latency.value = task.latency;
-        data_cap.value = task.data_cap;
+        uplink_data_cap.value = task.uplink_data_cap;
+        downlink_data_cap.value = task.downlink_data_cap;
         $("#" + form_id ).dialog( "open" );
     };
 
-    
     action_button.onclick =  function()
     {
         task = read_task(constellation_name, task_id);
         var state =task.task_state; 
         console.log(state);
-        if(state == 'not started')
+        if(state == 'ready')
         {
-            var r = confirm('Start task "' + task.task_title + '"?')
+            // var r = confirm('Start task "' + task.task_title + '"?')
             start_task(constellation_name, task.task_id);
         }
     };

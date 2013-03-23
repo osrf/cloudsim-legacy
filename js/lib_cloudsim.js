@@ -121,17 +121,48 @@ function get_constellation(constellation)
 }
 
 function create_task(constellation, task_title, 
-                  ros_package, launch_file, 
-                  timeout, launch_args, latency, data_cap)
+                  ros_package, 
+                  launch_file, 
+                  timeout, 
+                  launch_args,
+                  latency,
+                  uplink_data_cap, 
+                  downlink_data_cap)
 {
+    console.log("task_title " + task_title)
+    console.log("ros_package " + ros_package)
+    console.log("launch_file " + launch_file)
+    console.log("launch_args " + launch_args)
+    console.log("timeout " + timeout)
+    console.log("latency " + latency)
+    console.log("uplink_data_cap " + uplink_data_cap)
+    console.log("downllink_data_cap " + downlink_data_cap)    
+    
+    
     var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + "?";
-    url += 'task_title=' + encodeURIComponent(task_title);
-    url += '&ros_package=' + encodeURIComponent(ros_package);
-    url += '&ros_launch=' + encodeURIComponent(launch_file);
-    url += '&ros_args=' + encodeURIComponent(launch_args);
-    url += '&timeout=' + encodeURIComponent(timeout);
-    url += '&latency=' + encodeURIComponent(latency);
-    url += '&data_cap=' + encodeURIComponent(data_cap);
+    
+    if(task_title != "")  
+        url += 'task_title=' + encodeURIComponent(task_title);
+    
+    if(ros_package != "")
+        url += '&ros_package=' + encodeURIComponent(ros_package);
+    
+    if(launch_file != "")
+        url += '&ros_launch=' + encodeURIComponent(launch_file);
+    
+    if(launch_args != "")
+    	url += '&ros_args=' + encodeURIComponent(launch_args);
+    if(timeout != "")
+    	url += '&timeout=' + encodeURIComponent(timeout);
+
+    if(latency != "")
+        url += '&latency=' + encodeURIComponent(latency);
+    
+    if(uplink_data_cap != "")
+        url += '&uplink_data_cap=' + encodeURIComponent(uplink_data_cap);
+    
+    if(downlink_data_cap != "")
+        url += '&downlink_data_cap=' + encodeURIComponent(downlink_data_cap);   
     
     console.log("[POST (create)]" + url);
     msg = httpPost(url);
@@ -151,26 +182,49 @@ function read_task(constellation, task_id)
 
 function update_task(constellation, task_id, task_title, 
         ros_package, launch_file, 
-        timeout, launch_args,  latency, data_cap)
+        timeout, launch_args,  latency, uplink_data_cap, downlink_data_cap)
 {
-//    if(timeout == "") timeout = -1; 
+
+    console.log("task_title " + task_title)
+    console.log("ros_package " + ros_package)
+    console.log("launch_file " + launch_file)
+    console.log("launch_args " + launch_args)
+    console.log("timeout " + timeout)
+    console.log("latency " + latency)
+    console.log("uplink_data_cap " + uplink_data_cap)
+    console.log("downlink_data_cap " + downlink_data_cap) 
+
+    
     var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
     url += "?";
-    url += 'task_title=' + encodeURIComponent(task_title);
-    console.log("task_title " + task_title)
-    url += '&ros_package=' + encodeURIComponent(ros_package);
-    console.log("ros_package " + ros_package)
-    url += '&ros_launch=' + encodeURIComponent(launch_file);
-    console.log("launch_file " + launch_file)
-    url += '&ros_args=' + encodeURIComponent(launch_args);
-    console.log("launch_args " + launch_args)
-    url += '&timeout=' + encodeURIComponent(timeout);
-    console.log("timeout " + timeout)
-    url += '&latency=' + encodeURIComponent(latency);
-    console.log("latency " + latency)
-    url += '&data_cap=' + encodeURIComponent(data_cap);
-    console.log("data_cap " + data_cap)
 
+    if(task_title != "")
+        url += 'task_title=' + encodeURIComponent(task_title);
+   
+
+    if(ros_package != "")
+        url += '&ros_package=' + encodeURIComponent(ros_package);
+    
+    if(launch_file != "")
+    	url += '&ros_launch=' + encodeURIComponent(launch_file);
+
+
+    if(launch_args != "")
+    	url += '&ros_args=' + encodeURIComponent(launch_args);
+
+
+    if(timeout != "")
+        url += '&timeout=' + encodeURIComponent(timeout);
+
+    if(latency != "")
+        url += '&latency=' + encodeURIComponent(latency);
+
+    if(uplink_data_cap != "")
+        url += '&uplink_data_cap=' + encodeURIComponent(uplink_data_cap);
+
+    if(downlink_data_cap != "")
+        url += '&downlink_data_cap=' + encodeURIComponent(downlink_data_cap);
+    
     console.log("[PUT (update)]" + url);
     msg = httpPut(url);
     console.log(msg);
@@ -198,9 +252,15 @@ function start_task(constellation_name, task_id)
     return msg;
 }
 
-function stop_simulator(constellation_name, task_id)
+function stop_task(constellation_name)
 {
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=stop_task';
+    url += '&constellation=' + constellation_name;
     
+    console.log(url);
+    msg = httpGet(url);
+    console.log(msg);
+    return msg;    
 }
 
 function async_get_constellations(callback)
