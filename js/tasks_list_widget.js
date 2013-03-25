@@ -36,6 +36,7 @@ function add_task_widget(constellation_name, task_id, color, task_title, task_da
         $( "#task-view-form" ).dialog( "open" );
     };
 
+    
     stop_button.onclick =  function()
     {
         alert("stop");
