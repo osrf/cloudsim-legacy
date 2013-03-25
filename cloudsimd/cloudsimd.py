@@ -434,10 +434,9 @@ def resume_monitoring(boto_path, root_dir):
             state = constellation['constellation_state']
             config = constellation['configuration']
             username = constellation['username']
-            log ("      config %s" % config)
-            log ("      state %s" % state)
-            if state != "terminated":
-                async_monitor(username, config, constellation_name, boto_path)
+            log ("      resume_monitoring config %s" % config)
+            log ("      resume_monitoring state %s" % state)
+            async_monitor(username, config, constellation_name, boto_path)
         except Exception, e:
             print ("MONITOR ERROR %s in constellation : %s" % (e, constellation_name))
             tb = traceback.format_exc()

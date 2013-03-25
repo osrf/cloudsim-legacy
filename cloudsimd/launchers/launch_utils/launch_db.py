@@ -7,7 +7,7 @@ import json
 import redis
 
 
-def log(msg, channel = "launch"):
+def log(msg, channel = "launch_db"):
     try:
         
         redis_client = redis.Redis()
@@ -83,6 +83,7 @@ class ConstellationState(object):
         raise KeyError(task_id)
 
     def expire(self, nb_of_secs):
+        log('expiration of %s in %s sec' % (self.constellation_name, nb_of_secs))
         resources  = get_constellation_data(self.constellation_name)
         set_constellation_data(self.constellation_name, resources, nb_of_secs)
 

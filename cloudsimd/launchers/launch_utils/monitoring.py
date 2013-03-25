@@ -13,7 +13,7 @@ constellation_states = ['terminated', 'terminating','launching', 'running']
 
 LATENCY_TIME_BUFFER = 60
 
-def log(msg, channel = "monitor"):
+def log(msg, channel = "monitoring"):
     try:
         
         redis_client = redis.Redis()
@@ -118,12 +118,11 @@ def constellation_is_terminated(constellation_name):
         constellation_state = constellation.get_value("constellation_state") 
         # log("constellation %s state %s" % (constellation_name, constellation_state) )
         if constellation_state == "terminated":
-            # constellation.expire(30)
+            constellation.expire(1)
             log("Constellation  %s is terminated" % constellation_name)
             return True
     except:
         log("Can't access constellation  %s data" % constellation_name)
-        # constellation.expire(30)
         return True
 
 def get_ssh_client(constellation_name, machine_state, ip_key, sshkey_key):
