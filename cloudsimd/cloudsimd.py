@@ -227,7 +227,6 @@ def stop_simulator(username, constellation,  machine):
     try:
         data = get_constellation_data( constellation)
         config = data['configuration']
-        root_directory =  MACHINES_DIR
         stop_simulator  = plugins[config]['stop_simulator']
         stop_simulator(username, constellation, machine)
     except Exception, e:
