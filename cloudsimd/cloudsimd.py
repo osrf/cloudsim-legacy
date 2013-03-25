@@ -32,9 +32,13 @@ from launchers import cloudsim
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
+from launchers.launch_utils.launch import aws_connect
 
 
 def del_constellations():
+    """
+    Removes all constellations from the Redis db
+    """
     r = redis.Redis()
     for k in r.keys():
         if k.find('cloudsim/') == 0:
@@ -42,6 +46,9 @@ def del_constellations():
     # r.flushdb()
 
 def list_constellations():
+    """
+    Returns a list that contains all the constellations in the Redis db
+    """
     r = redis.Redis()
     constellations = []
     for key in r.keys():
@@ -51,7 +58,36 @@ def list_constellations():
             constellations.append(c)
     return constellations 
     
-    
+
+def get_aws_instance_by_name(instance_name, boto_path="../../boto.ini"):
+    """
+    Interactive command to get a bot instance of a running machine
+    Raises exceptions if the credentials are not there or invalid
+    """
+    ec2conn = aws_connect(boto_path)[0]
+    reservations = ec2conn.get_all_instances()
+    instances = [i for r in reservations for i in r.instances]
+    for i in instances:
+        if id.tags.has_key('Name'):
+            name = id.tags['Name']
+            if name == instance_name:
+                return i
+    return None
+
+def get_aws_instance(instance, boto_path="../../boto.ini"):
+    """
+    Interactive command to get a boto instance of a running machine
+    instance: a string that contains the AWS instance id
+    Raises exceptions if the credentials are not there or invalid
+    """
+    ec2conn = aws_connect(boto_path)[0]
+    reservations = ec2conn.get_all_instances()
+    instances = [i for r in reservations for i in r.instances]
+    for i in instances:
+        if i.id == instance:
+            return i
+    return None
+        
 #
 # The plugins contains the function pointers for each type of constellation
 # Don't forget to register new constellations
@@ -338,7 +374,7 @@ def run_tc_command(_username, _constellationName, _targetPacketLatency):
     elif (config == 'vpc_trio_prerelease') or (config == 'vpc_trio') or (config == 'vpc_micro_trio'):
         keyDirectory = os.path.join(keyDirectory, 'router_' + _constellationName)
         keyPairName = constellation['router_key_pair_name']
-        ip = constellation['router_ip']
+        ip = constellation['router_public_ip']
     else:
         #You should not be here
         log("cloudsim::run_tc_command() Unknown constellation type: (%s)" % (config) )

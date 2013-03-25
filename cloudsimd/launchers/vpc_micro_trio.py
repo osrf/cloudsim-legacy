@@ -60,8 +60,10 @@ def launch(username, constellation_name, tags, credentials_ec2,
     ROUTER_AWS_TYPE='t1.micro'
     ROUTER_AWS_IMAGE="ami-137bcf7a"
     ROUTER_SCRIPT = get_vpc_router_script(vpc_trio.OPENVPN_SERVER_IP, 
-                                          vpc_trio.OPENVPN_CLIENT_IP) 
-    
+                                          vpc_trio.OPENVPN_CLIENT_IP,
+                                          vpc_trio.TS_IP,
+                                          vpc_trio.SIM_IP) 
+
 
     vpc_trio._launch(username, constellation_name, tags, credentials_ec2, 
                      constellation_directory,

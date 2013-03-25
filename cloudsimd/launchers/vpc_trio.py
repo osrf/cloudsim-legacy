@@ -34,6 +34,7 @@ from shutil import copyfile
 
 from launch_utils.monitoring import get_aws_states, record_ping_result,\
     LATENCY_TIME_BUFFER, machine_states
+from launch_utils.launch import aws_connect
 
 
 ROBOT_IP='10.0.0.52'
@@ -52,13 +53,6 @@ def log(msg, channel = "trio"):
     except:
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
-
-def aws_connect(credentials_ec2):    
-    boto.config = BotoConfig(credentials_ec2)
-    # boto.config = boto.pyami.config.Config(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn =  boto.connect_vpc()    
-    return ec2conn, vpcconn
 
 def create_vcp_router_securtity_group(ec2conn, sg_name, constellation_name, vpc_id, vpn_subnet):
     sg = ec2conn.create_security_group(sg_name, 'Security group for constellation %s' % (constellation_name), vpc_id)
@@ -99,7 +93,10 @@ def launch_prerelease(username, constellation_name, tags, credentials_ec2, const
     SIM_SCRIPT = get_drc_startup_script(open_vpn_script, SIM_IP, drc_package_name = "drcsim-prerelease")
     ROUTER_AWS_TYPE='t1.micro'
     ROUTER_AWS_IMAGE="ami-137bcf7a"
-    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP) 
+    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, 
+                                          OPENVPN_CLIENT_IP,
+                                          TS_IP,
+                                          SIM_IP) 
     
     
     _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,
@@ -131,7 +128,8 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     SIM_SCRIPT = get_drc_startup_script(open_vpn_script, SIM_IP, "drcsim")
     ROUTER_AWS_TYPE='t1.micro'
     ROUTER_AWS_IMAGE="ami-137bcf7a"
-    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP) 
+    ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP,
+                                          TS_IP, SIM_IP) 
     
     
     _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,
@@ -212,11 +210,11 @@ def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATI
         constellation_state = constellation.get_value("constellation_state") 
         # log("constellation %s state %s" % (constellation_name, constellation_state) )
         if constellation_state == "terminated":
-            constellation.expire(30)
+            # constellation.expire(30)
             return True
     except:
         log("Can't access constellation  %s data" % constellation_name)
-        constellation.expire(30)
+        # constellation.expire(30)
         return True
     
     router_state = constellation.get_value('router_state')
