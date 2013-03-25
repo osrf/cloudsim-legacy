@@ -7,7 +7,7 @@ def log(msg):
     try:
         import redis
         redis_client = redis.Redis()
-        redis_client.publish("launch", msg)
+        redis_client.publish("ssh", msg)
         logging.info(msg)
     except:
         print("Warning: redis not installed.")
@@ -93,13 +93,3 @@ class SshClient(object):
             return False
         return True
 
-
-#def wait_for_ssh(self, public_ip, key_file, fname='/done', username = 'ubuntu'):
-#    ssh_cmd = ['ssh', '-o', 'StrictHostKeyChecking=no',
-#           '-i', '%s.pem'%(key_file), '%s@%s'%(username,
-#           public_ip), 'ls %s' % fname]
-#    while True:
-#        po = subprocess.Popen(ssh_cmd)
-#        po.communicate()
-#        if po.returncode == 0:
-#            break

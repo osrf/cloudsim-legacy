@@ -21,20 +21,21 @@ from launch_utils import get_constellation_data
 from launch_utils import SshClient
 from launch_utils import get_ssh_cmd_generator, empty_ssh_queue # task_list
 from launch_utils import ConstellationState # launch_db
-from launch_utils.launch_events import parse_dpkg_line
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_drc_startup_script,\
     get_vpc_router_script, get_vpc_open_vpn, create_openvpn_client_cfg_file,\
     create_vpc_vpn_connect_file, create_ros_connect_file, create_ssh_connect_file
 
-from launch_utils.testing import get_boto_path, get_test_path, get_test_runner,\
-    get_test_dir
+from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 import zipfile
 from shutil import copyfile
 
-from launch_utils.monitoring import get_aws_states, record_ping_result,\
-    LATENCY_TIME_BUFFER, machine_states
+from launch_utils.monitoring import  record_ping_result,\
+    LATENCY_TIME_BUFFER, machine_states, update_machine_aws_states,\
+    constellation_is_terminated, get_ssh_client, monitor_launch_state,\
+    monitor_simulator, monitor_ssh_ping, monitor_cloudsim_ping
 from launch_utils.launch import aws_connect
+from launch_utils.traffic_shapping import run_tc_command
 
 
 ROBOT_IP='10.0.0.52'
@@ -75,20 +76,36 @@ def create_vcp_internal_securtity_group(ec2conn, sg_name, constellation_name, vp
     sg.authorize('udp' ,  0, 65535, openvpn_client_addr)
     return sg.id
 
-def start_task(constellation, task_id):
+def start_task(constellation, task):
     
-    for i in range(5):
-        log("*****")
+    log("** SIMULATOR *** start_task %s" % task)
+
+    latency = task['latency']
+    up = task['uplink_data_cap']
+    down = task['downlink_data_cap']
+
+    log("** TC COMMAND ***")
+    run_tc_command(constellation, 'sim_machine_name', 'sim_key_pair_name', 'simulation_ip', latency, up, down)
+    
+    log("** START SIMULATOR ***")
+    start_simulator(constellation, task['ros_package'], task['ros_launch'], task['ros_args'], task['timeout'])
+    
+    
+    task_id = task['task_id']
+    log("** SIMULATOR *** task %s started" % task_id)
         
-    log("start_task %s" % task_id)
-
-    for i in range(5):
-        log("*****")
-
     
 def stop_task(constellation):
-    for i in range(10):
-        log("** STOP TASK %s ***" % constellation)
+    
+    log("** SIMULATOR *** STOP TASK %s ***" % constellation)
+    
+    log("** stop simulator ***")
+    stop_simulator(constellation)
+    latency = 0 
+    up = -1
+    down = -1
+    log("** TC COMMAND ***")
+    run_tc_command(constellation, 'router_machine_name', 'router_key_pair_name', 'router_public_ip', latency, up, down)
         
 
 def launch_prerelease(username, constellation_name, tags, credentials_ec2, constellation_directory ):
@@ -210,141 +227,35 @@ def stop_simulator(username, constellation_name, machine_name):
     except Exception, e:
         log('stop_simulator error %s' % e)
 
-
-    
-    
+ 
 def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION):
     
     time.sleep(1)
-    constellation = ConstellationState(constellation_name)
-    
-    constellation_state = None
-    try:
-        
-        constellation_state = constellation.get_value("constellation_state") 
-        # log("constellation %s state %s" % (constellation_name, constellation_state) )
-        if constellation_state == "terminated":
-            # constellation.expire(30)
-            return True
-    except:
-        log("Can't access constellation  %s data" % constellation_name)
-        # constellation.expire(30)
+    if constellation_is_terminated(constellation_name):
         return True
     
+    constellation = ConstellationState(constellation_name)
+ 
     router_state = constellation.get_value('router_state')
     robot_state = constellation.get_value('robot_state')
     simulation_state = constellation.get_value('simulation_state')
-    
-    constellation_directory = constellation.get_value('constellation_directory')
-    
-    router_state_index = machine_states.index(router_state)
-    sim_state_index = machine_states.index(simulation_state)
-    
-    
-    aws_ids = {}
-    if constellation.has_value('router_aws_id'):
-        aws_ids["router"] = constellation.get_value('router_aws_id')
-    if constellation.has_value('robot_aws_id'):
-        aws_ids["robot"] = constellation.get_value('robot_aws_id')
-    if constellation.has_value('simulation_aws_id'):
-        aws_ids["sim"] = constellation.get_value('simulation_aws_id')
-    
-    
-    if len(aws_ids):
-        ec2conn = aws_connect(credentials_ec2)[0]
-        aws_states = get_aws_states(ec2conn, aws_ids)
-        
-        constellation.set_value("router_aws_state", aws_states["router"]) 
-        constellation.set_value("simulation_aws_state", aws_states["sim"])
-        constellation.set_value("robot_aws_state", aws_states["robot"])
+ 
+    update_machine_aws_states(credentials_ec2, constellation_name, {'router_aws_id':'router_aws_state' ,'robot_aws_id': "robot_aws_state", 'simulation_aws_id':"simulation_aws_state"}) 
 
-    if router_state_index >= machine_states.index('packages_setup'):
-        
-        router_ip = constellation.get_value('router_public_ip')
-        router_key_pair_name = constellation.get_value('router_key_pair_name')
-        ssh_router = SshClient(constellation_directory, router_key_pair_name, 'ubuntu', router_ip)
-        
-        ping_robot = ssh_router.cmd("ping -c3 %s" % ROBOT_IP)
-        # latency_event(username, CONFIGURATION, constellation_name, robot_machine_name, mini, avg, maxi, mdev)
-        robot_latency = constellation.get_value('robot_latency')
-        robot_latency = record_ping_result(robot_latency, ping_robot, LATENCY_TIME_BUFFER)
-        constellation.set_value('robot_latency', robot_latency)
-        
-        ping_simulator = ssh_router.cmd("ping -c3 %s" % SIM_IP)
-        sim_latency = constellation.get_value('simulation_latency')
-        sim_latency = record_ping_result(sim_latency, ping_simulator, LATENCY_TIME_BUFFER)
-        constellation.set_value('simulation_latency', sim_latency)
-        
-        o, ping_router = commands.getstatusoutput("ping -c3 %s" % router_ip)
-        if o == 0:
-            router_latency = constellation.get_value('router_latency')
-            router_latency = record_ping_result(router_latency, ping_router, LATENCY_TIME_BUFFER)
-            constellation.set_value('router_latency', router_latency)
-        
-        if constellation_state == "running":
-            if router_state == "running":
-                constellation.set_value('router_launch_msg', "complete")
-            
-            if robot_state == "running":
-                constellation.set_value('robot_launch_msg', "complete")
-            
-            if simulation_state == "running":
-                constellation.set_value('simulation_launch_msg', "complete")
-        
-        if router_state == 'packages_setup':
-            try:
-                dpkg_line = ssh_router.cmd("bash cloudsim/dpkg_log_router.bash")
-                #log("cloudsim/dpkg_log_router.bash = %s" % router_package )
-                router_package = parse_dpkg_line(dpkg_line) 
-                constellation.set_value('router_launch_msg', router_package)
-                
-            except Exception, e:
-                log("monitor: cloudsim/dpkg_log_router.bash error: %s" % e)
-       
-        if robot_state == 'packages_setup':
-            try:
-                dpkg_line = ssh_router.cmd("bash cloudsim/dpkg_log_robot.bash")
-                robot_package = parse_dpkg_line(dpkg_line)
-                #log("cloudsim/dpkg_log_robot.bash = %s" % robot_package )
-                constellation.set_value('robot_launch_msg', robot_package)
-            except Exception, e:
-                log("monitor: cloudsim/dpkg_log_robot.bash error: %s" % e)
-        
-        if simulation_state == 'packages_setup':
-            try:
-                dpkg_line = ssh_router.cmd("bash cloudsim/dpkg_log_sim.bash")
-                #log("cloudsim/dpkg_log_sim.bash = %s" % simulation_package )
-                simulation_package = parse_dpkg_line(dpkg_line) 
-                constellation.set_value('simulation_launch_msg', simulation_package)
-                
-            except Exception, e:
-                log("monitor: cloudsim/dpkg_log_sim.bash error: %s" % e )
-        
-        if sim_state_index >= machine_states.index('running'):
-            
-            gl_state = constellation.get_value("simulation_glx_state")
-            if gl_state == "running":
-                try:
-                    ping_gazebo = ssh_router.cmd("bash cloudsim/ping_gazebo.bash")
-                    log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
-                    constellation.set_value("gazebo", "running")
-                except Exception, e:
-                    log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
-                    constellation.set_value("gazebo", "not running")
-            
-            
-             
-            gl_state = constellation.get_value("simulation_glx_state")
-            if gl_state == "running":
-                try:
-                    ping_gazebo = ssh_router.cmd("bash cloudsim/ping_gazebo.bash")
-                    log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
-                    constellation.set_value("gazebo", "running")
-                except Exception, e:
-                    log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
-                    constellation.set_value("gazebo", "not running")
-            
-            return False
+    ssh_router = get_ssh_client(constellation_name, router_state,'router_public_ip', 'router_key_pair_name' )
+
+    monitor_launch_state(constellation_name, ssh_router, router_state, "bash cloudsim/dpkg_log_router.bash", 'router_launch_msg' )
+    monitor_launch_state(constellation_name, ssh_router, robot_state,  "bash cloudsim/dpkg_log_robot.bash", 'robot_launch_msg' )
+    monitor_launch_state(constellation_name, ssh_router, simulation_state,  "bash cloudsim/dpkg_log_sim.bash", 'simulation_launch_msg' )        
+
+    monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'simulation_latency')
+    monitor_ssh_ping(constellation_name, ssh_router, ROBOT_IP, 'robot_latency')
+    
+    monitor_cloudsim_ping(constellation_name, 'router_public_ip', 'simulation_latency')
+           
+    monitor_simulator(constellation_name, ssh_router)
+                         
+    return False # not done yet
 
 
 

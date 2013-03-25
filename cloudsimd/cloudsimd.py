@@ -153,7 +153,7 @@ def launch( username,
         constellation.set_value('constellation_state', 'launching')
         constellation.set_value('error', '')
         
-        constellation.set_value('task_state', "ready")
+        constellation.set_value('current_task', "")
         constellation.set_value('tasks', [])
         
         try:
@@ -210,31 +210,6 @@ def terminate(username,
     constellation.set_value('constellation_state', 'terminated')    
     log("Deleting %s from the database" % constellation)
     constellation.expire(30)    
-
-#def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
-#
-#    try:
-#        data = get_constellation_data( constellation)
-#        config = data['configuration']
-#        start_simulator  = plugins[config]['start_simulator']
-#        start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args)
-#    except Exception, e:
-#        log("cloudsimd.py start_simulator error: %s" % e)
-#        tb = traceback.format_exc()
-#        log("traceback:  %s" % tb) 
-#
-#
-#def stop_simulator(username, constellation,  machine):
-#    try:
-#        data = get_constellation_data( constellation)
-#        config = data['configuration']
-#        root_directory =  MACHINES_DIR
-#        stop_simulator  = plugins[config]['stop_simulator']
-#        stop_simulator(username, constellation, machine)
-#    except Exception, e:
-#        log("cloudsimd.py stop_simulator error: %s" % e)
-#        tb = traceback.format_exc()
-#        log("traceback:  %s" % tb)
 
 
 
@@ -301,12 +276,21 @@ def start_task(constellation_name, task_id):
         cs = ConstellationState(constellation_name)
         config = cs.get_value('configuration')
         start_task = plugins[config]['start_task']
-        #tasks = cs.get_value('tasks')
-        #task = _find_task(tasks, task_id)
-        #log("Ze task is %s" % task)
-        #if task['task_state'] == "not started":
-        
-        start_task(constellation_name, task_id)
+        current_task = cs.get_value('current_task')
+        if current_task == '':
+            task = cs.get_task(task_id)
+            if task['task_state'] == 'ready':
+                cs.set_value('current_task', task_id)
+                log('task_state running')
+                task['task_state'] = 'running'
+                cs.update_task(task_id, task) 
+                # no other task running, and task is ready
+                start_task(constellation_name, task)
+                
+                task['task_state'] = 'stopped'
+                cs.update_task(task_id, task)
+                log('task_state stopped')
+                cs.set_value('current_task', '')
             
     except Exception, e:
         log("start_task error %s" % e)
@@ -320,12 +304,15 @@ def stop_task(constellation_name):
         cs = ConstellationState(constellation_name)
         config = cs.get_value('configuration')
         stop_task = plugins[config]['stop_task']
-        # task_state = cs.get_value('task_state')
-        # if task_state  == "running %s" % task_id:
-            # stop gazebo
-            # stop traffic shaper
-        #cs.set_value("task_state", "stopping %s" % task_id)
-        stop_task(constellation_name)
+        
+        task_id = cs.get_value('current_task')
+        if task_id != '':
+            task = cs.get_task(task_id)
+            task['task_state'] = 'stopping'
+            log('task_state stopping')
+            cs.update_task(task_id, task)
+            stop_task(constellation_name)
+            
             
     except Exception, e:
         log("stop_task error %s" % e)

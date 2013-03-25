@@ -69,6 +69,7 @@ class ConstellationState(object):
         for task in tasks:
             if task['task_id'] == task_id:
                 task.update(updated_task)
+                self.set_value('tasks', tasks)
                 return
         raise KeyError(task_id)
     
@@ -138,29 +139,18 @@ def get_constellation_data(constellation):
 __CONFIG__KEY__ = "cloudsim_config"
 
 def set_cloudsim_config(config):
-    
     r = redis.Redis()
     s = json.dumps(config)
     r.set(__CONFIG__KEY__, s)
     
 def get_cloudsim_config():
-    
     r = redis.Redis()
     s = r.get(__CONFIG__KEY__)
     config = json.loads(s)
     return config
 
-
-def subscribe(channels):
-    
-    redis_client = redis.Redis()
-    ps = redis_client.pubsub()
-    ps.subscribe(channels)
-    for e in ps.listen():
-        print(e)
     
         
-
              
         
 if __name__ == '__main__':
