@@ -267,7 +267,7 @@ function _set_task_style(style)
 function _set_state_widget(state_widget, task_state)
 {
     state_widget.src = "/js/images/gray_status.png";
-    
+
 }
 
 function _set_button_state(action_button, task_state)
@@ -445,6 +445,9 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 console.log("task state " + task.state);
                 task_title_div.innerHTML = task.task_title;
             }
+            console.log('TASK _set_state_widget: ' + constellation_name + ': '+ task_state)
+            _set_state_widget(state_widget, task.task_state);
+            
         }
         else
         {
