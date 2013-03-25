@@ -17,6 +17,15 @@ wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
 sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
 wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
 
+# Multiverse is needed to install some pandora server related packages
+cat << DELIM_APT >> /etc/apt/sources.list
+# Enable multiverse for pandora
+deb http://archive.ubuntu.com/ubuntu precise multiverse
+deb-src http://archive.ubuntu.com/ubuntu precise multiverse
+deb http://archive.ubuntu.com/ubuntu precise-updates multiverse
+deb-src http://archive.ubuntu.com/ubuntu precise-updates multiverse
+DELIM_APT
+
 apt-get update
 
 apt-get install -y ntp
@@ -112,12 +121,18 @@ wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Deb
 
 wget 'http://downloads.sourceforge.net/project/pandora/Tools%20and%20dependencies%20%28All%20versions%29/DEB%20Debian%2C%20Ubuntu/wmi-client_0112-1_amd64.deb?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fpandora%2Ffiles%2FTools%2520and%2520dependencies%2520%2528All%2520versions%2529%2FDEB%2520Debian%252C%2520Ubuntu%2F&ts=1363026186' -O /tmp/wmi-client_0112-1.deb
 
-dpkg -i wmi-client_0112-1.deb
-dpkg -i pandora_server_4.0.3.deb
+dpkg -i /tmp/wmi-client_0112-1.deb
+dpkg -i /tmp/pandora_server_4.0.3.deb
 
-sed -i -e 's:servername.*:servername router-server::' /etc/pandora/pandora_server.conf
-sed -i -e 's:dbpass.*:dbpass pass::' /etc/pandora/pandora_server.conf
+sed -i -e 's:servername.*:servername router-server:' /etc/pandora/pandora_server.conf
+sed -i -e 's:dbpass.*:dbpass pass:' /etc/pandora/pandora_server.conf
 s
+
+# Install pandora agent
+wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Debian_Ubuntu%20%28DEB%29/pandorafms.agent_unix_4.0.3-130118.deb?r=http%3A%2F%2Fwww.google.com%2Furl%3Fq%3Dhttp%253A%252F%252Fsourceforge.net%252Fprojects%252Fpandora%252Ffiles%252FPandora%252520FMS%2525204.0.3%252FDebian_Ubuntu%252520%252528DEB%252529%252Fpandorafms.agent_unix_4.0.3-130118.deb%252Fdownload%26sa%3DD%26sntz%3D1%26usg%3DAFQjCNGiocSiDqQuZ8vPfT7prYp3JdO04w&ts=1363971857&use_mirror=ignum' -O /tmp/pandora_agent.deb
+
+dpkg -i /tmp/pandora_agent.deb
+
 """
 
 """
@@ -573,7 +588,7 @@ rm `which vrc_bandwidth.py`
 wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Debian_Ubuntu%20%28DEB%29/pandorafms.agent_unix_4.0.3-130118.deb?r=http%3A%2F%2Fwww.google.com%2Furl%3Fq%3Dhttp%253A%252F%252Fsourceforge.net%252Fprojects%252Fpandora%252Ffiles%252FPandora%252520FMS%2525204.0.3%252FDebian_Ubuntu%252520%252528DEB%252529%252Fpandorafms.agent_unix_4.0.3-130118.deb%252Fdownload%26sa%3DD%26sntz%3D1%26usg%3DAFQjCNGiocSiDqQuZ8vPfT7prYp3JdO04w&ts=1363971857&use_mirror=ignum' -O /tmp/pandora_agent.deb
 
 dpkg -i /tmp/pandora_agent.deb
-sed -i -e 's:server_ip.*:server_ip 10.0.0.50::' /etc/pandora/pandora_agent.conf
+sed -i -e 's:server_ip.*:server_ip 10.0.0.50:' /etc/pandora/pandora_agent.conf
 
 touch /home/ubuntu/cloudsim/setup/done
 
