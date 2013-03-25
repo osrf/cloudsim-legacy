@@ -15,7 +15,11 @@ function create_hostname_widget(machine_div,
         if(msg.constellation_name != constellation_name)
             return;
         
-        title[0].innerHTML = "<td align='left'>" + machine_name + "</td>";
+        // Remove the constellation name from the title
+    	var machine_name_separator = machine_name.lastIndexOf("_")
+    	var machine_name_only = machine_name.slice(0, machine_name_separator)
+        
+        title[0].innerHTML = "<td align='left'>" + machine_name_only + "</td>";
 		title[1].innerHTML = "<td align='right'><FONT SIZE=2>IP: " + msg[key_ip] + "<FONT></td>";
 		
 		if (msg[key_zip_file] == 'ready')
