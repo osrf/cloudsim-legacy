@@ -101,6 +101,23 @@ mkdir /home/ubuntu/cloudsim/setup
 touch /home/ubuntu/cloudsim/setup/done
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
+# Install pandora server
+apt-get install -y snmp snmpd libtime-format-perl libxml-simple-perl libdbi-perl libnetaddr-ip-perl libhtml-parser-perl nmap traceroute libio-socket-inet6-perl libhtml-tree-perl libsnmp-perl snmp-mibs-downloader libio-socket-multicast-perl libsnmp-perl libjson-perl xprobe  libdbd-mysql-perl libxml-twig-perl
+
+sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password password pass'
+sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password_again password pass'
+sudo apt-get -y install mysql-server
+
+wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Debian_Ubuntu%20%28DEB%29/pandorafms.server_4.0.3-130118.deb?r=http%3A%2F%2Fwww.google.com%2Furl%3Fq%3Dhttp%253A%252F%252Fsourceforge.net%252Fprojects%252Fpandora%252Ffiles%252FPandora%252520FMS%2525204.0.3%252FDebian_Ubuntu%252520%252528DEB%252529%252Fpandorafms.server_4.0.3-130118.deb%252Fdownload%26sa%3DD%26sntz%3D1%26usg%3DAFQjCNEQI2WsLiDqi0cWs7Z3JYttkuwZHA&ts=1363025800&use_mirror=heanet' -O /tmp/pandora_server_4.0.3.deb
+
+wget 'http://downloads.sourceforge.net/project/pandora/Tools%20and%20dependencies%20%28All%20versions%29/DEB%20Debian%2C%20Ubuntu/wmi-client_0112-1_amd64.deb?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fpandora%2Ffiles%2FTools%2520and%2520dependencies%2520%2528All%2520versions%2529%2FDEB%2520Debian%252C%2520Ubuntu%2F&ts=1363026186' -O /tmp/wmi-client_0112-1.deb
+
+dpkg -i wmi-client_0112-1.deb
+dpkg -i pandora_server_4.0.3.deb
+
+sed -i -e 's:servername.*:servername router-server::' /etc/pandora/pandora_server.conf
+sed -i -e 's:dbpass.*:dbpass pass::' /etc/pandora/pandora_server.conf
+s
 """
 
 """
@@ -551,7 +568,13 @@ start vrc_sniffer
 start vrc_controller
 
 rm `which vrc_bandwidth.py`
- 
+
+# Install pandora agent
+wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Debian_Ubuntu%20%28DEB%29/pandorafms.agent_unix_4.0.3-130118.deb?r=http%3A%2F%2Fwww.google.com%2Furl%3Fq%3Dhttp%253A%252F%252Fsourceforge.net%252Fprojects%252Fpandora%252Ffiles%252FPandora%252520FMS%2525204.0.3%252FDebian_Ubuntu%252520%252528DEB%252529%252Fpandorafms.agent_unix_4.0.3-130118.deb%252Fdownload%26sa%3DD%26sntz%3D1%26usg%3DAFQjCNGiocSiDqQuZ8vPfT7prYp3JdO04w&ts=1363971857&use_mirror=ignum' -O /tmp/pandora_agent.deb
+
+dpkg -i /tmp/pandora_agent.deb
+sed -i -e 's:server_ip.*:server_ip 10.0.0.50::' /etc/pandora/pandora_agent.conf
+
 touch /home/ubuntu/cloudsim/setup/done
 
 """
