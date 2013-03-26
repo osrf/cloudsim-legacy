@@ -155,18 +155,22 @@ wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Deb
 
 dpkg -i /tmp/wmi-client_0112-1.deb
 dpkg -i /tmp/pandora_server_4.0.3.deb
-
-sed -i -e 's:servername.*:servername router-server:' /etc/pandora/pandora_server.conf
+sed -i -e 's:.*servername.*:servername router-server:' /etc/pandora/pandora_server.conf
 sed -i -e 's:dbpass.*:dbpass pass:' /etc/pandora/pandora_server.conf
 sed -i -e 's:dbuser.*:dbuser root:' /etc/pandora/pandora_server.conf
+
+/etc/init.d/tentacle_serverd start
 /etc/init.d/pandora_server start
 
 # Install pandora agent
+apt-get install -y unzip
 wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Debian_Ubuntu%20%28DEB%29/pandorafms.agent_unix_4.0.3-130118.deb?r=http%3A%2F%2Fwww.google.com%2Furl%3Fq%3Dhttp%253A%252F%252Fsourceforge.net%252Fprojects%252Fpandora%252Ffiles%252FPandora%252520FMS%2525204.0.3%252FDebian_Ubuntu%252520%252528DEB%252529%252Fpandorafms.agent_unix_4.0.3-130118.deb%252Fdownload%26sa%3DD%26sntz%3D1%26usg%3DAFQjCNGiocSiDqQuZ8vPfT7prYp3JdO04w&ts=1363971857&use_mirror=ignum' -O /tmp/pandora_agent.deb
 
 dpkg -i /tmp/pandora_agent.deb
-/etc/init.d/pandora_agent start
+sed -i -e 's:.*agent_name.*:agent_name router-agent:' /etc/pandora/pandora_agent.conf
 
+/etc/init.d/pandora_agent_daemon start
+	
 """
 
 """
