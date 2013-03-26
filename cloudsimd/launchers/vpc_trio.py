@@ -85,7 +85,7 @@ def start_task(constellation, task):
     down = task['downlink_data_cap']
 
     log("** TC COMMAND ***")
-    run_tc_command(constellation, 'sim_machine_name', 'sim_key_pair_name', 'sim_ip', latency, up, down)
+    run_tc_command(constellation, 'router_machine_name', 'router_key_pair_name', 'router_public_ip', latency, up, down)
     
     log("** START SIMULATOR ***")
     start_simulator(constellation, task['ros_package'], task['ros_launch'], task['ros_args'], task['timeout'])
@@ -183,7 +183,7 @@ def monitor(username, constellation_name, credentials_ec2, counter):
     m =_monitor(username, constellation_name, credentials_ec2, counter, "vpc_trio")
     return m
 
-def start_simulator(username, constellation_name, machine_name, package_name, launch_file_name, launch_args, ):
+def start_simulator(constellation_name, package_name, launch_file_name, launch_args, timeout):
     
     log("vpc_trio start_simulator")
     constellation_dict = get_constellation_data(  constellation_name)
@@ -210,8 +210,12 @@ def stop_simulator( constellation_name):
     router_ip    = constellation_dict['router_public_ip']
     cmd = "bash cloudsim/stop_sim.bash"
     ssh_router = SshClient(constellation_directory, router_key_pair_name, 'ubuntu', router_ip)
-    r = ssh_router.cmd(cmd)
-    log('stop_simulator %s' % r)
+    try:
+        r = ssh_router.cmd(cmd)
+        log('stop_simulator %s' % r)
+    except Exception, e:
+        log('error stop_simulator %s' % e)
+    
 
  
 def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION):

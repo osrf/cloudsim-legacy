@@ -319,10 +319,7 @@ def start_task(constellation_name, task_id):
                     start_task(constellation_name, task)
                 except:
                     pass
-                task['task_state'] = 'stopped'
-                cs.update_task(task_id, task)
-                log('task_state stopped')
-                cs.set_value('current_task', '')
+
             else:
                 log("Task is not ready (%s)" % task_state)
         else:
@@ -343,12 +340,19 @@ def stop_task(constellation_name):
         task_id = cs.get_value('current_task')
         if task_id != '':
             task = cs.get_task(task_id)
+            
             task['task_state'] = 'stopping'
             log('task_state stopping')
             cs.update_task(task_id, task)
-            stop_task_fn(constellation_name)
-            cs.set_value('current_task', '')
             
+            stop_task_fn(constellation_name)            
+            
+            task['task_state'] = 'stopped'
+            cs.update_task(task_id, task)
+            log('task_state stopped')
+            cs.set_value('current_task', '')            
+        else:
+            log('stop_task error: no current task')    
     except Exception, e:
         log("stop_task error %s" % e)
         tb = traceback.format_exc()

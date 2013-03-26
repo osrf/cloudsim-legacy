@@ -443,19 +443,20 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 console.log("task state " + task.state);
                 task_title_div.innerHTML = task.task_title;
             }
-            console.log('TASK _set_state_widget: ' + constellation_name + ': '+ task.task_state)
             
-//            starting_colors = ["/js/images/gray_status.png", "/js/images/yellow_status.png"];
-            
-//            stopping_colors = ["/js/images/gray_status.png", "/js/images/blue_status.png"];
-            
-            
+            //  console.log('TASK _set_state_widget: ' + constellation_name + ': '+ task.task_state)
             state_widget.src = "/js/images/gray_status.png";
-            
             if (task.task_state == "running")
             {
             	colors =  ["/js/images/gray_status.png", "/js/images/blue_status.png"];
-                var color = colors[count % colors.length];
+                
+            	// starting up color
+            	if(data.gazebo == "not running")
+            	{
+            		colors[0] =  "/js/images/yellow_status.png";	
+            	}
+            		
+            	var color = colors[count % colors.length];
                 state_widget.src = color;
             }
             
