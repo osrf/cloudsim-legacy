@@ -119,24 +119,47 @@ sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password_aga
 sudo apt-get -y install mysql-server
 
 # Install pandora console (needed for server)
-sudo apt-get install php5 php5-snmp php5-gd php5-mysql php-db php5-xmlrpc php-gettext php5-curl graphviz dbconfig-common php5-ldap apache
+apt-get install php5 php5-curl mysql-client php5-snmp php5-gd php5-mysql php-db php5-xmlrpc php-gettext php5 curl graphviz dbconfig-common php5-ldap apache2
 
 wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Debian_Ubuntu%20%28DEB%29/pandorafms.console_4.0.3-130118.deb?r=http%3A%2F%2Fwww.google.com%2Furl%3Fq%3Dhttp%253A%252F%252Fsourceforge.net%252Fprojects%252Fpandora%252Ffiles%252FPandora%252520FMS%2525204.0.3%252FDebian_Ubuntu%252520%252528DEB%252529%252Fpandorafms.console_4.0.3-130118.deb%252Fdownload%26sa%3DD%26sntz%3D1%26usg%3DAFQjCNH_XgMlgnQgJalqcGfLarJZO47pXQ&ts=1364237927&use_mirror=freefr' -O /tmp/pandora_console.deb
 
 dpkg -i /tmp/pandora_console.deb
 
-# Install pandora server 
-wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Debian_Ubuntu%20%28DEB%29/pandorafms.server_4.0.3-130118.deb?r=http%3A%2F%2Fwww.google.com%2Furl%3Fq%3Dhttp%253A%252F%252Fsourceforge.net%252Fprojects%252Fpandora%252Ffiles%252FPandora%252520FMS%2525204.0.3%252FDebian_Ubuntu%252520%252528DEB%252529%252Fpandorafms.server_4.0.3-130118.deb%252Fdownload%26sa%3DD%26sntz%3D1%26usg%3DAFQjCNEQI2WsLiDqi0cWs7Z3JYttkuwZHA&ts=1363025800&use_mirror=heanet' -O /tmp/pandora_server_4.0.3.deb
+export MYSQL_PASS="pass"
+mysql -u root -p${MYSQL_PASS} <<< "CREATE DATABASE pandora;"
+mysql -u root -p${MYSQL_PASS} -Dpandora < /var/www/pandora_console/pandoradb.sql
+mysql -u root -p${MYSQL_PASS} -Dpandora < /var/www/pandora_console/pandoradb_data.sql
 
+cat << DELIM_PANDORA > /var/www/pandora_console/include/config.php
+<?php
+\$config["dbtype"] = "mysql";        
+\$config["dbname"] = "pandora";               // MySQL DataBase name
+\$config["dbuser"] = "root";                  // DB User
+\$config["dbpass"] = "${MYSQL_PASS}";         // DB Password
+\$config["dbhost"] = "localhost";              // DB Host
+\$config["homedir"] = "/var/www/pandora_console"; // Config homedir
+\$config["homeurl"] = "/pandora_console"; // Base URL
+?>
+
+error_reporting(E_ALL);
+
+$ownDir = dirname(__FILE__) . '/';
+include ($ownDir . "config_process.php");
+DELIM_PANDORA
+
+rm /var/www/pandora_console/install.php
+
+# Install pandora server 
 wget 'http://downloads.sourceforge.net/project/pandora/Tools%20and%20dependencies%20%28All%20versions%29/DEB%20Debian%2C%20Ubuntu/wmi-client_0112-1_amd64.deb?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fpandora%2Ffiles%2FTools%2520and%2520dependencies%2520%2528All%2520versions%2529%2FDEB%2520Debian%252C%2520Ubuntu%2F&ts=1363026186' -O /tmp/wmi-client_0112-1.deb
+wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Debian_Ubuntu%20%28DEB%29/pandorafms.server_4.0.3-130118.deb?r=http%3A%2F%2Fwww.google.com%2Furl%3Fq%3Dhttp%253A%252F%252Fsourceforge.net%252Fprojects%252Fpandora%252Ffiles%252FPandora%252520FMS%2525204.0.3%252FDebian_Ubuntu%252520%252528DEB%252529%252Fpandorafms.server_4.0.3-130118.deb%252Fdownload%26sa%3DD%26sntz%3D1%26usg%3DAFQjCNEQI2WsLiDqi0cWs7Z3JYttkuwZHA&ts=1363025800&use_mirror=heanet' -O /tmp/pandora_server_4.0.3.deb
 
 dpkg -i /tmp/wmi-client_0112-1.deb
 dpkg -i /tmp/pandora_server_4.0.3.deb
-/etc/init.d/pandora_server start
 
 sed -i -e 's:servername.*:servername router-server:' /etc/pandora/pandora_server.conf
 sed -i -e 's:dbpass.*:dbpass pass:' /etc/pandora/pandora_server.conf
-s
+sed -i -e 's:dbuser.*:dbuser root:' /etc/pandora/pandora_server.conf
+/etc/init.d/pandora_server start
 
 # Install pandora agent
 wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Debian_Ubuntu%20%28DEB%29/pandorafms.agent_unix_4.0.3-130118.deb?r=http%3A%2F%2Fwww.google.com%2Furl%3Fq%3Dhttp%253A%252F%252Fsourceforge.net%252Fprojects%252Fpandora%252Ffiles%252FPandora%252520FMS%2525204.0.3%252FDebian_Ubuntu%252520%252528DEB%252529%252Fpandorafms.agent_unix_4.0.3-130118.deb%252Fdownload%26sa%3DD%26sntz%3D1%26usg%3DAFQjCNGiocSiDqQuZ8vPfT7prYp3JdO04w&ts=1363971857&use_mirror=ignum' -O /tmp/pandora_agent.deb
