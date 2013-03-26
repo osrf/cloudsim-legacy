@@ -95,12 +95,41 @@ def get_aws_instance(instance, boto_path="../../boto.ini"):
 #
 
 plugins = {}
-plugins['vpc_micro_trio'] = {'launch':vpc_micro_trio.launch,    'terminate':vpc_micro_trio.terminate,    'monitor':vpc_micro_trio.monitor,   'start_task':vpc_micro_trio.start_task,   'stop_task':vpc_micro_trio.stop_task}
-plugins['vpc_trio'] =       {'launch':vpc_trio.launch,          'terminate':vpc_trio.terminate,          'monitor':vpc_trio.monitor,         'start_task':vpc_trio.start_task,         'stop_task':vpc_trio.stop_task}
-plugins['simulator'] =       {'launch':simulator.launch,          'terminate':simulator.terminate,       'monitor':simulator.monitor,         'start_task':simulator.start_task,         'stop_task':simulator.stop_task}
-plugins['cloudsim'] =       {'launch':cloudsim.launch,          'terminate':cloudsim.terminate,       'monitor':cloudsim.monitor,         'start_task':cloudsim.start_task,         'stop_task':cloudsim.stop_task}
-plugins['vpc_trio_prerelease'] =       {'launch':vpc_trio.launch_prerelease,          'terminate':vpc_trio.terminate_prerelease,          'monitor':vpc_trio.monitor_prerelease,         'start_task':vpc_trio.start_simulator,         'stop_task':vpc_trio.stop_task}
-plugins['simulator_prerelease'] =       {'launch':simulator.launch_prerelease,          'terminate':simulator.terminate_prerelease,       'monitor':simulator.monitor_prerelease,         'start_task':simulator.start_simulator,         'stop_task':simulator.stop_task}
+plugins['vpc_micro_trio'] = {'launch':vpc_micro_trio.launch,    
+                             'terminate':vpc_micro_trio.terminate,    
+                             'monitor':vpc_micro_trio.monitor,   
+                             'start_task':vpc_micro_trio.start_task,   
+                             'stop_task':vpc_micro_trio.stop_task}
+
+plugins['vpc_trio'] =       {'launch':vpc_trio.launch,
+                             'terminate':vpc_trio.terminate,          
+                             'monitor':vpc_trio.monitor,         
+                             'start_task':vpc_trio.start_task,         
+                             'stop_task':vpc_trio.stop_task}
+
+plugins['simulator'] =       {'launch':simulator.launch,          
+                              'terminate':simulator.terminate,       
+                              'monitor':simulator.monitor,         
+                              'start_task':simulator.start_task,         
+                              'stop_task':simulator.stop_task}
+
+plugins['cloudsim'] =       {'launch':cloudsim.launch,          
+                             'terminate':cloudsim.terminate,       
+                             'monitor':cloudsim.monitor,         
+                             'start_task':cloudsim.start_task,         
+                             'stop_task':cloudsim.stop_task}
+
+plugins['vpc_trio_prerelease'] =  {'launch':vpc_trio.launch_prerelease,          
+                                    'terminate':vpc_trio.terminate_prerelease,          
+                                    'monitor':vpc_trio.monitor_prerelease,         
+                                    'start_task':vpc_trio.start_simulator,         
+                                    'stop_task':vpc_trio.stop_task}
+
+plugins['simulator_prerelease'] =   {'launch':simulator.launch_prerelease,          
+                                     'terminate':simulator.terminate_prerelease,       
+                                     'monitor':simulator.monitor_prerelease,         
+                                     'start_task':simulator.start_simulator,         
+                                     'stop_task':simulator.stop_task}
 
 
 class LaunchException(Exception):
@@ -279,19 +308,25 @@ def start_task(constellation_name, task_id):
         current_task = cs.get_value('current_task')
         if current_task == '':
             task = cs.get_task(task_id)
-            if task['task_state'] == 'ready':
+            task_state = task['task_state']
+            if task_state == 'ready':
                 cs.set_value('current_task', task_id)
                 log('task_state running')
                 task['task_state'] = 'running'
                 cs.update_task(task_id, task) 
                 # no other task running, and task is ready
-                start_task(constellation_name, task)
-                
+                try:
+                    start_task(constellation_name, task)
+                except:
+                    pass
                 task['task_state'] = 'stopped'
                 cs.update_task(task_id, task)
                 log('task_state stopped')
                 cs.set_value('current_task', '')
-            
+            else:
+                log("Task is not ready (%s)" % task_state)
+        else:
+                log("can't run task %s while tasks %s is already running" % (task_id, current_task))
     except Exception, e:
         log("start_task error %s" % e)
         tb = traceback.format_exc()
@@ -303,7 +338,7 @@ def stop_task(constellation_name):
         log("stop_task %s" % (constellation_name))
         cs = ConstellationState(constellation_name)
         config = cs.get_value('configuration')
-        stop_task = plugins[config]['stop_task']
+        stop_task_fn = plugins[config]['stop_task']
         
         task_id = cs.get_value('current_task')
         if task_id != '':
@@ -311,8 +346,8 @@ def stop_task(constellation_name):
             task['task_state'] = 'stopping'
             log('task_state stopping')
             cs.update_task(task_id, task)
-            stop_task(constellation_name)
-            
+            stop_task_fn(constellation_name)
+            cs.set_value('current_task', '')
             
     except Exception, e:
         log("stop_task error %s" % e)
@@ -331,7 +366,7 @@ def monitor(username, config, constellation_name, credentials_ec2):
             try:
                 #log("monitor %s (%s)" % (constellation_name, counter) )
                 done = monitor(username, constellation_name, credentials_ec2, counter)
-                #log("monitor return value %s" % ( done) )
+                log("monitor return value %s" % ( done) )
                 counter += 1
             except Exception, e:
                 done = False
@@ -376,28 +411,6 @@ def async_terminate(username, constellation, credentials_ec2, constellation_dire
         log("Cloudsim async_terminate Error %s" % e)
 
 
-                
-#def async_start_simulator(username, constellation, machine, package_name, launch_file_name,launch_args ):
-#    
-#    
-#    log("async start simulator! user %s machine %s, pack %s launch %s args '%s'" % (username, machine, package_name, 
-#                                                                                    launch_file_name, launch_args ))
-#    try:
-#        p = multiprocessing.Process(target=start_simulator, args=(username,  constellation, machine, package_name, launch_file_name, launch_args ) )
-#        p.start()
-#    except Exception, e:
-#        log("Cloudsim daemon Error %s" % e)
-#
-#def async_stop_simulator(username, constellation, machine):
-#    log("async stop simulator! user %s constellation %s machine %s" % (username, constellation, machine))
-#    try:
-#        p = multiprocessing.Process(target=stop_simulator, args=(username,  constellation,  machine) )
-#        # jobs.append(p)
-#        p.start()
-#    except Exception, e:
-#        log("Cloudsim daemon Error %s" % e)
-    
-    
 def tick_monitor(tick_interval):
     count = 0
     red = redis.Redis()

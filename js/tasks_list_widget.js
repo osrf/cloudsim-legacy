@@ -264,11 +264,7 @@ function _set_task_style(style)
     // style.backgroundColor = "#f1f1f2";
 }
 
-function _set_state_widget(state_widget, task_state)
-{
-    state_widget.src = "/js/images/gray_status.png";
 
-}
 
 function _set_button_state(action_button, task_state)
 {
@@ -380,6 +376,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
 
     action_button.onclick =  function()
     {
+        console.log('start task '+ task_id);
         task = read_task(constellation_name, task_id);
         var state =task.task_state; 
         console.log(state);
@@ -429,6 +426,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     task_div.appendChild(task_buttons_div);
     task_div.appendChild(task_title_div);
     
+    var count = 0;
     var cb = function(event, data)
     {
     	
@@ -446,8 +444,46 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 task_title_div.innerHTML = task.task_title;
             }
             console.log('TASK _set_state_widget: ' + constellation_name + ': '+ task.task_state)
-            _set_state_widget(state_widget, task.task_state);
             
+//            starting_colors = ["/js/images/gray_status.png", "/js/images/yellow_status.png"];
+            
+//            stopping_colors = ["/js/images/gray_status.png", "/js/images/blue_status.png"];
+            
+            
+            state_widget.src = "/js/images/gray_status.png";
+            
+            if (task.task_state == "running")
+            {
+            	colors =  ["/js/images/gray_status.png", "/js/images/blue_status.png"];
+                var color = colors[count % colors.length];
+                state_widget.src = color;
+            }
+            
+            if (task.task_state == "ready")
+            {
+                state_widget.src = "/js/images/gray_status.png";
+            }
+            
+            if (task.task_state == "stopping")
+            {
+            	colors =  ["/js/images/blue_status.png", "/js/images/red_status.png"];
+                var color = colors[count % colors.length];
+                state_widget.src = color;
+            }
+                        
+            if (task.task_state == "stopped")
+            {
+                state_widget.src = "/js/images/red_status.png";
+            }
+            
+            
+            // _set_state_widget(state_widget, task.task_state, count);
+            
+            // the count is used to blink the status
+            if (count == 100) 
+                 count =0;
+             else 
+                 count ++;
         }
         else
         {

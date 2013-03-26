@@ -57,21 +57,23 @@ def get_ping_data(ping_str):
 
 def start_simulator(constellation, package_name, launch_file_name, launch_args, task_timeout):
 
+    log("1")
     constellation_dict = get_constellation_data(  constellation)
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_pair_name    = constellation_dict['sim_key_pair_name']
+    log("2")
     sim_ip    = constellation_dict['simulation_ip']
     sim_machine_name = constellation_dict['sim_machine_name']
     sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
     c = "bash cloudsim/start_sim.bash %s %s %s" %(package_name, launch_file_name, launch_args)
     cmd = c.strip()
     ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
+    log("3")
     r = ssh_sim.cmd(cmd)
     log('start_simulator %s' % r)
 
 
 def stop_simulator(constellation):
-    
     constellation_dict = get_constellation_data( constellation)
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_pair_name    = constellation_dict['sim_key_pair_name']
@@ -99,21 +101,22 @@ def start_task(constellation, task):
     start_simulator(constellation, task['ros_package'], task['ros_launch'], task['ros_args'], task['timeout'])
     
     
-    task_id = task['task_id']
-    log("** SIMULATOR *** task %s started" % task_id)
+
         
     
 def stop_task(constellation):
     
     log("** SIMULATOR *** STOP TASK %s ***" % constellation)
-    
-    log("** stop simulator ***")
-    stop_simulator(constellation)
+
     latency = 0 
     up = -1
     down = -1
     log("** TC COMMAND ***")
     run_tc_command(constellation, 'sim_machine_name', 'sim_key_pair_name', 'simulation_ip', latency, up, down)
+    
+    log("** stop simulator ***")
+    stop_simulator(constellation)
+    
 
 def monitor(username, constellation_name, credentials_ec2, counter):
     _monitor(username, constellation_name, credentials_ec2, "simulator", counter)
@@ -205,7 +208,10 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
 
     SIM_AWS_TYPE = 'cg1.4xlarge'
     SIM_AWS_IMAGE= 'ami-98fa58f1'
-
+    availability_zone = boto.config.get('Boto','ec2_region_name')
+    if availability_zone.startswith('eu-west'):
+        SIM_AWS_IMAGE    ='ami-fc191788'
+        
     open_vpn_script = get_open_vpn_single(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
     SIM_SCRIPT = get_drc_startup_script(open_vpn_script, OPENVPN_SERVER_IP, drc_package_name)
 

@@ -44,7 +44,7 @@ SIM_IP='10.0.0.51'
 OPENVPN_SERVER_IP='11.8.0.1'
 OPENVPN_CLIENT_IP='11.8.0.2'
 
-
+    
 def log(msg, channel = "trio"):
     try:
         
@@ -78,21 +78,18 @@ def create_vcp_internal_securtity_group(ec2conn, sg_name, constellation_name, vp
 
 def start_task(constellation, task):
     
-    log("** SIMULATOR *** start_task %s" % task)
+    log("** SIMULATOR *** start_task %s" % task['task_id'])
 
     latency = task['latency']
     up = task['uplink_data_cap']
     down = task['downlink_data_cap']
 
     log("** TC COMMAND ***")
-    run_tc_command(constellation, 'sim_machine_name', 'sim_key_pair_name', 'simulation_ip', latency, up, down)
+    run_tc_command(constellation, 'sim_machine_name', 'sim_key_pair_name', 'sim_ip', latency, up, down)
     
     log("** START SIMULATOR ***")
     start_simulator(constellation, task['ros_package'], task['ros_launch'], task['ros_args'], task['timeout'])
     
-    
-    task_id = task['task_id']
-    log("** SIMULATOR *** task %s started" % task_id)
         
     
 def stop_task(constellation):
@@ -109,21 +106,23 @@ def stop_task(constellation):
         
 
 def launch_prerelease(username, constellation_name, tags, credentials_ec2, constellation_directory ):
+    
+
+    
     # call _launch with small instance machine types with simple scripts and call  
     CONFIGURATION = "vpc_trio_prerelease"
     
     ROBOT_AWS_TYPE  = 'cg1.4xlarge'
-    ROBOT_AWS_IMAGE = 'ami-98fa58f1' 
+    
+    
     open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
     ROBOT_SCRIPT = get_drc_startup_script(open_vpn_script, ROBOT_IP, drc_package_name = "drcsim-prerelease")
 
 
     SIM_AWS_TYPE = 'cg1.4xlarge'
-    SIM_AWS_IMAGE= 'ami-98fa58f1'
     open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
     SIM_SCRIPT = get_drc_startup_script(open_vpn_script, SIM_IP, drc_package_name = "drcsim-prerelease")
     ROUTER_AWS_TYPE='t1.micro'
-    ROUTER_AWS_IMAGE="ami-137bcf7a"
     ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, 
                                           OPENVPN_CLIENT_IP,
                                           TS_IP,
@@ -132,14 +131,11 @@ def launch_prerelease(username, constellation_name, tags, credentials_ec2, const
     
     _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,
                         ROUTER_AWS_TYPE,
-                        ROUTER_AWS_IMAGE,
                         ROUTER_SCRIPT,
                         
                         ROBOT_AWS_TYPE,
-                        ROBOT_AWS_IMAGE,
                         ROBOT_SCRIPT,
                         
-                        SIM_AWS_IMAGE,
                         SIM_AWS_TYPE,
                         SIM_SCRIPT, 
                         CONFIGURATION)
@@ -149,30 +145,24 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     CONFIGURATION = "vpc_trio"
     
     ROBOT_AWS_TYPE  = 'cg1.4xlarge'
-    ROBOT_AWS_IMAGE = 'ami-98fa58f1' 
     open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
     ROBOT_SCRIPT = get_drc_startup_script(open_vpn_script, ROBOT_IP, "drcsim")
     
     SIM_AWS_TYPE = 'cg1.4xlarge'
-    SIM_AWS_IMAGE= 'ami-98fa58f1'
     open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
     SIM_SCRIPT = get_drc_startup_script(open_vpn_script, SIM_IP, "drcsim")
     ROUTER_AWS_TYPE='t1.micro'
-    ROUTER_AWS_IMAGE="ami-137bcf7a"
     ROUTER_SCRIPT = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP,
                                           TS_IP, SIM_IP) 
     
     
     _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,
                         ROUTER_AWS_TYPE,
-                        ROUTER_AWS_IMAGE,
                         ROUTER_SCRIPT,
                         
                         ROBOT_AWS_TYPE,
-                        ROBOT_AWS_IMAGE,
                         ROBOT_SCRIPT,
                         
-                        SIM_AWS_IMAGE,
                         SIM_AWS_TYPE,
                         SIM_SCRIPT, 
                         CONFIGURATION)
@@ -212,20 +202,16 @@ def start_simulator(username, constellation_name, machine_name, package_name, la
         
         
 
-def stop_simulator(username, constellation_name, machine_name):
+def stop_simulator( constellation_name):
     log("vpc_trio stop_simulator")
     constellation_dict = get_constellation_data( constellation_name)
     constellation_directory = constellation_dict['constellation_directory']
     router_key_pair_name    = constellation_dict['router_key_pair_name']
     router_ip    = constellation_dict['router_public_ip']
-    
-    try:
-        cmd = "bash cloudsim/stop_sim.bash"
-        ssh_router = SshClient(constellation_directory, router_key_pair_name, 'ubuntu', router_ip)
-        r = ssh_router.cmd(cmd)
-        log('stop_simulator %s' % r)
-    except Exception, e:
-        log('stop_simulator error %s' % e)
+    cmd = "bash cloudsim/stop_sim.bash"
+    ssh_router = SshClient(constellation_directory, router_key_pair_name, 'ubuntu', router_ip)
+    r = ssh_router.cmd(cmd)
+    log('stop_simulator %s' % r)
 
  
 def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION):
@@ -274,18 +260,27 @@ def _launch(username,
             constellation_directory, 
             
             ROUTER_AWS_TYPE,
-            ROUTER_AWS_IMAGE,
             ROUTER_SCRIPT,
             
             ROBOT_AWS_TYPE,
-            ROBOT_AWS_IMAGE,
             ROBOT_SCRIPT,
             
-            SIM_AWS_IMAGE,
+
             SIM_AWS_TYPE,
             SIM_SCRIPT,
             
             CONFIGURATION):
+
+
+    SIM_AWS_IMAGE    = 'ami-98fa58f1'
+    ROBOT_AWS_IMAGE  = 'ami-98fa58f1'
+    ROUTER_AWS_IMAGE = "ami-137bcf7a"
+    
+    availability_zone = boto.config.get('Boto','ec2_region_name')
+    if availability_zone.startswith('eu-west'):
+        SIM_AWS_IMAGE    ='ami-fc191788'
+        SIM_AWS_IMAGE    ='ami-fc191788'
+        ROUTER_AWS_IMAGE = 'ami-f2191786'
 
     log("new trio constellation: %s" % constellation_name) 
        
