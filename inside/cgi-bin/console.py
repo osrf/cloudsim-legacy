@@ -60,34 +60,10 @@ page =  """<!DOCTYPE html>
             $('.admin_only').show();
         }
         
-        // create_server_monitor_widget("server_monitor_div");
-        add_cloud_credentials_widget("credentials_div");
-        add_users_admin_widget("users_div");
-        
         create_constellation_launcher_widget("launcher_div");
         create_constellations_widget("constellations_div");
         
-        setTimeout(constellation_update , 500);
-        setTimeout(users_update , 1500);
-        
-    }
-    
-    function users_update()
-    {
-        try
-        {
-            var callback = function(str_data)
-            {
-                var users = eval( '(' + str_data + ')' );
-                $.publish('/users',users);
-                setTimeout(users_update , 1500);
-            };
-        }
-        catch(err)
-        {
-            console.log("update error: " + err.messagae);
-        }
-        async_get_users(callback);
+        setTimeout(constellation_update , 500);        
     }
     
     function constellation_update()
@@ -118,11 +94,8 @@ page =  """<!DOCTYPE html>
     </script>
     
     
-    
 </head>
 <body onload = "on_load_page()">
-
-
 
     <div style="float:left;">
         <!-- img src="/js/images/osrf.png" width="200px"/ -->
@@ -136,29 +109,15 @@ page =  """<!DOCTYPE html>
 
 <div style="float:right;">
 
-Welcome, """ + email + """<br>
-<a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-<div class="admin_only" style="display:none;">
-    <a href="/cloudsim/inside/cgi-bin/admin_download">SSH key download</a><br>
+Welcome, """ + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
+<div class="admin_only" style="display:none; padding: 20px 0px 0px 0px;" align="right">
+    <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
 </div>
 </div>    
 
 
 <div style="width:100%; float:left;"><br><hr><br></div>
 
-    
-    <div class="admin_only" style="display:none;" >
-
-        <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">
-        </div>
-
-        <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
-        </div>
-
-    </div>
-        
-
-    
     <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  background-color:#f1f1f2;">
     </div>
     
@@ -167,10 +126,7 @@ Welcome, """ + email + """<br>
 
 
 <div id="footer" style="width:100%; float:left; ">
-
-
-
-    
+   
     <br>
     <hr>
     
@@ -182,9 +138,6 @@ Welcome, """ + email + """<br>
      <img src="/js/images/osrf-pos-horz-cmyk.png" height="30px"/>
     </div>
 </div>
-
-
-
 
     
 </body>

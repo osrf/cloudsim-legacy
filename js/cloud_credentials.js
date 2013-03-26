@@ -15,7 +15,7 @@ function add_cloud_credentials_widget(place_holder_div_name)
     
     str += '<button type="button" onclick="_cred_click(\'';
     str += place_holder_div_name;
-    str += '\');">Override</button>';
+    str += '\');">Override</button><br><br>Set new AWS credentials and availability zone. Those changes will be applied on the new constellations';
     
     launch_div.innerHTML = str;
     console.log('cloud_credentials_on_load_page:' +  place_holder_div_name);
