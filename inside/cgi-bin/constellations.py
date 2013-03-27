@@ -23,6 +23,25 @@ def _domain(email):
     domain = email.split('@')[1]
     return domain
 
+
+def clean_constellation_data(constellation):
+    """
+    Remove data from the constellation to avoid cheating in the VRC
+    """
+    constellation.pop("constellation_directory")
+    # remove tasks data 
+    tasks = constellation.pop('tasks')
+    # log("clean %s" % constellation['constellation_name'])
+    # and replace with a censored version
+    constellation['tasks'] = []
+    for task in tasks:
+        t = {'task_title':task['task_title'], 
+             'task_state': task['task_state'],
+             'task_id' : task['task_id']}
+        constellation['tasks'].append(t)
+        
+    return constellation
+
 def get_constellation(email, constellation_name):
 
     try:
@@ -30,28 +49,27 @@ def get_constellation(email, constellation_name):
        
         s = r.get(key)
         c = json.loads(s)
-        log("c %s" % c)
         
         domain = _domain(c['username'])
         authorised_domain = _domain(email)
-        
-        x = None
+                
         if domain == authorised_domain:
-            x = c
-        return x
-    except:
+            constellation = clean_constellation_data(c)
+            return constellation
+    except Exception, e:
+        log("Get const error: %s" % e)
         return None
+    return None
 
-def list_constellation_names(email):
+def list_constellations(email):
     constellations = []
     for key in r.keys():
-        
         toks = key.split('cloudsim/')
         if len(toks) == 2:
             constellation_name = toks[1]
             c = get_constellation(email, constellation_name)
             if c:
-                log(constellation_name)
+                #log(constellation_name)
                 constellations.append(c )
     return constellations          
 
@@ -79,23 +97,20 @@ print("\n")
 
 if method == 'GET':
     s = None
-    log("Constellations")
+    # log("[GET] Constellations")
     try:    
         
         constellation = get_constellation_from_path()
-        
-        
+
         if len(constellation) > 0:
             domain = _domain(email)
             key = "cloudsim/"+ constellation
             s = r.get(key)
         else:
-            log("listing all constellations")
-            l = list_constellation_names(email)
+            # log("listing all constellations")
+            l = list_constellations(email)
             s = json.dumps(l)
-            
-        
-            
+
     except Exception, e:
         s = "%s" % e
         

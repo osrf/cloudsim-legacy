@@ -21,19 +21,16 @@ if['command'] == "cloudseed":
     d['key'] = form.getfirst('key')
     d['secret'] = form.getfirst('secret')
 
-if d['command'] == 'start_simulator':
+if d['command'] == 'start_task':
     d['constellation'] = form.getfirst('constellation')
-    d['machine'] = form.getfirst('machine')
-    d['package_name'] = form.getfirst('package')
-    d['launch_file_name'] = form.getfirst('launch_file_name')
-    d['launch_args'] = form.getfirst('launch_args', default = '')
+    d['task_id'] = form.getfirst('task_id')
+ 
+if d['command'] == 'stop_task':
+    d['constellation'] = form.getfirst('constellation')
+    # d['task_id'] = form.getfirst('task_id')
 
-if d['command'] == 'stop_simulator':
-    d['constellation'] = form.getfirst('constellation')
-    d['machine'] = form.getfirst('machine')
 
 s = dumps(d)
-
 redis_client = redis.Redis()
 redis_client.publish('cloudsim_cmds', s)
 

@@ -3,14 +3,15 @@ from __future__ import print_function
 import unittest
 import os
 import time
-import commands
 import zipfile
+from shutil import copyfile
 
 import boto
 from boto.pyami.config import Config as BotoConfig
 import redis
 import logging
 
+from launch_utils.traffic_shapping import  run_tc_command
 
 from launch_utils import get_unique_short_name
 from launch_utils import wait_for_multiple_machines_to_terminate
@@ -20,19 +21,22 @@ from launch_utils import get_constellation_data
 from launch_utils import SshClient
 from launch_utils import get_ssh_cmd_generator, empty_ssh_queue # task_list
 from launch_utils import ConstellationState # launch_db
-from launch_utils.launch_events import parse_dpkg_line
+
 
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_drc_startup_script,\
     get_open_vpn_single, create_openvpn_client_cfg_file, create_vpn_connect_file,\
     create_ros_connect_file, create_ssh_connect_file
-from launch_utils.launch import LaunchException, aws_connect
+from launch_utils.launch import LaunchException, aws_connect, get_amazon_amis
 
 from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
 from launch_utils.monitoring import LATENCY_TIME_BUFFER, record_ping_result,\
-    machine_states, get_aws_states
-    
+    machine_states, update_machine_aws_states, constellation_is_terminated,\
+    monitor_launch_state, monitor_simulator, monitor_cloudsim_ping,\
+    get_ssh_client
+
+
 
 def log(msg, channel = "simulator"):
     try:
@@ -51,23 +55,25 @@ def get_ping_data(ping_str):
 
 
 
-def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
+def start_simulator(constellation, package_name, launch_file_name, launch_args, task_timeout):
 
+    log("1")
     constellation_dict = get_constellation_data(  constellation)
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_pair_name    = constellation_dict['sim_key_pair_name']
+    log("2")
     sim_ip    = constellation_dict['simulation_ip']
     sim_machine_name = constellation_dict['sim_machine_name']
     sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
     c = "bash cloudsim/start_sim.bash %s %s %s" %(package_name, launch_file_name, launch_args)
     cmd = c.strip()
     ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
+    log("3")
     r = ssh_sim.cmd(cmd)
     log('start_simulator %s' % r)
 
 
-def stop_simulator(username, constellation, machine):
-    
+def stop_simulator(constellation):
     constellation_dict = get_constellation_data( constellation)
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_pair_name    = constellation_dict['sim_key_pair_name']
@@ -79,6 +85,38 @@ def stop_simulator(username, constellation, machine):
     r = ssh_sim.cmd(cmd)
     log('stop_simulator %s' % r)
 
+
+def start_task(constellation, task):
+    
+    log("** SIMULATOR *** start_task %s" % task)
+
+    latency = task['latency']
+    up = task['uplink_data_cap']
+    down = task['downlink_data_cap']
+
+    log("** TC COMMAND ***")
+    run_tc_command(constellation, 'sim_machine_name', 'sim_key_pair_name', 'simulation_ip', latency, up, down)
+    
+    log("** START SIMULATOR ***")
+    start_simulator(constellation, task['ros_package'], task['ros_launch'], task['ros_args'], task['timeout'])
+    
+    
+
+        
+    
+def stop_task(constellation):
+    
+    log("** SIMULATOR *** STOP TASK %s ***" % constellation)
+
+    latency = 0 
+    up = -1
+    down = -1
+    log("** TC COMMAND ***")
+    run_tc_command(constellation, 'sim_machine_name', 'sim_key_pair_name', 'simulation_ip', latency, up, down)
+    
+    log("** stop simulator ***")
+    stop_simulator(constellation)
+    
 
 def monitor(username, constellation_name, credentials_ec2, counter):
     _monitor(username, constellation_name, credentials_ec2, "simulator", counter)
@@ -92,33 +130,24 @@ def _monitor( username,
              credentials_ec2, 
              CONFIGURATION,  
              counter):
-    
+
     time.sleep(1)
-    constellation = ConstellationState( constellation_name)
-    
-    constellation_state = None
-    try:
-        
-        constellation_state = constellation.get_value("constellation_state") 
-        # log("constellation %s state %s" % (constellation_name, constellation_state) )
-        if constellation_state == "terminated":
-            log("constellation_state terminated for  %s " % constellation_name)
-            # constellation.expire(30)
-            return True
-    except:
-        log("Can't access constellation  %s data" % constellation_name)
-        # constellation.expire(30)
+    if constellation_is_terminated(constellation_name):
         return True
     
+    constellation = ConstellationState( constellation_name)
+   
     simulation_state = constellation.get_value('simulation_state')
-    sim_machine_name = constellation.get_value('sim_machine_name')
-
-    sim_state_index = machine_states.index(simulation_state)
-    aws_ids = {}
+    update_machine_aws_states(credentials_ec2, constellation_name, {'simulation_aws_id':"simulation_aws_state"}) 
     
-    if constellation.has_value('simulation_aws_id'):
-        aws_ids["sim"] = constellation.get_value('simulation_aws_id')
+    ssh_sim = get_ssh_client(constellation_name, simulation_state,'simulation_ip', 'sim_key_pair_name' )
 
+    monitor_cloudsim_ping(constellation_name, 'simulation_ip', 'simulation_latency')
+    monitor_launch_state(constellation_name, ssh_sim, simulation_state, "bash cloudsim/dpkg_log_sim.bash", 'simulation_launch_msg')
+    
+    monitor_simulator(constellation_name, ssh_sim)
+
+<<<<<<< local
     if len(aws_ids):
         ec2conn = aws_connect(credentials_ec2)[0]
         aws_states = get_aws_states(ec2conn, aws_ids)
@@ -161,6 +190,9 @@ def _monitor( username,
     return False
 
 
+=======
+    return False #log("monitor not done")
+>>>>>>> other
 
 
 def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
@@ -183,7 +215,6 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     constellation.set_value('simulation_latency','[]')
     constellation.set_value('constellation_directory', constellation_directory)
 
-    
     constellation.set_value('username', username)
     sim_machine_name = "simulator_"+ constellation_name
     constellation.set_value('sim_machine_name', sim_machine_name)
@@ -212,12 +243,13 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     sim_key_pair_name = 'key-sim-%s'%(constellation_name)
     constellation.set_value('sim_key_pair_name', sim_key_pair_name)
     key_pair = ec2conn.create_key_pair(sim_key_pair_name)
-    key_pair.save(sim_machine_dir)
+    key_pair.save(constellation_directory)
 
     roles_to_reservations ={}    
 
-    SIM_AWS_TYPE = 'cg1.4xlarge'
-    SIM_AWS_IMAGE= 'ami-98fa58f1'
+    amis = get_amazon_amis(credentials_ec2)
+    aws_machine_type = 'cg1.4xlarge'
+    aws_disk_image    = amis['ubuntu_1204_x64_cluster']
 
     open_vpn_script = get_open_vpn_single(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
     SIM_SCRIPT = get_drc_startup_script(open_vpn_script, OPENVPN_SERVER_IP, drc_package_name)
@@ -228,8 +260,8 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
         constellation.set_value('simulation_launch_msg', "booting")
         
         # start a new machine, using the AWS api via the boto library
-        res = ec2conn.run_instances( image_id       = SIM_AWS_IMAGE, 
-                                     instance_type  = SIM_AWS_TYPE,
+        res = ec2conn.run_instances( image_id       = aws_disk_image, 
+                                     instance_type  = aws_machine_type,
                                      #subnet_id      = subnet_id,
                                      #private_ip_address=SIM_IP,
                                      security_group_ids=[sim_security_group_id],
@@ -325,7 +357,7 @@ timeout 5 gztopic list
     
     """ 
     ssh_sim.create_file(ping_gazebo, "cloudsim/ping_gazebo.bash")
-    
+
 
     hostname = sim_ip
     file_content = create_openvpn_client_cfg_file(hostname, client_ip = OPENVPN_CLIENT_IP, server_ip = OPENVPN_SERVER_IP)
@@ -347,6 +379,7 @@ timeout 5 gztopic list
         f.write(file_content)
     
     key_filename = sim_key_pair_name + '.pem'
+    copyfile(os.path.join(constellation_directory, key_filename), sim_machine_dir)
     fname_ssh_key =  os.path.join(sim_machine_dir, key_filename)
     os.chmod(fname_ssh_key, 0600)
     
@@ -478,16 +511,14 @@ def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, con
         error_msg += "<b>Simulator security group</b>: %s<br>" % e
         constellation.set_value('error', error_msg)        
         log("error cleaning up sim security group %s: %s" % (security_group_id, e))       
-    
-    constellation.set_value('constellation_state', 'terminated')
-    constellation.expire(30)
+
 
     
 
 class SimulatorCase(unittest.TestCase):
-    def atest(self):
+    def test(self):
         user = 'hugo@osrfoundation.org'
-        const = 'cxdbcf5cf8'
+        const = 'cxb49a97c4'
         cred = get_boto_path()
         
         monitor(user, const, cred, 1)

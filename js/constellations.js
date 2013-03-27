@@ -1,45 +1,12 @@
 
-
-
 function create_constellations_widget(div_name)
 {
-    console.log("constellations_on_load_page " + div_name);
+    console.log("create_constellations_widget " + div_name);
     var div = document.getElementById(div_name);
     
     
     var str = "<h2>Constellations</h2>";
-    str += '<div id="task-view-form" title="Task properties">';
-    //str += '<p>Hola</p>';
-    str += '<b>Simulation properties</b><br>';
-    str += 'ROS Package<br><input type="text" name="package"></input><br>';
-    str += 'Launch file<br><input type="text" name="launch"></input><br>';
-    str += 'Arguments<br><input type="text" name="args"></input><br>';
-    str += '<b>Network properties</b><br>';
-    str += 'Target latency (ms)<br><input type="text" name="latency"></input><br>';
-    str += '</div>';
-
-//    str += '<div id="task-add-form" title="Add task">';
-//    str += '<input type="text"></input>'
-//    str += '</div>';
-
     div.innerHTML = str;
-
-//    var task_form_div = document.createElement("div");
-//    task_form_div.id = "task-add-form";
-//    task_form_div.title = "Add task";
-//
-//    var ipack = document.createElement("input"); //input element, text
-//
-//    var txtNode = document.createTextNode("Hello");
-//    ipack.setAttribute('type',"text");
-//    ipack.setAttribute('name',"package");
-//    
-//    task_form_div.appendChild(txtNode);
-//    task_form_div.appendChild(ipack);
-//    
-//    div.appendChild(task_form_div);
-    
-
 
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name)
@@ -56,50 +23,10 @@ function create_constellations_widget(div_name)
             }
         }
     });
-
-    // initialise the form that shows the tasks properties
-    $( "#task-view-form" ).dialog({
-      autoOpen: false,
-      height: 400,
-      width: 350,
-      modal: true,
-      buttons: {
-         "Save": function() {
-         var dlg = document.querySelector("#task-view-form");
-         var inputs = dlg.querySelectorAll("input");
-         var task_data = {
-            'ros_package' : inputs[0].value,
-            'launch' : inputs[1].value,
-            'args' : inputs[2].value,
-            'latency' : inputs[3].value
-         }
-//         var ros_package = inputs[0].value;
-//         var launch = inputs[1].value;
-//         var args = inputs[2].value;
-//         var latency = inputs[3].value;
-         
-         alert(task_data.ros_package + ", " + task_data.launch + ", " + task_data.args  + ", " + task_data.latency);
-         
-         $( this ).dialog( "close" );
-          }
-        },
-        
-//        "Delete" : function() {
-//            alert("What the hell are you trying to do?");
-//        },
-        
-      //  Cancel: function() {
-      //    $( this ).dialog( "close" );
-      //  }
-      //	},
-      close: function() {
-       //    allFields.val( "" ).removeClass( "ui-state-error" );
-    	  console.log("gone");
-      }
-    });
 }
 
 
+<<<<<<< local
 
 //function get_constellation_names(div_name)
 //{
@@ -120,6 +47,9 @@ function create_constellations_widget(div_name)
 //}
 
 function insert_constellation_div(div_name, configuration_name, constellation_name, username, gmt)
+=======
+function insert_constellation_div(div_name, configuration_name, constellation_name)
+>>>>>>> other
 {
     var div = document.getElementById(div_name);
     var nodes = div.childNodes;
@@ -150,6 +80,7 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     _set_const_style(const_div.style);
     
     var top_div = document.createElement("div");
+    
     top_div.id = "top";
     
     var title_str = " <h3 style=' margin-top:0; margin-bottom:0;'><table width='100%'><tr><td align='left'>";
@@ -161,14 +92,20 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     top_div.style.color = "white";
     top_div.style.marginTop = "0";
     top_div.style.color = "0";
-    
+    top_div.style.float = "left";
+    top_div.style.width = "100%";
+    top_div.style.height = "100%";
     top_div.innerHTML = title_str;
+    
     const_div.appendChild(top_div);
     
     // div.insertBefore(top_div, node);
+
+
     var msg_div = document.createElement("div");
     msg_div.id = "error";
-    msg_div.style.color = "red";
+    msg_div.style.color = "red"; 
+    msg_div.style.float = "left";
     const_div.appendChild(msg_div);
 
     var terminate_button= document.createElement('input');
@@ -187,20 +124,9 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     
     top_div.appendChild(terminate_button);
 
-    var add_task_button =document.createElement('input');
-    add_task_button.setAttribute('type','button');
-    add_task_button.setAttribute('value','Add task...');
-    add_task_button.onclick =  function()
-    {
-         $( "#task-view-form" ).dialog( "open" );
-    }
-    
-    // const_div.appendChild(add_task_button);
-    
 
-    var tasks_div = document.createElement("div");
-    tasks_div.id = "tasks";
-    const_div.appendChild(tasks_div);
+
+    //create_task_list_widget(const_div, constellation_name);
 
     var machines_div = document.createElement("div");
     machines_div.id = "machines";

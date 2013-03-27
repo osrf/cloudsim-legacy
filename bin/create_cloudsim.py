@@ -10,6 +10,7 @@ import os
 import tempfile
 import argparse
 
+
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -29,7 +30,7 @@ parser.add_argument('access_key', metavar='ACCESS-KEY', help='AWS access key')
 parser.add_argument('secret_key', metavar='SECRET-KEY', help='AWS secret key')
 parser.add_argument('ec2_zone', metavar='EC2-AVAILABILITY-ZONE',
                     help='Amazon EC2 availability zone',
-                    choices=['us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d'])
+                    choices=['us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d', 'eu-west-1a', 'eu-west-1b', 'eu-west-1c',])
 
 # Parse command line arguments
 args = parser.parse_args()
@@ -44,7 +45,8 @@ tmp_fname.close()
 cred = common.CloudCredentials(key, secret, fname=tmp_fname.name, ec2_region_name=ec2_zone)
 cred.save()
 
+auto_launch_constellation = None
 # Launch a cloudsim instance
-machine = cloudsim.cloudsim_bootstrap(username, tmp_fname.name)
+machine = cloudsim.cloudsim_bootstrap(username, tmp_fname.name, auto_launch_constellation)
 
 os.remove(tmp_fname.name)
