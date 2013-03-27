@@ -147,45 +147,7 @@ def _monitor( username,
     
     monitor_simulator(constellation_name, ssh_sim)
 
-<<<<<<< local
-    if len(aws_ids):
-        ec2conn = aws_connect(credentials_ec2)[0]
-        aws_states = get_aws_states(ec2conn, aws_ids)
-        constellation.set_value("simulation_aws_state", aws_states["sim"])
 
-    if sim_state_index >= machine_states.index('packages_setup'):
-        constellation_directory = constellation.get_value('constellation_directory')
-        sim_key_pair_name = constellation.get_value('sim_key_pair_name')
-        sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
-
-        sim_ip = constellation.get_value("simulation_ip")
-        ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
-
-        if simulation_state == 'packages_setup':
-            try:
-                dpkg_line = ssh_sim.cmd("bash cloudsim/dpkg_log_sim.bash")
-                simulation_package = parse_dpkg_line(dpkg_line)
-                constellation.set_value('simulation_launch_msg', simulation_package)
-            except Exception, e:
-                log("monitor: cloudsim/dpkg_log_sim.bash error: %s" % e )
-
-        o, ping_simulator = commands.getstatusoutput("ping -c3 %s" % sim_ip)
-        if o == 0:
-            sim_latency = constellation.get_value('simulation_latency')
-            sim_latency = record_ping_result(sim_latency, ping_simulator, LATENCY_TIME_BUFFER)
-            constellation.set_value('simulation_latency', sim_latency)
-            
-        if sim_state_index >= machine_states.index('running'):
-            constellation.set_value('simulation_launch_msg', "Complete")
-            gl_state = constellation.get_value("simulation_glx_state")
-            if gl_state == "running":
-                try:
-                    ping_gazebo = ssh_sim.cmd("bash cloudsim/ping_gazebo.bash")
-                    log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
-                    constellation.set_value("gazebo", "running")
-                except Exception, e:
-                    log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
-                    constellation.set_value("gazebo", "not running")
     #log("monitor not done")
     return False
 
