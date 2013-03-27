@@ -374,12 +374,8 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         $("#" + form_id ).dialog( "open" );
     };
 
-<<<<<<< local
-    
-    stop_button.onclick =  function()
-=======
+
     action_button.onclick =  function()
->>>>>>> other
     {
         console.log('start task '+ task_id);
         task = read_task(constellation_name, task_id);

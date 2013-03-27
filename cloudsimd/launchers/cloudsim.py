@@ -84,57 +84,7 @@ def monitor(username, constellation_name, credentials_ec2, counter):
 
     monitor_cloudsim_ping(constellation_name, 'simulation_ip', 'simulation_latency')
     monitor_launch_state(constellation_name, ssh_sim, simulation_state, "bash cloudsim/dpkg_log_sim.bash", 'simulation_launch_msg')
-    
-    #monitor_simulator(constellation_name, ssh_sim)
-
-<<<<<<< local
-    
-                
-    if sim_state_index >= machine_states.index('packages_setup'):
-        constellation_directory = constellation.get_value('constellation_directory')
-        sim_key_pair_name = constellation.get_value('sim_key_pair_name')
-        ssh_sim = SshClient(constellation_directory, sim_key_pair_name, 'ubuntu', sim_ip)
-        
-        if sim_state_index >= machine_states.index('running'):
-            launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "Complete")
-            
-        if simulation_state == 'packages_setup':
-            try:
-                simulation_package = ssh_sim.cmd("cloudsim/dpkg_log_sim.bash")
-                
-                launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "orange", simulation_package)
-            except Exception, e:
-                log("monitor: cloudsim/dpkg_log_sim.bash error: %s" % e )
-        
-        o, ping_simulator = commands.getstatusoutput("ping -c3 %s" % sim_ip)
-        if o == 0:
-            sim_latency = constellation.get_value('simulation_latency')
-            sim_latency = record_ping_result(sim_latency, ping_simulator, LATENCY_TIME_BUFFER)
-            constellation.set_value('simulation_latency', sim_latency)
-            
-        
-        if sim_state_index >= machine_states.index('running'):
-            try:
-                ping_gl = ssh_sim.cmd("bash cloudsim/ping_gl.bash")
-                log("cloudsim/ping_gl.bash = %s" % ping_gl )
-                gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "running")
-                
-            except Exception, e:
-                log("monitor: cloudsim/ping_gl.bash error %s" % e )
-                gl_event(username, CONFIGURATION, constellation_name, sim_machine_name, "red", "Not running")
-                
-            try:
-                ping_gazebo = ssh_sim.cmd("bash cloudsim/ping_gazebo.bash")
-                log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
-                simulator_event(username, CONFIGURATION, constellation_name, sim_machine_name, ping_gazebo)
-            except Exception, e:
-                log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
-    
-    #log("monitor not done")
-    return False
-=======
     return False #log("monitor not done")    
->>>>>>> other
 
 
 
@@ -335,25 +285,17 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
 #    print ("\t%s"% out)
 
     
-<<<<<<< local
-    log('setup Complete')
-=======
+
     if auto_launch_configuration:
         log("Launching a constellation of type %s" % auto_launch_configuration)
         ssh_sim.cmd("/home/ubuntu/cloudsim/launch.py %s %s" % (username, auto_launch_configuration) )
          
     log('setup complete')
->>>>>>> other
-    log("ssh -i %s ubuntu %s\n" % (key_filename, sim_ip) )
-    log("http://%s"% sim_ip)
-<<<<<<< local
+
     print ("\033[1;32mCloudSim ready. Visit http://%s \033[0m\n"% sim_ip)
     print ("Stop your CloudSim using the AWS console")
     print ("     http://aws.amazon.com/console/\n")
-           
-=======
 
->>>>>>> other
     constellation.set_value('constellation_state', 'running')
     log("provisioning done")
     
@@ -400,13 +342,9 @@ def terminate(username,  constellation_name, credentials_ec2, constellation_dire
     constellation.set_value('constellation_state', 'terminated')
     
 
-<<<<<<< local
-def cloudsim_bootstrap(username, credentials_ec2):
-    #print(__file__)
-=======
+
 def cloudsim_bootstrap(username, credentials_ec2, initial_constellation):
-    print(__file__)
->>>>>>> other
+
     constellation_name = get_unique_short_name('c')
     
     gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())

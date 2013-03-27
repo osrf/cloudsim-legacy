@@ -241,124 +241,13 @@ def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATI
     monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'simulation_latency')
     monitor_ssh_ping(constellation_name, ssh_router, ROBOT_IP, 'robot_latency')
     
-<<<<<<< local
-    constellation_directory = constellation.get_value('constellation_directory')
-    
-    router_state_index = machine_states.index(router_state)
-    sim_state_index = machine_states.index(simulation_state)
-    
-    
-    aws_ids = {}
-    if constellation.has_value('router_aws_id'):
-        aws_ids["router"] = constellation.get_value('router_aws_id')
-    if constellation.has_value('robot_aws_id'):
-        aws_ids["robot"] = constellation.get_value('robot_aws_id')
-    if constellation.has_value('simulation_aws_id'):
-        aws_ids["sim"] = constellation.get_value('simulation_aws_id')
-    
-    
-    if len(aws_ids):
-        ec2conn = aws_connect(credentials_ec2)[0]
-        aws_states = get_aws_states(ec2conn, aws_ids)
-        
-        constellation.set_value("router_aws_state", aws_states["router"]) 
-        constellation.set_value("simulation_aws_state", aws_states["sim"])
-        constellation.set_value("robot_aws_state", aws_states["robot"])
 
-    if router_state_index >= machine_states.index('packages_setup'):
-        
-        router_ip = constellation.get_value('router_public_ip')
-        router_key_pair_name = constellation.get_value('router_key_pair_name')
-        ssh_router = SshClient(constellation_directory, router_key_pair_name, 'ubuntu', router_ip)
-        
-        ping_robot = ssh_router.cmd("ping -c3 %s" % ROBOT_IP)
-        # latency_event(username, CONFIGURATION, constellation_name, robot_machine_name, mini, avg, maxi, mdev)
-        robot_latency = constellation.get_value('robot_latency')
-        robot_latency = record_ping_result(robot_latency, ping_robot, LATENCY_TIME_BUFFER)
-        constellation.set_value('robot_latency', robot_latency)
-        
-        ping_simulator = ssh_router.cmd("ping -c3 %s" % SIM_IP)
-        sim_latency = constellation.get_value('simulation_latency')
-        sim_latency = record_ping_result(sim_latency, ping_simulator, LATENCY_TIME_BUFFER)
-        constellation.set_value('simulation_latency', sim_latency)
-        
-        o, ping_router = commands.getstatusoutput("ping -c3 %s" % router_ip)
-        if o == 0:
-            router_latency = constellation.get_value('router_latency')
-            router_latency = record_ping_result(router_latency, ping_router, LATENCY_TIME_BUFFER)
-            constellation.set_value('router_latency', router_latency)
-        
-        if constellation_state == "running":
-            if router_state == "running":
-                constellation.set_value('router_launch_msg', "Complete")
-            
-            if robot_state == "running":
-                constellation.set_value('robot_launch_msg', "Complete")
-            
-            if simulation_state == "running":
-                constellation.set_value('simulation_launch_msg', "Complete")
-        
-        if router_state == 'packages_setup':
-            try:
-                dpkg_line = ssh_router.cmd("bash cloudsim/dpkg_log_router.bash")
-                #log("cloudsim/dpkg_log_router.bash = %s" % router_package )
-                router_package = parse_dpkg_line(dpkg_line) 
-                constellation.set_value('router_launch_msg', router_package)
-                
-            except Exception, e:
-                log("monitor: cloudsim/dpkg_log_router.bash error: %s" % e)
-       
-        if robot_state == 'packages_setup':
-            try:
-                dpkg_line = ssh_router.cmd("bash cloudsim/dpkg_log_robot.bash")
-                robot_package = parse_dpkg_line(dpkg_line)
-                #log("cloudsim/dpkg_log_robot.bash = %s" % robot_package )
-                constellation.set_value('robot_launch_msg', robot_package)
-            except Exception, e:
-                log("monitor: cloudsim/dpkg_log_robot.bash error: %s" % e)
-        
-        if simulation_state == 'packages_setup':
-            try:
-                dpkg_line = ssh_router.cmd("bash cloudsim/dpkg_log_sim.bash")
-                #log("cloudsim/dpkg_log_sim.bash = %s" % simulation_package )
-                simulation_package = parse_dpkg_line(dpkg_line) 
-                constellation.set_value('simulation_launch_msg', simulation_package)
-                
-            except Exception, e:
-                log("monitor: cloudsim/dpkg_log_sim.bash error: %s" % e )
-        
-        if sim_state_index >= machine_states.index('running'):
-            
-            gl_state = constellation.get_value("simulation_glx_state")
-            if gl_state == "running":
-                try:
-                    ping_gazebo = ssh_router.cmd("bash cloudsim/ping_gazebo.bash")
-                    log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
-                    constellation.set_value("gazebo", "running")
-                except Exception, e:
-                    log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
-                    constellation.set_value("gazebo", "not running")
-            
-            
-             
-            gl_state = constellation.get_value("simulation_glx_state")
-            if gl_state == "running":
-                try:
-                    ping_gazebo = ssh_router.cmd("bash cloudsim/ping_gazebo.bash")
-                    log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
-                    constellation.set_value("gazebo", "running")
-                except Exception, e:
-                    log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
-                    constellation.set_value("gazebo", "not running")
-            
-            return False
-=======
     monitor_cloudsim_ping(constellation_name, 'router_public_ip', 'simulation_latency')
            
     monitor_simulator(constellation_name, ssh_router)
                          
     return False # not done yet
->>>>>>> other
+
 
 
 
