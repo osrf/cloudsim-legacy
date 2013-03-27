@@ -55,13 +55,9 @@ page =  """<!DOCTYPE html>
 <script language="javascript">
 
     function on_load_page()
-    {
-        var user_info = """ + user_info + """;
-        if(user_info.role == "admin")
-        {
-            $('.admin_only').show();
-        }
-        
+    {        
+        $('.admin_only').show();
+                
         add_cloud_credentials_widget("credentials_div");
         add_users_admin_widget("users_div");
         
