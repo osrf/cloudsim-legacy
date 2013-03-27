@@ -47,9 +47,6 @@ function create_constellations_widget(div_name)
 //}
 
 function insert_constellation_div(div_name, configuration_name, constellation_name, username, gmt)
-=======
-function insert_constellation_div(div_name, configuration_name, constellation_name)
->>>>>>> other
 {
     var div = document.getElementById(div_name);
     var nodes = div.childNodes;

@@ -190,11 +190,6 @@ def _monitor( username,
     return False
 
 
-=======
-    return False #log("monitor not done")
->>>>>>> other
-
-
 def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
     _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,  "simulator", drc_package_name = "drcsim" )
 
