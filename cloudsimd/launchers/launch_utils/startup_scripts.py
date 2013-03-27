@@ -119,7 +119,7 @@ sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password_aga
 sudo apt-get -y install mysql-server
 
 # Install pandora console (needed for server)
-apt-get install php5 php5-curl mysql-client php5-snmp php5-gd php5-mysql php-db php5-xmlrpc php-gettext php5 curl graphviz dbconfig-common php5-ldap apache2
+apt-get -y install php5 php5-curl mysql-client php5-snmp php5-gd php5-mysql php-db php5-xmlrpc php-gettext php5 curl graphviz dbconfig-common php5-ldap apache2
 
 wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Debian_Ubuntu%20%28DEB%29/pandorafms.console_4.0.3-130118.deb?r=http%3A%2F%2Fwww.google.com%2Furl%3Fq%3Dhttp%253A%252F%252Fsourceforge.net%252Fprojects%252Fpandora%252Ffiles%252FPandora%252520FMS%2525204.0.3%252FDebian_Ubuntu%252520%252528DEB%252529%252Fpandorafms.console_4.0.3-130118.deb%252Fdownload%26sa%3DD%26sntz%3D1%26usg%3DAFQjCNH_XgMlgnQgJalqcGfLarJZO47pXQ&ts=1364237927&use_mirror=freefr' -O /tmp/pandora_console.deb
 
