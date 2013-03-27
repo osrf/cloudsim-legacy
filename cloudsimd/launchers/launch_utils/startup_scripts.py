@@ -156,7 +156,7 @@ wget 'http://downloads.sourceforge.net/project/pandora/Pandora%20FMS%204.0.3/Deb
 dpkg -i /tmp/wmi-client_0112-1.deb
 dpkg -i /tmp/pandora_server_4.0.3.deb
 sed -i -e 's:.*servername.*:servername router-server:' /etc/pandora/pandora_server.conf
-sed -i -e 's:dbpass.*:dbpass pass:' /etc/pandora/pandora_server.conf
+sed -i -e "s:dbpass.*:dbpass $MYSQL_PASS:" /etc/pandora/pandora_server.conf
 sed -i -e 's:dbuser.*:dbuser root:' /etc/pandora/pandora_server.conf
 
 /etc/init.d/tentacle_serverd start
