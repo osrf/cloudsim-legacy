@@ -36,9 +36,37 @@ from launchers.launch_utils.launch import aws_connect
 
 
 
+def launch_constellation(username, configuration, count =1):
+    """
+    Launches one (or count) constellation of a given configuration
+    """
+    r = redis.Redis()
+    for i in range(count):
+        time.sleep(0.1)
+        d = {}
+        d['username'] = username
+        d['command'] = 'launch'
+        d['configuration'] = configuration
+        s = json.dumps(d)
+        print(i, ")", s)
+        r.publish('cloudsim_cmds', s)
+        
+def terminate_all_constellations():
+    for x in get_constellation_names():
+        d = {}
+        d['username'] = 'hugo@osrfoundation.org'
+        d['command'] = 'terminate'
+        d['constellation'] = x
+        s = json.dumps(d)
+        time.sleep(0.5)
+        print("Terminate %s" % x)
+        r.publish('cloudsim_cmds', s)
+
+
 def del_constellations():
     """
-    Removes all constellations from the Redis db
+    Removes all constellations from the Redis db 
+    does not attempt to terminate them
     """
     r = redis.Redis()
     for k in r.keys():

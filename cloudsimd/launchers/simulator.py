@@ -27,7 +27,7 @@ from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_drc_startup_script,\
     get_open_vpn_single, create_openvpn_client_cfg_file, create_vpn_connect_file,\
     create_ros_connect_file, create_ssh_connect_file
-from launch_utils.launch import LaunchException, aws_connect
+from launch_utils.launch import LaunchException, aws_connect, get_amazon_amis
 
 from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
@@ -150,8 +150,6 @@ def _monitor( username,
     return False #log("monitor not done")
 
 
-
-
 def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
     _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,  "simulator", drc_package_name = "drcsim" )
 
@@ -172,7 +170,6 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     constellation.set_value('simulation_latency','[]')
     constellation.set_value('constellation_directory', constellation_directory)
 
-    
     constellation.set_value('username', username)
     sim_machine_name = "simulator_"+ constellation_name
     constellation.set_value('sim_machine_name', sim_machine_name)
@@ -202,16 +199,13 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     constellation.set_value('sim_key_pair_name', sim_key_pair_name)
     key_pair = ec2conn.create_key_pair(sim_key_pair_name)
     key_pair.save(constellation_directory)
-    
-    
+
     roles_to_reservations ={}    
 
-    SIM_AWS_TYPE = 'cg1.4xlarge'
-    SIM_AWS_IMAGE= 'ami-98fa58f1'
-    availability_zone = boto.config.get('Boto','ec2_region_name')
-    if availability_zone.startswith('eu-west'):
-        SIM_AWS_IMAGE    ='ami-fc191788'
-        
+    amis = get_amazon_amis(credentials_ec2)
+    aws_machine_type = 'cg1.4xlarge'
+    aws_disk_image    = amis['ubuntu_1204_x64_cluster']
+
     open_vpn_script = get_open_vpn_single(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
     SIM_SCRIPT = get_drc_startup_script(open_vpn_script, OPENVPN_SERVER_IP, drc_package_name)
 
@@ -221,8 +215,8 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
         constellation.set_value('simulation_launch_msg', "booting")
         
         # start a new machine, using the AWS api via the boto library
-        res = ec2conn.run_instances( image_id       = SIM_AWS_IMAGE, 
-                                     instance_type  = SIM_AWS_TYPE,
+        res = ec2conn.run_instances( image_id       = aws_disk_image, 
+                                     instance_type  = aws_machine_type,
                                      #subnet_id      = subnet_id,
                                      #private_ip_address=SIM_IP,
                                      security_group_ids=[sim_security_group_id],

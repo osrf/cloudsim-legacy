@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from constants import BOTO_CONFIG_FILE_USEAST
+
 
 
 class CloudCredentials(object):
@@ -12,9 +12,8 @@ class CloudCredentials(object):
     def __init__(self,
                  aws_access_key_id,
                  aws_secret_access_key,
-                 ec2_region_name='us-east-1b',
-                 ec2_region_endpoint='ec2.amazonaws.com',
-                 fname=BOTO_CONFIG_FILE_USEAST):
+                 ec2_region_name,
+                 fname):
         """
         Constructor.
         @param aws_access_key_id: uniquely identifies user who owns account
@@ -28,7 +27,11 @@ class CloudCredentials(object):
         @param fname: boto config file name
         @type fname: string
         """
-
+        
+        ec2_region_endpoint='ec2.amazonaws.com',
+        if ec2_region_name.startswith('eu-west'):
+            ec2_region_endpoint = 'ec2.eu-west-1.amazonaws.com'
+            
         self.fname = fname
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key

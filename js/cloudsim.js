@@ -21,6 +21,7 @@ function create_constellation(div_name, configuration, constellation)
 
     if(configuration == "vpc_trio" || configuration == "vpc_micro_trio" || configuration == "vpc_trio_prerelease" )
     {
+    	create_task_list_widget(constellation_div, constellation);
     	// field computer
         { 
             var div =  constellation_div.querySelector("#machines" );
@@ -67,6 +68,7 @@ function create_constellation(div_name, configuration, constellation)
     
     if(configuration == "simulator" || configuration == "simulator_prerelease")
     {
+        create_task_list_widget(constellation_div, constellation);
         var machine_name = "simulator_" +constellation;
     	
         

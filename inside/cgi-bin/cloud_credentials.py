@@ -11,13 +11,15 @@ from common import  authorize
 import urlparse
 from common import CloudCredentials
 import urllib2
+from common.constants import get_cloudsim_config
 
 cgitb.enable()
 
 
 def log(msg):
     red = redis.Redis()
-    red.publish("cloudsim_log", "cloud_credentials.py > %s" % msg )
+    s = "cloud_credentials.py > %s" % msg 
+    red.publish("cloud_credentials", s)
     
 
 email = authorize("admin")
@@ -26,7 +28,12 @@ q_string= os.environ['QUERY_STRING']
 log("query string %s" % (q_string) )
 
 
-try:    
+try:
+    
+    # get the location of the AWS credentials from the cloudsim daemon
+    config = get_cloudsim_config()
+    boto_file  = config['boto_path']
+    
     d = urlparse.parse_qs(q_string)
     
     r = {}
@@ -39,10 +46,13 @@ try:
     #
     print('Content-type: application/json')
     print("\n")
-    #
+    
     if method == 'PUT':
         log("new credentials")
-        cloud = CloudCredentials(r['aws_access_key_id'], r['aws_secret_access_key'], ec2_region_name = r['aws_availablity_zone'] )
+        cloud = CloudCredentials(r['aws_access_key_id'], 
+                                 r['aws_secret_access_key'], 
+                                 ec2_region_name = r['aws_availablity_zone'],
+                                 fname =  boto_file)
         
         if cloud.validate():
             cloud.save()
@@ -51,7 +61,7 @@ try:
             
         else:
             r['msg'] = "The credentials are not valid."
-
+            
     if method == 'POST':
         # not supported
         pass
@@ -66,7 +76,9 @@ try:
     
     jr = json.dumps(r)
     log(jr)
-    print(jr)
+
+    print(jr)       
+
     
 except Exception, e:
     log(e)

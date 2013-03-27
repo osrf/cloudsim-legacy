@@ -11,10 +11,28 @@ class LaunchException(Exception):
 
 def aws_connect(credentials_ec2):    
     boto.config = BotoConfig(credentials_ec2)
-    # boto.config = boto.pyami.config.Config(credentials_ec2)
     ec2conn = boto.connect_ec2()
     vpcconn =  boto.connect_vpc()    
     return ec2conn, vpcconn
+
+def get_amazon_amis(credentials_ec2):
+    """
+    AMIs are the Amazon disk images. They have unique ids, and those ids vary
+    in different regions
+    """
+    boto.config = BotoConfig(credentials_ec2)
+    availability_zone = boto.config.get('Boto','ec2_region_name')
+
+    amis = {}
+    if availability_zone.startswith('eu-west'):
+        amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
+        amis['ubuntu_1204_x64'] = 'ami-f2191786'
+        
+    if availability_zone.startswith('us-east'):
+        amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
+        amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
+
+    return amis
 
 def get_unique_short_name(prefix = 'x'):
     s = str(uuid.uuid1()).split('-')[0]
