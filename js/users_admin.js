@@ -53,7 +53,7 @@ function _get_user_div_str(users_div_name, users)
     
     str += '<button type="button" onclick="_add_click(';
     str += "'" +  users_div_name + "'";
-    str +=');">Add user</button>';
+    str +=');">Add user</button><br><br>Add or remove users. Do not remove the last remaining administrative user!';
     return str;
 }
 
