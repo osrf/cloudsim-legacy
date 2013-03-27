@@ -26,27 +26,32 @@ function get_machine_names(div_name, constellation)
 }
 
 function _get_machine_div_str(machine_name)
-{
+{	
     var str = "";
     str += '<div id="top" style="width = 100%; float:left; border-top-left-radius:10px; border-top-right-radius:15px; background-color:#44497a; width:100%; float:left;" ">' // background-color:#FFA500;
-    str +=    "<h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
-    str +=    machine_name + "</center></h3>";    
-    str += '</div>' // top
+    str += "<h3 style='margin-bottom:0; margin-top:0; color:white'>";
+    str += "<table width='100%'>";
+    str += "<tr><td align='left'>" + machine_name + "</td><td align='right'></td></tr>";
+    str += "<tr><td align='left'><form method='get'><button type='submit' disabled>Download Keys</button></form></td><td align='right'></td></tr>";
+    str += '</table>';    
+    str += '</h3></div>' // top
     str += '<div id="widgets"';
     str += _get_machine_widgets_style();
     str +='></div>'; // widgets
     return str;
 }
 
-function create_machine(div, machine_name)
+function create_machine(div, machine_name )
 {
 	var new_div = document.createElement("div");
-    new_div.id = machine_name;    
+    new_div.id = machine_name;
+    
     _set_mach_style(new_div.style);
     
     var str =  _get_machine_div_str(machine_name);
     new_div.innerHTML = str;
     div.insertBefore(new_div, null);
+    
     return new_div;	
 }
 

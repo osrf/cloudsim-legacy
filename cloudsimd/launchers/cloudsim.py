@@ -114,7 +114,7 @@ def monitor(username, constellation_name, credentials_ec2, counter):
         ssh_sim = SshClient(constellation_directory, sim_key_pair_name, 'ubuntu', sim_ip)
         
         if sim_state_index >= machine_states.index('running'):
-            launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "complete")
+            launch_event(username, CONFIGURATION, constellation_name, sim_machine_name, "blue", "Complete")
             
         if simulation_state == 'packages_setup':
             try:
@@ -341,7 +341,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
 #    out = machine.ssh_wait_for_ready('/var/www-cloudsim-auth/users')
 #    print ("\t%s"% out)
     
-    log('setup complete')
+    log('setup Complete')
     log("ssh -i %s ubuntu %s\n" % (key_filename, sim_ip) )
     log("http://%s"% sim_ip)
            
