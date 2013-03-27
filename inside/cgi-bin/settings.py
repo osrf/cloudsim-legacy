@@ -21,6 +21,15 @@ if method != 'GET':
 email = authorize()
 udb = UserDatabase()
 role = udb.get_role(email)
+
+if role != 'admin':
+    print_http_header()
+    print("<title>Access Denied</title>")
+    print("<h1>Access Denied</h1>")
+    print("<h2>Sorry, but you're not an administrator</h2>")
+    print("Try <a href=\"/cloudsim/inside/cgi-bin/logout\">logging out</a>.  For assistance, contact <a href=mailto:%s>cloudsim-info@osrfoundation.org</a>")
+    exit(0)
+
 version = get_cloudsim_version_txt()
 
 user_info = json.dumps({'user':email, 'role':role})
