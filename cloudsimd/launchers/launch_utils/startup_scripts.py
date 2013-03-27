@@ -139,12 +139,12 @@ cat << DELIM_PANDORA > /var/www/pandora_console/include/config.php
 \$config["dbhost"] = "localhost";              // DB Host
 \$config["homedir"] = "/var/www/pandora_console"; // Config homedir
 \$config["homeurl"] = "/pandora_console"; // Base URL
-?>
 
 error_reporting(E_ALL);
 
-$ownDir = dirname(__FILE__) . '/';
+\$ownDir = dirname(__FILE__) . '/';
 include ($ownDir . "config_process.php");
+?>
 DELIM_PANDORA
 
 rm /var/www/pandora_console/install.php
