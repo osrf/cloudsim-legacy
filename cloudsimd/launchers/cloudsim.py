@@ -55,7 +55,7 @@ def log(msg, channel = "cloudsim"):
         logging.info(msg)
     except:
         print("Warning: redis not installed.")
-    print("cloudsim log> %s" % msg)
+    #print("cloudsim log> %s" % msg)
 
 
 def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args, root_directory):
@@ -204,6 +204,13 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
         constellation.set_value("error", "red", "%s" % e)
         raise       
 
+    print ("##############################################")
+    print ("# Your CloudSim instance has been launched.  #")
+    print ("# It will take around 5-10 mins to be ready. #")
+    print ("# Your CloudSim's URL will appear here soon. #")
+    print ("#                Stay tuned!                 #")
+    print ("##############################################")
+
     
     # running_machines = wait_for_multiple_machines_to_run(ec2conn, roles_to_reservations, constellation, max_retries = 150, final_state = 'network_setup')
     running_machines = {} 
@@ -344,6 +351,9 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     log('setup Complete')
     log("ssh -i %s ubuntu %s\n" % (key_filename, sim_ip) )
     log("http://%s"% sim_ip)
+    print ("\033[1;32mCloudSim ready. Visit http://%s \033[0m\n"% sim_ip)
+    print ("Stop your CloudSim using the AWS console")
+    print ("http://aws.amazon.com/console/)\n")
            
     constellation.set_value('constellation_state', 'running')
     log("provisionning done")
@@ -401,7 +411,7 @@ def terminate(username,  constellation_name, credentials_ec2, constellation_dire
     
 
 def cloudsim_bootstrap(username, credentials_ec2):
-    print(__file__)
+    #print(__file__)
     constellation_name = get_unique_short_name('c')
     
     gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())

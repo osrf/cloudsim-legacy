@@ -11,7 +11,7 @@ def log(msg):
         logging.info(msg)
     except:
         print("Warning: redis not installed.")
-    print("cloudsim log> %s" % msg)
+    # print("cloudsim log> %s" % msg)
 
 """
 Removes the key for this ip, in case we connect to a different machine with the

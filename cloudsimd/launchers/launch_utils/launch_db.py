@@ -15,7 +15,7 @@ def log(msg, channel = "launch"):
         logging.info(msg)
     except:
         print("Warning: redis not installed.")
-    print("cloudsim log> %s" % msg)
+    #print("cloudsim log> %s" % msg)
   
 
 def publish_event(username, type, data):
