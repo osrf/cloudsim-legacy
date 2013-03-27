@@ -115,8 +115,8 @@ chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 apt-get install -y snmp snmpd libtime-format-perl libxml-simple-perl libdbi-perl libnetaddr-ip-perl libhtml-parser-perl nmap traceroute libio-socket-inet6-perl libhtml-tree-perl libsnmp-perl snmp-mibs-downloader libio-socket-multicast-perl libsnmp-perl libjson-perl xprobe  libdbd-mysql-perl libxml-twig-perl
 
 export MYSQL_PASS=$(cat /dev/urandom | tr -cd "[:alnum:]" | head -c 32)
-sudo debconf-set-selections <<< "'mysql-server-5.5 mysql-server/root_password password \$MYSQL_PASS'"
-sudo debconf-set-selections <<< "'mysql-server-5.5 mysql-server/root_password_again password \$MYSQL_PASS'"
+sudo debconf-set-selections <<< "'mysql-server-5.5 mysql-server/root_password password $MYSQL_PASS'"
+sudo debconf-set-selections <<< "'mysql-server-5.5 mysql-server/root_password_again password $MYSQL_PASS'"
 sudo apt-get -y install mysql-server
 
 # Install pandora console (needed for server)
