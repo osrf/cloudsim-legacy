@@ -143,7 +143,7 @@ cat << DELIM_PANDORA > /var/www/pandora_console/include/config.php
 error_reporting(E_ALL);
 
 \$ownDir = dirname(__FILE__) . '/';
-include ($ownDir . "config_process.php");
+include (\$ownDir . "config_process.php");
 ?>
 DELIM_PANDORA
 
