@@ -28,7 +28,7 @@ class CloudCredentials(object):
         @type fname: string
         """
         
-        ec2_region_endpoint='ec2.amazonaws.com',
+        ec2_region_endpoint='ec2.amazonaws.com'
         if ec2_region_name.startswith('eu-west'):
             ec2_region_endpoint = 'ec2.eu-west-1.amazonaws.com'
             
