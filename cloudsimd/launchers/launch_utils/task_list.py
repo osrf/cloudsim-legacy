@@ -1,6 +1,7 @@
 from __future__ import print_function
 import unittest
 import time
+import sys
 from sshclient import SshClientException
 
 from launch_db import log

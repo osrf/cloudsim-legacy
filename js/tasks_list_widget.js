@@ -126,14 +126,14 @@ function _create_task_form(form_id)
     var uplink_data_cap = document.createElement("input");
     uplink_data_cap.size = "35";
     form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Uplink cap (bits for each s of run time)"));
+    form_div.appendChild(document.createTextNode("Uplink data cap (bits)"));
     form_div.appendChild(document.createElement("br"));
     form_div.appendChild(uplink_data_cap);
 
     var downlink_data_cap = document.createElement("input");
     downlink_data_cap.size = "35";
     form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Downlink cap (bits for each s of run time)"));
+    form_div.appendChild(document.createTextNode("Downlink data cap (bits)"));
     form_div.appendChild(document.createElement("br"));
     form_div.appendChild(downlink_data_cap);    
 
