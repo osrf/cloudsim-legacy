@@ -91,7 +91,7 @@ function create_constellation(div_name, configuration, constellation, username, 
         
         create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
 
-        create_traffic_shaper_widget(machine_div, constellation, machine_name, "traffic_shaper");
+        //create_traffic_shaper_widget(machine_div, constellation, machine_name, "traffic_shaper");
         create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to the local computer");
 
     }

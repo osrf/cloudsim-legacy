@@ -105,9 +105,9 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
 
 
     //create_task_list_widget(const_div, constellation_name);
-    var tasks_div = document.createElement("div");
-    tasks_div.id = "tasks";
-    const_div.appendChild(tasks_div);
+//    var tasks_div = document.createElement("div");
+//    tasks_div.id = "tasks";
+//    const_div.appendChild(tasks_div);
     
     var machines_div = document.createElement("div");
     machines_div.id = "machines";
