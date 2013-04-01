@@ -27,7 +27,7 @@ from launchers import vpc_trio
 from launchers import simulator
 from launchers import vpc_micro_trio
 from launchers import cloudsim
-
+from launchers import vrc_constellation
 
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
@@ -36,7 +36,7 @@ from launchers.launch_utils.launch import aws_connect
 
 
 
-def launch_constellation(username, configuration, count =1):
+def launch_constellation(username, configuration, args = None, count =1):
     """
     Launches one (or count) constellation of a given configuration
     """
@@ -47,8 +47,14 @@ def launch_constellation(username, configuration, count =1):
         d['username'] = username
         d['command'] = 'launch'
         d['configuration'] = configuration
+        if count >1:
+            d['count'] = count
+        if args:
+            d['args'] = args
+        
+        
         s = json.dumps(d)
-        print(i, ")", s)
+        print("LAUNCH constellation... command: %s " % s)
         r.publish('cloudsim_cmds', s)
         
 def terminate_all_constellations():
@@ -159,7 +165,11 @@ plugins['simulator_prerelease'] =   {'launch':simulator.launch_prerelease,
                                      'start_task':simulator.start_simulator,         
                                      'stop_task':simulator.stop_task}
 
-
+plugins['vrc_constellation'] =   {'launch':vrc_constellation.launch_prerelease,          
+                                     'terminate':vrc_constellation.terminate_prerelease,       
+                                     'monitor':vrc_constellation.monitor_prerelease,         
+                                     'start_task':vrc_constellation.start_simulator,         
+                                     'stop_task':vrc_constellation.stop_task}
 class LaunchException(Exception):
     pass
 
@@ -180,6 +190,7 @@ def log(msg, chan="cloudsimd"):
 def launch( username, 
             config, 
             constellation_name,
+            args,
             credentials_ec2, 
             constellation_directory):
 
@@ -201,7 +212,10 @@ def launch( username,
                'constellation_name':constellation_name, 
                'CloudSim': version, 
                'GMT': gmt}
-
+        
+        if args != None:
+            tags['args'] =  args
+        
         constellation.set_value('username', username)
         constellation.set_value('constellation_name', constellation_name)
         constellation.set_value('gmt', gmt)
@@ -422,11 +436,11 @@ def async_monitor(username, config, constellation_name, boto_path):
         log("cloudsimd async_monitor Error %s" % e)
         
     
-def async_launch(username, config, constellation_name, credentials_ec2, constellation_directory):
+def async_launch(username, config, constellation_name, args, credentials_ec2, constellation_directory):
     
     log("cloudsimd async_launch '%s' [config '%s' for user '%s']"% (constellation_name, config, username) )
     try:
-        p = multiprocessing.Process(target=launch, args=(username, config, constellation_name, credentials_ec2, constellation_directory ))
+        p = multiprocessing.Process(target=launch, args=(username, config, constellation_name, args, credentials_ec2, constellation_directory ))
         p.start()
     except Exception, e:
         log("cloudsimd async_launch Error %s" % e)
@@ -571,14 +585,27 @@ def run(boto_path, root_dir, tick_interval):
             if cmd == 'launch':
                 username = data['username']
                 config = data['configuration']
+                
+                # number of constellations to create
+                count =1
+                if data.has_key('count'):
+                    count = int(data['count'])
+                
+                # extra arguments to the launch methd
+                args = None
+                if data.has_key('args'):
+                    args = data['args']
+                    
                 # log("CLOUDSIM Launch %s" % config)
-                constellation_name =  "c" + get_unique_short_name()
                 
-                constellation_path = os.path.join(root_dir, constellation_name )
-                os.makedirs(constellation_path)
-                
-                async_launch(username, config, constellation_name, boto_path, constellation_path)
-                async_monitor(username, config,constellation_name, boto_path)
+                for i in range(count):
+                    constellation_name =  "c" + get_unique_short_name()
+                    
+                    constellation_path = os.path.join(root_dir, constellation_name )
+                    os.makedirs(constellation_path)
+                    
+                    async_launch(username, config, constellation_name, args, boto_path, constellation_path)
+                    async_monitor(username, config,constellation_name, boto_path)
                 continue
 
             constellation = data['constellation']

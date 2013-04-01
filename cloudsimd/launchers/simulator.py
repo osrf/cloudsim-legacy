@@ -272,14 +272,15 @@ def _launch(username, constellation_name, tags, credentials_ec2, constellation_d
     
     constellation.set_value('simulation_ip', sim_ip)
     log("%s simulation machine ip %s" % (constellation_name, sim_ip))
-    ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
+    ssh_sim = SshClient(constellation_directory, sim_key_pair_name, 'ubuntu', sim_ip)
     
     networking_done = get_ssh_cmd_generator(ssh_sim,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "simulation_state", 'packages_setup' ,max_retries = 1000)
     #empty_ssh_queue([networking_done], sleep=2)
     
+    constellation.set_value('simulation_launch_msg', "waiting for network")
     for g in networking_done:
         time.sleep(1)
-        constellation.set_value('simulation_launch_msg', "waiting for ip")
+        
 
     constellation.set_value('simulation_state', 'packages_setup')
     constellation.set_value('simulation_launch_msg', "setting up scripts")
@@ -336,7 +337,9 @@ timeout 5 gztopic list
         f.write(file_content)
     
     key_filename = sim_key_pair_name + '.pem'
-    copyfile(os.path.join(constellation_directory, key_filename), sim_machine_dir)
+    src = os.path.join(constellation_directory, key_filename)
+    dst = os.path.join(sim_machine_dir, key_filename)
+    copyfile(src ,dst )
     fname_ssh_key =  os.path.join(sim_machine_dir, key_filename)
     os.chmod(fname_ssh_key, 0600)
     
@@ -384,16 +387,19 @@ timeout 5 gztopic list
     
     constellation.set_value('simulation_state', "rebooting")
     constellation.set_value('simulation_launch_msg', "rebooting") 
+    log("rebooting")
     ssh_sim.cmd("sudo reboot")
 
     sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 300)
+    log("waiting for machine to be booted")
     empty_ssh_queue([sim_setup_done], sleep=2)
-
+    log("machine is ready")
 
     constellation.set_value('simulation_glx_state', "pending")
     
     gl_retries = 0
     while True:
+        log("OpenGL test")
         gl_retries += 1
         time.sleep(10)
         try:
@@ -404,6 +410,7 @@ timeout 5 gztopic list
         except Exception, e:
             log("cloudsim/ping_gl.bash = %s" % e )
             if gl_retries > 30:
+                log('OpenGL  retry timeout error')
                 constellation.set_value('simulation_glx_state', "not running")
                 constellation.set_value('error', "%s" % "OpenGL diagnostic failed")
                 raise

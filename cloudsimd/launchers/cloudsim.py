@@ -88,8 +88,16 @@ def monitor(username, constellation_name, credentials_ec2, counter):
 
 
 
-def launch(username, constellation_name, tags, credentials_ec2, constellation_directory, website_distribution = CLOUDSIM_ZIP_PATH, auto_launch_configuration = None ):
+def launch(username, constellation_name, tags, credentials_ec2, constellation_directory, website_distribution = CLOUDSIM_ZIP_PATH ):
     
+    log('launch!!! tags = %s' % tags)
+    
+    auto_launch_configuration = None
+    if tags.has_key('args'):
+        auto_launch_configuration  = tags['args']
+    
+    log('auto_launch_configuration %s' % auto_launch_configuration )
+
     ec2conn = aws_connect(credentials_ec2)[0]
     constellation = ConstellationState( constellation_name)
    
@@ -280,12 +288,12 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     log("running deploy script '%s' remotely" % deploy_script_fname)
     out = ssh_sim.cmd("bash " + deploy_script_fname  )
     log ("\t%s"% out)
-#    print("check that file is there")
-#    out = machine.ssh_wait_for_ready('/var/www-cloudsim-auth/users')
-#    print ("\t%s"% out)
+
 
     
-
+    #
+    # For a CLoudSim launch, we look at the tags for a configuration to launch
+    # at the end.
     if auto_launch_configuration:
         log("Launching a constellation of type %s" % auto_launch_configuration)
         ssh_sim.cmd("/home/ubuntu/cloudsim/launch.py %s %s" % (username, auto_launch_configuration) )

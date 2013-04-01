@@ -27,9 +27,11 @@ def get_ssh_cmd_generator(ssh_client, cmd, expected_output, constellation_data, 
                 constellation_data.set_value(key, value)
                 yield True
                 done = True
-        except SshClientException:
+            else:
+                log("   SSH %s = %s" % (cmd, result))
+        except SshClientException, e:
+            log("   SshClientException = %s" % (e))
             yield False
-                    
         if count == 0:
             raise SshRetryException("%s: %s" % (ssh_client.user, cmd))
             yield False
