@@ -372,11 +372,8 @@ def cloudsim_bootstrap(username, credentials_ec2, initial_constellation):
     constellation.set_value('constellation_state', 'launching')
     constellation.set_value('error', '')
     
-    return launch(username, constellation_name, tags,  credentials_ec2, 
-                  constellation_directory, 
-                  website_distribution,
-                  initial_constellation)
-    
+    return launch(username, constellation_name, tags,  credentials_ec2,
+                  constellation_directory, website_distribution)
     
     
 def zip_cloudsim():
