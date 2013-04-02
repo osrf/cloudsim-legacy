@@ -16,7 +16,7 @@ configuration = sys.argv[2]
 
 args = None
 if len(sys.argv) > 3:
-    args = int(sys.argv[3])
+    args = sys.argv[3]
     
 count = 1
 if len(sys.argv) > 4:
