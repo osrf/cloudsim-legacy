@@ -105,12 +105,6 @@ start vrc_sniffer
 start vrc_controller
 start vrc_bandwidth
 
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
-touch /home/ubuntu/cloudsim/setup/done
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
-
-
 # Install pandora dependencies
 apt-get install -y snmp snmpd libtime-format-perl libxml-simple-perl libdbi-perl libnetaddr-ip-perl libhtml-parser-perl nmap traceroute libio-socket-inet6-perl libhtml-tree-perl libsnmp-perl snmp-mibs-downloader libio-socket-multicast-perl libsnmp-perl libjson-perl xprobe  libdbd-mysql-perl libxml-twig-perl
 
@@ -170,7 +164,12 @@ dpkg -i /tmp/pandora_agent.deb
 sed -i -e 's:.*agent_name.*:agent_name router-agent:' /etc/pandora/pandora_agent.conf
 
 /etc/init.d/pandora_agent_daemon start
-	
+
+mkdir /home/ubuntu/cloudsim
+mkdir /home/ubuntu/cloudsim/setup
+touch /home/ubuntu/cloudsim/setup/done
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+
 """
 
 """
