@@ -26,8 +26,10 @@ from launch_utils import ConstellationState # launch_db
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_drc_startup_script,\
     get_open_vpn_single, create_openvpn_client_cfg_file, create_vpn_connect_file,\
-    create_ros_connect_file, create_ssh_connect_file
-from launch_utils.launch import LaunchException, aws_connect, get_amazon_amis
+    create_ros_connect_file, create_ssh_connect_file, get_vpc_open_vpn,\
+    get_vpc_router_script
+from launch_utils.launch import LaunchException, aws_connect, get_amazon_amis,\
+    wait_for_multiple_machines_to_run, wait_for_multiple_machines_instances
 
 from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
@@ -38,7 +40,7 @@ from launch_utils.monitoring import LATENCY_TIME_BUFFER, record_ping_result,\
 
 
 
-def log(msg, channel = "simulator"):
+def log(msg, channel = "vrc_constellation"):
     try:
         
         redis_client = redis.Redis()
@@ -137,26 +139,198 @@ def _monitor( username,
     
     constellation = ConstellationState( constellation_name)
    
-    simulation_state = constellation.get_value('simulation_state')
-    update_machine_aws_states(credentials_ec2, constellation_name, {'simulation_aws_id':"simulation_aws_state"}) 
     
-    ssh_sim = get_ssh_client(constellation_name, simulation_state,'simulation_ip', 'sim_key_pair_name' )
 
-    monitor_cloudsim_ping(constellation_name, 'simulation_ip', 'simulation_latency')
-    monitor_launch_state(constellation_name, ssh_sim, simulation_state, "bash cloudsim/dpkg_log_sim.bash", 'simulation_launch_msg')
+    update_machine_aws_states(credentials_ec2, constellation_name, {'simulation_aws_id':"simulation_aws_state",
+                                                                    'router_aws_id': 'router_aws_state',
+                                                                    'field1_aws_id': 'field1_aws_state',
+                                                                    'field2_aws_id': 'field2_aws_state',
+                                                                    }) 
+    simulation_state = constellation.get_value('sim_state')
+    sim_ssh = get_ssh_client(constellation_name, simulation_state,'sim_ip_address', 'sim_key_pair_name' )
+    monitor_cloudsim_ping(constellation_name, 'sim_ip_address', 'sim_latency')
+    monitor_launch_state(constellation_name, sim_ssh, simulation_state, "tail -1 /var/log/dpkg.log ", 'sim_launch_msg')
     
-    monitor_simulator(constellation_name, ssh_sim)
-
-
-    #log("monitor not done")
+    monitor_simulator(constellation_name, sim_ssh)
+    
+    router_state = constellation.get_value('router_state')
+    ssh_router = get_ssh_client(constellation_name, router_state,'router_ip_address', 'router_key_pair_name' )
+    monitor_cloudsim_ping(constellation_name, 'router_ip_address', 'router_latency')
+    monitor_launch_state(constellation_name, ssh_router, router_state, "tail -1 /var/log/dpkg.log", 'router_launch_msg')
+    
+    field1_state = constellation.get_value('field1_state')
+    ssh_field1 = get_ssh_client(constellation_name, field1_state,'field1_ip_address', 'field1_key_pair_name' )
+    monitor_cloudsim_ping(constellation_name, 'field1_ip_address', 'field1_latency')
+    monitor_launch_state(constellation_name, ssh_field1, field1_state, "tail -1 /var/log/dpkg.log", 'field1_launch_msg')
+    
+    field2_state = constellation.get_value('field2_state')
+    ssh_field2 = get_ssh_client(constellation_name, field2_state,'field2_ip_address', 'field1_key_pair_name' )
+    monitor_cloudsim_ping(constellation_name, 'field2_ip_address', 'field2_latency')
+    monitor_launch_state(constellation_name, ssh_field2, field2_state, "tail -1 /var/log/dpkg.log", 'field2_launch_msg')
+    # log("monitor not done")
     return False
 
 
-def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
-    _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,  "simulator", drc_package_name = "drcsim" )
+def init_computer_data(constellation_name, prefixes):
+    constellation = ConstellationState( constellation_name)
+    for prefix in prefixes:
+        constellation.set_value('%s_ip_address' % prefix, "nothing")
+        constellation.set_value('%s_state' % prefix, "nothing")
+        constellation.set_value('%s_aws_state'% prefix, 'nothing')
+        constellation.set_value('%s_launch_msg'% prefix, 'starting')
+        constellation.set_value('%s_zip_file'% prefix, 'not ready')
+        constellation.set_value('%s_latency'% prefix, 'not ready')
+        constellation.set_value('%s_aws_reservation_id'% prefix, 'nothing')
+        constellation.set_value('%s_machine_name' % prefix, '%s_%s' % (prefix, constellation_name) )
+        constellation.set_value('%s_key_name'% prefix, None)
 
+def boot_machine(prefix, constellation_name, tcp_port_list, udp_port_list, script, aws_machine_type, aws_ami, credentials_ec2):
+    
+    constellation = ConstellationState( constellation_name)
+    constellation_directory = constellation.get_value("constellation_directory")
+    
+    
+    sg_name = '%s-sg-%s'%(prefix, constellation_name)
+    
+    # constellation.set_value('%s_security_group' % prefix, sg_name)
+    
+    ec2conn = aws_connect(credentials_ec2)[0]
+    security_group= ec2conn.create_security_group(sg_name, "%s security group for constellation %s" % (prefix, constellation_name))
+    
+    for port in tcp_port_list:
+        security_group.authorize('tcp', port, port, '0.0.0.0/0')
+    for port in udp_port_list:
+        security_group.authorize('udp', port, port, '0.0.0.0/0')
+    security_group.authorize('icmp', -1, -1, '0.0.0.0/0')
+
+    key_pair_name = "key-%s-%s" % (prefix, constellation_name)
+    constellation.set_value('%s_key_name'% prefix, key_pair_name)
+    key_pair = ec2conn.create_key_pair(key_pair_name)
+    key_pair.save(constellation_directory)
+
+    res = ec2conn.run_instances( image_id       = aws_ami, 
+                             instance_type  = aws_machine_type,
+                             #subnet_id      = subnet_id,
+                             #private_ip_address=SIM_IP,
+                             security_group_ids=[security_group],
+                             key_name  = key_pair_name ,
+                             user_data = script)
+    constellation.set_value('%s_aws_reservation_id'% prefix, res.id)
+    
+
+def boot_machines(username, constellation_name, tags, credentials_ec2, constellation_directory):
+    
+    constellation = ConstellationState( constellation_name)
+    constellation.set_value("error", "")
+    constellation.set_value("boot_sequence", "not done")
+    constellation.set_value("setup_sequence", "not done")
+    constellation.set_value("gazebo", "not running")
+    constellation.set_value("simulation_glx_state", "not running")
+    constellation.set_value("constellation_directory", constellation_directory)
+    init_computer_data(constellation_name, ["sim", "field1","field2", "router" ] )
+    constellation = ConstellationState( constellation_name)
+    
+    constellation.set_value("error", "")
+    constellation.set_value("boot_sequence", "not done")
+    constellation.set_value("setup_sequence", "not done")
+    constellation.set_value("gazebo", "not running")
+    constellation.set_value("simulation_glx_state", "not running")
+
+    amis = get_amazon_amis(credentials_ec2)
+    cluster_ami    = amis['ubuntu_1204_x64_cluster']
+    server_ami = amis['ubuntu_1204_x64']
+    drc_package_name = "drcsim"
+    
+    ROBOT_IP='10.0.0.52'
+    TS_IP='10.0.0.50'
+    SIM_IP='10.0.0.51'
+    OPENVPN_SERVER_IP='11.8.0.1'
+    OPENVPN_CLIENT_IP='11.8.0.2'
+
+    router_script = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP, TS_IP, SIM_IP)
+    boot_machine('router', constellation_name, [80,22], [1194], router_script, 't1.micro', server_ami, credentials_ec2)
+
+    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
+    sim_script = get_drc_startup_script(open_vpn_script, SIM_IP, drc_package_name)
+    boot_machine('sim', constellation_name, [80,22], [], sim_script,'cg1.4xlarge',  cluster_ami, credentials_ec2)
+
+    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
+    field1_script = get_drc_startup_script(open_vpn_script, ROBOT_IP, drc_package_name)
+    boot_machine('field1', constellation_name, [80,22], [], field1_script,'cg1.4xlarge',  cluster_ami, credentials_ec2)
+
+    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP)
+    field2_script = get_drc_startup_script(open_vpn_script, ROBOT_IP, drc_package_name)
+    boot_machine('field2', constellation_name, [80,22], [], field2_script,'cr1.8xlarge',  cluster_ami, credentials_ec2)
+
+    constellation.set_value("boot_sequence", "done")
+
+def configure_machines(constellation_name, credentials_ec2 ):
+    ec2conn = aws_connect(credentials_ec2)[0]
+    constellation = ConstellationState( constellation_name)
+    
+    constellation_directory = constellation.get_value('constellation_directory')
+    
+    roles_to_reservations = {}
+    roles_to_reservations['router_state'] = constellation.get_value('router_aws_reservation_id')
+    roles_to_reservations['sim_state'] = constellation.get_value('sim_aws_reservation_id')
+    roles_to_reservations['field1_state'] = constellation.get_value('field1_aws_reservation_id')
+    roles_to_reservations['field2_state'] = constellation.get_value('field2_aws_reservation_id')
+    
+    running_instances = wait_for_multiple_machines_instances(ec2conn, roles_to_reservations, constellation, max_retries = 500, final_state = 'network_setup')
+    
+    router_aws_id = running_instances['router_state'].id 
+    router_ip_address = running_instances['router_state'].ip_address
+    constellation.set_value('router_aws_id', router_aws_id)
+    constellation.set_value('router_ip_address', router_ip_address)
+    
+    sim_aws_id = running_instances['sim_state'].id
+    sim_ip_address = running_instances['sim_state'].ip_address
+    constellation.set_value('sim_aws_id', sim_aws_id)
+    constellation.set_value('sim_ip_address', sim_ip_address)
+    
+    field1_aws_id = running_instances['field1_state'].id
+    field1_ip_address = running_instances['field1_state'].ip_address
+    constellation.set_value('field1_aws_id', field1_aws_id)
+    constellation.set_value('field1_ip_address', field1_ip_address)
+    
+    field2_aws_id = running_instances['field2_state'].id
+    field2_ip_address = running_instances['field2_state'].ip_address
+    constellation.set_value('field2_aws_id', field2_aws_id)
+    constellation.set_value('field2_ip_address', field2_ip_address)
+    
+    router_key_pair_name = constellation.get_value('router_key_name')
+    router_ssh = SshClient(constellation_directory, router_key_pair_name, 'ubuntu', router_ip_address)
+    
+    sim_key_pair_name = constellation.get_value('sim_key_name')
+    sim_ssh = SshClient(constellation_directory, sim_key_pair_name, 'ubuntu', sim_ip_address)
+    
+    field1_key_pair_name = constellation.get_value('field1_key_name')
+    field1_ssh = SshClient(constellation_directory, field1_key_pair_name, 'ubuntu', field1_ip_address)
+    
+    field2_key_pair_name = constellation.get_value('field2_key_name')
+    field2_ssh = SshClient(constellation_directory, field2_key_pair_name, 'ubuntu', field2_ip_address)
+    
+    
+    router_done = get_ssh_cmd_generator(router_ssh,"ls cloudsim/setup/done", "cloudsim/setup/done",  constellation, "router_state", "running",  max_retries = 500)
+    sim_done = get_ssh_cmd_generator(sim_ssh,"ls cloudsim/setup/done", "cloudsim/setup/done",  constellation, "sim_state", "running",  max_retries = 500)
+    field1_done = get_ssh_cmd_generator(sim_ssh,"ls cloudsim/setup/done", "cloudsim/setup/done",  constellation, "field1_state", "running",  max_retries = 500)
+    field2_done = get_ssh_cmd_generator(sim_ssh,"ls cloudsim/setup/done", "cloudsim/setup/done",  constellation, "field2_state", "running",  max_retries = 500)
+    
+    empty_ssh_queue([router_done, sim_done, field1_done, field2_done], sleep=2)
+    log('done')    
+
+def launch(username, constellation_name, tags, credentials_ec2, constellation_directory ):
+    # _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,  "simulator", drc_package_name = "drcsim" )
+
+    boot_machines(username, constellation_name, tags, credentials_ec2, constellation_directory)
+    configure_machines(constellation_name, credentials_ec2)
+    
+
+    
 def launch_prerelease(username, constellation_name, tags, credentials_ec2, constellation_directory):
     _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,  "simulator_prerelease", drc_package_name = "drcsim-prerelease" )
+
+
 
 def _launch(username, constellation_name, tags, credentials_ec2, constellation_directory, CONFIGURATION, drc_package_name):
 
@@ -422,8 +596,18 @@ timeout 5 gztopic list
     log("provisionning done")
 
 
-def terminate(username, constellation_name, credentials_ec2, constellation_directory):
-    _terminate(username, 'simulator', constellation_name, credentials_ec2, constellation_directory)
+def terminate(constellation_name, credentials_ec2):
+#    _terminate(username, 'simulator', constellation_name, credentials_ec2, constellation_directory)
+    ec2conn = aws_connect(credentials_ec2)[0]
+    constellation = ConstellationState( constellation_name)
+    
+    constellation.set_value('constellation_state', 'terminating')
+    constellation.set_value('router_state', 'terminating')
+    constellation.set_value('sim_state', 'terminating')
+    constellation.set_value('field1_state', 'terminating')
+    constellation.set_value('field2_state', 'terminating')
+    constellation.set_value('sim_launch_msg', "terminating")
+    constellation.set_value('sim_glx_state', "not running")
     
 def terminate_prerelease(username, constellation_name, credentials_ec2, constellation_directory):
     _terminate(username, 'simulator_prerelease', constellation_name, credentials_ec2, constellation_directory)
@@ -436,15 +620,17 @@ def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, con
     ec2conn = aws_connect(credentials_ec2)[0]
     constellation = ConstellationState( constellation_name)
     constellation.set_value('constellation_state', 'terminating')
-    constellation.set_value('simulation_state', 'terminating')
-    constellation.set_value('simulation_launch_msg', "terminating")
-    constellation.set_value('simulation_glx_state', "not running")
+    
+    constellation.set_value('sim_state', 'terminating')
+    constellation.set_value('sim_launch_msg', "terminating")
+    constellation.set_value('sim_glx_state', "not running")
+    
     
     log("terminate %s [user=%s, constellation_name=%s" % (CONFIGURATION, username, constellation_name) )
     
     try:
         running_machines =  {}
-        running_machines['simulation_aws_state'] = resources['simulation_aws_id']
+        running_machines['sim'] = resources['simulation_aws_id']
         
         wait_for_multiple_machines_to_terminate(ec2conn, 
                                                 running_machines, 
@@ -467,7 +653,6 @@ def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, con
         error_msg += "<b>Simulation key</b>: %s<br>" % e
         constellation.set_value('error', error_msg)        
         log("error cleaning up simulation key %s: %s" % (sim_key_pair_name, e))
-        
     try:    
         security_group_id =  resources['sim_security_group_id' ]
         ec2conn.delete_security_group(group_id = security_group_id)
@@ -479,53 +664,50 @@ def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, con
 
     
 
-class SimulatorCase(unittest.TestCase):
-    def test(self):
+class MonitorCase(unittest.TestCase):
+    def atest(self):
         user = 'hugo@osrfoundation.org'
         const = 'cxb49a97c4'
         cred = get_boto_path()
         
         monitor(user, const, cred, 1)
         
-    def atest_set_get(self):
-        
-        constellation = "constellation"
-        value = {'a':1, 'b':2}
-        expiration = 25
-        set_constellation_data( constellation, value, expiration)
-        
-        data = get_constellation_data(constellation)
-        self.assert_(data['a'] == value['a'], "not set")
-
-class TrioCase(unittest.TestCase):
+  
+class VrcCase(unittest.TestCase):
     
     def test_launch(self):
-        CONFIGURATION = 'simulator'
-        test_name = "test_" + CONFIGURATION
-        self.constellation_name =  get_unique_short_name(test_name + "_")
+#        CONFIGURATION = 'vrc_constellation'
+#        test_name = "test_" + CONFIGURATION
+#        self.constellation_name =  get_unique_short_name(test_name + "_")
+#        
+#        self.username = "toto@osrfoundation.org"
+#        self.credentials_ec2  = get_boto_path()
+#        
+#        self.tags = {'TestCase':CONFIGURATION, 'configuration': CONFIGURATION, 'constellation' : self.constellation_name, 'user': self.username, 'GMT':"now"}
+#        
+#        self.constellation_directory = os.path.abspath( os.path.join(get_test_path(test_name), self.constellation_name))
+#        print("creating: %s" % self.constellation_directory )
+#        os.makedirs(self.constellation_directory)
         
-        self.username = "toto@osrfoundation.org"
+        
+        #boot_machines(self.username, self.constellation_name, self.tags, self.credentials_ec2, self.constellation_directory)
         self.credentials_ec2  = get_boto_path()
-        
-        self.tags = {'TestCase':CONFIGURATION, 'configuration': CONFIGURATION, 'constellation' : self.constellation_name, 'user': self.username, 'GMT':"now"}
-        
-        self.constellation_directory = os.path.abspath( os.path.join(get_test_path(test_name), self.constellation_name))
-        print("creating: %s" % self.constellation_directory )
-        os.makedirs(self.constellation_directory)
-        
-        launch(self.username, self.constellation_name, self.tags, self.credentials_ec2, self.constellation_directory)
+        self.constellation_name = "test_vrc_constellation_be71a8cc" 
+        configure_machines(self.constellation_name, self.credentials_ec2)
                 
         sweep_count = 10
         for i in range(sweep_count):
             print("monitoring %s/%s" % (i,sweep_count) )
             monitor(self.username, self.constellation_name, self.credentials_ec2, i)
             time.sleep(1)
-    
+        
+        terminate(self.constellation_name, self.credentials_ec2)
+        
     def tearDown(self):
         unittest.TestCase.tearDown(self)
         #self.machine.terminate() 
         # self.constellation_name = 
-        terminate(self.username, self.constellation_name, self.credentials_ec2, self.constellation_directory)
+        #terminate(self.username, self.constellation_name, self.credentials_ec2, self.constellation_directory)
         
         
         

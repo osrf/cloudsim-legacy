@@ -492,7 +492,6 @@ def _launch(username,
         constellation.set_value('error', "%s" % e)
         raise       
 
-    
     try:
         constellation.set_value('router_launch_msg',   "booting")
         res = ec2conn.run_instances(ROUTER_AWS_IMAGE, instance_type=ROUTER_AWS_TYPE,
