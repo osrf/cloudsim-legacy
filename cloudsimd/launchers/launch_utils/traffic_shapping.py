@@ -27,3 +27,12 @@ def run_tc_command(constellation_name, machine_name_key, sshkey_key, ip_address_
     ssh = sshclient.SshClient(keyDirectory, keyPairName, 'ubuntu', ip)
     r = ssh.cmd(cmd)  
     log("ssh %s = %s" % (cmd, r) )
+    
+    cmd = 'redis-cli set cloudsim/network/uplink_max_bits ' + str(uplink_data_cap)
+    ssh = sshclient.SshClient(keyDirectory, keyPairName, 'ubuntu', ip)
+    r = ssh.cmd(cmd)  
+     
+    cmd = 'redis-cli set cloudsim/network/downlink_max_bits ' + str(downlink_data_cap)
+    ssh = sshclient.SshClient(keyDirectory, keyPairName, 'ubuntu', ip)
+    r = ssh.cmd(cmd)  
+    log("ssh %s = %s" % (cmd, r) )
