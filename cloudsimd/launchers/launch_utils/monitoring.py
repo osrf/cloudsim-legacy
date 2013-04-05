@@ -149,14 +149,14 @@ def monitor_launch_state(constellation_name, ssh_client,  machine_state, dpkg_cm
     if constellation_states.index(constellation_state ) >= constellation_states.index("launching"):
         if machine_state == "running":
             constellation.set_value(launch_msg_key, "complete")       
-            log("complete")
+            log("launch state: complete")
             
         if machine_state == 'packages_setup':
             try:
                 dpkg_line = ssh_client.cmd(dpkg_cmd)# "bash cloudsim/dpkg_log_robot.bash"
                 robot_package = parse_dpkg_line(dpkg_line)
                 current_value = constellation.get_value(launch_msg_key)
-                log("xx %s" % robot_package)
+                log("package setup: %s" % robot_package)
                 if current_value != robot_package:
                     constellation.set_value(launch_msg_key, robot_package)
                     log('%s/%s = %s' % (constellation_name, dpkg_cmd, robot_package) )
@@ -173,7 +173,7 @@ def monitor_simulator(constellation_name, ssh_client):
         return False
     
     constellation = ConstellationState(constellation_name)
-    simulation_state = constellation.get_value('simulation_state')
+    simulation_state = constellation.get_value('sim_state')
     if machine_states.index(simulation_state) >= machine_states.index('running'):
         gl_state = constellation.get_value("simulation_glx_state")
         if gl_state == "running":

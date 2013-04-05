@@ -1,9 +1,21 @@
 import time
 import uuid
+import redis
+import logging
+
 import boto
 from boto.pyami.config import Config as BotoConfig
 
-from launch_db import log
+def log(msg, channel = "launch"):
+    try:
+        
+        redis_client = redis.Redis()
+        redis_client.publish(channel, msg)
+        logging.info(msg)
+        print("launch_db>",msg)
+    except:
+        print("Warning: redis not installed.")
+    #print("cloudsim log> %s" % msg)
 
 
 class LaunchException(Exception):
@@ -74,11 +86,12 @@ def wait_for_multiple_machines_instances(ec2conn, roles_to_reservations, constel
                 reservation = r.id
                 if r.id in reservations_to_roles and r.instances[0].state == 'running':
                     role = reservations_to_roles[reservation]
-                    ready_machines[role] =  r.instances[0]
+                    instance = r.instances[0]
+                    ready_machines[role] = instance
                     reservations_to_roles.pop(reservation)
                     # mark this machines as "network_setup" (or other final state)
                     constellation.set_value(role, final_state)
-                    print 'Done launching %s (AWS %s)'%(role, aws_id)
+                    print 'Done launching %s (AWS %s)'%(role, instance.id)
                     
                     done = True
                     break

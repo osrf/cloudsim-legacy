@@ -123,6 +123,9 @@ function create_latency_widget(machine_div,
 
 function _set_latency_data(latency_plot_data, values)
 {
+	if(!values)
+		return;
+	
 	if(values.length ==0)
 		return;
 	

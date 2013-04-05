@@ -315,7 +315,7 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     return simulation_aws_id, sim_ip, key_filename
 
 
-def terminate(username,  constellation_name, credentials_ec2, constellation_directory):
+def terminate(  constellation_name, credentials_ec2):
 
     ec2conn = aws_connect(credentials_ec2)[0]
     constellation = ConstellationState( constellation_name)

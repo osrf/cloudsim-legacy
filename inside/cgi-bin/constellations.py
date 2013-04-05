@@ -30,7 +30,11 @@ def clean_constellation_data(constellation):
     """
     constellation.pop("constellation_directory")
     # remove tasks data 
-    tasks = constellation.pop('tasks')
+    tasks = []
+    try:
+        tasks = constellation.pop('tasks')
+    except:
+        pass
     # log("clean %s" % constellation['constellation_name'])
     # and replace with a censored version
     constellation['tasks'] = []
@@ -50,12 +54,13 @@ def get_constellation(email, constellation_name):
         s = r.get(key)
         c = json.loads(s)
         
-        domain = _domain(c['username'])
-        authorised_domain = _domain(email)
+        #domain = _domain(c['username'])
+        #authorised_domain = _domain(email)
                 
-        if domain == authorised_domain:
-            constellation = clean_constellation_data(c)
-            return constellation
+        # if domain == authorised_domain:
+        constellation = clean_constellation_data(c)
+        return constellation
+        
     except Exception, e:
         log("Get const error: %s" % e)
         return None
@@ -97,7 +102,7 @@ print("\n")
 
 if method == 'GET':
     s = None
-    # log("[GET] Constellations")
+    
     try:    
         
         constellation = get_constellation_from_path()

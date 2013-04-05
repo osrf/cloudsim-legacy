@@ -5,6 +5,7 @@ import testing
 import json
 
 import redis
+from launch import aws_connect
 
 
 def log(msg, channel = "launch_db"):
@@ -34,13 +35,37 @@ def publish_event(username, type, data):
         log("publish_event: [%s] type %s msg[%s]" % (username, type, msg))
         
 
+
+def get_constellation_data(constellation):
+    try:
+        
+        red = redis.Redis()
+        redis_key = "cloudsim/" + constellation
+        s = red.get(redis_key)
+        data = json.loads(s)
+        return data
+    except:
+        return None    
+    
 class ConstellationState(object):
     """
     This class is the access point to the constellation information in Redis
     """
     def __init__(self, constellation_name):
         self.constellation_name = constellation_name
-        
+    
+    def exists(self):
+        names = get_constellation_names()
+        r = self.constellation_name in names
+        return r
+    
+    def get_all_data(self):
+        data = get_constellation_data(  self.constellation_name)
+        return data
+    
+    def set_all_data(self, data_dict):
+        set_constellation_data(self.constellation_name, data_dict, None)
+    
     def has_value(self, name):
         resources = get_constellation_data(  self.constellation_name)
         return resources.has_key(name)
@@ -88,16 +113,12 @@ class ConstellationState(object):
         resources  = get_constellation_data(self.constellation_name)
         set_constellation_data(self.constellation_name, resources, nb_of_secs)
 
-
-
 def _domain(user_or_domain):
     domain = user_or_domain
     if user_or_domain.find('@') > 0:
         domain = user_or_domain.split('@')[1]
     return domain
 
-
-  
 def set_constellation_data(constellation, value, expiration = None):
     try:
         
@@ -127,16 +148,6 @@ def get_constellation_names():
     except:
         return None        
 
-def get_constellation_data(constellation):
-    try:
-        
-        red = redis.Redis()
-        redis_key = "cloudsim/" + constellation
-        s = red.get(redis_key)
-        data = json.loads(s)
-        return data
-    except:
-        return None    
 
 __CONFIG__KEY__ = "cloudsim_config"
 
@@ -151,8 +162,34 @@ def get_cloudsim_config():
     config = json.loads(s)
     return config
 
-    
-        
+def get_aws_instance_by_name(instance_name, boto_path="../../boto.ini"):
+    """
+    Interactive command to get a bot instance of a running machine
+    Raises exceptions if the credentials are not there or invalid
+    """
+    ec2conn = aws_connect(boto_path)[0]
+    reservations = ec2conn.get_all_instances()
+    instances = [i for r in reservations for i in r.instances]
+    for i in instances:
+        if i.tags.has_key('Name'):
+            name = i.tags['Name']
+            if name == instance_name:
+                return i
+    return None
+
+def get_aws_instance(instance, boto_path="../../boto.ini"):
+    """
+    Interactive command to get a boto instance of a running machine
+    instance: a string that contains the AWS instance id
+    Raises exceptions if the credentials are not there or invalid
+    """
+    ec2conn = aws_connect(boto_path)[0]
+    reservations = ec2conn.get_all_instances()
+    instances = [i for r in reservations for i in r.instances]
+    for i in instances:
+        if i.id == instance:
+            return i
+    return None        
              
         
 if __name__ == '__main__':

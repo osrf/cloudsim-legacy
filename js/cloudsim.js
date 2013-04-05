@@ -9,7 +9,7 @@ function create_constellation(div_name, configuration, constellation, username, 
     
     if(configuration == "cloudsim")
     {
-        var machine_name = "cloudsim_" + constellation;
+        var machine_name = "cloudsim";
         var machine_div = create_machine(machines_div, machine_name);
 
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file" );
@@ -19,12 +19,36 @@ function create_constellation(div_name, configuration, constellation, username, 
 
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file" );
         
-        create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to the local computer");
+        create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to CloudSim");
 
 
     }
+    
+    if (configuration == "vrc_constellation")
+    {
+        var machines =['router','field1', 'field2', 'sim'];
+        
+        create_task_list_widget(constellation_div, constellation);
+        
+        var mach_div =  constellation_div.querySelector("#machines" );
+        for (var i=0; i < machines.length; i++)
+        {
+            var prefix = machines[i];
+            var machine_name = prefix;
+            var machine_div = create_machine(machines_div, machine_name);
+            create_hostname_widget(machine_div, constellation, machine_name, prefix+"_ip_address", prefix+"_aws_id", "username", "gmt", prefix+"_zip_file");
+            create_machine_launch_monitor_widget(machine_div, constellation, machine_name, prefix+"_launch_msg", prefix + "_state");
+            create_machine_state_widget(machine_div, constellation, machine_name, prefix + "_aws_state", prefix + "_state");
+            if(prefix == 'sim')
+            {
+                create_simulator_state_widget(machine_div, constellation, machine_name, prefix + "_glx_state", "gazebo");
+            }
+            create_latency_widget(machine_div, constellation, machine_name, prefix + "_latency", "RTT latency to CloudSim"); 
+            
+        }
+    }
 
-    if(configuration == "vpc_trio" || configuration == "vpc_micro_trio" || configuration == "vpc_trio_prerelease" )
+    if(configuration == "vpc_trio" || configuration == "vpc_micro_trio" || configuration == "vpc_trio_prerelease")
     {
     	create_task_list_widget(constellation_div, constellation);
     	// field computer
@@ -32,7 +56,7 @@ function create_constellation(div_name, configuration, constellation, username, 
             var div =  constellation_div.querySelector("#machines" );
             
 
-            var machine_name = "field_computer_" + constellation;
+            var machine_name = "field_computer";
 			var machine_div = create_machine(machines_div, machine_name);
 
             create_hostname_widget(machine_div, constellation, machine_name, "robot_ip", "robot_aws_id", "username", "gmt", "robot_zip_file");
@@ -45,7 +69,7 @@ function create_constellation(div_name, configuration, constellation, username, 
     	}
         // router computer
         {
-            var machine_name = "router_" + constellation;
+            var machine_name = "router";
             var machine_div = create_machine(machines_div, machine_name);
             
 
@@ -60,7 +84,7 @@ function create_constellation(div_name, configuration, constellation, username, 
         
         // simulator computer
         {            
-            var machine_name = "simulator_" + constellation;
+            var machine_name = "simulator";
             var machine_div = create_machine(machines_div, machine_name);
             
             create_hostname_widget (machine_div, constellation, machine_name, "sim_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file");	
@@ -72,6 +96,7 @@ function create_constellation(div_name, configuration, constellation, username, 
             create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
             create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to the Router");
         }
+        
     }
     
     if(configuration == "simulator" || configuration == "simulator_prerelease")

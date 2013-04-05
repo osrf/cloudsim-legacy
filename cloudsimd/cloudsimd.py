@@ -34,7 +34,7 @@ from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
 from launchers.launch_utils.launch import aws_connect
 
-
+from launchers.launch_utils import get_aws_instance, get_aws_instance_by_name
 
 def launch_constellation(username, configuration, args = None, count =1):
     """
@@ -93,34 +93,7 @@ def list_constellations():
     return constellations 
     
 
-def get_aws_instance_by_name(instance_name, boto_path="../../boto.ini"):
-    """
-    Interactive command to get a bot instance of a running machine
-    Raises exceptions if the credentials are not there or invalid
-    """
-    ec2conn = aws_connect(boto_path)[0]
-    reservations = ec2conn.get_all_instances()
-    instances = [i for r in reservations for i in r.instances]
-    for i in instances:
-        if id.tags.has_key('Name'):
-            name = id.tags['Name']
-            if name == instance_name:
-                return i
-    return None
 
-def get_aws_instance(instance, boto_path="../../boto.ini"):
-    """
-    Interactive command to get a boto instance of a running machine
-    instance: a string that contains the AWS instance id
-    Raises exceptions if the credentials are not there or invalid
-    """
-    ec2conn = aws_connect(boto_path)[0]
-    reservations = ec2conn.get_all_instances()
-    instances = [i for r in reservations for i in r.instances]
-    for i in instances:
-        if i.id == instance:
-            return i
-    return None
         
 #
 # The plugins contains the function pointers for each type of constellation
@@ -253,10 +226,8 @@ def launch( username,
 Terminates the machine via the cloud interface. Files will be removed by the 
 monitoring process
 """
-def terminate(username, 
-              constellation, 
-              credentials_ec2,
-              constellation_directory):
+def terminate(constellation, 
+              credentials_ec2):
  
     proc = multiprocessing.current_process().name
     log("terminate '%s' for '%s' from proc '%s'" % (constellation, username, proc))
@@ -268,7 +239,7 @@ def terminate(username,
         log("    configuration is '%s'" % (config))
         
         terminate = plugins[config]['terminate']
-        terminate(username, constellation, credentials_ec2, constellation_directory)
+        terminate(constellation, credentials_ec2)
         
         
     except Exception, e:
@@ -444,12 +415,12 @@ def async_launch(username, config, constellation_name, args, credentials_ec2, co
     except Exception, e:
         log("cloudsimd async_launch Error %s" % e)
 
-def async_terminate(username, constellation, credentials_ec2, constellation_directory):
+def async_terminate(constellation, credentials_ec2):
     
-    log("async terminate '%s' for '%s'"% (constellation, username) )
+    log("async terminate '%s'"% (constellation) )
     try:
         
-        p = multiprocessing.Process(target=terminate, args= (username, constellation, credentials_ec2, constellation_directory)  )
+        p = multiprocessing.Process(target=terminate, args= ( constellation, credentials_ec2)  )
         p.start()
 
     except Exception, e:
@@ -611,9 +582,8 @@ def run(boto_path, root_dir, tick_interval):
             
             
             if cmd == 'terminate':
-                username = data['username']
                 constellation_path = os.path.join(root_dir, constellation )
-                async_terminate(username, constellation, boto_path, constellation_path )
+                async_terminate( constellation, boto_path )
                 continue
             #
             # tasks stuff

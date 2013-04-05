@@ -113,10 +113,8 @@ def monitor(username, constellation_name, credentials_ec2, counter):
                              counter, CONFIGURATION)
 
 
-def terminate(username, constellation_name, credentials_ec2, 
-              constellation_directory):
-    vpc_trio._terminate(username, constellation_name, credentials_ec2, 
-                        constellation_directory, CONFIGURATION)
+def terminate( constellation_name, credentials_ec2, ):
+    vpc_trio._terminate( constellation_name, credentials_ec2)
                            
     
 def start_simulator(username, constellation_name, machine_name, package_name, 

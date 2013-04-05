@@ -167,12 +167,12 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
                         SIM_SCRIPT, 
                         CONFIGURATION)
     
-def terminate_prerelease(username, constellation_name, credentials_ec2, constellation_directory):
-    _terminate(username, constellation_name, credentials_ec2, constellation_directory, "vpc_trio_prerelease")
+def terminate_prerelease( constellation_name, credentials_ec2, ):
+    _terminate(constellation_name, credentials_ec2)
         
-def terminate(username, constellation_name, credentials_ec2, constellation_directory):
+def terminate( constellation_name, credentials_ec2 ):
     # call terminate with the appropriate configuration name
-    _terminate(username, constellation_name, credentials_ec2, constellation_directory, "vpc_trio")
+    _terminate( constellation_name, credentials_ec2)
     
 def monitor_prerelease(username, constellation_name, credentials_ec2, counter):
     m = _monitor(username, constellation_name, credentials_ec2, counter, "vpc_trio_prerelease")
@@ -848,7 +848,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     log("provisionning done")
     
     
-def _terminate(username, constellation_name, credentials_ec2, constellation_directory, CONFIGURATION):
+def _terminate( constellation_name, credentials_ec2):
 
     resources = get_constellation_data( constellation_name)
     constellation = ConstellationState( constellation_name)
@@ -863,7 +863,7 @@ def _terminate(username, constellation_name, credentials_ec2, constellation_dire
     constellation.set_value('simulation_glx_state', "not running")
     ec2conn, vpcconn = aws_connect(credentials_ec2)
 
-    log("terminate_vpc_trio [user=%s, constellation_name=%s" % (username, constellation_name) )
+    log("terminate_vpc_trio [  constellation_name=%s" % ( constellation_name) )
     
     
     #log("resources: %s" %   pprint.pformat(resources) )
