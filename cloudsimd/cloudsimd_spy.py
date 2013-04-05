@@ -13,7 +13,7 @@ redis_client = redis.Redis()
 
 def run():
     
-    channels = ["cloudsim_log", "cloudsim_cmds"]
+    channels = ["cloudsimd", "cloudsim_cmds"]
     for channel in sys.argv[1:]:
         if channel == 'o':
             channel = 'osrfoundation.org'

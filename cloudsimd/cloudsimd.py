@@ -381,7 +381,7 @@ def monitor(username, config, constellation_name, credentials_ec2):
             try:
                 #log("monitor %s (%s)" % (constellation_name, counter) )
                 done = monitor(username, constellation_name, credentials_ec2, counter)
-                log("monitor return value %s" % ( done) )
+                # log("monitor return value %s" % ( done) )
                 counter += 1
             except Exception, e:
                 done = False

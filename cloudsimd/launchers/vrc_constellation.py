@@ -736,7 +736,7 @@ class VrcCase(unittest.TestCase):
     
     def test_monitor(self):
         
-        self.constellation_name =  "cx48c9fb2e"
+        self.constellation_name =  "cxf44f7040"
         
         self.username = "toto@osrfoundation.org"
         self.credentials_ec2  = get_boto_path()
