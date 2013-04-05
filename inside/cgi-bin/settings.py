@@ -61,7 +61,7 @@ page =  """<!DOCTYPE html>
         add_cloud_credentials_widget("credentials_div");
         add_users_admin_widget("users_div");
         
-        setTimeout(users_update , 1500);        
+        setTimeout(users_update , 500);        
     }
     
     function users_update()
@@ -72,7 +72,7 @@ page =  """<!DOCTYPE html>
             {
                 var users = eval( '(' + str_data + ')' );
                 $.publish('/users',users);
-                setTimeout(users_update , 1500);
+                setTimeout(users_update , 500);
             };
         }
         catch(err)
