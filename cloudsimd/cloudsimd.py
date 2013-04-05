@@ -34,7 +34,7 @@ from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
 from launchers.launch_utils.launch import aws_connect
 
-from launchers.launch_utils import get_aws_instance, get_aws_instance_by_name
+from launchers.launch_utils import get_aws_instance, get_aws_instance_by_name, get_constellation_to_config_dict
 
 def launch_constellation(username, configuration, args = None, count =1):
     """
@@ -183,6 +183,7 @@ def launch( username,
         tags = {'username': username, 
                'constellation_name':constellation_name, 
                'CloudSim': version, 
+               'configuration' : config,
                'GMT': gmt}
         
         if args != None:

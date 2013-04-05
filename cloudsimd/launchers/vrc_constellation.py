@@ -38,7 +38,8 @@ from launch_utils.monitoring import LATENCY_TIME_BUFFER, record_ping_result,\
     monitor_launch_state, monitor_simulator, monitor_cloudsim_ping,\
     get_ssh_client
 import shutil
-from launch_utils.launch_db import get_aws_instance_by_name
+from launch_utils.launch_db import get_aws_instance_by_name,\
+    get_constellation_to_config_dict
 
 
 
@@ -734,7 +735,24 @@ class MonitorCase(unittest.TestCase):
   
 class VrcCase(unittest.TestCase):
     
-    def test_monitor(self):
+    def test_delete_vrc_constellations(self):
+        credentials_ec2  = get_boto_path()
+        constellations = []
+        d = get_constellation_to_config_dict(credentials_ec2)
+        for const, conf in d.iteritems():
+            if conf == "vrc_constellation":
+                constellations.append(const)
+        
+        for constellation_name in constellations:
+            terminate(constellation_name, credentials_ec2)
+    
+    def atest_const_2_config(self):
+        credentials_ec2  = get_boto_path()
+        d = get_constellation_to_config_dict(credentials_ec2)
+        for const, conf in d.iteritems():
+            print("const: %s = %s"%(const,conf))
+    
+    def atest_monitor(self):
         
         self.constellation_name =  "cxf44f7040"
         

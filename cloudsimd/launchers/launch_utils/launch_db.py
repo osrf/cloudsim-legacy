@@ -162,6 +162,22 @@ def get_cloudsim_config():
     config = json.loads(s)
     return config
 
+
+def get_constellation_to_config_dict(boto_path="../../boto.ini"):
+    constellations = {}
+    ec2conn = aws_connect(boto_path)[0]
+    reservations = ec2conn.get_all_instances()
+    instances = [i for r in reservations for i in r.instances]
+    for i in instances:
+   
+        if i.tags.has_key('CloudSim') and i.tags.has_key('configuration'):
+            #name = i.tags['Name']
+            constellation = i.tags['constellation_name']
+            config = i.tags['configuration']
+            constellations[constellation] = config
+    return constellations
+    
+
 def get_aws_instance_by_name(instance_name, boto_path="../../boto.ini"):
     """
     Interactive command to get a bot instance of a running machine
