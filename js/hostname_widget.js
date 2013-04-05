@@ -15,18 +15,36 @@ function create_hostname_widget(machine_div,
         if(msg.constellation_name != constellation_name)
             return;
         
-        
-        title[0].innerHTML = "<td align='left'>" + machine_name + "</td>";
-		title[1].innerHTML = "<td align='right'><FONT SIZE=2>IP: " + msg[key_ip] + "<FONT></td>";
+        //var name = "<td align='left'>" + machine_name + "</td>";
+        var name = machine_name;
+        if(title[0].innerHTML != name)
+        {
+        	title[0].innerHTML = name;
+        }
+		//var ip = "<td align='right'><FONT SIZE=2>IP: " + msg[key_ip] + "<FONT></td>"
+        var ip = '<font size="2">IP: ' + msg[key_ip] + "</font>"
+        if(title[1].innerHTML != ip)
+        {
+        	title[1].innerHTML = ip;
+        }
 		
 		if (msg[key_zip_file] == 'ready')
 		{
 			var url = "/cloudsim/inside/cgi-bin/machine_zip_download.py?constellation=" + constellation_name + "&machine=" + machine_name + "_" + constellation_name;
 			var str = "<td align='left'><form style='display: inline' action='" + url + "' method='post'><button>Download Keys</button></form></td>";
 			//var str = "<td align='left'><a href='" + url + "'>Download Keys</a></form></td>";
-			title[2].innerHTML = str;
+			if (title[2].innerHTML != str)
+			{
+				title[2].innerHTML = str;
+			}
 		}
-		title[3].innerHTML = "<td align='right'><FONT SIZE=2>AWS Id: " + msg[key_aws_id] + "<FONT></td>";			
+		//var aws = "<td align='right'><FONT SIZE=2>AWS Id: " + msg[key_aws_id] + "<FONT></td>";
+		var aws = "<FONT SIZE=2>AWS Id: " + msg[key_aws_id] + "<FONT>";
+		if(title[3].innerHTML != aws)
+		{ 
+			title[3].innerHTML =  aws;
+		}
+		
     });
     
 }

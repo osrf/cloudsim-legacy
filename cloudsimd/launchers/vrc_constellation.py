@@ -354,6 +354,13 @@ def configure_machines(constellation_name, tags, credentials_ec2 ):
     field2_key_name = constellation.get_value('field2_key_name')
     field2_ssh = SshClient(constellation_directory, field2_key_name, 'ubuntu', field2_ip_address)
     
+    router_networking_done = get_ssh_cmd_generator(router_ssh,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "router_state", 'packages_setup' ,max_retries = 1000)
+    sim_networking_done = get_ssh_cmd_generator(sim_ssh,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "sim_state", 'packages_setup' ,max_retries = 1000)
+    field1_networking_done = get_ssh_cmd_generator(field1_ssh,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "field1_state", 'packages_setup' ,max_retries = 1000)
+    field2_networking_done = get_ssh_cmd_generator(field2_ssh,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "field2_state", 'packages_setup' ,max_retries = 1000)
+    empty_ssh_queue([router_networking_done, sim_networking_done, field1_networking_done, field2_networking_done], sleep=2)
+    
+    
     
     router_done = get_ssh_cmd_generator(router_ssh,"ls cloudsim/setup/done", "cloudsim/setup/done",  constellation, "router_state", "running",  max_retries = 500)
     sim_done = get_ssh_cmd_generator(sim_ssh,"ls cloudsim/setup/done", "cloudsim/setup/done",  constellation, "sim_state", "running",  max_retries = 500)
@@ -653,8 +660,12 @@ def terminate(constellation_name, credentials_ec2):
     constellation.set_value('sim_state', 'terminating')
     constellation.set_value('field1_state', 'terminating')
     constellation.set_value('field2_state', 'terminating')
-    constellation.set_value('sim_launch_msg', "terminating")
     constellation.set_value('sim_glx_state', "not running")
+    
+    constellation.set_value('sim_launch_msg', "terminating")
+    constellation.set_value('router_launch_msg', "terminating")
+    constellation.set_value('field1_launch_msg', "terminating")
+    constellation.set_value('field2_launch_msg', "terminating")    
     
     try:
         running_machines =  {}
@@ -707,11 +718,7 @@ def terminate(constellation_name, credentials_ec2):
     constellation.set_value('constellation_state', 'terminated')
 
     
-def terminate_prerelease(username, constellation_name, credentials_ec2, constellation_directory):
-    pass
 
-def _terminate(username, CONFIGURATION, constellation_name, credentials_ec2, constellation_directory):
-    pass
 
 
     
@@ -727,9 +734,21 @@ class MonitorCase(unittest.TestCase):
   
 class VrcCase(unittest.TestCase):
     
-    def test_launch(self):
+    def test_monitor(self):
         
-        self.constellation_name =  "test_vrc_constellation_59d6f99a"
+        self.constellation_name =  "cx48c9fb2e"
+        
+        self.username = "toto@osrfoundation.org"
+        self.credentials_ec2  = get_boto_path()
+        sweep_count = 2
+        for i in range(sweep_count):
+            print("monitoring %s/%s" % (i,sweep_count) )
+            monitor(self.username, self.constellation_name, self.credentials_ec2, i)
+            time.sleep(1)
+        
+    def stest_launch(self):
+        
+        
         
         self.username = "toto@osrfoundation.org"
         self.credentials_ec2  = get_boto_path()

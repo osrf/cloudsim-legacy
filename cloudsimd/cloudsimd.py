@@ -226,11 +226,10 @@ def launch( username,
 Terminates the machine via the cloud interface. Files will be removed by the 
 monitoring process
 """
-def terminate(constellation, 
-              credentials_ec2):
+def terminate(constellation, credentials_ec2):
  
     proc = multiprocessing.current_process().name
-    log("terminate '%s' for '%s' from proc '%s'" % (constellation, username, proc))
+    log("terminate '%s' from proc '%s'" % (constellation,  proc))
 
     try:
         
