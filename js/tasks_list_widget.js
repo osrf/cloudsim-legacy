@@ -192,13 +192,15 @@ function create_task_list_widget(const_div, constellation_name)
     // create a form for the content 
     //
 
+    var form_id = constellation_name + "-task-view-form";
+
     var add_task_button = document.createElement('input');
     add_task_button.setAttribute('type','button');
     add_task_button.setAttribute('value','Create task...');
     add_task_button.onclick =  function()
     {
     	
-    	$( "#task-view-form" ).dialog( "open" );
+    	$( "#" + form_id ).dialog( "open" );
     }
     
     var stop_current_task_button = document.createElement('input');
@@ -217,12 +219,11 @@ function create_task_list_widget(const_div, constellation_name)
 
 
 
-    var form_id = "task-view-form";
     var form_div = _create_task_form(form_id);
     p.insertBefore(form_div, widgets_div);
     
     // this is necessary, otherwise the form does not form
-    setTimeout(function(){ $( "#task-view-form" ).dialog(dlg_options );}, 0);
+    setTimeout(function(){ $( "#" + form_id ).dialog(dlg_options );}, 0);
 
     var task_div_list = widgets_div.children;
 
@@ -454,11 +455,13 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
             	// starting up color
             	if(data.gazebo == "not running")
             	{
-            		colors[0] =  "/js/images/yellow_status.png";	
+            		colors[1] =  "/js/images/yellow_status.png";	
             	}
             		
             	var color = colors[count % colors.length];
                 state_widget.src = color;
+                action_button.disabled=true;
+                x_button.disabled=true;
             }
             
             if (task.task_state == "ready")
@@ -468,14 +471,20 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
             
             if (task.task_state == "stopping")
             {
-            	colors =  ["/js/images/blue_status.png", "/js/images/red_status.png"];
+            	colors =  ["/js/images/gray_status.png", "/js/images/red_status.png"];
                 var color = colors[count % colors.length];
                 state_widget.src = color;
+                action_button.disabled=true;
+                x_button.disabled=true;
+
             }
                         
             if (task.task_state == "stopped")
             {
                 state_widget.src = "/js/images/red_status.png";
+                action_button.disabled=true;
+                x_button.disabled=true;
+
             }
             
             
