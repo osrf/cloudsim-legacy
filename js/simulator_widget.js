@@ -10,8 +10,8 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
     var widget_div = _create_empty_widget(machine_div, "simulator");
     
     var status = status_img("gray");
-    widget_div.innerHTML = status;
-    
+    widget_div.innerHTML = status + "<b>Simulator</b>";
+/*    
     var package_text = document.createElement('input');
     package_text.setAttribute('type','text');
     package_text.setAttribute('name','pack');
@@ -80,7 +80,8 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
     widget_div.appendChild(start_button);
     widget_div.appendChild(stop_button);
     
-
+*/
+    
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name != constellation_name)
             return;

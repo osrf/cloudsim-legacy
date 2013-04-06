@@ -10,14 +10,11 @@ import urlparse
 from common import  authorize
 import redis
 
-
 cgitb.enable()
 r = redis.Redis()
 
-
-
 def log(msg):
-    r.publish('tasks', msg)
+    r.publish('cgi_tasks', msg)
 
 def _domain(email):
     domain = email.split('@')[1]
@@ -30,19 +27,19 @@ def get_task(email, constellation_name, task_id):
        
         s = r.get(key)
         c = json.loads(s)
-        log("c %s" % c)
         
         domain = _domain(c['username'])
         authorised_domain = _domain(email)
         
-        x = None
+        
         if domain == authorised_domain:
-            x = c
-        return x
+            tasks = c['tasks']
+            for task in tasks:
+                if task['task_id'] == task_id:
+                    return task
+        return None
     except:
         return None
-        
-
 
 def parse_path():
     try:
@@ -56,22 +53,24 @@ def parse_path():
         return None, None
 
 
-def get_query_param(param):
+def get_query_param(param, default = "N/A"):
     qs= os.environ['QUERY_STRING']
     params = urlparse.parse_qs(qs)
-    p = params[param][0]
+    p = None
+    try:
+        p = params[param][0]
+    except:
+        p = default
     return p
+    
 
 email = authorize()
 method = os.environ['REQUEST_METHOD']
 
-
 print('Content-type: application/json')
 print("\n")
 
-
 constellation, task_id = parse_path()
-
 
 if method == 'GET':
     s = None
@@ -80,16 +79,13 @@ if method == 'GET':
         if len(constellation) > 0:
             domain = _domain(email)
             key = "cloudsim/"+ constellation
-            s = r.get(key)
-            s = "constellation %s, task_id %s" % (constellation, task_id)
-            
+            task = get_task(email, constellation, task_id)
+            s = json.dumps(task)
     except Exception, e:
         s = "%s" % e
         
-    print("GET %s" % s)
+    print( s)
     exit(0)
-
-
 
 d = {}
 
@@ -98,25 +94,36 @@ if method == 'DELETE':
     d['constellation'] = constellation
     d['task_id'] = task_id    
 
-  
-    
-d['constellation'] = constellation
-d['package'] = get_query_param('package')
-d['launch'] = get_query_param('launch')
-d['args'] = get_query_param('args')
-d['latency'] = get_query_param('latency')
 
 
 if method == 'PUT':
     d['command'] = 'update_task'
+    d['constellation'] = constellation
     d['task_id'] = task_id  
-
+    d['command'] = 'update_task'
+    d['task_title'] =  get_query_param('task_title')
+    d['ros_package'] =  get_query_param('ros_package')
+    d['ros_launch'] =  get_query_param('ros_launch')
+    d['ros_args'] =  get_query_param('ros_args',"")
+    d['latency'] =  get_query_param('latency')
+    d['timeout'] =  get_query_param('timeout')
+    d['uplink_data_cap'] =  get_query_param('uplink_data_cap')
+    d['downlink_data_cap'] =  get_query_param('downlink_data_cap')
+    log("Update (put) tasks: %s" % d)
+    
+# see lib_cloudsim.js
 if method == 'POST':
     d['command'] = 'create_task'
-    
-
-
-    
+    d['constellation'] = constellation
+    d['task_title'] =  get_query_param('task_title')
+    d['ros_package'] =  get_query_param('ros_package')
+    d['ros_launch'] =  get_query_param('ros_launch')
+    d['ros_args'] =  get_query_param('ros_args',"")
+    d['latency'] =  get_query_param('latency')
+    d['timeout'] =  get_query_param('timeout')
+    d['uplink_data_cap'] =  get_query_param('uplink_data_cap')
+    d['downlink_data_cap'] =  get_query_param('downlink_data_cap')
+    log("Create (post) tasks: %s" % d)
     
 s = json.dumps(d)
 r.publish('cloudsim_cmds', s)

@@ -24,7 +24,7 @@ def get_machine_zip_key(email, constellation_name, machine_name):
     return path
 
 def log(msg):
-    red.publish("cloudsim_log", "[machine_zip_download.py] " + msg)
+    red.publish("machine_zip_download", "[machine_zip_download.py] " + msg)
 
 def download(filename):
     short_name = os.path.split(filename)[1]

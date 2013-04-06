@@ -8,68 +8,28 @@ function create_hostname_widget(machine_div,
                                 key_launch_date, 
                                 key_zip_file)
 {
-    
-    var widget_div = _create_empty_widget(machine_div, "hostname");
-    _update_hostname_widget(widget_div, constellation_name, machine_name, "xxx.xxx.xxx", "x-xxxxx", "xx@xx.xxx", "xxxx-xx-xx xx:xx:xx");
-    
-    $.subscribe("/cloudsim", function(event, msg){
-        if(msg.constellation_name != constellation_name)
-            return;
-        if(msg.machine_name != machine_name)
-            return
-            
-        if(msg.type == 'machine')
-        {
-            var data = msg.data;
-            _update_hostname_widget(widget_div, constellation_name, machine_name, 
-            data.ip, data.aws_id, data.username, data.gmt, data.key_download_ready );
-        }
-    });
+	var table = machine_div.querySelector("table");
+	var title = table.querySelectorAll("td");		
     
     $.subscribe("/constellation", function(event, msg){
         if(msg.constellation_name != constellation_name)
             return;
         
-        _update_hostname_widget(widget_div, 
-                                constellation_name, 
-                                machine_name, 
-                                msg[key_ip], 
-                                msg[key_aws_id], 
-                                msg[key_user], 
-                                msg[key_launch_date], 
-                                msg[key_zip_file]);
-       
+        // Remove the constellation name from the title
+    	var machine_name_separator = machine_name.lastIndexOf("_")
+    	var machine_name_only = machine_name.slice(0, machine_name_separator)
+        
+        title[0].innerHTML = "<td align='left'>" + machine_name_only + "</td>";
+		title[1].innerHTML = "<td align='right'><FONT SIZE=2>IP: " + msg[key_ip] + "<FONT></td>";
+		
+		if (msg[key_zip_file] == 'ready')
+		{
+			var url = "/cloudsim/inside/cgi-bin/machine_zip_download.py?constellation=" + constellation_name + "&machine=" + machine_name;
+			var str = "<td align='left'><form style='display: inline' action='" + url + "' method='post'><button>Download Keys</button></form></td>";
+			//var str = "<td align='left'><a href='" + url + "'>Download Keys</a></form></td>";
+			title[2].innerHTML = str;
+		}
+		title[3].innerHTML = "<td align='right'><FONT SIZE=2>AWS Id: " + msg[key_aws_id] + "<FONT></td>";			
     });
     
 }
-
-
-function _update_hostname_widget(widget_div, 
-                                 constellation_name, 
-                                 machine_name, 
-                                 ip, 
-                                 aws_id, 
-                                 user, 
-                                 launch_date, 
-                                 zip_file)
-{
-		
-    var str = "";
-    str += "<b>IP</b> " + ip + " ("
-    str += "<b>AWS id</b> " + aws_id +") ";
-    
-    if(zip_file == 'ready')
-    {
-        str += '<a href="/cloudsim/inside/cgi-bin/machine_zip_download.py';
-        str += '?constellation=' + constellation_name;
-        str += '&machine=' + machine_name;
-        str += '">Download keys</a>';
-	}
-    str += '<br>';
-    str += '<b>Launched by: </b>' + user + " ( at GMT " + launch_date+ ")";
-    widget_div.innerHTML = str;
-}
-
-
-
-

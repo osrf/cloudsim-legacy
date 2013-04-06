@@ -101,7 +101,7 @@ def print_http_header(newline=True):
         print("\n")
 
 def print_http_filedownload_header(fname, newline=True):
-    print("Content-Type: applicatoin/octet-stream; name=\"%s\""%(fname))
+    print("Content-Type: application/octet-stream; name=\"%s\""%(fname))
     print("Content-Disposition: attachment; filename=\"%s\""%(fname))
     if newline:
         print("\n")
