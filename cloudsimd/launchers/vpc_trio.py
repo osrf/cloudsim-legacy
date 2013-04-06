@@ -280,11 +280,17 @@ def _launch(username,
     log("new trio constellation: %s" % constellation_name) 
 
     amis = get_amazon_amis(credentials_ec2)
+    print (amis)
 
     SIM_AWS_IMAGE    = amis['ubuntu_1204_x64_cluster']
-    ROBOT_AWS_IMAGE  = amis['ubuntu_1204_x64_cluster']
+    if SIM_AWS_TYPE == 't1.micro':
+        SIM_AWS_IMAGE  = amis['ubuntu_1204_x64']
+    
+    ROBOT_AWS_IMAGE  = amis['ubuntu_1204_x64_cluster']    
+    if ROBOT_AWS_TYPE == 't1.micro':
+        ROBOT_AWS_IMAGE  = amis['ubuntu_1204_x64']
+  
     ROUTER_AWS_IMAGE = amis['ubuntu_1204_x64']
-
        
     ec2conn, vpcconn = aws_connect(credentials_ec2)
     constellation = ConstellationState( constellation_name)

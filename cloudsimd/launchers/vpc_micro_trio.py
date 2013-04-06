@@ -7,6 +7,7 @@ import time
 import vpc_trio 
 import redis
 import logging
+import cloudsim
 
 from launch_utils.launch import get_unique_short_name
 from launch_utils.testing import get_test_runner
@@ -96,14 +97,11 @@ def launch(username, constellation_name, tags, credentials_ec2,
     vpc_trio._launch(username, constellation_name, tags, credentials_ec2, 
                      constellation_directory,
                         ROUTER_AWS_TYPE,
-                        ROUTER_AWS_IMAGE,
                         ROUTER_SCRIPT,
                         
                         ROBOT_AWS_TYPE,
-                        ROBOT_AWS_IMAGE,
                         ROBOT_SCRIPT,
-                        
-                        SIM_AWS_IMAGE,
+
                         SIM_AWS_TYPE,
                         SIM_SCRIPT,
                         CONFIGURATION)
@@ -147,6 +145,9 @@ class MicroTrioCase(unittest.TestCase):
         self.constellation_directory = os.path.abspath( os.path.join(get_test_path('test_trio'), self.constellation_name))
         print("creating: %s" % self.constellation_directory )
         os.makedirs(self.constellation_directory)
+        
+        website_distribution = cloudsim.zip_cloudsim()
+        
         
         launch(self.username, self.constellation_name, self.tags, self.credentials_ec2, self.constellation_directory)
         
