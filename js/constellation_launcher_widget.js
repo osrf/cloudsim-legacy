@@ -11,6 +11,7 @@ function create_constellation_launcher_widget(div_name)
     var div = document.getElementById(div_name);
     
     var desc = document.createElement("div");
+    desc.setAttribute("style", "width: 100%; float: left; height: 10px; padding: 5px 0px 0px 0px; position: relative;");
     
     var configs_select = document.createElement('select');
     for(var configuration in machine_configurations)

@@ -5,13 +5,15 @@ var MAX_PACKET_LATENCY = 500;
 function create_traffic_shaper_widget(_machineDiv, _constellationName, _machineName, _widgetName)
 {
     var widget_div = _create_empty_widget(_machineDiv, _widgetName);
+    widget_div.setAttribute("style", "width: 100%; float: left; height: 10px; padding: 0px 0px 10px 17px; position: relative;");
+
 
     var targetPacketLatency_text = document.createElement('input');
     targetPacketLatency_text.setAttribute('type','number');
     targetPacketLatency_text.setAttribute('name','targetPacketLatency');
     targetPacketLatency_text.setAttribute('value', INITIAL_PACKET_LATENCY);
     targetPacketLatency_text.setAttribute('min', 0); 
-    targetPacketLatency_text.setAttribute('max', MAX_PACKET_LATENCY); 
+    targetPacketLatency_text.setAttribute('max', MAX_PACKET_LATENCY);
   
     var update_button = document.createElement('input');
     update_button.setAttribute('type','button');

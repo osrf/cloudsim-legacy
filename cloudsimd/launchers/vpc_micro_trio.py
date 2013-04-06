@@ -5,6 +5,9 @@ import os
 import time
 
 import vpc_trio 
+import redis
+import logging
+import cloudsim
 
 from launch_utils.launch import get_unique_short_name
 from launch_utils.testing import get_test_runner
@@ -13,6 +16,16 @@ from launch_utils.startup_scripts import get_vpc_router_script, get_vpc_open_vpn
 
 CONFIGURATION = "vpc_micro_trio"
 
+def log(msg, channel = "micro_trio"):
+    try:
+        
+        redis_client = redis.Redis()
+        redis_client.publish(channel, msg)
+        logging.info(msg)
+    except:
+        print("Warning: redis not installed.")
+    print("vpc_micro_trio log> %s" % msg)
+    
 
 def get_micro_sim_script(routing_script):
     s = """#!/bin/bash
@@ -42,8 +55,24 @@ def get_micro_robot_script(routing_script):
     
     return get_micro_sim_script(routing_script)
 
+def start_task(constellation, task_id):
+    
+    for i in range(5):
+        log("*****")
+        
+    log("start_task %s" % task_id)
+
+    for i in range(5):
+        log("*****")
+
+    
+def stop_task(constellation):
+    for i in range(10):
+        log("** STOP TASK %s ***" % constellation)
+
 def launch(username, constellation_name, tags, credentials_ec2, 
            constellation_directory ):
+
 
     routing_script = get_vpc_open_vpn(vpc_trio.OPENVPN_CLIENT_IP, 
                                       vpc_trio.TS_IP)
@@ -68,14 +97,11 @@ def launch(username, constellation_name, tags, credentials_ec2,
     vpc_trio._launch(username, constellation_name, tags, credentials_ec2, 
                      constellation_directory,
                         ROUTER_AWS_TYPE,
-                        ROUTER_AWS_IMAGE,
                         ROUTER_SCRIPT,
                         
                         ROBOT_AWS_TYPE,
-                        ROBOT_AWS_IMAGE,
                         ROBOT_SCRIPT,
-                        
-                        SIM_AWS_IMAGE,
+
                         SIM_AWS_TYPE,
                         SIM_SCRIPT,
                         CONFIGURATION)
@@ -91,13 +117,15 @@ def terminate(username, constellation_name, credentials_ec2,
                         constellation_directory, CONFIGURATION)
                            
     
-def start_simulator(username, constellation, machine_name, package_name, 
+def start_simulator(username, constellation_name, machine_name, package_name, 
                     launch_file_name, launch_args, ):
-    vpc_trio.start_simulator(username, constellation, machine_name, 
+    vpc_trio.start_simulator(username, constellation_name, machine_name, 
                              package_name, launch_file_name, launch_args)
+    
+    
 
-def stop_simulator(username, constellation, machine):
-    vpc_trio.stop_simulator(username, constellation, machine)
+def stop_simulator(username, constellation_name, machine):
+    vpc_trio.stop_simulator(username, constellation_name, machine)
 
 class MicroTrioCase(unittest.TestCase):
     
@@ -117,6 +145,9 @@ class MicroTrioCase(unittest.TestCase):
         self.constellation_directory = os.path.abspath( os.path.join(get_test_path('test_trio'), self.constellation_name))
         print("creating: %s" % self.constellation_directory )
         os.makedirs(self.constellation_directory)
+        
+        website_distribution = cloudsim.zip_cloudsim()
+        
         
         launch(self.username, self.constellation_name, self.tags, self.credentials_ec2, self.constellation_directory)
         

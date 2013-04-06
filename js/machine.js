@@ -6,6 +6,22 @@ function machines_on_load_page()
     
 }
 
+function create_section(parent_div, div_id, left_content, right_content)
+{
+	var new_div = document.createElement("div");
+    new_div.id = div_id;    
+    _set_mach_style(new_div.style);
+    
+    if(!right_content) 
+        right_content = "";
+    var str =  _get_machine_div_str(left_content, right_content);
+    new_div.innerHTML = str;
+    // parent_div.insertBefore(new_div, null);
+    parent_div.appendChild(new_div);
+    return new_div;	
+}
+
+
 function get_machine_names(div_name, constellation)
 {
 	var div = document.getElementById(div_name);
@@ -25,30 +41,34 @@ function get_machine_names(div_name, constellation)
     return machines;
 }
 
-function _get_machine_div_str(machine_name)
-{
+function _get_machine_div_str(left_content, right_content)
+{	
     var str = "";
+
     str += '<div id="top" style="width = 100%; float:left; border-top-left-radius:10px; border-top-right-radius:15px; background-color:#44497a; width:100%; float:left;" ">' // background-color:#FFA500;
-    str +=    "<h3 style='margin-bottom:0; margin-top:0; color:white'><center>";
-    str +=    machine_name + "</center></h3>";    
-    str += '</div>' // top
+    str += "<h3 style='margin-bottom:0; margin-top:0; color:white'>";
+    str += "<table width='100%'>";
+    str += "<tr><td align='left'>" + left_content + "</td><td align='right'></td></tr>";
+    str += "<tr><td align='left'>" + right_content+ "</td><td align='right'></td></tr>";
+    str += '</table>';
+    str += '</h3></div>' // top
+
     str += '<div id="widgets"';
-    str += _get_machine_widgets_style();
+    str +=   _get_machine_widgets_style();
     str +='></div>'; // widgets
+
+    str+= "</div>";
     return str;
 }
 
-function create_machine(div, machine_name)
+function create_machine(div, machine_name )
 {
-	var new_div = document.createElement("div");
-    new_div.id = machine_name;    
-    _set_mach_style(new_div.style);
-    
-    var str =  _get_machine_div_str(machine_name);
-    new_div.innerHTML = str;
-    div.insertBefore(new_div, null);
-    return new_div;	
+    var download = "<form method='get'><button type='submit' disabled>Download Keys</button></form>";
+    var div = create_section(div, machine_name, download);
+    return div;
+
 }
+
 
 
 function _set_mach_style(style)

@@ -45,7 +45,7 @@ function _get_user_div_str(users_div_name, users)
     
     str +="</div>";
     
-    str += '<input type="text" name="new_user"/>';
+    str += 'New User\'s Gmail Address: <input type="text" name="new_user"/>';
     str += '<select id="role" />';
     str += '   <option value="user" selected="selected">user</option>';
     str += '   <option value="admin">admin</option>';
@@ -53,7 +53,7 @@ function _get_user_div_str(users_div_name, users)
     
     str += '<button type="button" onclick="_add_click(';
     str += "'" +  users_div_name + "'";
-    str +=');">Add user</button>';
+    str +=');">Add user</button><br><br>Add or remove users. Do not remove the last remaining administrative user!';
     return str;
 }
 

@@ -42,7 +42,7 @@ fi
  
 
 sudo chown -R www-data:www-data /var/www-cloudsim-auth
-sudo chmod 700 /var/www-cloudsim-auth
+sudo chmod 704 /var/www-cloudsim-auth
 
 #
 # Setup a daemons to launch and monitor simulations for us
