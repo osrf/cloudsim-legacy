@@ -7,7 +7,7 @@ import json
 import redis
 
 
-def log(msg, channel = "launch"):
+def log(msg, channel = "launch_db"):
     try:
         
         redis_client = redis.Redis()
@@ -69,6 +69,7 @@ class ConstellationState(object):
         for task in tasks:
             if task['task_id'] == task_id:
                 task.update(updated_task)
+                self.set_value('tasks', tasks)
                 return
         raise KeyError(task_id)
     
@@ -82,6 +83,7 @@ class ConstellationState(object):
         raise KeyError(task_id)
 
     def expire(self, nb_of_secs):
+        log('expiration of %s in %s sec' % (self.constellation_name, nb_of_secs))
         resources  = get_constellation_data(self.constellation_name)
         set_constellation_data(self.constellation_name, resources, nb_of_secs)
 
@@ -138,29 +140,18 @@ def get_constellation_data(constellation):
 __CONFIG__KEY__ = "cloudsim_config"
 
 def set_cloudsim_config(config):
-    
     r = redis.Redis()
     s = json.dumps(config)
     r.set(__CONFIG__KEY__, s)
     
 def get_cloudsim_config():
-    
     r = redis.Redis()
     s = r.get(__CONFIG__KEY__)
     config = json.loads(s)
     return config
 
-
-def subscribe(channels):
-    
-    redis_client = redis.Redis()
-    ps = redis_client.pubsub()
-    ps.subscribe(channels)
-    for e in ps.listen():
-        print(e)
     
         
-
              
         
 if __name__ == '__main__':

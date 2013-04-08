@@ -36,9 +36,37 @@ from launchers.launch_utils.launch import aws_connect
 
 
 
+def launch_constellation(username, configuration, count =1):
+    """
+    Launches one (or count) constellation of a given configuration
+    """
+    r = redis.Redis()
+    for i in range(count):
+        time.sleep(0.1)
+        d = {}
+        d['username'] = username
+        d['command'] = 'launch'
+        d['configuration'] = configuration
+        s = json.dumps(d)
+        print(i, ")", s)
+        r.publish('cloudsim_cmds', s)
+        
+def terminate_all_constellations():
+    for x in get_constellation_names():
+        d = {}
+        d['username'] = 'hugo@osrfoundation.org'
+        d['command'] = 'terminate'
+        d['constellation'] = x
+        s = json.dumps(d)
+        time.sleep(0.5)
+        print("Terminate %s" % x)
+        r.publish('cloudsim_cmds', s)
+
+
 def del_constellations():
     """
-    Removes all constellations from the Redis db
+    Removes all constellations from the Redis db 
+    does not attempt to terminate them
     """
     r = redis.Redis()
     for k in r.keys():
@@ -95,12 +123,41 @@ def get_aws_instance(instance, boto_path="../../boto.ini"):
 #
 
 plugins = {}
-plugins['vpc_micro_trio'] = {'launch':vpc_micro_trio.launch,    'terminate':vpc_micro_trio.terminate,    'monitor':vpc_micro_trio.monitor,   'start_task':vpc_micro_trio.start_task,   'stop_task':vpc_micro_trio.stop_task}
-plugins['vpc_trio'] =       {'launch':vpc_trio.launch,          'terminate':vpc_trio.terminate,          'monitor':vpc_trio.monitor,         'start_task':vpc_trio.start_task,         'stop_task':vpc_trio.stop_task}
-plugins['simulator'] =       {'launch':simulator.launch,          'terminate':simulator.terminate,       'monitor':simulator.monitor,         'start_task':simulator.start_task,         'stop_task':simulator.stop_task}
-plugins['cloudsim'] =       {'launch':cloudsim.launch,          'terminate':cloudsim.terminate,       'monitor':cloudsim.monitor,         'start_task':cloudsim.start_task,         'stop_task':cloudsim.stop_task}
-plugins['vpc_trio_prerelease'] =       {'launch':vpc_trio.launch_prerelease,          'terminate':vpc_trio.terminate_prerelease,          'monitor':vpc_trio.monitor_prerelease,         'start_task':vpc_trio.start_simulator,         'stop_task':vpc_trio.stop_task}
-plugins['simulator_prerelease'] =       {'launch':simulator.launch_prerelease,          'terminate':simulator.terminate_prerelease,       'monitor':simulator.monitor_prerelease,         'start_task':simulator.start_simulator,         'stop_task':simulator.stop_task}
+plugins['vpc_micro_trio'] = {'launch':vpc_micro_trio.launch,    
+                             'terminate':vpc_micro_trio.terminate,    
+                             'monitor':vpc_micro_trio.monitor,   
+                             'start_task':vpc_micro_trio.start_task,   
+                             'stop_task':vpc_micro_trio.stop_task}
+
+plugins['vpc_trio'] =       {'launch':vpc_trio.launch,
+                             'terminate':vpc_trio.terminate,          
+                             'monitor':vpc_trio.monitor,         
+                             'start_task':vpc_trio.start_task,         
+                             'stop_task':vpc_trio.stop_task}
+
+plugins['simulator'] =       {'launch':simulator.launch,          
+                              'terminate':simulator.terminate,       
+                              'monitor':simulator.monitor,         
+                              'start_task':simulator.start_task,         
+                              'stop_task':simulator.stop_task}
+
+plugins['cloudsim'] =       {'launch':cloudsim.launch,          
+                             'terminate':cloudsim.terminate,       
+                             'monitor':cloudsim.monitor,         
+                             'start_task':cloudsim.start_task,         
+                             'stop_task':cloudsim.stop_task}
+
+plugins['vpc_trio_prerelease'] =  {'launch':vpc_trio.launch_prerelease,          
+                                    'terminate':vpc_trio.terminate_prerelease,          
+                                    'monitor':vpc_trio.monitor_prerelease,         
+                                    'start_task':vpc_trio.start_simulator,         
+                                    'stop_task':vpc_trio.stop_task}
+
+plugins['simulator_prerelease'] =   {'launch':simulator.launch_prerelease,          
+                                     'terminate':simulator.terminate_prerelease,       
+                                     'monitor':simulator.monitor_prerelease,         
+                                     'start_task':simulator.start_simulator,         
+                                     'stop_task':simulator.stop_task}
 
 
 class LaunchException(Exception):
@@ -153,7 +210,7 @@ def launch( username,
         constellation.set_value('constellation_state', 'launching')
         constellation.set_value('error', '')
         
-        constellation.set_value('task_state', "ready")
+        constellation.set_value('current_task', "")
         constellation.set_value('tasks', [])
         
         try:
@@ -210,31 +267,6 @@ def terminate(username,
     constellation.set_value('constellation_state', 'terminated')    
     log("Deleting %s from the database" % constellation)
     constellation.expire(30)    
-
-#def start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args):
-#
-#    try:
-#        data = get_constellation_data( constellation)
-#        config = data['configuration']
-#        start_simulator  = plugins[config]['start_simulator']
-#        start_simulator(username, constellation, machine_name, package_name, launch_file_name, launch_args)
-#    except Exception, e:
-#        log("cloudsimd.py start_simulator error: %s" % e)
-#        tb = traceback.format_exc()
-#        log("traceback:  %s" % tb) 
-#
-#
-#def stop_simulator(username, constellation,  machine):
-#    try:
-#        data = get_constellation_data( constellation)
-#        config = data['configuration']
-#        root_directory =  MACHINES_DIR
-#        stop_simulator  = plugins[config]['stop_simulator']
-#        stop_simulator(username, constellation, machine)
-#    except Exception, e:
-#        log("cloudsimd.py stop_simulator error: %s" % e)
-#        tb = traceback.format_exc()
-#        log("traceback:  %s" % tb)
 
 
 
@@ -301,13 +333,25 @@ def start_task(constellation_name, task_id):
         cs = ConstellationState(constellation_name)
         config = cs.get_value('configuration')
         start_task = plugins[config]['start_task']
-        #tasks = cs.get_value('tasks')
-        #task = _find_task(tasks, task_id)
-        #log("Ze task is %s" % task)
-        #if task['task_state'] == "not started":
-        
-        start_task(constellation_name, task_id)
-            
+        current_task = cs.get_value('current_task')
+        if current_task == '':
+            task = cs.get_task(task_id)
+            task_state = task['task_state']
+            if task_state == 'ready':
+                cs.set_value('current_task', task_id)
+                log('task_state running')
+                task['task_state'] = 'running'
+                cs.update_task(task_id, task) 
+                # no other task running, and task is ready
+                try:
+                    start_task(constellation_name, task)
+                except:
+                    pass
+
+            else:
+                log("Task is not ready (%s)" % task_state)
+        else:
+                log("can't run task %s while tasks %s is already running" % (task_id, current_task))
     except Exception, e:
         log("start_task error %s" % e)
         tb = traceback.format_exc()
@@ -319,14 +363,24 @@ def stop_task(constellation_name):
         log("stop_task %s" % (constellation_name))
         cs = ConstellationState(constellation_name)
         config = cs.get_value('configuration')
-        stop_task = plugins[config]['stop_task']
-        # task_state = cs.get_value('task_state')
-        # if task_state  == "running %s" % task_id:
-            # stop gazebo
-            # stop traffic shaper
-        #cs.set_value("task_state", "stopping %s" % task_id)
-        stop_task(constellation_name)
+        stop_task_fn = plugins[config]['stop_task']
+        
+        task_id = cs.get_value('current_task')
+        if task_id != '':
+            task = cs.get_task(task_id)
             
+            task['task_state'] = 'stopping'
+            log('task_state stopping')
+            cs.update_task(task_id, task)
+            
+            stop_task_fn(constellation_name)            
+            
+            task['task_state'] = 'stopped'
+            cs.update_task(task_id, task)
+            log('task_state stopped')
+            cs.set_value('current_task', '')            
+        else:
+            log('stop_task error: no current task')    
     except Exception, e:
         log("stop_task error %s" % e)
         tb = traceback.format_exc()
@@ -344,7 +398,7 @@ def monitor(username, config, constellation_name, credentials_ec2):
             try:
                 #log("monitor %s (%s)" % (constellation_name, counter) )
                 done = monitor(username, constellation_name, credentials_ec2, counter)
-                #log("monitor return value %s" % ( done) )
+                log("monitor return value %s" % ( done) )
                 counter += 1
             except Exception, e:
                 done = False
@@ -389,28 +443,6 @@ def async_terminate(username, constellation, credentials_ec2, constellation_dire
         log("Cloudsim async_terminate Error %s" % e)
 
 
-                
-#def async_start_simulator(username, constellation, machine, package_name, launch_file_name,launch_args ):
-#    
-#    
-#    log("async start simulator! user %s machine %s, pack %s launch %s args '%s'" % (username, machine, package_name, 
-#                                                                                    launch_file_name, launch_args ))
-#    try:
-#        p = multiprocessing.Process(target=start_simulator, args=(username,  constellation, machine, package_name, launch_file_name, launch_args ) )
-#        p.start()
-#    except Exception, e:
-#        log("Cloudsim daemon Error %s" % e)
-#
-#def async_stop_simulator(username, constellation, machine):
-#    log("async stop simulator! user %s constellation %s machine %s" % (username, constellation, machine))
-#    try:
-#        p = multiprocessing.Process(target=stop_simulator, args=(username,  constellation,  machine) )
-#        # jobs.append(p)
-#        p.start()
-#    except Exception, e:
-#        log("Cloudsim daemon Error %s" % e)
-    
-    
 def tick_monitor(tick_interval):
     count = 0
     red = redis.Redis()
@@ -447,10 +479,9 @@ def resume_monitoring(boto_path, root_dir):
             state = constellation['constellation_state']
             config = constellation['configuration']
             username = constellation['username']
-            log ("      config %s" % config)
-            log ("      state %s" % state)
-            if state != "terminated":
-                async_monitor(username, config, constellation_name, boto_path)
+            log ("      resume_monitoring config %s" % config)
+            log ("      resume_monitoring state %s" % state)
+            async_monitor(username, config, constellation_name, boto_path)
         except Exception, e:
             print ("MONITOR ERROR %s in constellation : %s" % (e, constellation_name))
             tb = traceback.format_exc()
