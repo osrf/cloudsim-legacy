@@ -309,7 +309,7 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
     
 
-def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51"):
+def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3"):
     
     s = """#!/bin/bash
 # Exit on error
@@ -454,7 +454,16 @@ apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa
 #
 # The BusID is given by lspci (but lspci gives it in hex, and BusID needs dec)
 # This value is required for Tesla cards
-cat <<DELIM > etc/X11/xorg.conf
+cat <<DELIM > /etc/X11/xorg.conf
+
+# take the hex from lspci and turn it into dec
+# root@gpu02:/home/ubuntu# lspci | grep Tesla
+
+# SOFTLAYER
+# 82:00.0 3D controller: NVIDIA Corporation Tesla M2090 (rev a1)
+# 82 hex is 130 dec
+# Amazon is 3 dec for cg1.4xLarge
+
 Section "ServerLayout"
     Identifier     "Layout0"
     Screen      0  "Screen0"
@@ -470,7 +479,7 @@ EndSection
 Section "Device"
     Identifier     "Device0"
     Driver         "nvidia"
-    BusID          "PCI:0:3:0"
+    BusID          "PCI:0:""" + pcibus_id + """:0"
     VendorName     "NVIDIA Corporation"
 EndSection
 Section "Screen"
@@ -666,7 +675,7 @@ if __name__ == "__main__":
     OPENVPN_CLIENT_IP='11.8.0.2'
     drc_package_name = 'drcsim'
     open_vpn_script = get_open_vpn_single(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
-    SIM_SCRIPT = get_drc_startup_script(open_vpn_script, OPENVPN_SERVER_IP, drc_package_name)
+    SIM_SCRIPT = get_drc_startup_script(open_vpn_script, OPENVPN_SERVER_IP, drc_package_name,ros_master_ip="10.0.0.51", pcibus_id="130")
 
     print(SIM_SCRIPT)
     
