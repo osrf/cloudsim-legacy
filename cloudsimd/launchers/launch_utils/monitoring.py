@@ -204,10 +204,11 @@ def monitor_cloudsim_ping(constellation_name, ip_address_key, ping_data_key):
     The ping is done from CloudSim
     """
     constellation = ConstellationState(constellation_name)
-    ip_address = constellation.get_value(ip_address_key)
-    o, ping_str = commands.getstatusoutput("ping -c3 %s" % ip_address)
-    if o == 0:
-        _monitor_ping(constellation_name, ping_data_key, ping_str) 
+    if constellation.has_value(ip_address_key):
+        ip_address = constellation.get_value(ip_address_key)
+        o, ping_str = commands.getstatusoutput("ping -c3 %s" % ip_address)
+        if o == 0:
+            _monitor_ping(constellation_name, ping_data_key, ping_str) 
         
 def monitor_ssh_ping(constellation_name, ssh_client, ip_address, ping_data_key):
     """

@@ -34,7 +34,7 @@ from launch_utils.monitoring import  record_ping_result,\
     LATENCY_TIME_BUFFER, machine_states, update_machine_aws_states,\
     constellation_is_terminated, get_ssh_client, monitor_launch_state,\
     monitor_simulator, monitor_ssh_ping, monitor_cloudsim_ping
-from launch_utils.launch import aws_connect
+from launch_utils.launch import aws_connect, get_amazon_amis
 from launch_utils.traffic_shapping import run_tc_command
 
 
@@ -275,18 +275,14 @@ def _launch(username,
             
             CONFIGURATION):
 
-
-    SIM_AWS_IMAGE    = 'ami-98fa58f1'
-    ROBOT_AWS_IMAGE  = 'ami-98fa58f1'
-    ROUTER_AWS_IMAGE = "ami-137bcf7a"
-    
-    availability_zone = boto.config.get('Boto','ec2_region_name')
-    if availability_zone.startswith('eu-west'):
-        SIM_AWS_IMAGE    ='ami-fc191788'
-        SIM_AWS_IMAGE    ='ami-fc191788'
-        ROUTER_AWS_IMAGE = 'ami-f2191786'
-
     log("new trio constellation: %s" % constellation_name) 
+
+    amis = get_amazon_amis(credentials_ec2)
+
+    SIM_AWS_IMAGE    = amis['ubuntu_1204_x64_cluster']
+    ROBOT_AWS_IMAGE  = amis['ubuntu_1204_x64_cluster']
+    ROUTER_AWS_IMAGE = amis['ubuntu_1204_x64']
+
        
     ec2conn, vpcconn = aws_connect(credentials_ec2)
     constellation = ConstellationState( constellation_name)
