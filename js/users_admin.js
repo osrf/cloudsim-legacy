@@ -16,7 +16,6 @@ function add_users_admin_widget(users_div_name)
     	var str = _get_user_list_str(data)
     	user_list_div.innerHTML = str;
     });
-    
 }
 
 function _get_user_list_str(users)

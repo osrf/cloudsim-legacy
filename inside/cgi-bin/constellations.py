@@ -88,7 +88,7 @@ def get_query_param(param):
     p = params[param][0]
     return p
 
-email = authorize()
+email = authorize("officer")
 method = os.environ['REQUEST_METHOD']
 
 

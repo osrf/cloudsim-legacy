@@ -9,6 +9,23 @@ import os
 import urlparse
 from common import  authorize
 import redis
+from common.web import UserDatabase
+
+
+def process_http_get(email, role, constellation, task_id):
+    
+    if method == 'GET':
+        s = None
+        log("GET task %s" % task_id)
+        try:
+            if len(constellation) > 0:
+                key = "cloudsim/" + constellation
+                task = get_task(email, constellation, task_id)
+                s = json.dumps(task)
+        except Exception as e:
+            s = "%s" % e
+        print s
+    return s
 
 cgitb.enable()
 r = redis.Redis()
@@ -16,9 +33,9 @@ r = redis.Redis()
 def log(msg):
     r.publish('cgi_tasks', msg)
 
-def _domain(email):
-    domain = email.split('@')[1]
-    return domain
+#def _domain(email):
+#    domain = email.split('@')[1]
+#    return domain
 
 def get_task(email, constellation_name, task_id):
 
@@ -28,11 +45,15 @@ def get_task(email, constellation_name, task_id):
         s = r.get(key)
         c = json.loads(s)
         
-        domain = _domain(c['username'])
-        authorised_domain = _domain(email)
-        
-        
-        if domain == authorised_domain:
+#        domain = _domain(c['username'])
+#        authorised_domain = _domain(email)
+#        
+#        authorized_domain = False
+#        if domain == authorised_domain:
+#            authorized_domain = True
+            
+        authorized_domain = True
+        if authorized_domain:
             tasks = c['tasks']
             for task in tasks:
                 if task['task_id'] == task_id:
@@ -67,24 +88,18 @@ def get_query_param(param, default = "N/A"):
 email = authorize()
 method = os.environ['REQUEST_METHOD']
 
+udb = UserDatabase()
+role = udb.get_role(email)
+
+
 print('Content-type: application/json')
 print("\n")
 
 constellation, task_id = parse_path()
 
 if method == 'GET':
-    s = None
-    log("tasks")
-    try:
-        if len(constellation) > 0:
-            domain = _domain(email)
-            key = "cloudsim/"+ constellation
-            task = get_task(email, constellation, task_id)
-            s = json.dumps(task)
-    except Exception, e:
-        s = "%s" % e
-        
-    print( s)
+    s = process_http_get(email, role, constellation, task_id)
+    print(s)
     exit(0)
 
 d = {}
