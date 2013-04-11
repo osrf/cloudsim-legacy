@@ -12,21 +12,97 @@ import redis
 from common.web import UserDatabase
 
 
-def process_http_get(email, role, constellation, task_id):
-    
+def refuse_authorization():
+    print('Content-type: application/json')
+    print("\n")
+    print("Unauthorized")
+    exit(0)
+
+
+def process_http_get( role, constellation, task_id):
     if method == 'GET':
         s = None
-        log("GET task %s" % task_id)
+        log("GET task %s, role %s" % (task_id, role))
         try:
             if len(constellation) > 0:
-                key = "cloudsim/" + constellation
                 task = get_task(email, constellation, task_id)
+                # Do not allow user to snoop the content of the task
+                # before it is executed:
+                if role == "user":
+                    if task['task_state'] == 'ready':
+                        refuse_authorization()
                 s = json.dumps(task)
         except Exception as e:
             s = "%s" % e
-        print s
+        print('Content-type: application/json')
+        print("\n")
+        print(s)
     return s
 
+
+def process_http_delete(role, constellation, task_id):
+    if role == "user":
+        refuse_authorization()
+    d = {}
+    d['command'] = 'delete_task'
+    d['constellation'] = constellation
+    d['task_id'] = task_id    
+    s = json.dumps(d)
+    r.publish('cloudsim_cmds', s)
+    print('Content-type: application/json')
+    print("\n")
+    print("%s" % s)    
+    
+def process_http_post(role, constellation, task_id):
+    if role == "user":
+        refuse_authorization()
+    d = {}
+    d['command'] = 'create_task'
+    d['constellation'] = constellation
+    d['task_title'] =  get_query_param('task_title')
+    d['ros_package'] =  get_query_param('ros_package')
+    d['ros_launch'] =  get_query_param('ros_launch')
+    d['ros_args'] =  get_query_param('ros_args',"")
+    d['latency'] =  get_query_param('latency')
+    d['timeout'] =  get_query_param('timeout')
+    d['uplink_data_cap'] =  get_query_param('uplink_data_cap')
+    d['downlink_data_cap'] =  get_query_param('downlink_data_cap')
+    
+    log("Create (post) tasks: %s" % d)
+    
+    s = json.dumps(d)
+    r.publish('cloudsim_cmds', s)
+    print('Content-type: application/json')
+    print("\n")
+    print("%s" % s)
+    
+def process_http_put(role, constellation, task_id):
+    if role == "user":
+        refuse_authorization()
+            
+    d = {}
+    d['command'] = 'update_task'
+    d['constellation'] = constellation
+    d['task_id'] = task_id  
+    d['command'] = 'update_task'
+    d['task_title'] =  get_query_param('task_title')
+    d['ros_package'] =  get_query_param('ros_package')
+    d['ros_launch'] =  get_query_param('ros_launch')
+    d['ros_args'] =  get_query_param('ros_args',"")
+    d['latency'] =  get_query_param('latency')
+    d['timeout'] =  get_query_param('timeout')
+    d['uplink_data_cap'] =  get_query_param('uplink_data_cap')
+    d['downlink_data_cap'] =  get_query_param('downlink_data_cap')
+    
+    log("Update (put) tasks: %s" % d)
+    
+    s = json.dumps(d)
+    r.publish('cloudsim_cmds', s)
+    print('Content-type: application/json')
+    print("\n")
+    print("%s" % s)
+    
+    
 cgitb.enable()
 r = redis.Redis()
 
@@ -37,7 +113,7 @@ def log(msg):
 #    domain = email.split('@')[1]
 #    return domain
 
-def get_task(email, constellation_name, task_id):
+def get_task(constellation_name, task_id):
 
     try:
         key = 'cloudsim/' + constellation_name
@@ -51,13 +127,15 @@ def get_task(email, constellation_name, task_id):
 #        authorized_domain = False
 #        if domain == authorised_domain:
 #            authorized_domain = True
-            
+        
         authorized_domain = True
         if authorized_domain:
             tasks = c['tasks']
             for task in tasks:
                 if task['task_id'] == task_id:
+                    
                     return task
+                    
         return None
     except:
         return None
@@ -87,59 +165,15 @@ def get_query_param(param, default = "N/A"):
 
 email = authorize()
 method = os.environ['REQUEST_METHOD']
-
 udb = UserDatabase()
 role = udb.get_role(email)
-
-
-print('Content-type: application/json')
-print("\n")
-
 constellation, task_id = parse_path()
 
 if method == 'GET':
-    s = process_http_get(email, role, constellation, task_id)
-    print(s)
-    exit(0)
-
-d = {}
-
-if method == 'DELETE':
-    d['command'] = 'delete_task'
-    d['constellation'] = constellation
-    d['task_id'] = task_id    
-
-
-
-if method == 'PUT':
-    d['command'] = 'update_task'
-    d['constellation'] = constellation
-    d['task_id'] = task_id  
-    d['command'] = 'update_task'
-    d['task_title'] =  get_query_param('task_title')
-    d['ros_package'] =  get_query_param('ros_package')
-    d['ros_launch'] =  get_query_param('ros_launch')
-    d['ros_args'] =  get_query_param('ros_args',"")
-    d['latency'] =  get_query_param('latency')
-    d['timeout'] =  get_query_param('timeout')
-    d['uplink_data_cap'] =  get_query_param('uplink_data_cap')
-    d['downlink_data_cap'] =  get_query_param('downlink_data_cap')
-    log("Update (put) tasks: %s" % d)
-    
-# see lib_cloudsim.js
-if method == 'POST':
-    d['command'] = 'create_task'
-    d['constellation'] = constellation
-    d['task_title'] =  get_query_param('task_title')
-    d['ros_package'] =  get_query_param('ros_package')
-    d['ros_launch'] =  get_query_param('ros_launch')
-    d['ros_args'] =  get_query_param('ros_args',"")
-    d['latency'] =  get_query_param('latency')
-    d['timeout'] =  get_query_param('timeout')
-    d['uplink_data_cap'] =  get_query_param('uplink_data_cap')
-    d['downlink_data_cap'] =  get_query_param('downlink_data_cap')
-    log("Create (post) tasks: %s" % d)
-    
-s = json.dumps(d)
-r.publish('cloudsim_cmds', s)
-print("%s" % s)
+    process_http_get(email, role, constellation, task_id)
+elif method == 'DELETE':
+    process_http_delete(role, constellation, task_id)
+elif method == 'PUT':
+    process_http_put(role, constellation, task_id)
+elif method == 'POST':
+    process_http_post(role, constellation, task_id)
