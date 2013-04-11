@@ -12,10 +12,11 @@ import redis
 from common.web import UserDatabase
 
 
+# refuse the non deserving
 def refuse_authorization():
     print('Content-type: application/json')
     print("\n")
-    print("Unauthorized")
+    print("'Unauthorized'")
     exit(0)
 
 
@@ -25,11 +26,12 @@ def process_http_get( role, constellation, task_id):
         log("GET task %s, role %s" % (task_id, role))
         try:
             if len(constellation) > 0:
-                task = get_task(email, constellation, task_id)
-                # Do not allow user to snoop the content of the task
-                # before it is executed:
+                task = get_task( constellation, task_id)
+               
                 if role == "user":
                     if task['task_state'] == 'ready':
+                        # Do not allow user to snoop the content of the task
+                        # before it is executed:
                         refuse_authorization()
                 s = json.dumps(task)
         except Exception as e:
@@ -170,7 +172,7 @@ role = udb.get_role(email)
 constellation, task_id = parse_path()
 
 if method == 'GET':
-    process_http_get(email, role, constellation, task_id)
+    process_http_get(role, constellation, task_id)
 elif method == 'DELETE':
     process_http_delete(role, constellation, task_id)
 elif method == 'PUT':

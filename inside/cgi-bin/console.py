@@ -52,9 +52,15 @@ page =  """<!DOCTYPE html>
     
 <script language="javascript">
 
+    function get_user_info()
+    {
+       var user_info = """ + user_info + """;
+       return user_info; 
+    }
+    
     function on_load_page()
     {
-        var user_info = """ + user_info + """;
+        var user_info = get_user_info();
         console.log("User role: " +  user_info.role);
         if(user_info.role != "user")
         {

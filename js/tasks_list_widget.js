@@ -202,6 +202,10 @@ function create_task_list_widget(const_div, constellation_name)
     	
     	$( "#" + form_id ).dialog( "open" );
     }
+    if(get_user_info().role == "user")
+    {
+    	add_task_button.style.display='none';
+    }
     
     var stop_current_task_button = document.createElement('input');
     stop_current_task_button.setAttribute('type','button');
@@ -300,31 +304,44 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     var inputs = dlg.querySelectorAll("input");
     var title_input = inputs[0];
     
+    var dlg_buttons = {
+            "Update": function() {
+                console.log("Update " + constellation_name + "/" + task_id);
+
+                var title = inputs[0].value;
+                var ros_package = inputs[1].value;
+                var launch = inputs[2].value;
+                var timeout = inputs[3].value; 
+                var args = inputs[4].value;
+                var latency = inputs[5].value;
+                var uplink_data_cap = inputs[6].value;
+                var downlink_data_cap = inputs[7].value;
+                
+                update_task(constellation_name, task_id,
+                       title, ros_package,launch, timeout, args, latency, 
+                       uplink_data_cap, downlink_data_cap); 
+                
+                $( this ).dialog( "close" );
+                 }
+               }; 
+    
+    if(get_user_info().role == "user")
+    {
+    	dlg_buttons = {
+                "Close": function() 
+                	{
+                    $( this ).dialog( "close" );
+                     }
+                   }; 
+    	
+    }
+    
      $( "#" + form_id ).dialog({
       autoOpen: false,
       height: 600,
       width: 500,
       modal: true,
-      buttons: {
-         "Update": function() {
-         console.log("Update " + constellation_name + "/" + task_id);
-
-         var title = inputs[0].value;
-         var ros_package = inputs[1].value;
-         var launch = inputs[2].value;
-         var timeout = inputs[3].value; 
-         var args = inputs[4].value;
-         var latency = inputs[5].value;
-         var uplink_data_cap = inputs[6].value;
-         var downlink_data_cap = inputs[7].value;
-         
-         update_task(constellation_name, task_id,
-                title, ros_package,launch, timeout, args, latency, 
-                uplink_data_cap, downlink_data_cap); 
-         
-         $( this ).dialog( "close" );
-          }
-        },
+      buttons: dlg_buttons,
 
       close: function() {
           console.log("gone");
@@ -339,6 +356,10 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     var x_button= document.createElement('input');
     x_button.setAttribute('type','button');
     x_button.setAttribute('value','X');
+    if(get_user_info().role == "user")
+    {
+    	x_button.style.display = "none";
+    }
 
     var action_button= document.createElement('input');
     action_button.setAttribute('type','button');
@@ -346,7 +367,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
 
     var edit_button= document.createElement('input');
     edit_button.setAttribute('type','button');
-    edit_button.setAttribute('value','View');
+    edit_button.setAttribute('value','...');
 
 
     edit_button.onclick =  function()
@@ -364,6 +385,11 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         var downlink_data_cap = inputs[7];
         
         task = read_task(constellation_name, task_id);
+        if (task == "Unauthorized")
+        {
+        	alert("You do not have sufficient privileges for this operation");
+        	return;
+        }
         task_title_input.value = task.task_title;
         ros_package.value = task.ros_package;
         launch_file.value = task.ros_launch;
@@ -379,13 +405,10 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     action_button.onclick =  function()
     {
         console.log('start task '+ task_id);
-        task = read_task(constellation_name, task_id);
-        var state =task.task_state; 
-        console.log(state);
+        var state = "ready";
         if(state == 'ready')
         {
-            // var r = confirm('Start task "' + task.task_title + '"?')
-            start_task(constellation_name, task.task_id);
+            start_task(constellation_name, task_id);
         }
     };
     
@@ -462,11 +485,16 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 state_widget.src = color;
                 action_button.disabled=true;
                 x_button.disabled=true;
+                edit_button.disabled=false;
             }
             
             if (task.task_state == "ready")
             {
                 state_widget.src = "/js/images/gray_status.png";
+                if(get_user_info().role == "user")
+                {
+                	edit_button.disabled=true;
+                }
             }
             
             if (task.task_state == "stopping")
@@ -486,6 +514,8 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 x_button.disabled=true;
 
             }
+            
+
             
             
             // _set_state_widget(state_widget, task.task_state, count);

@@ -32,14 +32,13 @@ function create_machine_launch_monitor_widget(machine_div,
         
         var machine_state = data[state_key];
         var colors = ["gray"];
-        if(machine_state == "packages_setup")
-        {
-        	colors = ["gray", "yellow"]
-        }        
-        if(machine_state == "terminating")
-        {
-        	colors = ["gray", "orange"]
-        }        
+        
+        if (machine_state == "network_setup") colors = ["gray", "yellow"];     
+        	
+        if(machine_state == "packages_setup") colors = ["gray", "yellow"];
+             
+        if(machine_state == "terminating") colors = ["gray", "orange"];
+   
 
         var color = colors[count % colors.length]
         
