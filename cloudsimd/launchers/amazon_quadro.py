@@ -38,7 +38,7 @@ from launch_utils.monitoring import LATENCY_TIME_BUFFER, record_ping_result,\
 
 
 
-def log(msg, channel = "simulator"):
+def log(msg, channel = "amazon_quadro"):
     try:
         
         redis_client = redis.Redis()

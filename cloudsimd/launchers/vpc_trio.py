@@ -30,8 +30,7 @@ from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 import zipfile
 from shutil import copyfile
 
-from launch_utils.monitoring import  record_ping_result,\
-    LATENCY_TIME_BUFFER, machine_states, update_machine_aws_states,\
+from launch_utils.monitoring import  update_machine_aws_states,\
     constellation_is_terminated, get_ssh_client, monitor_launch_state,\
     monitor_simulator, monitor_ssh_ping, monitor_cloudsim_ping
 from launch_utils.launch import aws_connect, get_amazon_amis
@@ -47,7 +46,6 @@ OPENVPN_CLIENT_IP='11.8.0.2'
     
 def log(msg, channel = "trio"):
     try:
-        
         redis_client = redis.Redis()
         redis_client.publish(channel, msg)
         logging.info(msg)

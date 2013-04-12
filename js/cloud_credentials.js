@@ -39,7 +39,7 @@ function _cred_click(div_name)
     var access = div.querySelectorAll("input")[0].value;
     var secret_access = div.querySelectorAll("input")[1].value;
     var availability_zone = div.querySelectorAll("select")[0].value;
-    var r = change_credentials(access, secret_access, availability_zone);
+    var r = change_aws_credentials(access, secret_access, availability_zone);
     
     alert(r['msg']);
 }

@@ -57,8 +57,9 @@ page =  """<!DOCTYPE html>
     function on_load_page()
     {        
         $('.admin_only').show();
-                
-        add_cloud_credentials_widget("credentials_div");
+        
+        add_osrf_cloud_credentials_widget("osrf_credentials_div");
+        add_cloud_credentials_widget("amazon_credentials_div");
         add_users_admin_widget("users_div");
         
         setTimeout(users_update , 500);        
@@ -106,9 +107,12 @@ Welcome, """ + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a
 
     <div class="admin_only" style="display:none;" >
 
-        <div id="credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
+        <div id="osrf_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
         </div>
-
+        
+        <div id="amazon_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
+        </div>
+        
         <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
         </div>
 
