@@ -61,6 +61,14 @@ def _get_boot_status(api_username, api_key, server_id):
         name = stat['friendlyName']
     return name
 
+
+def _get_pub_ip(server):
+    for nic in server['frontendNetworkComponents']:
+        if nic.has_key('primaryIpAddress'):
+            pub_ip = nic['primaryIpAddress']
+            return pub_ip
+    return None
+
 def hardware_info(osrf_creds):
     api_username = osrf_creds['user'] 
     api_key = osrf_creds['api_key']
@@ -76,36 +84,42 @@ def hardware_info(osrf_creds):
         for nic in server['frontendNetworkComponents']:
             if nic.has_key('primaryIpAddress'):
                 pub_ip = nic['primaryIpAddress']
+                
         server_id = server['id']
         print "[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, user['username'], user['password'], priv_ip, pub_ip)
 
-def print_cb(server_id, status):
-    print("print_cb  [%s] = %s" % (server_id, status))
+def print_cb(server_name, status):
+    print("print_cb  [%s] = %s" % (server_name, status))
 
-def _wait_for_multiple_server_reloads(api_username, api_key, server_list, callback = print_cb):
+def _wait_for_multiple_server_reloads(api_username, api_key, server_ids_to_hostname, callback):
 
     status = ""
-    booting_servers = {server_id:status for server_id in server_list}
+    booting_servers = {server_id:status for server_id in server_ids_to_hostname.keys()}
 
     while booting_servers:
+        ready_servers = []
         for server_id, status in booting_servers.iteritems():
             current_status = _get_boot_status(api_username, api_key, server_id)
             # check for status change
             if status != current_status:
                 booting_servers[server_id]=current_status
-                callback(server_id, current_status)
+                hostname = server_ids_to_hostname[server_id]
+                callback(hostname, current_status)
             if current_status == "ready":
                 print("%s reloaded" % server_id)
-                booting_servers.pop(server_id)
+                ready_servers.append(server_id)
+        
+        for server_id in ready_servers:
+            booting_servers.pop(server_id)
         time.sleep(10)
 
 def reload_servers(osrf_creds, machine_names):
     api_username = osrf_creds['user'] 
     api_key = osrf_creds['api_key']
     hardware = _get_hardware(api_username, api_key)
-    servers = [server['id'] for server in hardware if server['hostname'] in machine_names]
-    for server in servers:
-        _send_reload_server_cmd(api_username, api_key, server)
+    servers = {server['id']:server['hostname'] for server in hardware if server['hostname'] in machine_names}
+    for server_id in servers.keys():
+        _send_reload_server_cmd(api_username, api_key, server_id)
     
     _wait_for_multiple_server_reloads(api_username, api_key, servers)
   
@@ -189,7 +203,7 @@ class TestSofty(unittest.TestCase):
     
     def test_reload_xx(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
-        machine_names = ['router-01']# ['sim-01', "fc1-01"]
+        machine_names = ['router-01', 'fc2-01']#, 'sim-01', "fc1-01"]
         reload_servers(osrf_creds, machine_names)
         
     
