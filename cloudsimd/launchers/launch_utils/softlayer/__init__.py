@@ -55,7 +55,10 @@ def _get_boot_status(api_username, api_key, server_id):
     t = client.getActiveTransaction()
     if t == '':
         return "ready"
-    name = t['transactionStatus']['friendlyName']
+    stat = t['transactionStatus']
+    name = stat['name']
+    if stat.has_key('friendlyName'):
+        name = stat['friendlyName']
     return name
 
 def hardware_info(osrf_creds):
@@ -76,19 +79,26 @@ def hardware_info(osrf_creds):
         server_id = server['id']
         print "[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, user['username'], user['password'], priv_ip, pub_ip)
 
-def _wait_for_multiple_server_reloads(api_username, api_key, server_list):
-    
-    time.sleep(5)
-    booting_servers = server_list[:]
+def print_cb(server_id, status):
+    print("print_cb  [%s] = %s" % (server_id, status))
+
+def _wait_for_multiple_server_reloads(api_username, api_key, server_list, callback = print_cb):
+
+    status = ""
+    booting_servers = {server_id:status for server_id in server_list}
+
     while booting_servers:
-        time.sleep(30)
-        for server_id in booting_servers:
-            if not  _is_booting(api_username, api_key, server_id):
+        for server_id, status in booting_servers.iteritems():
+            current_status = _get_boot_status(api_username, api_key, server_id)
+            # check for status change
+            if status != current_status:
+                booting_servers[server_id]=current_status
+                callback(server_id, current_status)
+            if current_status == "ready":
                 print("%s reloaded" % server_id)
-                booting_servers.remove(server_id)
-        
-    
-     
+                booting_servers.pop(server_id)
+        time.sleep(10)
+
 def reload_servers(osrf_creds, machine_names):
     api_username = osrf_creds['user'] 
     api_key = osrf_creds['api_key']
@@ -96,6 +106,7 @@ def reload_servers(osrf_creds, machine_names):
     servers = [server['id'] for server in hardware if server['hostname'] in machine_names]
     for server in servers:
         _send_reload_server_cmd(api_username, api_key, server)
+    
     _wait_for_multiple_server_reloads(api_username, api_key, servers)
   
 
@@ -113,7 +124,7 @@ def get_machine_login_info(osrf_creds, machine):
     api_key = osrf_creds['api_key']
    
     hardware = _get_hardware(api_username, api_key)
-    sever = [server for server in hardware if server['hostname']==machine][0]
+    server = [server for server in hardware if server['hostname']==machine][0]
     user = server['operatingSystem']['passwords'][0]
     ip = server['frontendNetworkComponents'][-1]['primaryIpAddress']
     psswd = user['password']
@@ -135,7 +146,7 @@ def _setup_ssh_key_access(ip, root_password, key_fname, ):
     l = [os.path.dirname( __file__),'bash', 'auto_ubuntu.bash']
     fname = os.path.join(*l)
     
-    print("oula: %s" % fname)
+    print("TODO check: %s\nip: %s\npsswd: %s\nkey: %s" % (fname, ip, root_password, key_fname))
     #subprocess.check_call(cmd.split())
 
 
@@ -176,9 +187,9 @@ class TestSofty(unittest.TestCase):
         
         creds = load_osrf_creds(fname)
     
-    def test_reload_fc2_xx(self):
+    def test_reload_xx(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
-        machine_names = ['fc2-xx']
+        machine_names = ['router-01']# ['sim-01', "fc1-01"]
         reload_servers(osrf_creds, machine_names)
         
     
