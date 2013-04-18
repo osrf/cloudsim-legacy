@@ -37,27 +37,24 @@ def _send_reload_server_cmd(api_username, api_key, server_id):
     result = client.reloadCurrentOperatingSystemConfiguration('FORCE')
     print (result)
 
-def _wait_for_server_reload(api_username, api_key, server_id):
-    time.sleep(5)
-    while _is_booting(api_username, api_key, server_id):
-        time.sleep(30)
+def _wait_for_server_reload(api_username, api_key, server_id, callback):
+    
+    status = None
+    while True:
+        time.sleep(10)
+        new_status = _get_boot_status(api_username, api_key, server_id)
+        if new_status != status:
+            status = new_status
+            callback(server_id, status)
+            if status == "ready":
+                return 
 
-def _is_booting(api_username, api_key, server_id):
-    try:
-        client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, api_username, api_key)
-        t = client.getActiveTransaction()
-        print("elapsed: %s, status: %s" % (t['elapsedSeconds'], t['transactionStatus']))
-        return True
-    except Exception, e:
-        print("%s" % e) 
-    print("NO BOOT DETECTED for server %s" % server_id)    
-    return False
 
 def _get_boot_status(api_username, api_key, server_id):
     client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, api_username, api_key)
     t = client.getActiveTransaction()
     if t == '':
-        return None
+        return "ready"
     name = t['transactionStatus']['friendlyName']
     return name
 
