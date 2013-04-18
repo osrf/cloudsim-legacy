@@ -28,7 +28,6 @@ function add_osrf_cloud_credentials_widget(place_holder_div_name)
         var api_key = the_div.querySelectorAll("input")[1].value;
         var location = the_div.querySelectorAll("select")[0].value;
         var r = change_osrf_credentials(user, api_key, location);
-        
         alert(r['msg']);
     }
     

@@ -2,7 +2,14 @@ import os
 import time
 import SoftLayer.API
 import unittest
+import json
 
+
+def get_softlayer_path():
+    d = os.path.dirname(__file__)
+    r = os.path.abspath(d +'../../../../../../softlayer.ini' )
+    return r
+    
 
 def _get_hardware(api_username, api_key, server_name = None):
     domain_id = None   
@@ -12,6 +19,7 @@ def _get_hardware(api_username, api_key, server_name = None):
             'operatingSystem' : {
                 'passwords' : {},
             },
+            
             #'networkComponents' : {},
             'frontendNetworkComponents' :{},
             'backendNetworkComponents' :{},
@@ -29,22 +37,59 @@ def _send_reload_server_cmd(api_username, api_key, server_id):
     result = client.reloadCurrentOperatingSystemConfiguration('FORCE')
     print (result)
 
-def _wair_for_server_reload(api_username, api_key, server_id):
-    time.sleep(3600)
+def _wait_for_server_reload(api_username, api_key, server_id):
+    time.sleep(5)
+    while _is_booting(api_username, api_key, server_id):
+        time.sleep(30)
 
+def _is_booting(api_username, api_key, server_id):
+    try:
+        client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, api_username, api_key)
+        t = client.getActiveTransaction()
+        print("elapsed: %s, status: %s" % (t['elapsedSeconds'], t['transactionStatus']))
+        return True
+    except Exception, e:
+        print("%s" % e) 
+    print("NO BOOT DETECTED for server %s" % server_id)    
+    return False
+
+def _get_boot_status(api_username, api_key, server_id):
+    client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, api_username, api_key)
+    t = client.getActiveTransaction()
+    if t == '':
+        return None
+    name = t['transactionStatus']['friendlyName']
+    return name
 
 def hardware_info(osrf_creds):
-    hardware = _get_hardware(osrf_creds)  
+    api_username = osrf_creds['user'] 
+    api_key = osrf_creds['api_key']
+    hardware = _get_hardware(api_username, api_key)  
     for server in hardware:
         host = server['hostname']
         user = server['operatingSystem']['passwords'][0]
-        priv_ip = server['backendNetworkComponents'][-1]['primaryIpAddress']
-        pub_ip = server['frontendNetworkComponents'][-1]['primaryIpAddress']
+        priv_ip = None
+        pub_ip = None
+        for nic in server['backendNetworkComponents']:
+            if nic.has_key('primaryIpAddress'):
+                priv_ip = nic['primaryIpAddress']
+        for nic in server['frontendNetworkComponents']:
+            if nic.has_key('primaryIpAddress'):
+                pub_ip = nic['primaryIpAddress']
         server_id = server['id']
         print "[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, user['username'], user['password'], priv_ip, pub_ip)
 
 def _wait_for_multiple_server_reloads(api_username, api_key, server_list):
-    time.sleep(3600)  
+    
+    time.sleep(5)
+    booting_servers = server_list[:]
+    while booting_servers:
+        time.sleep(30)
+        for server_id in booting_servers:
+            if not  _is_booting(api_username, api_key, server_id):
+                print("%s reloaded" % server_id)
+                booting_servers.remove(server_id)
+        
     
      
 def reload_servers(osrf_creds, machine_names):
@@ -92,16 +137,60 @@ def _setup_ssh_key_access(ip, root_password, key_fname, ):
     """
     l = [os.path.dirname( __file__),'bash', 'auto_ubuntu.bash']
     fname = os.path.join(*l)
+    
     print("oula: %s" % fname)
     #subprocess.check_call(cmd.split())
 
+
+class SoftLayerCredentials(object):
+    """
+    Class that manages all the AWS credentials.
+    """
+
+    def __init__(self,
+                 name,
+                 api_key,
+                 fname):
+        self.fname = fname
+        self.osrf_creds = {'user':name, 'api_key': api_key}
+ 
+        
+    def save(self):
+        with open(self.fname, 'w') as f:
+            s = json.dumps(self.osrf_creds)
+            f.write(s)
+    
+    
+def load_osrf_creds(fname):
+    path = fname
+    with open(path,'r') as f:
+        s = f.read()
+        j = json.loads(s)
+        return j
+
+
+    
 class TestSofty(unittest.TestCase):
+    
+    def atest_write_cred(self):
+        fname = get_softlayer_path()
+        c = SoftLayerCredentials('hugo','xxx', fname)
+        c.save()
+        
+        creds = load_osrf_creds(fname)
+    
+    def test_reload_fc2_xx(self):
+        osrf_creds = load_osrf_creds(get_softlayer_path())
+        machine_names = ['fc2-xx']
+        reload_servers(osrf_creds, machine_names)
+        
     
     def test_o(self):
         print("%s" % os.path.dirname( __file__))
         _setup_ssh_key_access('33.33', 'pass', 'key.key')
 
 if __name__ == "__main__": 
-    osrf_creds = {'user':'hugo', 'api_key': 'ef658539df1e05a72ff3a717d98cce8faf1b47bfa27adb2ef8619ad56e1998aa'}
-    # hardware_info(osrf_creds)
+    p = get_softlayer_path()
+    osrf_creds = load_osrf_creds(p)
+    hardware_info(osrf_creds)
     unittest.main()
