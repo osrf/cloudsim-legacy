@@ -3,6 +3,7 @@ import time
 import SoftLayer.API
 import unittest
 import json
+import subprocess
 
 
 def get_softlayer_path():
@@ -75,7 +76,13 @@ def hardware_info(osrf_creds):
     hardware = _get_hardware(api_username, api_key)  
     for server in hardware:
         host = server['hostname']
-        user = server['operatingSystem']['passwords'][0]
+        o_s = server['operatingSystem']
+        username = None
+        password = None
+        if o_s['passwords']:
+            user = o_s['passwords'][0]
+            username = user['username']
+            password = user['password']
         priv_ip = None
         pub_ip = None
         for nic in server['backendNetworkComponents']:
@@ -86,7 +93,7 @@ def hardware_info(osrf_creds):
                 pub_ip = nic['primaryIpAddress']
                 
         server_id = server['id']
-        print "[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, user['username'], user['password'], priv_ip, pub_ip)
+        print "[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip)
 
 def print_cb(server_name, status):
     print("print_cb  [%s] = %s" % (server_name, status))
@@ -101,27 +108,27 @@ def _wait_for_multiple_server_reloads(api_username, api_key, server_ids_to_hostn
         for server_id, status in booting_servers.iteritems():
             current_status = _get_boot_status(api_username, api_key, server_id)
             # check for status change
+            hostname = server_ids_to_hostname[server_id]
             if status != current_status:
                 booting_servers[server_id]=current_status
-                hostname = server_ids_to_hostname[server_id]
                 callback(hostname, current_status)
             if current_status == "ready":
-                print("%s reloaded" % server_id)
+                print("%s reloaded" % hostname)
                 ready_servers.append(server_id)
         
         for server_id in ready_servers:
             booting_servers.pop(server_id)
         time.sleep(10)
 
-def reload_servers(osrf_creds, machine_names):
+def reload_servers(osrf_creds, machine_names, callback):
     api_username = osrf_creds['user'] 
     api_key = osrf_creds['api_key']
     hardware = _get_hardware(api_username, api_key)
-    servers = {server['id']:server['hostname'] for server in hardware if server['hostname'] in machine_names}
-    for server_id in servers.keys():
+    server_ids_to_hostname = {server['id']:server['hostname'] for server in hardware if server['hostname'] in machine_names}
+    for server_id in server_ids_to_hostname.keys():
         _send_reload_server_cmd(api_username, api_key, server_id)
     
-    _wait_for_multiple_server_reloads(api_username, api_key, servers)
+    _wait_for_multiple_server_reloads(api_username, api_key, server_ids_to_hostname, callback)
   
 
 def reload_constellation(osrf_creds, constellation_id):
@@ -159,9 +166,14 @@ def _setup_ssh_key_access(ip, root_password, key_fname, ):
     """
     l = [os.path.dirname( __file__),'bash', 'auto_ubuntu.bash']
     fname = os.path.join(*l)
-    
-    print("TODO check: %s\nip: %s\npsswd: %s\nkey: %s" % (fname, ip, root_password, key_fname))
-    #subprocess.check_call(cmd.split())
+    #cmd = (fname, ip, root_password, key_fname)
+    cmd = "%s %s %s %s" % (fname, ip, root_password, key_fname)
+    print("calling: %s\nip: %s\npsswd: %s\nkey: %s" % (fname, ip, root_password, key_fname))
+    #subprocess.check_call(cmd)
+    #subprocess.check_output(cmd)
+    import commands
+    st,output = commands.getstatusoutput(cmd)
+    print(st,output)
 
 
 class SoftLayerCredentials(object):
@@ -201,15 +213,15 @@ class TestSofty(unittest.TestCase):
         
         creds = load_osrf_creds(fname)
     
-    def test_reload_xx(self):
+    def atest_reload_xx(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         machine_names = ['router-01', 'fc2-01']#, 'sim-01', "fc1-01"]
-        reload_servers(osrf_creds, machine_names)
+        reload_servers(osrf_creds, machine_names, print_cb)
         
     
     def test_o(self):
         print("%s" % os.path.dirname( __file__))
-        _setup_ssh_key_access('33.33', 'pass', 'key.key')
+        _setup_ssh_key_access('50.97.149.34', 'C4nKfne6', 'test_key')
 
 if __name__ == "__main__": 
     p = get_softlayer_path()

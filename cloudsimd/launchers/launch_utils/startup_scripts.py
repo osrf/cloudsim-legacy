@@ -280,6 +280,8 @@ echo "redis installed" >> /home/ubuntu/setup.log
 sudo pip install --upgrade boto
 echo "boto installed" >> /home/ubuntu/setup.log
 
+sudo pip install SoftLayer
+echo "SoftLayer installed" >> /home/ubuntu/setup.log
 
 sudo pip install unittest-xml-reporting
 echo "XmlTestRunner installed" >> /home/ubuntu/setup.log
