@@ -65,8 +65,13 @@ expect -exact "\r
 Adding user `ubuntu' to group `sudo' ...\r
 Adding user ubuntu to group sudo\r
 Done.\r"
+
+send -- "echo 'ubuntu ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers\r"
+expect -exact "\r"
+
 send -- "mkdir /home/ubuntu/.ssh;\r"
 expect -exact "\r"
+
 send -- "chmod 0700 /home/ubuntu/.ssh"
 send -- "\r"
 expect -exact "\r"

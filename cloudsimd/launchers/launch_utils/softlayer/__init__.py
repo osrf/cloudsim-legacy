@@ -173,8 +173,13 @@ def _setup_ssh_key_access(ip, root_password, key_fname, ):
     #subprocess.check_output(cmd)
     import commands
     st,output = commands.getstatusoutput(cmd)
-    print(st,output)
+    print(cmd)
+    print("RETURN %s" % st)
+    print ("%s" % output)
+    print("")
 
+def setup_ubuntu_user(server_name, key_name):
+    pass
 
 class SoftLayerCredentials(object):
     """
@@ -221,7 +226,7 @@ class TestSofty(unittest.TestCase):
     
     def test_o(self):
         print("%s" % os.path.dirname( __file__))
-        _setup_ssh_key_access('50.97.149.34', 'C4nKfne6', 'test_key')
+        _setup_ssh_key_access('50.97.149.39', 'AC56UfuB', 'router_key')
 
 if __name__ == "__main__": 
     p = get_softlayer_path()
