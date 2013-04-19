@@ -147,7 +147,7 @@ def get_machine_login_info(osrf_creds, machine):
     hardware = _get_hardware(api_username, api_key)
     server = [server for server in hardware if server['hostname']==machine][0]
     user = server['operatingSystem']['passwords'][0]
-    ip = server['frontendNetworkComponents'][-1]['primaryIpAddress']
+    ip = _get_pub_ip(server) # server['frontendNetworkComponents'][-1]['primaryIpAddress']
     psswd = user['password']
     return ip,psswd
     
@@ -218,15 +218,18 @@ class TestSofty(unittest.TestCase):
         
         creds = load_osrf_creds(fname)
     
-    def atest_reload_xx(self):
+    def test_reload_xx(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
-        machine_names = ['router-01', 'fc2-01']#, 'sim-01', "fc1-01"]
+        machine_names = ['router-01', 'cs-01', 'fc2-01']#, 'sim-01', "fc1-01"]
         reload_servers(osrf_creds, machine_names, print_cb)
         
     
     def test_o(self):
-        print("%s" % os.path.dirname( __file__))
-        _setup_ssh_key_access('50.97.149.39', 'AC56UfuB', 'router_key')
+        osrf_creds = load_osrf_creds(get_softlayer_path())
+        machine = "router-01"
+        ip, password = get_machine_login_info(osrf_creds, machine)
+        print ("%s %s" % (ip, password))
+        _setup_ssh_key_access(ip, password, 'router_key')
 
 if __name__ == "__main__": 
     p = get_softlayer_path()
