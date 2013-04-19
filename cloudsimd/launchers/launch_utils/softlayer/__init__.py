@@ -224,7 +224,7 @@ class TestSofty(unittest.TestCase):
         reload_servers(osrf_creds, machine_names, print_cb)
         
     
-    def test_o(self):
+    def stest_o(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         machine = "router-01"
         ip, password = get_machine_login_info(osrf_creds, machine)
