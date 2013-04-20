@@ -4,7 +4,7 @@ import SoftLayer.API
 import unittest
 import json
 import subprocess
-
+import shutil
 
 def get_softlayer_path():
     d = os.path.dirname(__file__)
@@ -96,7 +96,7 @@ def hardware_info(osrf_creds):
         print "[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip)
 
 def print_cb(server_name, status):
-    print("print_cb  [%s] = %s" % (server_name, status))
+    print("PCB %s  [%s] = %s" % (server_name, status))
 
 def _wait_for_multiple_server_reloads(api_username, api_key, server_ids_to_hostname, callback):
 
@@ -128,16 +128,10 @@ def reload_servers(osrf_creds, machine_names, callback):
     for server_id in server_ids_to_hostname.keys():
         _send_reload_server_cmd(api_username, api_key, server_id)
     
-    _wait_for_multiple_server_reloads(api_username, api_key, server_ids_to_hostname, callback)
+
   
 
-def reload_constellation(osrf_creds, constellation_id):
-    router = "router_%s" % constellation_id
-    sim = "sim_%s" % constellation_id
-    fc1 = "fc1_%s" % constellation_id
-    fc2 = "fc2_%s" % constellation_id
-    machine_names = [router, sim, fc1, fc2]
-    reload_servers(osrf_creds, machine_names)
+
 
 
 def get_machine_login_info(osrf_creds, machine):
@@ -159,25 +153,32 @@ def get_cloudsin_ip(osrf_creds, constellation_id):
     ip = [server['frontendNetworkComponents'][-1]['primaryIpAddress'] for server in hardware if server['hostname']==machine][0]  
     return ip
 
-def _setup_ssh_key_access(ip, root_password, key_fname, ):
+def setup_ssh_key_access(ip, root_password, key_prefix, target_directory):
     """
     Generates a key, logs in the machine at ip as root,
     creates a ubuntu user (sudoer) and adds the key  
     """
     l = [os.path.dirname( __file__),'bash', 'auto_ubuntu.bash']
     fname = os.path.join(*l)
-    #cmd = (fname, ip, root_password, key_fname)
-    cmd = "%s %s %s %s" % (fname, ip, root_password, key_fname)
-    print("calling: %s\nip: %s\npsswd: %s\nkey: %s" % (fname, ip, root_password, key_fname))
-    #subprocess.check_call(cmd)
-    #subprocess.check_output(cmd)
+    
+    cmd = "%s %s %s %s" % (fname, ip, root_password, key_prefix)
+    print("calling: %s\nip: %s\npsswd: %s\nkey: %s" % (fname, ip, root_password, key_prefix))
+    
     import commands
     st,output = commands.getstatusoutput(cmd)
     print(cmd)
     print("RETURN %s" % st)
     print ("%s" % output)
-    print("")
-
+    print("copyning keys")
+    
+    l = [os.path.dirname( __file__),'bash', '%s.pem' % key_prefix]
+    src = os.path.join(*l)
+    shutil.move(src, target_directory)
+    
+    l = [os.path.dirname( __file__),'bash', '%s.pem.pub' % key_prefix]
+    src = os.path.join(*l)
+    shutil.move(src, target_directory)
+    
 def setup_ubuntu_user(server_name, key_name):
     pass
 
@@ -208,7 +209,15 @@ def load_osrf_creds(fname):
         return j
 
 
-    
+def wait_for_server_reloads(osrf_creds, machine_names, callback = print_cb):
+    api_username = osrf_creds['user'] 
+    api_key = osrf_creds['api_key']
+    hardware = _get_hardware(api_username, api_key)
+    server_ids_to_hostname = {server['id']:server['hostname'] for server in hardware if server['hostname'] in machine_names}
+    _wait_for_multiple_server_reloads(api_username, api_key, server_ids_to_hostname, callback)
+
+
+
 class TestSofty(unittest.TestCase):
     
     def atest_write_cred(self):
@@ -218,18 +227,41 @@ class TestSofty(unittest.TestCase):
         
         creds = load_osrf_creds(fname)
     
-    def test_reload_xx(self):
-        osrf_creds = load_osrf_creds(get_softlayer_path())
-        machine_names = ['router-01', 'cs-01', 'fc2-01']#, 'sim-01', "fc1-01"]
-        reload_servers(osrf_creds, machine_names, print_cb)
-        
     
-    def stest_o(self):
+    def atest_reload_xx(self):
+        
         osrf_creds = load_osrf_creds(get_softlayer_path())
+        machine_names = ['router-01', 'fc1-01', 'fc2-01', 'sim-01']
+        reload_servers(osrf_creds, machine_names, print_cb)
+        wait_for_server_reloads(osrf_creds, machine_names, print_cb)
+
+    def atest_user_setup(self):
+        osrf_creds = load_osrf_creds(get_softlayer_path())
+        
+        print("ubuntu user setup")
         machine = "router-01"
+        dst_dir = os.path.abspath('.')
+        
+        key_prefix = 'key_%s' %  machine
         ip, password = get_machine_login_info(osrf_creds, machine)
-        print ("%s %s" % (ip, password))
-        _setup_ssh_key_access(ip, password, 'router_key')
+        print("%s %s : %s" % (machine, ip, password))
+        setup_ssh_key_access(ip, password, key_prefix, dst_dir)
+        print ("ssh -i %s/%s.pem ubuntu@%s" % (dst_dir, key_prefix, ip))
+
+    def test_ubuntu_upload_and_execute(self):
+        pass
+#        print("ubuntu user setup")
+#        ip, password = get_machine_login_info(osrf_creds, "fc1-01")
+#        setup_ssh_key_access(ip, password, 'fc1_key')
+#
+#        print("ubuntu user setup")
+#        ip, password = get_machine_login_info(osrf_creds, "fc2-01")
+#        setup_ssh_key_access(ip, password, 'fc2_key')
+#
+#        print("ubuntu user setup")
+#        ip, password = get_machine_login_info(osrf_creds, "sim-01")
+#        setup_ssh_key_access(ip, password, 'sim_key')
+
 
 if __name__ == "__main__": 
     p = get_softlayer_path()
