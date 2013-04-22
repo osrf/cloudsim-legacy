@@ -5,6 +5,9 @@ import unittest
 import json
 import subprocess
 import shutil
+import datetime
+
+
 
 def get_softlayer_path():
     d = os.path.dirname(__file__)
@@ -96,7 +99,7 @@ def hardware_info(osrf_creds):
         print "[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip)
 
 def print_cb(server_name, status):
-    print("PCB %s  [%s] = %s" % (server_name, status))
+    print("PCB %s  [%s] = %s" % (datetime.datetime.now(),server_name, status))
 
 def _wait_for_multiple_server_reloads(api_username, api_key, server_ids_to_hostname, callback):
 
@@ -120,7 +123,7 @@ def _wait_for_multiple_server_reloads(api_username, api_key, server_ids_to_hostn
             booting_servers.pop(server_id)
         time.sleep(10)
 
-def reload_servers(osrf_creds, machine_names, callback):
+def reload_servers(osrf_creds, machine_names):
     api_username = osrf_creds['user'] 
     api_key = osrf_creds['api_key']
     hardware = _get_hardware(api_username, api_key)
@@ -220,19 +223,27 @@ def wait_for_server_reloads(osrf_creds, machine_names, callback = print_cb):
 
 class TestSofty(unittest.TestCase):
     
-    def atest_write_cred(self):
+    def atest_a_write_cred(self):
         fname = get_softlayer_path()
         c = SoftLayerCredentials('hugo','xxx', fname)
         c.save()
         
         creds = load_osrf_creds(fname)
+        print(creds)
     
     
-    def atest_reload_xx(self):
+    def xtest_reload_axx(self):
         
         osrf_creds = load_osrf_creds(get_softlayer_path())
         machine_names = ['router-01', 'fc1-01', 'fc2-01', 'sim-01']
         reload_servers(osrf_creds, machine_names, print_cb)
+        wait_for_server_reloads(osrf_creds, machine_names, print_cb)
+
+    def test_reload_bxx(self):
+        
+        osrf_creds = load_osrf_creds(get_softlayer_path())
+        machine_names = ['router-01', 'fc1-01', 'fc2-01', 'sim-01']
+        
         wait_for_server_reloads(osrf_creds, machine_names, print_cb)
 
     def atest_user_setup(self):
@@ -248,7 +259,7 @@ class TestSofty(unittest.TestCase):
         setup_ssh_key_access(ip, password, key_prefix, dst_dir)
         print ("ssh -i %s/%s.pem ubuntu@%s" % (dst_dir, key_prefix, ip))
 
-    def test_ubuntu_upload_and_execute(self):
+    def atest_ubuntu_upload_and_execute(self):
         pass
 #        print("ubuntu user setup")
 #        ip, password = get_machine_login_info(osrf_creds, "fc1-01")
