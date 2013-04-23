@@ -96,8 +96,7 @@ start vrc_sniffer
 start vrc_controller
 start vrc_bandwidth
 
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
+mkdir -p /home/ubuntu/cloudsim/setup
 touch /home/ubuntu/cloudsim/setup/done
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 

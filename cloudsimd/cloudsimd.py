@@ -27,7 +27,7 @@ from launchers import vpc_trio
 from launchers import simulator
 from launchers import vpc_micro_trio
 from launchers import cloudsim
-from launchers import vrc_constellation
+from launchers import vrc_contest
 
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
@@ -155,20 +155,20 @@ plugins['cloudsim'] =       {'launch':cloudsim.launch,
 plugins['vpc_trio_prerelease'] =  {'launch':vpc_trio.launch_prerelease,          
                                     'terminate':vpc_trio.terminate_prerelease,          
                                     'monitor':vpc_trio.monitor_prerelease,         
-                                    'start_task':vpc_trio.start_simulator,         
+                                    'start_task':vpc_trio.start_task,         
                                     'stop_task':vpc_trio.stop_task}
 
 plugins['simulator_prerelease'] =   {'launch':simulator.launch_prerelease,          
                                      'terminate':simulator.terminate_prerelease,       
                                      'monitor':simulator.monitor_prerelease,         
-                                     'start_task':simulator.start_simulator,         
+                                     'start_task':simulator.start_task,         
                                      'stop_task':simulator.stop_task}
 
-plugins['vrc_constellation'] =   {'launch':vrc_constellation.launch_prerelease,          
-                                     'terminate':vrc_constellation.terminate_prerelease,       
-                                     'monitor':vrc_constellation.monitor_prerelease,         
-                                     'start_task':vrc_constellation.start_simulator,         
-                                     'stop_task':vrc_constellation.stop_task}
+plugins['vrc_contest'] =   {'launch':vrc_contest.launch,          
+                                     'terminate':vrc_contest.terminate,       
+                                     'monitor':vrc_contest.monitor,         
+                                     'start_task':vrc_contest.start_task,         
+                                     'stop_task':vrc_contest.stop_task}
 class LaunchException(Exception):
     pass
 
@@ -214,7 +214,7 @@ def launch( username,
         
         if args != None:
             tags['args'] =  args
-        
+
         constellation.set_value('username', username)
         constellation.set_value('constellation_name', constellation_name)
         constellation.set_value('gmt', gmt)
@@ -222,7 +222,7 @@ def launch( username,
         constellation.set_value('constellation_directory', constellation_directory)
         constellation.set_value('constellation_state', 'launching')
         constellation.set_value('error', '')
-        
+
         constellation.set_value('current_task', "")
         constellation.set_value('tasks', [])
         

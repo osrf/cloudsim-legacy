@@ -6,8 +6,10 @@ import json
 import subprocess
 import shutil
 import datetime
+import commands
 
-
+class SoftLayerException(Exception):
+    pass
 
 def get_softlayer_path():
     d = os.path.dirname(__file__)
@@ -156,7 +158,16 @@ def get_cloudsin_ip(osrf_creds, constellation_id):
     ip = [server['frontendNetworkComponents'][-1]['primaryIpAddress'] for server in hardware if server['hostname']==machine][0]  
     return ip
 
-def setup_ssh_key_access(ip, root_password, key_prefix, target_directory):
+def create_ssh_key(key_prefix, target_directory ):
+    path = os.path.join(target_directory, key_prefix)
+    cmd = 'ssh-keygen -q -t rsa -f %s.pem -N ""' % path
+    print(cmd)
+    st,output = commands.getstatusoutput(cmd)
+    if st != 0:
+        raise SoftLayerException(cmd)
+
+
+def setup_ssh_key_access(ip, root_password, key_path):
     """
     Generates a key, logs in the machine at ip as root,
     creates a ubuntu user (sudoer) and adds the key  
@@ -164,23 +175,27 @@ def setup_ssh_key_access(ip, root_password, key_prefix, target_directory):
     l = [os.path.dirname( __file__),'bash', 'auto_ubuntu.bash']
     fname = os.path.join(*l)
     
-    cmd = "%s %s %s %s" % (fname, ip, root_password, key_prefix)
-    print("calling: %s\nip: %s\npsswd: %s\nkey: %s" % (fname, ip, root_password, key_prefix))
     
-    import commands
+    cmd = "%s %s %s %s" % (fname, ip, root_password, key_path)
+    print("calling: %s\nip: %s\npsswd: %s\nkey: %s" % (fname, ip, root_password, key_path))
+    
+    
     st,output = commands.getstatusoutput(cmd)
-    print(cmd)
-    print("RETURN %s" % st)
-    print ("%s" % output)
-    print("copyning keys")
+    if st != 0:
+        
+        print(cmd)
+        print("RETURN %s" % st)
+        print ("%s" % output)
+        print("copying keys")
+        raise SoftLayerException(cmd)
     
-    l = [os.path.dirname( __file__),'bash', '%s.pem' % key_prefix]
-    src = os.path.join(*l)
-    shutil.move(src, target_directory)
-    
-    l = [os.path.dirname( __file__),'bash', '%s.pem.pub' % key_prefix]
-    src = os.path.join(*l)
-    shutil.move(src, target_directory)
+#    l = [os.path.dirname( __file__),'bash', '%s.pem' % key_prefix]
+#    src = os.path.join(*l)
+#    shutil.move(src, target_directory)
+#    
+#    l = [os.path.dirname( __file__),'bash', '%s.pem.pub' % key_prefix]
+#    src = os.path.join(*l)
+#    shutil.move(src, target_directory)
     
 def setup_ubuntu_user(server_name, key_name):
     pass
@@ -255,6 +270,10 @@ class TestSofty(unittest.TestCase):
         
         key_prefix = 'key_%s' %  machine
         ip, password = get_machine_login_info(osrf_creds, machine)
+        
+        #
+        # must create key first now :-)
+        
         print("%s %s : %s" % (machine, ip, password))
         setup_ssh_key_access(ip, password, key_prefix, dst_dir)
         print ("ssh -i %s/%s.pem ubuntu@%s" % (dst_dir, key_prefix, ip))

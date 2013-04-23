@@ -48,7 +48,7 @@ if {$force_conservative} {
 
 
 set timeout -1
-spawn scp ./$keyname.pem.pub root@$ip_address:/home/ubuntu/key.pub
+spawn scp $keyname root@$ip_address:/home/ubuntu/key.pub
 match_max 100000
 expect -exact "root@$ip_address's password: "
 send -- "$pass\r"

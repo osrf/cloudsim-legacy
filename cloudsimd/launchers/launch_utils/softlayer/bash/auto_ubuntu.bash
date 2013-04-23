@@ -4,7 +4,6 @@
 set -ex
 exec > ./auto_user.log 2>&1
 
-
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo $DIR
 cd $DIR
@@ -17,14 +16,9 @@ echo pass $2
 echo key $3
 
 echo "create user"
-echo "create user"
 ./create_ubuntu_user.exp $1 $2
 
-echo "create key"
-echo "create key"
-./create_key.bash $DIR/$3 $1
-
-echo "upload key"
+echo "upload public key"
 ./upload_key.exp $1 $2 $3
 
 echo "process key"
