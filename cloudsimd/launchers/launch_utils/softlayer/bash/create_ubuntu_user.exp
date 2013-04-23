@@ -48,7 +48,7 @@ if {$force_conservative} {
 
 
 set timeout -1
-spawn ssh root@$ip_address
+spawn ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip_address
 match_max 100000
 expect -exact "root@$ip_address's password: "
 send -- "$pass\r"

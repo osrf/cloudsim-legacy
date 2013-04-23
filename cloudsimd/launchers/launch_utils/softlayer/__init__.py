@@ -71,8 +71,15 @@ def _get_boot_status(api_username, api_key, server_id):
 def _get_pub_ip(server):
     for nic in server['frontendNetworkComponents']:
         if nic.has_key('primaryIpAddress'):
-            pub_ip = nic['primaryIpAddress']
-            return pub_ip
+            ip = nic['primaryIpAddress']
+            return ip
+    return None
+
+def _get_priv_ip(server):
+    for nic in server['backendNetworkComponents']:
+        if nic.has_key('primaryIpAddress'):
+            ip = nic['primaryIpAddress']
+            return ip
     return None
 
 def hardware_info(osrf_creds):
@@ -88,15 +95,9 @@ def hardware_info(osrf_creds):
             user = o_s['passwords'][0]
             username = user['username']
             password = user['password']
-        priv_ip = None
-        pub_ip = None
-        for nic in server['backendNetworkComponents']:
-            if nic.has_key('primaryIpAddress'):
-                priv_ip = nic['primaryIpAddress']
-        for nic in server['frontendNetworkComponents']:
-            if nic.has_key('primaryIpAddress'):
-                pub_ip = nic['primaryIpAddress']
-                
+
+        priv_ip = _get_priv_ip(server)
+        pub_ip = _get_pub_ip(server)
         server_id = server['id']
         print "[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip)
 
@@ -134,9 +135,6 @@ def reload_servers(osrf_creds, machine_names):
         _send_reload_server_cmd(api_username, api_key, server_id)
     
 
-  
-
-
 
 
 def get_machine_login_info(osrf_creds, machine):
@@ -146,9 +144,10 @@ def get_machine_login_info(osrf_creds, machine):
     hardware = _get_hardware(api_username, api_key)
     server = [server for server in hardware if server['hostname']==machine][0]
     user = server['operatingSystem']['passwords'][0]
-    ip = _get_pub_ip(server) # server['frontendNetworkComponents'][-1]['primaryIpAddress']
+    pub_ip = _get_pub_ip(server) 
+    priv_ip = _get_priv_ip(server)
     psswd = user['password']
-    return ip,psswd
+    return pub_ip, priv_ip, psswd
     
 def get_cloudsin_ip(osrf_creds, constellation_id):
     api_username = osrf_creds['user'] 
@@ -269,7 +268,7 @@ class TestSofty(unittest.TestCase):
         dst_dir = os.path.abspath('.')
         
         key_prefix = 'key_%s' %  machine
-        ip, password = get_machine_login_info(osrf_creds, machine)
+        ip, priv_ip, password = get_machine_login_info(osrf_creds, machine)
         
         #
         # must create key first now :-)
