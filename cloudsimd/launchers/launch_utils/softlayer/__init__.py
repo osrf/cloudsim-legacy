@@ -181,13 +181,12 @@ def setup_ssh_key_access(ip, root_password, key_path):
     
     st,output = commands.getstatusoutput(cmd)
     if st != 0:
-        
         print(cmd)
-        print("RETURN %s" % st)
-        print ("%s" % output)
-        print("copying keys")
         raise SoftLayerException(cmd)
-    
+    print("RETURN %s" % st)
+    print ("%s" % output)
+    print("copying keys")
+        
 #    l = [os.path.dirname( __file__),'bash', '%s.pem' % key_prefix]
 #    src = os.path.join(*l)
 #    shutil.move(src, target_directory)
@@ -196,8 +195,7 @@ def setup_ssh_key_access(ip, root_password, key_path):
 #    src = os.path.join(*l)
 #    shutil.move(src, target_directory)
     
-def setup_ubuntu_user(server_name, key_name):
-    pass
+
 
 class SoftLayerCredentials(object):
     """
@@ -237,6 +235,17 @@ def wait_for_server_reloads(osrf_creds, machine_names, callback = print_cb):
 
 class TestSofty(unittest.TestCase):
     
+    def test_ssh_setup(self):
+        
+        ip = '50.97.149.39'
+        d = os.path.abspath('.')
+        create_ssh_key('test-key', d)
+        key_path = os.path.join(d,'test-key.pem.pub')
+        setup_ssh_key_access(ip, 'SapRekx3', key_path )
+        router_priv_key_path = os.path.join(d,'test-key.pem')
+        print ("ssh -i %s ubuntu@%s" % (router_priv_key_path, ip))
+        
+    
     def atest_a_write_cred(self):
         fname = get_softlayer_path()
         c = SoftLayerCredentials('hugo','xxx', fname)
@@ -253,7 +262,7 @@ class TestSofty(unittest.TestCase):
         reload_servers(osrf_creds, machine_names, print_cb)
         wait_for_server_reloads(osrf_creds, machine_names, print_cb)
 
-    def test_reload_bxx(self):
+    def stest_reload_bxx(self):
         
         osrf_creds = load_osrf_creds(get_softlayer_path())
         machine_names = ['router-01', 'fc1-01', 'fc2-01', 'sim-01']

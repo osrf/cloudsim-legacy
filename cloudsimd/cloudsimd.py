@@ -673,15 +673,21 @@ if __name__ == "__main__":
         tick_interval = 5
         
         boto_path = '/var/www-cloudsim-auth/boto-useast'
+        softlayer_path = '/var/www-cloudsim-auth/softlayer.json'
         root_dir  = '/var/www-cloudsim-auth/machines'
 
         if len(sys.argv) > 1:
            boto_path = os.path.abspath(sys.argv[1])
+        
         if len(sys.argv) > 2:
-           root_dir = os.path.abspath(sys.argv[2])
+           softlayer_path = os.path.abspath(sys.argv[2])
+        
+        if len(sys.argv) > 3:
+           root_dir = os.path.abspath(sys.argv[3])
            
         config = {}
         config['boto_path'] = boto_path
+        config['softlayer_path'] = softlayer_path
         config['machines_directory'] = root_dir
         config['cloudsim_version'] = '1.x.x'
         set_cloudsim_config(config)
