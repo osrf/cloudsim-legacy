@@ -46,16 +46,10 @@ def get_constellation(email, constellation_name):
 
     try:
         key = 'cloudsim/' + constellation_name
-       
         s = r.get(key)
         c = json.loads(s)
-        
-        domain = _domain(c['username'])
-        authorised_domain = _domain(email)
-                
-        if domain == authorised_domain:
-            constellation = clean_constellation_data(c)
-            return constellation
+        constellation = clean_constellation_data(c)
+        return constellation
     except Exception, e:
         log("Get const error: %s" % e)
         return None
@@ -69,7 +63,7 @@ def list_constellations(email):
             constellation_name = toks[1]
             c = get_constellation(email, constellation_name)
             if c:
-                #log(constellation_name)
+                log(constellation_name)
                 constellations.append(c )
     return constellations          
 

@@ -54,17 +54,11 @@ expect -exact "root@$ip_address's password: "
 send -- "$pass\r"
 expect -exact "\r
 Welcome to Ubuntu"
-send -- "useradd -m -s /bin/bash ubuntu"
-expect -exact "useradd -m -s /bin/bash ubuntu"
-send -- "\r"
+send -- "useradd -m -s /bin/bash ubuntu\r"
 expect -exact "\r"
-send -- "adduser ubuntu sudo"
-expect -exact "adduser ubuntu sudo"
-send -- "\r"
-expect -exact "\r
-Adding user `ubuntu' to group `sudo' ...\r
-Adding user ubuntu to group sudo\r
-Done.\r"
+
+send -- "adduser ubuntu sudo\r"
+expect -exact "\r"
 
 send -- "echo 'ubuntu ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers\r"
 expect -exact "\r"
@@ -72,11 +66,9 @@ expect -exact "\r"
 send -- "mkdir /home/ubuntu/.ssh;\r"
 expect -exact "\r"
 
-send -- "chmod 0700 /home/ubuntu/.ssh"
-send -- "\r"
+send -- "chmod 0700 /home/ubuntu/.ssh\r"
 expect -exact "\r"
 
-send -- "chown ubuntu:ubuntu /home/ubuntu/.ssh"
-send -- "\r"
+send -- "chown ubuntu:ubuntu /home/ubuntu/.ssh\r"
 expect -exact "\r"
 

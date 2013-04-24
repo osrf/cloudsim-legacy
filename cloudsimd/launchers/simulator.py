@@ -31,8 +31,7 @@ from launch_utils.launch import LaunchException, aws_connect, get_amazon_amis
 
 from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
-from launch_utils.monitoring import LATENCY_TIME_BUFFER, record_ping_result,\
-    machine_states, update_machine_aws_states, constellation_is_terminated,\
+from launch_utils.monitoring import update_machine_aws_states, constellation_is_terminated,\
     monitor_launch_state, monitor_simulator, monitor_cloudsim_ping,\
     get_ssh_client
 

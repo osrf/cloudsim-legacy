@@ -10,6 +10,7 @@ class ConfigsDb(object):
     def get_config_dir(self):
         return self.configs_dir
     
+    # todo... move to cloudsimd and redis
     def get_configs(self):
         configs = {}
         configs['vpc_trio_prerelease'] = {'description': "3 machines for the VRC competition: a GPU field computer, a router and a GPU simulator, using gazebo and drcsim pre-release packages"} 
@@ -18,6 +19,7 @@ class ConfigsDb(object):
         configs['simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
         configs['simulator_prerelease'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim pre-release packages installed"}
         configs['cloudsim'] = {'description': "1 machine for starting a CloudSim on the cloud: A micro instance web app clone"}
+        configs['vrc_contest'] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
         return configs
 
     def get_configs_as_json(self):
