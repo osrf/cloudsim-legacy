@@ -539,7 +539,7 @@ def run_machines(constellation_name, constellation_directory):
     
 def launch(username, constellation_name, tags, credentials_softlayer, constellation_directory ):
     
-    constellation_prefix = "03"
+    constellation_prefix = "01"
 
     drc_package = "drcsim"
     constellation = ConstellationState( constellation_name)
@@ -634,7 +634,7 @@ class VrcCase(unittest.TestCase):
         
     def test_launch(self):
         
-        launch_stage = "nothing" # "os_reload"
+        launch_stage = "os_reload" #  "nothing" 
         self.constellation_name = 'test_vrc_contest_toto' 
         self.username = "toto@osrfoundation.org"
         self.credentials_softlayer  = get_softlayer_path()
