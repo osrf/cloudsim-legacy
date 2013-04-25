@@ -395,6 +395,7 @@ def initialize_private_machines(constellation_name, constellation_prefix, drcsim
         with open(local_fname, 'w') as f:
             f.write(startup_script)
         remote_fname = 'cloudsim/%s_startup_script.bash' % machine_name_prefix
+        # send startup script to router
         ssh_router.upload_file(local_fname, remote_fname)
         
     constellation = ConstellationState( constellation_name)
@@ -426,18 +427,22 @@ def initialize_private_machines(constellation_name, constellation_prefix, drcsim
     log('configure_machines done')    
     constellation.set_value("launch_stage", "init_privates")
 
-def startup_scripts(constellation_name, constellation_directory):
+def startup_scripts(constellation_name):
     constellation = ConstellationState( constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('startup'):
         return
     
-    router_ip = constellation.get_value("router_public_ip" )
-    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+    constellation_directory = constellation.get_value('constellation_directory')
     
-    ssh_router.cmd("cloudsim/sim_init.bash")
+    router_ip = constellation.get_value("router_public_ip" )
+    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)    
+
+    
     ssh_router.cmd("cloudsim/fc1_init.bash")
     ssh_router.cmd("cloudsim/fc2_init.bash")
+    ssh_router.cmd("cloudsim/sim_init.bash")
+    
     
     constellation.set_value("launch_stage", "startup")
     
@@ -539,7 +544,7 @@ def run_machines(constellation_name, constellation_directory):
     
 def launch(username, constellation_name, tags, credentials_softlayer, constellation_directory ):
     
-    constellation_prefix = "01"
+    constellation_prefix = "03"
 
     drc_package = "drcsim"
     constellation = ConstellationState( constellation_name)
@@ -596,43 +601,11 @@ class MonitorCase(unittest.TestCase):
   
 class VrcCase(unittest.TestCase):
     
+    def test_startup(self):
+        constellation_name = 'test_vrc_contest_toto'
+        startup_scripts(constellation_name)
     
-    def atest_monitor(self):
-
-        self.constellation_name =  "cxf44f7040"
-        self.username = "toto@osrfoundation.org"
-        self.credentials_softlayer  = get_softlayer_path()
-
-        sweep_count = 2
-        for i in range(sweep_count):
-            print("monitoring %s/%s" % (i,sweep_count) )
-            monitor(self.username, self.constellation_name, self.credentials_ec2, i)
-            time.sleep(1)
-    
-        
-    def Xtest_router_ubuntu(self):
-        directory = get_test_path('test_router_ubuntu')
-        router_ip = '50.97.149.39'
-        password = 'SapRekx3'
-        os.makedirs(directory)
-        print("add_ubuntu_user_to_router %s %s %s" % (router_ip, password, directory) )
-        add_ubuntu_user_to_router(router_ip, password, directory)
-        s = "ssh -i %s/key-router.pem ubuntu@%s" % (directory, router_ip)
-        print(s)
-    
-    
-    def atest_sim_ubuntu_user(self):
-        constellation_directory = get_test_path('test_router_ubuntu')
-        router_ip = '50.97.149.39'
-        upload_user_scripts_to_router(router_ip, constellation_directory)
-               
-        machine_ip = '10.41.54.2'
-        machine_password = 'MJykvzb9'
-        print ("sim: %s %s " % (machine_ip, machine_password))
-
-        add_ubuntu_user_via_router(router_ip, constellation_directory, 'sim', machine_ip, machine_password)    
-        
-    def test_launch(self):
+    def atest_launch(self):
         
         launch_stage = "os_reload" #  "nothing" 
         self.constellation_name = 'test_vrc_contest_toto' 
@@ -669,6 +642,42 @@ class VrcCase(unittest.TestCase):
             time.sleep(1)
         
         terminate(self.constellation_name, self.credentials_softlayer)
+
+    def atest_monitor(self):
+
+        self.constellation_name =  "cxf44f7040"
+        self.username = "toto@osrfoundation.org"
+        self.credentials_softlayer  = get_softlayer_path()
+
+        sweep_count = 2
+        for i in range(sweep_count):
+            print("monitoring %s/%s" % (i,sweep_count) )
+            monitor(self.username, self.constellation_name, self.credentials_ec2, i)
+            time.sleep(1)
+    
+        
+    def Xtest_router_ubuntu(self):
+        directory = get_test_path('test_router_ubuntu')
+        router_ip = '50.97.149.39'
+        password = 'SapRekx3'
+        os.makedirs(directory)
+        print("add_ubuntu_user_to_router %s %s %s" % (router_ip, password, directory) )
+        add_ubuntu_user_to_router(router_ip, password, directory)
+        s = "ssh -i %s/key-router.pem ubuntu@%s" % (directory, router_ip)
+        print(s)
+    
+    
+    def atest_sim_ubuntu_user(self):
+        constellation_directory = get_test_path('test_router_ubuntu')
+        router_ip = '50.97.149.39'
+        upload_user_scripts_to_router(router_ip, constellation_directory)
+               
+        machine_ip = '10.41.54.2'
+        machine_password = 'MJykvzb9'
+        print ("sim: %s %s " % (machine_ip, machine_password))
+
+        add_ubuntu_user_via_router(router_ip, constellation_directory, 'sim', machine_ip, machine_password)    
+        
     
     def stest_ubuntu_user_on_sim_from_router(self):
         
