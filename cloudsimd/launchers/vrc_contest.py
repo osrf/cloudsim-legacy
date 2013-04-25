@@ -30,10 +30,11 @@ from launch_utils.startup_scripts import get_vpc_router_script, get_vpc_open_vpn
 from launch_utils.sshclient import SshClient, clean_local_ssh_key_entry
 
 
-FC1_IP='10.0.0.52'
-FC2_IP='10.0.0.53'
+
 ROUTER_IP='10.0.0.50'
 SIM_IP='10.0.0.51'
+FC1_IP='10.0.0.52'
+FC2_IP='10.0.0.53'
 OPENVPN_SERVER_IP='11.8.0.1'
 OPENVPN_CLIENT_IP='11.8.0.2'
     
@@ -236,9 +237,9 @@ def reload_os_machines(constellation_name, constellation_prefix, osrf_creds_fnam
     constellation.set_value("fc1_aws_id", "xxx")
     constellation.set_value("fc2_aws_id", "xxx")
     constellation.set_value("simulation_aws_id", "xxx")
+    constellation.set_value("router_aws_id", "xxx")
     
-    
-    machine_names_prefix = ('router','sim' , 'fc1', 'fc2')
+    machine_names_prefix = ('router','sim' , 'fc2', 'fc1')
     init_computer_data(constellation_name, machine_names_prefix)
 
     constellation.set_value("error", "")
@@ -267,15 +268,20 @@ def add_ubuntu_user_to_router(router_ip, password, constellation_directory):
 
 def upload_user_scripts_to_router(router_ip, constellation_directory):
 
+    softlayer_scripts_dir = os.path.join( os.path.dirname(launch_utils.softlayer.__file__), 'bash')
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
     
-    # create a directory
+    # create a cloudsim directory on the router
     ssh_router.cmd("mkdir -p cloudsim")
-    # install expect 
-    ssh_router.cmd("sudo apt-get install -y expect")
     
+    local_fname = os.path.join( softlayer_scripts_dir, 'router_init.bash')
+    remote_fname = 'cloudsim/router_init.bash'
+    ssh_router.upload_file(local_fname,remote_fname)
+    log("upload %s to %s" % (local_fname, remote_fname))
+    # run the script
+    ssh_router.cmd("cd cloudsim; ./router_init.bash /home/ubuntu/cloudsim %s %s %s" % (SIM_IP, FC1_IP, FC2_IP))
     
-    softlayer_scripts_dir = os.path.join( os.path.dirname(launch_utils.softlayer.__file__), 'bash')
+    # upload ubuntu user setup scripts
     local_fname = os.path.join( softlayer_scripts_dir, 'auto_ubuntu.bash')
     remote_fname = 'cloudsim/auto_ubuntu.bash'
     ssh_router.upload_file(local_fname, remote_fname)
@@ -301,6 +307,7 @@ def add_ubuntu_user_via_router(router_ip, constellation_directory, machine_prefi
     
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
     
+    
     # create keys for machine
     create_ssh_key("key-%s" % machine_prefix, constellation_directory)
     
@@ -308,15 +315,20 @@ def add_ubuntu_user_via_router(router_ip, constellation_directory, machine_prefi
     local_fname = os.path.join(constellation_directory, 'key-%s.pem.pub' % machine_prefix)
     remote_fname = 'cloudsim/key-%s.pem.pub' % machine_prefix
     ssh_router.upload_file(local_fname, remote_fname)
-    log("upload %s to %s" % (local_fname, remote_fname))
-    
+    log("upload public key %s to %s" % (local_fname, remote_fname))
+        
+    # upload private key to router
+    local_fname = os.path.join(constellation_directory, 'key-%s.pem' % machine_prefix)
+    remote_fname = 'cloudsim/key-%s.pem' % machine_prefix
+    ssh_router.upload_file(local_fname, remote_fname)
+    log("upload private key %s to %s" % (local_fname, remote_fname))
     # execute script on router
     cmd = "cd cloudsim; ./auto_ubuntu.bash %s %s ./key-%s.pem.pub" % (machine_ip, machine_password, machine_prefix)
     log(cmd)
     ssh_router.cmd(cmd)
     
 
-def load_machine_scripts(constellation_name, constellation_prefix, osrf_creds_fname, constellation_directory):
+def initialize_router(constellation_name, constellation_prefix, osrf_creds_fname, constellation_directory):
     
     constellation = ConstellationState( constellation_name)
     
@@ -329,9 +341,10 @@ def load_machine_scripts(constellation_name, constellation_prefix, osrf_creds_fn
     os.makedirs(constellation_directory)
 
     machines_dict = {'sim-%s' % constellation_prefix:'simulation_launch_msg',
-                     'router-%s' % constellation_prefix:'router_launch_msg', }
-#                     'fc1-%s' % constellation_prefix:'fc1_launch_msg',
-#                     'fc2-%s' % constellation_prefix:'fc2_launch_msg'}
+                     'router-%s' % constellation_prefix:'router_launch_msg', 
+                     'fc2-%s' % constellation_prefix:'fc2_launch_msg', 
+                     'fc1-%s' % constellation_prefix:'fc1_launch_msg',
+                    }
     
     osrf_creds = load_osrf_creds(osrf_creds_fname)    
     reload_monitor = ReloadOsCallBack(constellation_name, machines_dict)
@@ -351,73 +364,56 @@ def load_machine_scripts(constellation_name, constellation_prefix, osrf_creds_fn
     # avoid ssh error because our server has changed
     constellation.set_value("launch_stage", "startup_script")
 
+def provision_ssh_router(router_ip, startup_script, constellation_directory):
+    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+    local_fname = os.path.join(constellation_directory, 'router_startup.bash')
+    with open(local_fname, 'w') as f:
+        f.write(startup_script)
+    remote_fname = 'cloudsim/router_startup_script.bash'
+    ssh_router.upload_file(local_fname, remote_fname)
+    log("upload %s to %s" % (local_fname, remote_fname))
+
+def provision_ssh_private_machine(machine_name_prefix, router_ip, private_machine_ip, machine_password, startup_script, constellation_directory ):
+
+    add_ubuntu_user_via_router(router_ip, constellation_directory, machine_name_prefix, private_machine_ip, machine_password)
+    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+    
+    local_fname = os.path.join(constellation_directory, '%s_startup.bash' % machine_name_prefix)
+    with open(local_fname, 'w') as f:
+        f.write(startup_script)
+    remote_fname = 'cloudsim/%s_startup_script.bash' % machine_name_prefix
+    ssh_router.upload_file(local_fname, remote_fname)
+    
+    
+    
 def configure_ssh_machines(constellation_name, constellation_prefix, drcsim_package_name, credentials_softlayer, constellation_directory):
 
     constellation = ConstellationState( constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('configure'):
         return
-    
+
     router_ip = constellation.get_value("router_public_ip" )
+    router_script = get_router_script()
+    provision_ssh_router(router_ip, router_script, constellation_directory)
     
     osrf_creds = load_osrf_creds(credentials_softlayer)
-    pub_ip, machine_ip, machine_password = get_machine_login_info(osrf_creds, "sim-%s" % constellation_prefix)
-    add_ubuntu_user_via_router(router_ip, constellation_directory, 'sim', machine_ip, machine_password)
 
-    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
-
+    sim_pub_ip, sim_priv_ip, sim_root_password = get_machine_login_info(osrf_creds, "sim-%s" % constellation_prefix)
     sim_script = get_sim_script(drcsim_package_name)
-    local_fname = os.path.join(constellation_directory, 'sim_startup.bash')
-    with open(local_fname, 'w') as f:
-        f.write(sim_script)
-    remote_fname = 'cloudsim/sim_startup_script.bash'
-    ssh_router.upload_file(local_fname, remote_fname)
-    
-    
+    log("provision sim [%s / %s] %s" % (sim_pub_ip, sim_priv_ip, sim_root_password))
+    provision_ssh_private_machine("sim", router_ip, sim_priv_ip, sim_root_password, sim_script, constellation_directory)
 
-    router_script = get_router_script()
-    local_fname = os.path.join(constellation_directory, 'router_startup.bash')
-    with open(local_fname, 'w') as f:
-        f.write(router_script)
-    remote_fname = 'cloudsim/router_startup_script.bash'
-    ssh_router.upload_file(local_fname, remote_fname)
-    log("upload %s to %s" % (local_fname, remote_fname))
-    
-    
+    fc1_pub_ip, fc1_priv_ip, fc1_root_password = get_machine_login_info(osrf_creds, "fc1-%s" % constellation_prefix)
     fc1_script = get_fc1_script(drcsim_package_name)
-    local_fname = os.path.join(constellation_directory, 'fc1_startup.bash')
-    with open(local_fname, 'w') as f:
-        f.write(fc1_script)
-    remote_fname = 'cloudsim/fc1_startup_script.bash'
-    ssh_router.upload_file(local_fname, remote_fname)
-    log("upload %s to %s" % (local_fname, remote_fname))
-    
+    log("provision fc1 [%s / %s] %s" % (fc1_pub_ip, fc1_priv_ip, fc1_root_password))
+    provision_ssh_private_machine("fc1", router_ip, fc1_priv_ip, fc1_root_password, fc1_script, constellation_directory)
+
+    fc2_pub_ip, fc2_priv_ip, fc2_root_password = get_machine_login_info(osrf_creds, "fc2-%s" % constellation_prefix)
     fc2_script = get_fc2_script(drcsim_package_name)
-    local_fname = os.path.join(constellation_directory, 'fc2_startup.bash')
-    with open(local_fname, 'w') as f:
-        f.write(fc2_script)
-    remote_fname = 'cloudsim/fc2_startup_script.bash'
-    ssh_router.upload_file(local_fname, remote_fname)
-    log("upload %s to %s" % (local_fname, remote_fname))
-    
-    
-    
-    
-    
-    
-#    pub_ip, ip, password = get_machine_login_info(osrf_creds, "fc1-%s" % constellation_prefix)
-#    log("setting up ubuntu user on field computer 1")
-#    cmd = "cd cloudsim; sudo  ./auto_ubuntu.bash %s %s key-fc1.pem.pub" % (ip, password)
-#    log(cmd)
-#    ssh_router.cmd(cmd)
-#
-#    pub_ip, ip, password = get_machine_login_info(osrf_creds, "fc2-%s" % constellation_prefix)
-#    log("setting up ubuntu user on field computer 2")
-#    cmd = "cd cloudsim; sudo  ./auto_ubuntu.bash %s %s key-fc2.pem.pub" % (ip, password)
-#    log(cmd)
-#    ssh_router.cmd(cmd)
-    
-    # ssh_router.cmd('sudo at -f cloudsim/router_startup_script.bash now')
+    log("provision fc2 [%s / %s] %s" % (fc2_pub_ip, fc2_priv_ip, fc2_root_password))
+    provision_ssh_private_machine("fc2", router_ip, fc2_priv_ip, fc2_root_password, fc2_script, constellation_directory)
+
     log('configure_machines done')    
 
 #    roles_to_reservations = {}
@@ -494,7 +490,7 @@ def launch(username, constellation_name, tags, credentials_softlayer, constellat
     
     
     reload_os_machines(constellation_name, constellation_prefix, credentials_softlayer)
-    load_machine_scripts(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory)
+    initialize_router(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory)
     configure_ssh_machines(constellation_name, constellation_prefix, drc_package, credentials_softlayer, constellation_directory)
     reboot_machines(constellation_name)
 
@@ -519,7 +515,7 @@ def terminate(constellation_name, osrf_creds_fname):
     constellation.set_value('field1_launch_msg', "terminating")
     constellation.set_value('field2_launch_msg', "terminating")    
         
-#        wait_for_multiple_machines_to_terminate(ec2conn, 
+#  wait_for_multiple_machines_to_terminate(ec2conn, 
         
     constellation.set_value('sim_state', 'terminated')
     constellation.set_value('sim_launch_msg', "terminated")
@@ -568,7 +564,7 @@ class VrcCase(unittest.TestCase):
         print(s)
     
     
-    def test_sim_ubuntu_user(self):
+    def atest_sim_ubuntu_user(self):
         constellation_directory = get_test_path('test_router_ubuntu')
         router_ip = '50.97.149.39'
         upload_user_scripts_to_router(router_ip, constellation_directory)
@@ -579,8 +575,9 @@ class VrcCase(unittest.TestCase):
 
         add_ubuntu_user_via_router(router_ip, constellation_directory, 'sim', machine_ip, machine_password)    
         
-    def atest_launch(self):
-
+    def test_launch(self):
+        
+        from_scratch = False
         self.constellation_name = 'test_vrc_contest_toto' 
         self.username = "toto@osrfoundation.org"
         self.credentials_softlayer  = get_softlayer_path()
@@ -602,8 +599,9 @@ class VrcCase(unittest.TestCase):
         constellation.set_value('current_task', "")
         constellation.set_value('tasks', [])
         
-        #constellation.set_value("launch_stage", 'nothing')
-        constellation.set_value("launch_stage", 'os_reload')
+        if from_scratch:
+            constellation.set_value("launch_stage", 'nothing')
+        #constellation.set_value("launch_stage", 'os_reload')
         log(self.constellation_directory)
         self.tags = {'TestCase':CONFIGURATION, 'configuration': CONFIGURATION, 'constellation' : self.constellation_name, 'user': self.username, 'GMT':"now"}
         launch(self.username, self.constellation_name, self.tags, self.credentials_softlayer, self.constellation_directory)

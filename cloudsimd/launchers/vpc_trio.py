@@ -649,7 +649,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     ssh_router.create_file(stop_sim, "cloudsim/stop_sim.bash")
     
     start_sim = """#!/bin/bash
-    
+     
     
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "bash cloudsim/start_sim.bash \$1 \$2 \$3"
     

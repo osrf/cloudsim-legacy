@@ -49,7 +49,7 @@ if {$force_conservative} {
 
 
 set timeout -1
-spawn ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip_address {mkdir -p /home/ubuntu/.ssh; cat /home/ubuntu/key.pub >> /home/ubuntu/.ssh/authorized_keys; chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys; chmod 600 /home/ubuntu/.ssh/authorized_keys; rm /home/ubuntu/key.pub}
+spawn ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip_address {mkdir -p /home/ubuntu/.ssh; cat /home/ubuntu/key.pub >> /home/ubuntu/.ssh/authorized_keys; chmod 600 /home/ubuntu/.ssh/authorized_keys; rm /home/ubuntu/key.pub; chown -R ubuntu:ubuntu /home/ubuntu/.ssh}
 match_max 100000
 expect -exact "root@$ip_address's password: "
 send -- $pass
