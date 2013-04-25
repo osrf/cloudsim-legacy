@@ -24,7 +24,7 @@ role = udb.get_role(email)
 version = get_cloudsim_version_txt()
 
 user_info = json.dumps({'user':email, 'role':role})
-scripts = get_javascripts(['machine_view.js', 'jquery-1.8.3.min.js', 'jquery.flot.js' ])
+scripts = get_javascripts(['jquery-1.8.3.min.js', 'jquery.flot.js' ])
 
 print_http_header()
 

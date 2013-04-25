@@ -13,13 +13,9 @@ function create_constellation(div_name, configuration, constellation, username, 
     	// field computer 1
         { 
             var div =  constellation_div.querySelector("#machines" );
-            
-
             var machine_name = "field_computer1_" + constellation;
             var machine_div = create_machine(machines_div, machine_name);
-
             create_hostname_widget(machine_div, constellation, machine_name, "fc1_ip", "fc1_aws_id", "username", "gmt", "fc1_zip_file");
-
             create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "fc1_launch_msg", "fc1_state");
             create_machine_state_widget(machine_div,constellation, machine_name, "fc1_aws_state");
             // create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
