@@ -25,23 +25,29 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.
 DELIM
 chmod +x $DIR/find_file_fc1.bash
 
-cat <<DELIM > $DIR/reboot_fc1.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@%s "sudo reboot"
-DELIM
-chmod +x $DIR/reboot_fc1.bash
-
 cat <<DELIM > $DIR/fc1_init.bash
 #!/bin/bash
 set -ex
 exec > $DIR/fc1_init.log 2>&1
 
 chmod +x $DIR/fc1_startup_script.bash
-scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem $DIR/fc1_startup_script.bash ubuntu@$FC1_IP:c1_startup_script.bash 
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem $DIR/fc1_startup_script.bash ubuntu@$FC1_IP:fc1_startup_script.bash 
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_IP "sudo ./fc1_startup_script.bash | at now"
-
+    
 DELIM
 chmod +x $DIR/fc1_init.bash
+
+
+cat <<DELIM > $DIR/reboot_fc1.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@%s "sudo reboot"
+DELIM
+chmod +x $DIR/reboot_fc1.bash
+
+
+chmod +x $DIR/fc1_startup_script.bash
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem $DIR/fc1_startup_script.bash ubuntu@$FC1_IP:c1_startup_script.bash 
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_IP "sudo ./fc1_startup_script.bash | at now"
 
 
 cat <<DELIM > $DIR/dpkg_log_fc2.bash
@@ -94,6 +100,13 @@ cat <<DELIM > $DIR/sim_init.bash
 #!/bin/bash
 set -ex
 exec > $DIR/sim_init.log 2>&1
+
+
+cat <<DELIM > $DIR/reboot_sim.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@%s "sudo reboot"
+DELIM
+chmod +x $DIR/reboot_sim.bash
 
 chmod +x $DIR/sim_startup_script.bash
 scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem $DIR/sim_startup_script.bash ubuntu@$SIM_IP:sim_startup_script.bash 
