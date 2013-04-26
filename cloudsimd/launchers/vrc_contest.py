@@ -26,9 +26,12 @@ from launch_utils import sshclient
 from launch_utils.testing import get_test_runner, get_test_path
 from launch_utils.launch import get_unique_short_name
 from launch_utils.startup_scripts import get_vpc_router_script, get_vpc_open_vpn,\
-    get_drc_startup_script
+    get_drc_startup_script, create_openvpn_client_cfg_file,\
+    create_vpc_vpn_connect_file, create_ros_connect_file,\
+    create_ssh_connect_file
 from launch_utils.sshclient import SshClient, clean_local_ssh_key_entry
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
+from zipfile import ZipFile
 
 
 
@@ -443,9 +446,83 @@ def startup_scripts(constellation_name):
     ssh_router.cmd("cloudsim/sim_init.bash")
 
     constellation.set_value("launch_stage", "startup")
+
     
 def configure_ssh(constellation_name, constellation_directory):
+    
+    def create_zip_file(zip_file_path, short_name, files_to_zip):
 
+        with ZipFile.ZipFile(zip_file_path, 'w') as fzip:
+            for fname in files_to_zip:
+                short_fname = os.path.split(fname)[1]
+                zip_name = os.path.join(short_name, short_fname)
+                fzip.write(fname, zip_name)
+            
+    def create_router_zip():
+        # create router zip file with keys
+        # This file is kept on the server and provides the user with:
+        #  - key file for ssh access to the router
+        #  - openvpn key
+        #  - scripts to connect with ssh, openvpn, ROS setup 
+        #  
+        #        
+        router_machine_dir = os.path.join(constellation_directory, "router")
+        os.makedirs(router_machine_dir )
+        router_key_short_filename = 'key-router.pem'
+        router_key_path =  os.path.join(router_machine_dir, router_key_short_filename)
+        copyfile(os.path.join(constellation_directory, router_key_short_filename), router_key_path)
+        os.chmod(router_key_path, 0600)        
+        hostname = router_ip
+        file_content = create_openvpn_client_cfg_file(hostname, client_ip = OPENVPN_CLIENT_IP, server_ip = OPENVPN_SERVER_IP)
+        fname_vpn_cfg = os.path.join(router_machine_dir, "openvpn.config")
+        with open(fname_vpn_cfg, 'w') as f:
+            f.write(file_content)
+        
+        
+        fname_start_vpn = os.path.join(router_machine_dir , "start_vpn.bash")    
+        file_content = create_vpc_vpn_connect_file(OPENVPN_CLIENT_IP)
+        with open(fname_start_vpn, 'w') as f:
+            f.write(file_content)
+        os.chmod(fname_start_vpn, 0755)
+        
+        fname_ros = os.path.join(router_machine_dir, "ros.bash")    
+        file_content = create_ros_connect_file(machine_ip=OPENVPN_CLIENT_IP, master_ip=SIM_IP)
+    
+        with open(fname_ros, 'w') as f:
+            f.write(file_content)
+    
+        
+        fname_ssh_sh =  os.path.join(router_machine_dir,'router_ssh.bash')
+        file_content = create_ssh_connect_file(router_key_short_filename, router_ip)
+        with open(fname_ssh_sh, 'w') as f:
+                f.write(file_content)
+        os.chmod(fname_ssh_sh, 0755)
+    
+        # wait (if necessary) for openvpn key to have been generated
+        constellation.set_value('router_launch_msg',   "waiting for key generation") 
+        remote_fname = "/etc/openvpn/static.key"
+        router_key_ready = get_ssh_cmd_generator(ssh_router, "ls /etc/openvpn/static.key", "/etc/openvpn/static.key", constellation, "simulation_state", 'running' ,max_retries = 100)
+        empty_ssh_queue([router_key_ready], sleep=2)
+        
+        vpnkey_fname = os.path.join(router_machine_dir, "openvpn.key")
+        
+        # download it locally for inclusion into the zip file
+        constellation.set_value('router_launch_msg',   "downloading router vpn key to CloudSim server") 
+        ssh_router.download_file(vpnkey_fname, remote_fname) 
+        os.chmod(vpnkey_fname, 0600)
+        
+        #creating zip
+        files_to_zip = [ router_key_path, 
+                         fname_start_vpn,
+                         fname_ssh_sh, 
+                         fname_vpn_cfg,
+                         vpnkey_fname,
+                         fname_ros,]
+        router_fname_zip = os.path.join(router_machine_dir, "router_%s.zip" % constellation_name)
+        create_zip_file(router_fname_zip, "router_%s" % constellation_name, files_to_zip)
+        constellation.set_value('router_zip_file', 'ready')
+        
+        
     constellation = ConstellationState( constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('configure'):
@@ -454,54 +531,74 @@ def configure_ssh(constellation_name, constellation_directory):
     router_ip = constellation.get_value("router_public_ip" )
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
 
+
+    constellation.set_value('router_launch_msg',   "creating key zip file bundle")
+    
+    
+    #
+    # ZIP files
+    # First, create 3 directories (using machine names) and copy pem key files there 
+
+
+    
+    robot_machine_dir = os.path.join(constellation_directory, "fc1")
+    os.makedirs(robot_machine_dir )
+    robot_key_short_filename = 'key-fc1.pem'
+    robot_key_path =  os.path.join(robot_machine_dir, robot_key_short_filename)
+    copyfile(os.path.join(constellation_directory,   robot_key_short_filename), robot_key_path)
+    os.chmod(robot_key_path, 0600)
+    
+    sim_machine_dir = os.path.join(constellation_directory, "sim")
+    os.makedirs(sim_machine_dir )
+    sim_key_short_filename =  'key-sim.pem'
+    sim_key_path =  os.path.join(sim_machine_dir, sim_key_short_filename)
+    copyfile(os.path.join(constellation_directory,   sim_key_short_filename), sim_key_path)    
+    os.chmod(sim_key_path, 0600)
+
+    
+    # create simulator zip file with keys
+    # This file is kept on the server and provides the user with:
+    #  - key file for ssh access to the router
+    #  - openvpn key
+    #  - scripts to connect with ssh, openvpn, ROS setup 
+    
+    
+    constellation.set_value('simulation_launch_msg', "creating zip file bundle")
+    fname_ssh_sh =  os.path.join(sim_machine_dir,'simulator_ssh.bash')
+    file_content = create_ssh_connect_file(sim_key_short_filename, SIM_IP)
+    with open(fname_ssh_sh, 'w') as f:
+            f.write(file_content)
+    os.chmod(fname_ssh_sh, 0755)    
+            
+    files_to_zip = [ sim_key_path, 
+                     fname_ssh_sh,]
+    
+    sim_fname_zip = os.path.join(sim_machine_dir, "sim_%s.zip" % constellation_name)
+    create_zip_file(sim_fname_zip, "sim_%s" % constellation_name, files_to_zip)
+    constellation.set_value('sim_zip_file', 'ready')
+
+    # create field computer zip file with keys
+    # This file is kept on the server and provides the user with:
+    #  - key file for ssh access to the router
+    #  - openvpn key
+    #  - scripts to connect with ssh, openvpn, ROS setup 
+    constellation.set_value('fc1_launch_msg',   "creating zip file bundle")
+    fname_ssh_sh =  os.path.join(robot_machine_dir,'robot_ssh.bash')
+    file_content = create_ssh_connect_file(robot_key_short_filename, FC1_IP)
+    with open(fname_ssh_sh, 'w') as f:
+            f.write(file_content)
+    os.chmod(fname_ssh_sh, 0755)
+                
+    files_to_zip = [ robot_key_path, 
+                     fname_ssh_sh,]
+
+    fc1_fname_zip = os.path.join(robot_machine_dir, "fc1_%s.zip" % constellation_name)
+    create_zip_file(fc1_fname_zip,"fc1_%s" % constellation_name , files_to_zip)
+    constellation.set_value('fc1_zip_file', 'ready')
+
+
     constellation.set_value("launch_stage", "configure")    
-    
-#    roles_to_reservations = {}
-#    roles_to_reservations['router_state'] = constellation.get_value('router_aws_reservation_id')
-#    roles_to_reservations['sim_state'] = constellation.get_value('sim_aws_reservation_id')
-#    roles_to_reservations['field1_state'] = constellation.get_value('field1_aws_reservation_id')
-#    roles_to_reservations['field2_state'] = constellation.get_value('field2_aws_reservation_id')
-#    
-#    # running_instances = wait_for_multiple_machines_instances(ec2conn, roles_to_reservations, constellation, max_retries = 500, final_state = 'network_setup')
-#    router_ip_address  = None
-#    sim_ip_address = None
-#    field1_ip_address = None
-#    field2_ip_address = None
-    
-#    constellation.set_value('router_ip_address', router_ip_address)
-#    constellation.set_value('sim_ip_address', sim_ip_address)
-#    constellation.set_value('field1_ip_address', field1_ip_address)
-#    constellation.set_value('field2_ip_address', field2_ip_address)
-    
-#    router_tags = {'Name': '%s_router' % constellation_name}
-#    router_tags.update(tags)
-#    sim_tags = {'Name': '%s_sim' % constellation_name}
-#    sim_tags.update(tags)
-#    field1_tags = {'Name': '%s_field1' % constellation_name}
-#    field1_tags.update(tags)
-#    field2_tags = {'Name': '%s_field2' % constellation_name}
-#    field2_tags.update(tags)
-    
-    # Set tags
-#    router_key_name = constellation.get_value('router_key_name')
-#    router_ssh = SshClient(constellation_directory, router_key_name, 'ubuntu', router_ip_address)
-#    
-#    sim_key_name = constellation.get_value('sim_key_name')
-#    sim_ssh = SshClient(constellation_directory, sim_key_name, 'ubuntu', sim_ip_address)
-#    
-#    field1_key_name = constellation.get_value('field1_key_name')
-#    field1_ssh = SshClient(constellation_directory, field1_key_name, 'ubuntu', field1_ip_address)
-#    
-#    field2_key_name = constellation.get_value('field2_key_name')
-#    field2_ssh = SshClient(constellation_directory, field2_key_name, 'ubuntu', field2_ip_address)
-#    
-#    router_networking_done = get_ssh_cmd_generator(router_ssh,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "router_state", 'packages_setup' ,max_retries = 1000)
-#    sim_networking_done = get_ssh_cmd_generator(sim_ssh,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "sim_state", 'packages_setup' ,max_retries = 1000)
-#    field1_networking_done = get_ssh_cmd_generator(field1_ssh,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "field1_state", 'packages_setup' ,max_retries = 1000)
-#    field2_networking_done = get_ssh_cmd_generator(field2_ssh,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "field2_state", 'packages_setup' ,max_retries = 1000)
-#    empty_ssh_queue([router_networking_done, sim_networking_done, field1_networking_done, field2_networking_done], sleep=2)
-#
-    
+
 
 
 def reboot_machines(constellation_name, constellation_directory):
