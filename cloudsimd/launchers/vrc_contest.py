@@ -540,8 +540,6 @@ def run_machines(constellation_name, constellation_directory):
     constellation.set_value("launch_stage", "running")
     
 def launch(username, constellation_name, constellation_prefix, credentials_softlayer, constellation_directory ):
-    
-    constellation_prefix = "01"
 
     drc_package = "drcsim"
     constellation = ConstellationState( constellation_name)
