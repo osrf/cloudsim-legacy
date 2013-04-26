@@ -4,6 +4,8 @@ import unittest
 import os
 import time
 import zipfile
+
+
 from shutil import copyfile
 
 
@@ -31,7 +33,7 @@ from launch_utils.startup_scripts import get_vpc_router_script, get_vpc_open_vpn
     create_ssh_connect_file
 from launch_utils.sshclient import SshClient, clean_local_ssh_key_entry
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
-from zipfile import ZipFile
+
 
 
 
@@ -452,7 +454,7 @@ def configure_ssh(constellation_name, constellation_directory):
     
     def create_zip_file(zip_file_path, short_name, files_to_zip):
 
-        with ZipFile.ZipFile(zip_file_path, 'w') as fzip:
+        with zipfile.ZipFile(zip_file_path, 'w') as fzip:
             for fname in files_to_zip:
                 short_fname = os.path.split(fname)[1]
                 zip_name = os.path.join(short_name, short_fname)
