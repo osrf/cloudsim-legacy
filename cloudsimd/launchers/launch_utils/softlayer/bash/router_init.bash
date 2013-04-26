@@ -36,24 +36,15 @@ chmod +x $DIR/find_file_fc1.bash
 
 # --------------------------------------------
 
-
-cat <<DELIM > $DIR/fc1_init.bash
-#!/bin/bash
-set -ex
-exec > $DIR/fc1_init.log 2>&1
-
-
-# --------------------------------------------
-
 cat <<DELIM > $DIR/fc1_init.bash
 #!/bin/bash
 set -ex
 exec > $DIR/fc1_init.log 2>&1
 
 chmod +x $DIR/fc1_startup_script.bash
-scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem $DIR/fc1_startup_script.bash ubuntu@$FC1_IP:fc1_startup_script.bash 
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_IP "sudo ./fc1_startup_script.bash | at now"
-    
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem $DIR/fc1_startup_script.bash ubuntu@FC1_IP:fc1_startup_script.bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@FC1_IP "nohup sudo ./fc1_startup_script.bash > ssh_startup.out 2> ssh_startup.err < /dev/null &"
+
 DELIM
 chmod +x $DIR/fc1_init.bash
 
@@ -100,15 +91,14 @@ chmod +x $DIR/reboot_fc2.bash
 # --------------------------------------------
 
 
-
 cat <<DELIM > $DIR/fc2_init.bash
 #!/bin/bash
 set -ex
 exec > $DIR/fc2_init.log 2>&1
 
 chmod +x $DIR/fc2_startup_script.bash
-scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem $DIR/fc2_startup_script.bash ubuntu@$FC2_IP:fc2_startup_script.bash 
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem ubuntu@$FC2_IP "sudo ./fc2_startup_script.bash | at now"
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem $DIR/fc2_startup_script.bash ubuntu@FC2_IP:fc2_startup_script.bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem ubuntu@FC2_IP "nohup sudo ./fc2_startup_script.bash > ssh_startup.out 2> ssh_startup.err < /dev/null &"
 
 DELIM
 chmod +x $DIR/fc2_init.bash
@@ -136,14 +126,15 @@ chmod +x $DIR/find_file_sim.bash
 
 # --------------------------------------------
 
+
 cat <<DELIM > $DIR/sim_init.bash
 #!/bin/bash
 set -ex
 exec > $DIR/sim_init.log 2>&1
 
 chmod +x $DIR/sim_startup_script.bash
-scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem $DIR/sim_startup_script.bash ubuntu@$SIM_IP:sim_startup_script.bash 
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "sudo ./sim_startup_script.bash | at now"
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem $DIR/sim_startup_script.bash ubuntu@SIM_IP:sim_startup_script.bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@SIM_IP "nohup sudo ./sim_startup_script.bash > ssh_startup.out 2> ssh_startup.err < /dev/null &"
 
 DELIM
 chmod +x $DIR/sim_init.bash

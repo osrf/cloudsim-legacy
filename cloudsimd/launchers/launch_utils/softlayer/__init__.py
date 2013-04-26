@@ -82,7 +82,8 @@ def _get_priv_ip(server):
             return ip
     return None
 
-def hardware_info(osrf_creds):
+def get_servers_info(osrf_creds):
+    servers = []
     api_username = osrf_creds['user'] 
     api_key = osrf_creds['api_key']
     hardware = _get_hardware(api_username, api_key)  
@@ -99,8 +100,27 @@ def hardware_info(osrf_creds):
         priv_ip = _get_priv_ip(server)
         pub_ip = _get_pub_ip(server)
         server_id = server['id']
-        print "[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip)
+        servers.append((server_id, host, username, password, priv_ip, pub_ip)  )
+        #print "[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip)
+    return servers
 
+def hardware_info(osrf_creds):
+    servers = get_servers_info(osrf_creds)
+    
+    for server in servers:
+        server_id, host, username, password, priv_ip, pub_ip = server
+        print ("[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip))
+
+def hardware_helpers(osrf_creds):
+    servers = get_servers_info(osrf_creds)
+    for server in servers:
+        server_id, host, username, password, priv_ip, pub_ip = server
+        print("")
+        print("# %s [%s /%s] %s" % (host,pub_ip, priv_ip, password))
+        prefix = host.split("-")[0]
+        print("ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i key-%s.pem ubuntu@%s" % (prefix, pub_ip ) )
+        print("ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i key-%s.pem ubuntu@%s" % (prefix, priv_ip ) )
+    
 def print_cb(server_name, status):
     print("PCB %s  [%s] = %s" % (datetime.datetime.now(),server_name, status))
 
@@ -235,7 +255,7 @@ def wait_for_server_reloads(osrf_creds, machine_names, callback = print_cb):
 
 class TestSofty(unittest.TestCase):
     
-    def test_ssh_setup(self):
+    def atest_ssh_setup(self):
         
         ip = '50.97.149.39'
         d = os.path.abspath('.')
@@ -304,5 +324,8 @@ class TestSofty(unittest.TestCase):
 if __name__ == "__main__": 
     p = get_softlayer_path()
     osrf_creds = load_osrf_creds(p)
+    
+    hardware_helpers(osrf_creds)
+    
     hardware_info(osrf_creds)
     unittest.main()

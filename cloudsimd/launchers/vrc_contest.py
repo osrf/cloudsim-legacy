@@ -432,31 +432,28 @@ def startup_scripts(constellation_name):
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('startup'):
         return
-    
+
     constellation_directory = constellation.get_value('constellation_directory')
-    
+
     router_ip = constellation.get_value("router_public_ip" )
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)    
 
-    
     ssh_router.cmd("cloudsim/fc1_init.bash")
     ssh_router.cmd("cloudsim/fc2_init.bash")
     ssh_router.cmd("cloudsim/sim_init.bash")
-    
-    
+
     constellation.set_value("launch_stage", "startup")
     
 def configure_ssh(constellation_name, constellation_directory):
-    
+
     constellation = ConstellationState( constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('configure'):
         return
-    
+
     router_ip = constellation.get_value("router_public_ip" )
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
-    
-        
+
     constellation.set_value("launch_stage", "configure")    
     
 #    roles_to_reservations = {}
@@ -542,9 +539,9 @@ def run_machines(constellation_name, constellation_directory):
     empty_ssh_queue([router_done, sim_done, fc1_done, fc2_done], sleep=2)
     constellation.set_value("launch_stage", "running")
     
-def launch(username, constellation_name, tags, credentials_softlayer, constellation_directory ):
+def launch(username, constellation_name, constellation_prefix, credentials_softlayer, constellation_directory ):
     
-    constellation_prefix = "03"
+    constellation_prefix = "01"
 
     drc_package = "drcsim"
     constellation = ConstellationState( constellation_name)
@@ -554,7 +551,9 @@ def launch(username, constellation_name, tags, credentials_softlayer, constellat
     reload_os_machines(constellation_name, constellation_prefix, credentials_softlayer)
     initialize_router(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory)
     initialize_private_machines(constellation_name, constellation_prefix, drc_package, credentials_softlayer, constellation_directory)
-    startup_scripts(constellation_name, constellation_directory)
+    
+    startup_scripts(constellation_name)
+    
     configure_ssh(constellation_name, constellation_directory)
     reboot_machines(constellation_name, constellation_directory)
     run_machines(constellation_name, constellation_directory)
@@ -601,14 +600,16 @@ class MonitorCase(unittest.TestCase):
   
 class VrcCase(unittest.TestCase):
     
-    def test_startup(self):
+    def atest_startup(self):
         constellation_name = 'test_vrc_contest_toto'
         startup_scripts(constellation_name)
     
-    def atest_launch(self):
+    def test_launch(self):
         
-        launch_stage = "os_reload" #  "nothing" 
-        self.constellation_name = 'test_vrc_contest_toto' 
+        constellation_prefix = "03"
+        launch_stage = "startup" 
+        
+        self.constellation_name = 'test_vrc_contest_%s' % constellation_prefix 
         self.username = "toto@osrfoundation.org"
         self.credentials_softlayer  = get_softlayer_path()
         CONFIGURATION = 'vrc_contest'
@@ -633,7 +634,7 @@ class VrcCase(unittest.TestCase):
         self.tags = {'TestCase':CONFIGURATION, 'configuration': CONFIGURATION, 'constellation' : self.constellation_name, 'user': self.username, 'GMT':"now"}
         
         constellation.set_value("launch_stage", launch_stage)
-        launch(self.username, self.constellation_name, self.tags, self.credentials_softlayer, self.constellation_directory)
+        launch(self.username, self.constellation_name, constellation_prefix, self.credentials_softlayer, self.constellation_directory)
 
         sweep_count = 2
         for i in range(sweep_count):
