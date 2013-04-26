@@ -604,8 +604,10 @@ class VrcCase(unittest.TestCase):
     
     def test_launch(self):
         
-        constellation_prefix = "03"
-        launch_stage = "nothing" 
+        constellation_prefix = "01"
+        launch_stage = 'init_privates' # before restart 
+        # "os_reload" #  
+        # "nothing" 
         
         self.constellation_name = 'test_vrc_contest_%s' % constellation_prefix 
         self.username = "toto@osrfoundation.org"
