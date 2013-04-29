@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 
+
 def get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP, machine_ip, ros_master_ip):
     
     return """#!/bin/bash
@@ -310,7 +311,7 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
     
 
-def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3"):
+def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3", prefix = "", extra = ""):
     
     s = """#!/bin/bash
 # Exit on error
@@ -390,6 +391,8 @@ DELIM
 
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
+
+""" + prefix + """
 
 cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
 
@@ -561,6 +564,8 @@ start vrc_sniffer
 start vrc_controller
 
 rm `which vrc_bandwidth.py`
+
+""" + extra + """
  
 touch /home/ubuntu/cloudsim/setup/done
 

@@ -183,19 +183,48 @@ def get_router_script():
     router_script = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP, ROUTER_IP, SIM_IP)    
     return router_script
 
+
+def get_linux_3_2_0_40_intel_fix():
+    
+    s = """cat <<DELIM > /etc/rc.local  
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
+insmod /lib/modules/`ls -rth | tail -n 1`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
+
+exit 0
+DELIM
+
+"""
+    return s
+
+
 def get_sim_script(drc_package_name):
+    nic_fix = get_linux_3_2_0_40_intel_fix()
     open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, ROUTER_IP)
-    sim_script = get_drc_startup_script(open_vpn_script, SIM_IP, drc_package_name)
+    sim_script = get_drc_startup_script(open_vpn_script, SIM_IP, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3", prefix ="", extra = nic_fix)
     return sim_script
 
 def get_fc1_script(drc_package_name):
+    nic_fix = get_linux_3_2_0_40_intel_fix()
     open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, ROUTER_IP)
-    field1_script = get_drc_startup_script(open_vpn_script, FC1_IP, drc_package_name)
+    field1_script = get_drc_startup_script(open_vpn_script, FC1_IP, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3",prefix ="", extra = nic_fix)
     return field1_script
 
 def get_fc2_script(drc_package_name):
+    nic_fix = get_linux_3_2_0_40_intel_fix()
     open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, ROUTER_IP)
-    field2_script = get_drc_startup_script(open_vpn_script, FC1_IP, drc_package_name)
+    field2_script = get_drc_startup_script(open_vpn_script, FC1_IP, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3", prefix ="",extra = nic_fix)
     return field2_script
 
 
@@ -441,9 +470,14 @@ def startup_scripts(constellation_name):
 
     router_ip = constellation.get_value("router_public_ip" )
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)    
-
+    
+    # load packages onto router
+    ssh_router.cmd("nohup sudo bash cloudsim/router_startup_script.bash > ssh_startup.out 2> ssh_startup.err < /dev/null &")
+    # load packages onto fc1
     ssh_router.cmd("cloudsim/fc1_init.bash")
+    # load packages onto fc2
     ssh_router.cmd("cloudsim/fc2_init.bash")
+    # load packages onto simulator
     ssh_router.cmd("cloudsim/sim_init.bash")
 
     constellation.set_value("launch_stage", "startup")
@@ -498,7 +532,7 @@ def create_router_zip(router_ip, constellation_name, constellation_directory):
         f.write(file_content)
     
     
-    fname_ssh_sh =  os.path.join(router_machine_dir,'router_ssh.bash')
+    fname_ssh_sh =  os.path.join(router_machine_dir,'ssh-router.bash')
     file_content = create_ssh_connect_file(router_key_short_filename, router_ip)
     with open(fname_ssh_sh, 'w') as f:
             f.write(file_content)
@@ -516,12 +550,32 @@ def create_router_zip(router_ip, constellation_name, constellation_directory):
     router_fname_zip = os.path.join(router_machine_dir, "router_%s.zip" % constellation_name)
     create_zip_file(router_fname_zip, "router_%s" % constellation_name, files_to_zip)
 
+
+def create_private_machine_zip(machine_name_prefix, machine_ip, constellation_name, constellation_directory):
+    
+    machine_dir = os.path.join(constellation_directory, machine_name_prefix)
+    os.makedirs(machine_dir )
+    key_short_filename = 'key-%s.pem' % machine_name_prefix
+    key_fpath =  os.path.join(machine_dir, key_short_filename)
+    copyfile(os.path.join(constellation_directory,   key_short_filename), key_fpath)
+    os.chmod(key_fpath, 0600)
+    
+    fname_ssh_sh =  os.path.join(machine_dir,'ssh-%s.bash' % machine_name_prefix)
+    file_content = create_ssh_connect_file('key-%s' % machine_name_prefix, machine_ip)
+    with open(fname_ssh_sh, 'w') as f:
+            f.write(file_content)
+    os.chmod(fname_ssh_sh, 0755)    
+    
+    files_to_zip = [ key_fpath, 
+                     fname_ssh_sh,]
+    
+    fname_zip = os.path.join(machine_dir, "%s_%s.zip" % (machine_name_prefix, constellation_name) )
+    create_zip_file(fname_zip, "%s_%s" % (machine_name_prefix, constellation_name), files_to_zip)
+
+    
     
 def configure_ssh(constellation_name, constellation_directory):
 
-
-        
-        
     constellation = ConstellationState( constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('configure'):
@@ -547,70 +601,70 @@ def configure_ssh(constellation_name, constellation_directory):
  
     # ZIP files
     # First, create 3 directories (using machine names) and copy pem key files there 
+    
+    create_private_machine_zip("fc1", FC1_IP, constellation_name, constellation_directory)
+    constellation.set_value('fc1_zip_file', 'ready')
+    
+    create_private_machine_zip("fc2", FC2_IP, constellation_name, constellation_directory)   
+    constellation.set_value('fc2_zip_file', 'ready')
 
-    
-    
-    robot_machine_dir = os.path.join(constellation_directory, "fc1")
-    os.makedirs(robot_machine_dir )
-    robot_key_short_filename = 'key-fc1.pem'
-    robot_key_path =  os.path.join(robot_machine_dir, robot_key_short_filename)
-    copyfile(os.path.join(constellation_directory,   robot_key_short_filename), robot_key_path)
-    os.chmod(robot_key_path, 0600)
-
-    robot_machine_dir = os.path.join(constellation_directory, "fc2")
-    os.makedirs(robot_machine_dir )
-    robot_key_short_filename = 'key-fc2.pem'
-    robot_key_path =  os.path.join(robot_machine_dir, robot_key_short_filename)
-    copyfile(os.path.join(constellation_directory,   robot_key_short_filename), robot_key_path)
-    os.chmod(robot_key_path, 0600)
-    
-    sim_machine_dir = os.path.join(constellation_directory, "sim")
-    os.makedirs(sim_machine_dir )
-    sim_key_short_filename =  'key-sim.pem'
-    sim_key_path =  os.path.join(sim_machine_dir, sim_key_short_filename)
-    copyfile(os.path.join(constellation_directory,   sim_key_short_filename), sim_key_path)    
-    os.chmod(sim_key_path, 0600)
-
-    
-    # create simulator zip file with keys
-    # This file is kept on the server and provides the user with:
-    #  - key file for ssh access to the router
-    #  - openvpn key
-    #  - scripts to connect with ssh, openvpn, ROS setup 
-    
-    
-    constellation.set_value('simulation_launch_msg', "creating zip file bundle")
-    fname_ssh_sh =  os.path.join(sim_machine_dir,'simulator_ssh.bash')
-    file_content = create_ssh_connect_file(sim_key_short_filename, SIM_IP)
-    with open(fname_ssh_sh, 'w') as f:
-            f.write(file_content)
-    os.chmod(fname_ssh_sh, 0755)    
-            
-    files_to_zip = [ sim_key_path, 
-                     fname_ssh_sh,]
-    
-    sim_fname_zip = os.path.join(sim_machine_dir, "sim_%s.zip" % constellation_name)
-    create_zip_file(sim_fname_zip, "sim_%s" % constellation_name, files_to_zip)
+    create_private_machine_zip("sim", SIM_IP, constellation_name, constellation_directory)
     constellation.set_value('sim_zip_file', 'ready')
-
+    
+#    robot_machine_dir = os.path.join(constellation_directory, "fc2")
+#    os.makedirs(robot_machine_dir )
+#    robot_key_short_filename = 'key-fc2.pem'
+#    robot_key_path =  os.path.join(robot_machine_dir, robot_key_short_filename)
+#    copyfile(os.path.join(constellation_directory,   robot_key_short_filename), robot_key_path)
+#    os.chmod(robot_key_path, 0600)
+#    
+#    sim_machine_dir = os.path.join(constellation_directory, "sim")
+#    os.makedirs(sim_machine_dir )
+#    sim_key_short_filename =  'key-sim.pem'
+#    sim_key_path =  os.path.join(sim_machine_dir, sim_key_short_filename)
+#    copyfile(os.path.join(constellation_directory,   sim_key_short_filename), sim_key_path)    
+#    os.chmod(sim_key_path, 0600)
+#
+#    
+#    # create simulator zip file with keys
+#    # This file is kept on the server and provides the user with:
+#    #  - key file for ssh access to the router
+#    #  - openvpn key
+#    #  - scripts to connect with ssh, openvpn, ROS setup 
+#    
+#    
+#    constellation.set_value('simulation_launch_msg', "creating zip file bundle")
+#    fname_ssh_sh =  os.path.join(sim_machine_dir,'simulator_ssh.bash')
+#    file_content = create_ssh_connect_file(sim_key_short_filename, SIM_IP)
+#    with open(fname_ssh_sh, 'w') as f:
+#            f.write(file_content)
+#    os.chmod(fname_ssh_sh, 0755)    
+#            
+#    files_to_zip = [ sim_key_path, 
+#                     fname_ssh_sh,]
+#    
+#    sim_fname_zip = os.path.join(sim_machine_dir, "sim_%s.zip" % constellation_name)
+#    create_zip_file(sim_fname_zip, "sim_%s" % constellation_name, files_to_zip)
+ 
     # create field computer zip file with keys
     # This file is kept on the server and provides the user with:
     #  - key file for ssh access to the router
     #  - openvpn key
-    #  - scripts to connect with ssh, openvpn, ROS setup 
-    constellation.set_value('fc1_launch_msg',   "creating zip file bundle")
-    fname_ssh_sh =  os.path.join(robot_machine_dir,'robot_ssh.bash')
-    file_content = create_ssh_connect_file(robot_key_short_filename, FC1_IP)
-    with open(fname_ssh_sh, 'w') as f:
-            f.write(file_content)
-    os.chmod(fname_ssh_sh, 0755)
-                
-    files_to_zip = [ robot_key_path, 
-                     fname_ssh_sh,]
-
-    fc1_fname_zip = os.path.join(robot_machine_dir, "fc1_%s.zip" % constellation_name)
-    create_zip_file(fc1_fname_zip,"fc1_%s" % constellation_name , files_to_zip)
-    constellation.set_value('fc1_zip_file', 'ready')
+    #  - scripts to connect with ssh, openvpn, ROS setup
+     
+#    constellation.set_value('fc1_launch_msg',   "creating zip file bundle")
+#    fname_ssh_sh =  os.path.join(robot_machine_dir,'robot_ssh.bash')
+#    file_content = create_ssh_connect_file(robot_key_short_filename, FC1_IP)
+#    with open(fname_ssh_sh, 'w') as f:
+#            f.write(file_content)
+#    os.chmod(fname_ssh_sh, 0755)
+#                
+#    files_to_zip = [ robot_key_path, 
+#                     fname_ssh_sh,]
+#
+#    fc1_fname_zip = os.path.join(robot_machine_dir, "fc1_%s.zip" % constellation_name)
+#    create_zip_file(fc1_fname_zip,"fc1_%s" % constellation_name , files_to_zip)
+#    constellation.set_value('fc1_zip_file', 'ready')
 
 
     constellation.set_value("launch_stage", "configure")    
@@ -654,12 +708,11 @@ def run_machines(constellation_name, constellation_directory):
     
 def launch(username, constellation_name, constellation_prefix, credentials_softlayer, constellation_directory ):
 
-
     drc_package = "drcsim"
     constellation = ConstellationState( constellation_name)
     if not constellation.has_value("launch_stage"):
         constellation.set_value("launch_stage", "nothing")
-    
+   
     reload_os_machines(constellation_name, constellation_prefix, credentials_softlayer)
     initialize_router(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory)
     initialize_private_machines(constellation_name, constellation_prefix, drc_package, credentials_softlayer, constellation_directory)
@@ -668,7 +721,6 @@ def launch(username, constellation_name, constellation_prefix, credentials_softl
     configure_ssh(constellation_name, constellation_directory)
     reboot_machines(constellation_name, constellation_directory)
     run_machines(constellation_name, constellation_directory)
-
 
 def terminate(constellation_name, osrf_creds_fname):
 
@@ -715,15 +767,31 @@ class VrcCase(unittest.TestCase):
         constellation_name = 'test_vrc_contest_toto'
         startup_scripts(constellation_name)
     
+    def atest_zip_create(self):
+        constellation_name = "toto"
+        constellation_directory =  os.path.join(get_test_path("zip_test"))
+        router_ip = '50.23.225.173'
+        
+        
+        
+        create_router_zip(router_ip, constellation_name, constellation_directory)
+        create_private_machine_zip("fc1", FC1_IP, constellation_name, constellation_directory)
+    
+    def atest_script(self):
+        s = get_sim_script('drcsim')
+        print(s)
+        
     def test_launch(self):
         
         constellation_prefix = "01"
-        #launch_stage = "nothing" #  
+        launch_stage = None # use the current stage
+        launch_stage = "nothing" #  
+        launch_stage='os_reload'
         #launch_stage =  "nothing" #
         #launch_stage = 'init_privates' # before restart 
         #launch_stage = "init_router"  
         
-        launch_stage = None # use the current stage   
+           
         
         self.constellation_name = 'test_vrc_contest_%s' % constellation_prefix 
         self.username = "toto@osrfoundation.org"

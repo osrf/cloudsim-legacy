@@ -33,6 +33,14 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.
 DELIM
 chmod +x $DIR/find_file_fc1.bash
 
+# --------------------------------------------
+
+
+cat <<DELIM > $DIR/ssh_fc1.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_IP
+DELIM
+chmod +x $DIR/ssh_fc1.bash
 
 # --------------------------------------------
 
@@ -53,7 +61,7 @@ chmod +x $DIR/fc1_init.bash
 
 cat <<DELIM > $DIR/reboot_fc1.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@%s "sudo reboot"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_IP "sudo reboot"
 DELIM
 chmod +x $DIR/reboot_fc1.bash
 
@@ -77,13 +85,22 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.
 DELIM
 chmod +x $DIR/find_file_fc2.bash
 
+# --------------------------------------------
+
+
+cat <<DELIM > $DIR/ssh_fc2.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem ubuntu@$FC2_IP
+DELIM
+chmod +x $DIR/ssh_fc2.bash
+
 
 # --------------------------------------------
 
 
 cat <<DELIM > $DIR/reboot_fc2.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem ubuntu@%s "sudo reboot"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem ubuntu@$FC2_IP "sudo reboot"
 DELIM
 chmod +x $DIR/reboot_fc2.bash
 
@@ -127,6 +144,15 @@ chmod +x $DIR/find_file_sim.bash
 # --------------------------------------------
 
 
+cat <<DELIM > $DIR/ssh_sim.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP
+DELIM
+chmod +x $DIR/ssh_sim.bash
+
+# --------------------------------------------
+
+
 cat <<DELIM > $DIR/sim_init.bash
 #!/bin/bash
 set -ex
@@ -146,7 +172,7 @@ chmod +x $DIR/sim_init.bash
 
 cat <<DELIM > $DIR/reboot_sim.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@%s "sudo reboot"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "sudo reboot"
 DELIM
 chmod +x $DIR/reboot_sim.bash
 
