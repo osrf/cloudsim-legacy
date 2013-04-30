@@ -29,7 +29,7 @@ chmod +x $DIR/dpkg_log_fc1.bash
 
 cat <<DELIM > $DIR/find_file_fc1.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_IP "ls -l \$1"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_IP "ls \$1"
 DELIM
 chmod +x $DIR/find_file_fc1.bash
 
@@ -81,7 +81,7 @@ chmod +x $DIR/dpkg_log_fc2.bash
 
 cat <<DELIM > $DIR/find_file_fc2.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem ubuntu@$FC2_IP "ls -l \$1"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem ubuntu@$FC2_IP "ls \$1"
 DELIM
 chmod +x $DIR/find_file_fc2.bash
 
@@ -137,7 +137,7 @@ chmod +x $DIR/dpkg_log_sim.bash
 
 cat <<DELIM > $DIR/find_file_sim.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "ls -l \$1"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "ls \$1"
 DELIM
 chmod +x $DIR/find_file_sim.bash
 

@@ -111,6 +111,7 @@ def hardware_info(osrf_creds):
         server_id, host, username, password, priv_ip, pub_ip = server
         print ("[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip))
 
+
 def hardware_helpers(osrf_creds):
     servers = get_servers_info(osrf_creds)
     for server in servers:
@@ -120,6 +121,15 @@ def hardware_helpers(osrf_creds):
         prefix = host.split("-")[0]
         print("ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i key-%s.pem ubuntu@%s" % (prefix, pub_ip ) )
         print("ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i key-%s.pem ubuntu@%s" % (prefix, priv_ip ) )
+
+def hardware_scan(osrf_creds):
+    servers = get_servers_info(osrf_creds)
+    for server  in servers:
+        server_id = server[0]
+        server_name = server[1]
+        client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, osrf_creds['user'], osrf_creds['api_key'])
+        print(server_name, server_id, client.getActiveTransaction())
+
     
 def print_cb(server_name, status):
     print("PCB %s  [%s] = %s" % (datetime.datetime.now(),server_name, status))
@@ -328,4 +338,7 @@ if __name__ == "__main__":
     hardware_helpers(osrf_creds)
     
     hardware_info(osrf_creds)
+    
+    hardware_scan(osrf_creds)
+    
     unittest.main()

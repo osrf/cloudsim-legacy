@@ -184,9 +184,107 @@ def get_router_script():
     return router_script
 
 
-def get_linux_3_2_0_40_intel_fix():
+
+def get_fc2_script(drc_package_name, machine_ip = FC2_IP):
+    s = get_softlayer_script(drc_package_name, machine_ip)
+    return s
+
+def get_fc1_script(drc_package_name, machine_ip = FC1_IP):
+    s = get_softlayer_script(drc_package_name, machine_ip)
+    return s
+
+def get_sim_script(drc_package_name, machine_ip = SIM_IP):
+    s = get_softlayer_script(drc_package_name, machine_ip)
+    return s
+
     
-    s = """cat <<DELIM > /etc/rc.local  
+def get_softlayer_script(drc_package_name, machine_ip):
+    
+    drc_package_name = "drcsim"
+    pcibus_id = "130"
+    ros_master_ip = SIM_IP
+    
+    s = """#!/bin/bash
+# Exit on error
+set -ex
+# Redirect everybody's output to a file
+logfile=/home/ubuntu/launch_stdout_stderr.log
+exec > $logfile 2>&1
+
+
+cat <<DELIM > /etc/apt/sources.list
+
+##
+## cloudsim 
+##
+## Note, this file is written by cloud-init on first boot of an instance
+## modifications made here will not survive a re-bundle.
+## if you wish to make changes you can:
+## a.) add 'apt_preserve_sources_list: true' to /etc/cloud/cloud.cfg
+##     or do the same in user-data
+## b.) add sources in /etc/apt/sources.list.d
+## c.) make changes to template file /etc/cloud/templates/sources.list.tmpl
+#
+
+# See http://help.ubuntu.com/community/UpgradeNotes for how to upgrade to
+# newer versions of the distribution.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
+
+## Major bug fix updates produced after the final release of the
+## distribution.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+## team. Also, please note that software in universe WILL NOT receive any
+## review or updates from the Ubuntu security team.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
+
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
+## team, and may not be under a free licence. Please satisfy yourself as to
+## your rights to use the software. Also, please note that software in 
+## multiverse WILL NOT receive any review or updates from the Ubuntu
+## security team.
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
+deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+
+## Uncomment the following two lines to add software from the 'backports'
+## repository.
+## N.B. software from this repository may not have been tested as
+## extensively as that contained in the main release, although it includes
+## newer versions of some applications which may provide useful features.
+## Also, please note that software in backports WILL NOT receive any review
+## or updates from the Ubuntu security team.
+# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+# deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+
+## Uncomment the following two lines to add software from Canonical's
+## 'partner' repository.
+## This software is not part of Ubuntu, but is offered by Canonical and the
+## respective vendors as a service to Ubuntu users.
+# deb http://archive.canonical.com/ubuntu precise partner
+# deb-src http://archive.canonical.com/ubuntu precise partner
+
+deb http://security.ubuntu.com/ubuntu precise-security main restricted
+deb-src http://security.ubuntu.com/ubuntu precise-security main restricted
+deb http://security.ubuntu.com/ubuntu precise-security universe
+deb-src http://security.ubuntu.com/ubuntu precise-security universe
+deb http://security.ubuntu.com/ubuntu precise-security multiverse
+deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
+
+DELIM
+
+mkdir /home/ubuntu/cloudsim
+mkdir /home/ubuntu/cloudsim/setup
+
+ 
+cat <<DELIM > /etc/rc.local  
 #!/bin/sh -e
 #
 # rc.local
@@ -200,32 +298,213 @@ def get_linux_3_2_0_40_intel_fix():
 #
 # By default this script does nothing.
 
-insmod /lib/modules/`ls -rth | tail -n 1`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
+insmod /lib/modules/`uname -r`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
 
 exit 0
 DELIM
 
+
+cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
+
+echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
+
+. /usr/share/drcsim/setup.sh 
+export ROS_IP=""" + machine_ip +""" 
+export GAZEBO_IP=""" + machine_ip +"""
+export DISPLAY=:0 
+roslaunch \$1 \$2 \$3 gzname:=gzserver  &
+
+DELIM
+
+cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
+
+killall -INT roslaunch
+
+DELIM
+
+cat <<DELIM > /home/ubuntu/cloudsim/ros.bash
+
+# To connect via ROS:
+
+# ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path
+oldrpp=$ROS_PACKAGE_PATH
+
+. /usr/share/drcsim/setup.sh
+eval export ROS_PACKAGE_PATH=\$oldrpp:\\$ROS_PACKAGE_PATH
+export ROS_IP=""" + machine_ip +"""
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311 
+
+export GAZEBO_IP=""" + machine_ip +"""
+export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
+
+DELIM
+
+cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
+
+DISPLAY=localhost:0 timeout 10 glxinfo
+
+DELIM
+
+
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim  
+
+# Add ROS and OSRF repositories
+echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
+echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+
+date >> /home/ubuntu/setup.log
+echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
+wget http://packages.ros.org/ros.key -O - | apt-key add -
+wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
+    
+echo "update packages" >> /home/ubuntu/setup.log
+apt-get update || apt-get update || apt-get update
+
+ 
+cat <<DELIM > /etc/init.d/vpcroute
+#! /bin/sh
+
+case "\$1" in
+  start|"")
+        route add """ + OPENVPN_CLIENT_IP+""" gw """ + ROUTER_IP+"""
+    ;;
+  stop)
+        route del """ + OPENVPN_CLIENT_IP+""" gw """ + ROUTER_IP+"""
+    ;;
+  *)
+    echo "Usage: vpcroute start|stop" >&2
+    exit 3
+    ;;
+esac
+
+:
+DELIM
+
+chmod +x  /etc/init.d/vpcroute 
+ln -s /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
+
+# invoke it now to add route to the router
+/etc/init.d/vpcroute start 
+    
+echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
+apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
+    
+#
+# The BusID is given by lspci (but lspci gives it in hex, and BusID needs dec)
+# This value is required for Tesla cards
+cat <<DELIM > /etc/X11/xorg.conf
+
+# take the hex from lspci and turn it into dec
+# root@gpu02:/home/ubuntu# lspci | grep Tesla
+
+# SOFTLAYER
+# 82:00.0 3D controller: NVIDIA Corporation Tesla M2090 (rev a1)
+# 82 hex is 130 dec
+# Amazon is 3 dec for cg1.4xLarge
+
+Section "ServerLayout"
+    Identifier     "Layout0"
+    Screen      0  "Screen0"
+EndSection
+Section "Monitor"
+    Identifier     "Monitor0"
+    VendorName     "Unknown"
+    ModelName      "Unknown"
+    HorizSync       28.0 - 33.0
+    VertRefresh     43.0 - 72.0
+    Option         "DPMS"
+EndSection
+Section "Device"
+    Identifier     "Device0"
+    Driver         "nvidia"
+    BusID          "PCI:0:""" + pcibus_id + """:0"
+    VendorName     "NVIDIA Corporation"
+EndSection
+Section "Screen"
+    Identifier     "Screen0"
+    Device         "Device0"
+    Monitor        "Monitor0"
+    DefaultDepth    24
+    SubSection     "Display"
+        Depth       24
+    EndSubSection
+EndSection
+DELIM
+
+
+echo "setup auto xsession login" >> /home/ubuntu/setup.log
+
+echo "
+[SeatDefaults]
+greeter-session=unity-greeter
+autologin-user=ubuntu
+autologin-user-timeout=0
+user-session=gnome-fallback
+" > /etc/lightdm/lightdm.conf
+initctl stop lightdm || true
+initctl start lightdm 
+
+apt-get install -y ntp 
+
+echo "install """ + drc_package_name+ """ ">> /home/ubuntu/setup.log
+apt-get install -y """ + drc_package_name+ """
+
+echo "Updating bashrc file">> /home/ubuntu/setup.log
+
+cat <<DELIM >> /home/ubuntu/.bashrc
+# CloudSim
+. /usr/share/drcsim/setup.sh
+export DISPLAY=:0 
+export ROS_IP="""    + machine_ip + """
+export GAZEBO_IP=""" + machine_ip + """
+
+DELIM
+
+echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
+apt-get install -y cloudsim-client-tools
+
+# Create upstart vrc_sniffer job
+cat <<DELIM > /etc/init/vrc_sniffer.conf
+# /etc/init/vrc_sniffer.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero <caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_sniffer.py -t 11.8.0.2 -l vrc_current_outbound_latency > /var/log/vrc_sniffer.log 2>&1
+
+respawn
+DELIM
+
+# Create upstart vrc_controller job
+cat <<DELIM > /etc/init/vrc_controller.conf
+# /etc/init/vrc_controller.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero <caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -v -d eth0 > /var/log/vrc_controller.log 2>&1
+
+respawn
+DELIM
+
+# start vrc_sniffer and vrc_controllers
+start vrc_sniffer
+start vrc_controller
+
+ 
+ 
+touch /home/ubuntu/cloudsim/setup/done
+
 """
     return s
+    
 
-
-def get_sim_script(drc_package_name):
-    nic_fix = get_linux_3_2_0_40_intel_fix()
-    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, ROUTER_IP)
-    sim_script = get_drc_startup_script(open_vpn_script, SIM_IP, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3", prefix ="", extra = nic_fix)
-    return sim_script
-
-def get_fc1_script(drc_package_name):
-    nic_fix = get_linux_3_2_0_40_intel_fix()
-    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, ROUTER_IP)
-    field1_script = get_drc_startup_script(open_vpn_script, FC1_IP, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3",prefix ="", extra = nic_fix)
-    return field1_script
-
-def get_fc2_script(drc_package_name):
-    nic_fix = get_linux_3_2_0_40_intel_fix()
-    open_vpn_script = get_vpc_open_vpn(OPENVPN_CLIENT_IP, ROUTER_IP)
-    field2_script = get_drc_startup_script(open_vpn_script, FC1_IP, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3", prefix ="",extra = nic_fix)
-    return field2_script
 
 
 
@@ -671,22 +950,7 @@ def configure_ssh(constellation_name, constellation_directory):
 
 
 
-def reboot_machines(constellation_name, constellation_directory):
-    constellation = ConstellationState( constellation_name)
-    launch_stage = constellation.get_value("launch_stage")
-    if launch_sequence.index(launch_stage) >= 'reboot':
-        return
-    
-    router_ip = constellation.get_value("router_public_ip" )
-    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
-    
-    ssh_router.cmd("cloudsim/reboot_sim.bash")
-    ssh_router.cmd("cloudsim/reboot_fc1.bash")
-    ssh_router.cmd("cloudsim/reboot_fc2.bash")
-           
-    constellation.set_value("launch_stage", "reboot")
-
-def run_machines(constellation_name, constellation_directory): 
+def wait_for_setup_done(constellation_name, constellation_directory):
     constellation = ConstellationState( constellation_name)   
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= 'running':
@@ -702,8 +966,31 @@ def run_machines(constellation_name, constellation_directory):
     sim_done    = get_ssh_cmd_generator(ssh_router,"cloudsim/find_file_sim.bash cloudsim/setup/done", "cloudsim/setup/done",  constellation, "sim_state", "running",  max_retries = 500)
     fc1_done    = get_ssh_cmd_generator(ssh_router,"cloudsim/find_file_fc1.bash cloudsim/setup/done", "cloudsim/setup/done",  constellation, "fc1_state", "running",  max_retries = 500)
     fc2_done    = get_ssh_cmd_generator(ssh_router,"cloudsim/find_file_fc2.bash cloudsim/setup/done", "cloudsim/setup/done",  constellation, "fc2_state", "running",  max_retries = 500)
-    
     empty_ssh_queue([router_done, sim_done, fc1_done, fc2_done], sleep=2)
+  
+
+def reboot_machines(constellation_name, constellation_directory):
+    
+    constellation = ConstellationState( constellation_name)
+    launch_stage = constellation.get_value("launch_stage")
+    if launch_sequence.index(launch_stage) >= 'reboot':
+        return
+    
+    wait_for_setup_done(constellation_name, constellation_directory)
+        
+    router_ip = constellation.get_value("router_public_ip" )
+    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+    
+    ssh_router.cmd("cloudsim/reboot_sim.bash")
+    ssh_router.cmd("cloudsim/reboot_fc1.bash")
+    ssh_router.cmd("cloudsim/reboot_fc2.bash")
+           
+    constellation.set_value("launch_stage", "reboot")
+
+def run_machines(constellation_name, constellation_directory): 
+    wait_for_setup_done(constellation_name, constellation_directory)
+    
+    constellation = ConstellationState( constellation_name)
     constellation.set_value("launch_stage", "running")
     
 def launch(username, constellation_name, constellation_prefix, credentials_softlayer, constellation_directory ):
@@ -785,7 +1072,7 @@ class VrcCase(unittest.TestCase):
         
         constellation_prefix = "01"
         launch_stage = None # use the current stage
-        launch_stage = "nothing" #  
+        #launch_stage = "nothing" #  
         launch_stage='os_reload'
         #launch_stage =  "nothing" #
         #launch_stage = 'init_privates' # before restart 

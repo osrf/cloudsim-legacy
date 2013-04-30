@@ -311,6 +311,9 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
     
 
+
+    
+
 def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3", prefix = "", extra = ""):
     
     s = """#!/bin/bash
