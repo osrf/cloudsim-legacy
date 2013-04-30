@@ -5,8 +5,7 @@ var machine_configurations = null;
 function create_constellation_launcher_widget(div_name)
 {   
     console.log('machine_launch_on_load_page div=' + div_name);
-    var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs.py");
-    machine_configurations = eval( '(' + x + ')' );
+    var machine_configurations = get_configurations();
 
     var div = document.getElementById(div_name);
     

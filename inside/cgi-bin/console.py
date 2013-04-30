@@ -52,15 +52,26 @@ page =  """<!DOCTYPE html>
     
 <script language="javascript">
 
+    function get_user_info()
+    {
+       var user_info = """ + user_info + """;
+       return user_info; 
+    }
+    
     function on_load_page()
     {
-        var user_info = """ + user_info + """;
+        var user_info = get_user_info();
+        console.log("User role: " +  user_info.role);
+        if(user_info.role != "user")
+        {
+            $('#officer_only').show();
+            create_constellation_launcher_widget("launcher_div");
+        }
         if(user_info.role == "admin")
         {
             $('.admin_only').show();
         }
         
-        create_constellation_launcher_widget("launcher_div");
         create_constellations_widget("constellations_div");
         
         setTimeout(constellation_update , 500);        
@@ -118,7 +129,9 @@ Welcome, """ + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a
 
 <div style="width:100%; float:left;"><br><hr><br></div>
 
+    <div id='officer_only' style="display: none;">
     <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  background-color:#f1f1f2;">
+    </div>
     </div>
     
     <div id="constellations_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">

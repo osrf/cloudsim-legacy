@@ -37,13 +37,19 @@ class UserDatabase (object):
                 users = json.load(f)
         return users    
     
+    def has_role(self, email, minimum_role):
+        role = self.get_role(email)
+        roles = ["user", "officer", "admin"]
+        if roles.index(role) >= roles.index( minimum_role):
+            return email
+        
     def get_role(self, email):
         role = self.get_users()[email]
         return role
     
-    def is_admin(self, email):
-        admin = self.get_role(email) == "admin"
-        return admin
+#    def is_admin(self, email):
+#        admin = self.get_role(email) == "admin"
+#        return admin
     
     def get_domain(self, email):
         d = user_to_domain(email)
@@ -110,7 +116,7 @@ def print_http_filedownload_header(fname, newline=True):
 
 class AuthException(Exception): pass
 
-def _check_auth():
+def _check_auth(minimum_role):
     # Get session ID from cookie
     in_cookies = Cookie.Cookie()
     in_cookies.load(os.environ[HTTP_COOKIE])
@@ -136,18 +142,20 @@ def _check_auth():
     
     if lower_case_email not in lower_case_users:
         raise AuthException("Access denied (email address %s not found in db)"%(email) )
-    
-    return email
+    if udb.has_role(email, minimum_role):
+        return email
    
 
 
 
         
-def authorize(role = "user"):
+def authorize(minimum_role = "user"):
+
+        
     email = None
     try:        
-        email = _check_auth()
-        return email
+        email = _check_auth(minimum_role)
+    
     
     except AuthException as e:
         print_http_header()
@@ -158,7 +166,7 @@ def authorize(role = "user"):
            
         print("Try <a href=\"/cloudsim/inside/cgi-bin/logout\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(ADMIN_EMAIL, ADMIN_EMAIL))
         exit(0)     
-        
+    return email    
 
 def get_cloudsim_version_txt():
     d = os.path.split(__file__)[0]

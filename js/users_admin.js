@@ -16,7 +16,6 @@ function add_users_admin_widget(users_div_name)
     	var str = _get_user_list_str(data)
     	user_list_div.innerHTML = str;
     });
-    
 }
 
 function _get_user_list_str(users)
@@ -47,8 +46,9 @@ function _get_user_div_str(users_div_name, users)
     
     str += 'New User\'s Gmail Address: <input type="text" name="new_user"/>';
     str += '<select id="role" />';
-    str += '   <option value="user" selected="selected">user</option>';
-    str += '   <option value="admin">admin</option>';
+    str += '   <option value="user" selected="selected">simulation user</option>';
+    str += '   <option value="admin">administrator</option>';
+    str += '   <option value="officer">simulations officer</option>';
     str += '</select>';
     
     str += '<button type="button" onclick="_add_click(';
