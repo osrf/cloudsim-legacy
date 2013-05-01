@@ -3,18 +3,84 @@
 set -ex
 exec > router_init.log 2>&1
 
-# DIR=/home/ubuntu/cloudsim
-
-DIR=$1
-SIM_IP=$2
-FC1_IP=$3
-FC2_IP=$4
+DIR=$1 # /home/ubuntu/cloudsim
 
 
+SIM_INITIAL_IP=$2
+FC1_INITIAL_IP=$3
+FC2_INITIAL_IP=$4
+
+#
+# The final addresses
+#
+# ROUTER_IP=10.0.0.50
+SIM_IP=10.0.0.51
+FC1_IP=10.0.0.52
+FC2_IP=10.0.0.53
+
+#
+# We need this software to automate the addition of the ubuntu user
+#
 sudo apt-get install -y expect
 
+# --------------------------------------------
 
-cat <<DELIM > $DIR/
+cat <<DELIM > $DIR/change_ip.bash
+
+#
+# Assumes private IP starts with 10.41. rather than look for 
+# $SIM_INITIAL_IP, $FC1_INITIAL_IP or $FC2_INITIAL_IP
+#
+
+#!/bin/bash
+set -ex
+exec > ./change_ip_to_\$1.log 2>&1
+
+file=/etc/network/interfaces
+new_ip=\$1
+
+cp \$file \$file.bak
+sed "s/^address 10.41.*/address \$new_ip/" \$file.bak > \$file
+
+/etc/init.d/networking restart
+echo done
+DELIM
+
+chmod +x $DIR/change_ip.bash
+
+# change_ip.bash is easily run from the home directory on all machines
+cp $DIR/change_ip.bash $DIR/..
+
+ # --------------------------------------------
+
+cat <<DELIM > $DIR/set_fc1_ip.bash
+#!/bin/bash
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem $DIR/change_ip.bash ubuntu@$FC1_INITIAL_IP:change_ip.bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_INITIAL_IP "nohup sudo ./change_ip.bash $FC1_IP > ssh_change_ip.out 2> ssh_change_ip.err < /dev/null &"
+
+DELIM
+chmod +x $DIR/set_fc1_ip.bash
+
+# --------------------------------------------
+
+cat <<DELIM > $DIR/set_fc2_ip.bash
+#!/bin/bash
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem $DIR/change_ip.bash ubuntu@$FC2_INITIAL_IP:change_ip.bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem ubuntu@$FC2_INITIAL_IP "nohup sudo ./change_ip.bash $FC2_IP > ssh_change_ip.out 2> ssh_change_ip.err < /dev/null &"
+
+DELIM
+chmod +x $DIR/set_fc2_ip.bash
+
+# --------------------------------------------
+
+cat <<DELIM > $DIR/set_sim_ip.bash
+#!/bin/bash
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem $DIR/change_ip.bash ubuntu@$SIM_INITIAL_IP:change_ip.bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_INITIAL_IP "nohup sudo ./change_ip.bash $SIM_IP > ssh_change_ip.out 2> ssh_change_ip.err < /dev/null &"
+
+DELIM
+chmod +x $DIR/set_sim_ip.bash
+
 
 # --------------------------------------------
 
@@ -23,23 +89,6 @@ cat <<DELIM > $DIR/dpkg_log_fc1.bash
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_IP "tail -1 /var/log/dpkg.log"
 DELIM
 chmod +x $DIR/dpkg_log_fc1.bash
-
-
-# --------------------------------------------
-
-cat <<DELIM > $DIR/change_ip.bash
-#!/bin/bash
-set -ex
-exec > ./change_ip_$2_to_$3.log 2>&1
-
-file=$1
-new_ip=$2
-
-cp $file $file.back
-sed "s/^address 10.41.*/address $new_ip/" $file.back > $file
-
-DELIM
-chmod +x $DIR/change_ip.bash
 
 
 # --------------------------------------------
