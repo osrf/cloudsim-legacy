@@ -187,6 +187,13 @@ def get_cloudsin_ip(osrf_creds, constellation_id):
     ip = [server['frontendNetworkComponents'][-1]['primaryIpAddress'] for server in hardware if server['hostname']==machine][0]  
     return ip
 
+def create_openvpn_key(key_fname):
+    cmd = 'openvpn --genkey --secret %s' % key_fname
+    print(cmd)
+    st,output = commands.getstatusoutput(cmd)
+    if st != 0:
+        raise SoftLayerException(cmd)
+
 def create_ssh_key(key_prefix, target_directory ):
     path = os.path.join(target_directory, key_prefix)
     cmd = 'ssh-keygen -q -t rsa -f %s.pem -N ""' % path

@@ -16,19 +16,18 @@ from launch_utils.traffic_shapping import  run_tc_command
 
 import launch_utils.softlayer
 
-from launch_utils.monitoring import update_machine_aws_states, constellation_is_terminated,\
+from launch_utils.monitoring import constellation_is_terminated,\
     monitor_launch_state, monitor_simulator, monitor_cloudsim_ping,\
     get_ssh_client
 import shutil
 from launch_utils.softlayer import load_osrf_creds, reload_servers,\
     get_softlayer_path, wait_for_server_reloads, get_machine_login_info,\
-    setup_ssh_key_access, create_ssh_key
+    setup_ssh_key_access, create_ssh_key, create_openvpn_key
 from launch_utils.launch_db import get_constellation_data, ConstellationState
 from launch_utils import sshclient
 from launch_utils.testing import get_test_runner, get_test_path
 from launch_utils.launch import get_unique_short_name
-from launch_utils.startup_scripts import get_vpc_router_script, get_vpc_open_vpn,\
-    get_drc_startup_script, create_openvpn_client_cfg_file,\
+from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
     create_vpc_vpn_connect_file, create_ros_connect_file,\
     create_ssh_connect_file
 from launch_utils.sshclient import SshClient, clean_local_ssh_key_entry
@@ -62,18 +61,18 @@ def get_ping_data(ping_str):
 
 def start_simulator(constellation, package_name, launch_file_name, launch_args, task_timeout):
 
-    log("1")
+     
     constellation_dict = get_constellation_data(  constellation)
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_name    = constellation_dict['sim_key_name']
-    log("2")
+ 
     sim_ip    = constellation_dict['simulation_ip']
     sim_machine_name = constellation_dict['sim_machine_name']
     sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
     c = "bash cloudsim/start_sim.bash %s %s %s" %(package_name, launch_file_name, launch_args)
     cmd = c.strip()
     ssh_sim = sshclient(sim_machine_dir, sim_key_name, 'ubuntu', sim_ip)
-    log("3")
+ 
     r = ssh_sim.cmd(cmd)
     log('start_simulator %s' % r)
 
@@ -130,13 +129,6 @@ def monitor(username, constellation_name, credentials_ec2, counter):
     
     constellation = ConstellationState( constellation_name)
    
-    
-
-    update_machine_aws_states(credentials_ec2, constellation_name, {'sim_aws_id':"sim_aws_state",
-                                                                    'router_aws_id': 'router_aws_state',
-                                                                    'field1_aws_id': 'field1_aws_state',
-                                                                    'field2_aws_id': 'field2_aws_state',
-                                                                    }) 
     simulation_state = constellation.get_value('sim_state')
     sim_ssh = get_ssh_client(constellation_name, simulation_state,'sim_ip_address', 'sim_key_name' )
     monitor_cloudsim_ping(constellation_name, 'sim_ip_address', 'sim_latency')
@@ -179,26 +171,133 @@ def init_computer_data(constellation_name, prefixes):
         constellation.set_value('%s_key_name'% prefix, None)
 
 
-def get_router_script():
-    router_script = get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP, ROUTER_IP, SIM_IP)    
-    return router_script
+
+def get_router_script(machine_ip, ros_master_ip):
+
+    
+    s= """#!/bin/bash
+# Exit on error
+set -ex
+exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
 
+# Add OSRF repositories
+echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
+
+# ROS setup
+sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
+wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+
+apt-get update
+
+apt-get install -y ntp
+apt-get install -y openvpn
+
+cat <<DELIM > /etc/openvpn/openvpn.conf
+dev tun
+ifconfig """ + OPENVPN_SERVER_IP + " " + OPENVPN_CLIENT_IP + """
+secret static.key
+DELIM
+
+
+
+#
+# The openvpn key is generated in CloudSim
+
+#
+cp /home/ubuntu/cloudsim/openvpn.key /etc/openvpn/static.key
+chmod 644 /etc/openvpn/static.key
+
+service openvpn restart
+
+sysctl -w net.ipv4.ip_forward=1
+iptables -A FORWARD -i tun0 -o bond0 -j ACCEPT
+iptables -A FORWARD -o tun0 -i bond0 -j ACCEPT
+
+# That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
+sudo apt-get install -y ros-fuerte-ros-comm
+
+# roscore is in simulator's machine
+cat <<DELIM >> /etc/environment
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
+export ROS_IP=""" + machine_ip + """
+source /opt/ros/fuerte/setup.sh
+DELIM
+
+apt-get install -y cloudsim-client-tools
+
+# Create upstart vrc_sniffer job
+cat <<DELIM > /etc/init/vrc_sniffer.conf
+# /etc/init/vrc_sniffer.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero <caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_sniffer.py -t 11.8.0.2 -l vrc_current_outbound_latency > /var/log/vrc_sniffer.log 2>&1
+
+respawn
+DELIM
+
+# Create upstart vrc_controller job
+cat <<DELIM > /etc/init/vrc_controller.conf
+# /etc/init/vrc_controller.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero <caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -s 0.5 -v -d eth0 > /var/log/vrc_controller.log 2>&1
+
+respawn
+DELIM
+
+# Create upstart vrc_bandwidth job
+cat <<DELIM > /etc/init/vrc_bandwidth.conf
+# /etc/init/vrc_bandwidth.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero<caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_wrapper.sh vrc_bandwidth.py -d /tmp > /var/log/vrc_bandwidth.log 2>&1
+
+respawn
+DELIM
+
+# start vrc_sniffer and vrc_controllers
+start vrc_sniffer
+start vrc_controller
+start vrc_bandwidth
+
+mkdir -p /home/ubuntu/cloudsim/setup
+touch /home/ubuntu/cloudsim/setup/done
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+
+"""
+    return s
 
 def get_fc2_script(drc_package_name, machine_ip = FC2_IP):
-    s = get_softlayer_script(drc_package_name, machine_ip)
+    s = get_drc_script(drc_package_name, machine_ip)
     return s
 
 def get_fc1_script(drc_package_name, machine_ip = FC1_IP):
-    s = get_softlayer_script(drc_package_name, machine_ip)
+    s = get_drc_script(drc_package_name, machine_ip)
     return s
 
 def get_sim_script(drc_package_name, machine_ip = SIM_IP):
-    s = get_softlayer_script(drc_package_name, machine_ip)
+    s = get_drc_script(drc_package_name, machine_ip)
     return s
 
     
-def get_softlayer_script(drc_package_name, machine_ip):
+def get_drc_script(drc_package_name, machine_ip):
     
     drc_package_name = "drcsim"
     pcibus_id = "130"
@@ -212,73 +311,9 @@ logfile=/home/ubuntu/launch_stdout_stderr.log
 exec > $logfile 2>&1
 
 
-cat <<DELIM > /etc/apt/sources.list
-
-##
-## cloudsim 
-##
-## Note, this file is written by cloud-init on first boot of an instance
-## modifications made here will not survive a re-bundle.
-## if you wish to make changes you can:
-## a.) add 'apt_preserve_sources_list: true' to /etc/cloud/cloud.cfg
-##     or do the same in user-data
-## b.) add sources in /etc/apt/sources.list.d
-## c.) make changes to template file /etc/cloud/templates/sources.list.tmpl
-#
-
-# See http://help.ubuntu.com/community/UpgradeNotes for how to upgrade to
-# newer versions of the distribution.
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
-
-## Major bug fix updates produced after the final release of the
-## distribution.
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
-
-## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
-## team. Also, please note that software in universe WILL NOT receive any
-## review or updates from the Ubuntu security team.
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
-
-## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
-## team, and may not be under a free licence. Please satisfy yourself as to
-## your rights to use the software. Also, please note that software in 
-## multiverse WILL NOT receive any review or updates from the Ubuntu
-## security team.
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
-
-## Uncomment the following two lines to add software from the 'backports'
-## repository.
-## N.B. software from this repository may not have been tested as
-## extensively as that contained in the main release, although it includes
-## newer versions of some applications which may provide useful features.
-## Also, please note that software in backports WILL NOT receive any review
-## or updates from the Ubuntu security team.
-# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
-# deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
-
-## Uncomment the following two lines to add software from Canonical's
-## 'partner' repository.
-## This software is not part of Ubuntu, but is offered by Canonical and the
-## respective vendors as a service to Ubuntu users.
-# deb http://archive.canonical.com/ubuntu precise partner
-# deb-src http://archive.canonical.com/ubuntu precise partner
-
-deb http://security.ubuntu.com/ubuntu precise-security main restricted
-deb-src http://security.ubuntu.com/ubuntu precise-security main restricted
-deb http://security.ubuntu.com/ubuntu precise-security universe
-deb-src http://security.ubuntu.com/ubuntu precise-security universe
-deb http://security.ubuntu.com/ubuntu precise-security multiverse
-deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
-
-DELIM
+#cat <<DELIM >> /etc/apt/sources.list
+#deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
+#DELIM
 
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
@@ -510,7 +545,7 @@ touch /home/ubuntu/cloudsim/setup/done
 
     
     
-launch_sequence = ["nothing", "os_reload", "init_router", "init_privates", "startup", "configure", "reboot", "running"]    
+launch_sequence = ["nothing", "os_reload", "init_router", "init_privates", "configure", "startup", "reboot", "running"]    
 
 class ReloadOsCallBack(object):
     def __init__(self, constellation_name, machines_dict):
@@ -599,9 +634,14 @@ def upload_user_scripts_to_router(router_ip, constellation_directory, sim_ip, fc
     softlayer_scripts_dir = os.path.join( os.path.dirname(launch_utils.softlayer.__file__), 'bash')
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
     
-    # create a cloudsim directory on the router
+    # create a remote cloudsim directory on the router
     ssh_router.cmd("mkdir -p cloudsim")
-
+    
+    openvpn_fname = os.path.join(constellation_directory, 'openvpn.key')
+    create_openvpn_key(openvpn_fname) 
+    remote_fname = 'cloudsim/openvpn.key'
+    ssh_router.upload_file(openvpn_fname, remote_fname)
+    
     # upload keys (useful when switching computers)
     upload_ssh_keys_to_router(ssh_router, "router", constellation_directory)
     
@@ -710,8 +750,8 @@ def initialize_private_machines(constellation_name, constellation_prefix, drcsim
 
     router_ip = constellation.get_value("router_public_ip" )
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
-    
-    router_script = get_router_script()
+
+    router_script = get_router_script(ROUTER_IP, SIM_IP)
     local_fname = os.path.join(constellation_directory, 'router_startup.bash')
     with open(local_fname, 'w') as f:
         f.write(router_script)
@@ -840,7 +880,7 @@ def create_private_machine_zip(machine_name_prefix, machine_ip, constellation_na
     os.chmod(key_fpath, 0600)
     
     fname_ssh_sh =  os.path.join(machine_dir,'ssh-%s.bash' % machine_name_prefix)
-    file_content = create_ssh_connect_file('key-%s' % machine_name_prefix, machine_ip)
+    file_content = create_ssh_connect_file(key_short_filename, machine_ip)
     with open(fname_ssh_sh, 'w') as f:
             f.write(file_content)
     os.chmod(fname_ssh_sh, 0755)    
@@ -862,17 +902,7 @@ def configure_ssh(constellation_name, constellation_directory):
 
     router_ip = constellation.get_value("router_public_ip" )
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
-    
-    constellation.set_value('router_launch_msg',   "waiting for key generation") 
-    router_key_ready = get_ssh_cmd_generator(ssh_router, "ls /etc/openvpn/static.key", "/etc/openvpn/static.key", constellation, "router_launch_msg", 'vpn_key_ready' ,max_retries = 100)
-    empty_ssh_queue([router_key_ready], sleep=2)
-    
-            # download it locally for inclusion into the zip file
-    constellation.set_value('router_launch_msg',   "downloading router vpn key to CloudSim server") 
-    vpnkey_fname = os.path.join(constellation_directory, "openvpn.key")
-    remote_fname = "/etc/openvpn/static.key"
-    ssh_router.download_file(vpnkey_fname, remote_fname)     
-    
+
     constellation.set_value('router_launch_msg',   "creating key zip file bundle")
 
     create_router_zip(router_ip, constellation_name, constellation_directory)
@@ -890,60 +920,6 @@ def configure_ssh(constellation_name, constellation_directory):
     create_private_machine_zip("sim", SIM_IP, constellation_name, constellation_directory)
     constellation.set_value('sim_zip_file', 'ready')
     
-#    robot_machine_dir = os.path.join(constellation_directory, "fc2")
-#    os.makedirs(robot_machine_dir )
-#    robot_key_short_filename = 'key-fc2.pem'
-#    robot_key_path =  os.path.join(robot_machine_dir, robot_key_short_filename)
-#    copyfile(os.path.join(constellation_directory,   robot_key_short_filename), robot_key_path)
-#    os.chmod(robot_key_path, 0600)
-#    
-#    sim_machine_dir = os.path.join(constellation_directory, "sim")
-#    os.makedirs(sim_machine_dir )
-#    sim_key_short_filename =  'key-sim.pem'
-#    sim_key_path =  os.path.join(sim_machine_dir, sim_key_short_filename)
-#    copyfile(os.path.join(constellation_directory,   sim_key_short_filename), sim_key_path)    
-#    os.chmod(sim_key_path, 0600)
-#
-#    
-#    # create simulator zip file with keys
-#    # This file is kept on the server and provides the user with:
-#    #  - key file for ssh access to the router
-#    #  - openvpn key
-#    #  - scripts to connect with ssh, openvpn, ROS setup 
-#    
-#    
-#    constellation.set_value('simulation_launch_msg', "creating zip file bundle")
-#    fname_ssh_sh =  os.path.join(sim_machine_dir,'simulator_ssh.bash')
-#    file_content = create_ssh_connect_file(sim_key_short_filename, SIM_IP)
-#    with open(fname_ssh_sh, 'w') as f:
-#            f.write(file_content)
-#    os.chmod(fname_ssh_sh, 0755)    
-#            
-#    files_to_zip = [ sim_key_path, 
-#                     fname_ssh_sh,]
-#    
-#    sim_fname_zip = os.path.join(sim_machine_dir, "sim_%s.zip" % constellation_name)
-#    create_zip_file(sim_fname_zip, "sim_%s" % constellation_name, files_to_zip)
- 
-    # create field computer zip file with keys
-    # This file is kept on the server and provides the user with:
-    #  - key file for ssh access to the router
-    #  - openvpn key
-    #  - scripts to connect with ssh, openvpn, ROS setup
-     
-#    constellation.set_value('fc1_launch_msg',   "creating zip file bundle")
-#    fname_ssh_sh =  os.path.join(robot_machine_dir,'robot_ssh.bash')
-#    file_content = create_ssh_connect_file(robot_key_short_filename, FC1_IP)
-#    with open(fname_ssh_sh, 'w') as f:
-#            f.write(file_content)
-#    os.chmod(fname_ssh_sh, 0755)
-#                
-#    files_to_zip = [ robot_key_path, 
-#                     fname_ssh_sh,]
-#
-#    fc1_fname_zip = os.path.join(robot_machine_dir, "fc1_%s.zip" % constellation_name)
-#    create_zip_file(fc1_fname_zip,"fc1_%s" % constellation_name , files_to_zip)
-#    constellation.set_value('fc1_zip_file', 'ready')
 
 
     constellation.set_value("launch_stage", "configure")    
@@ -992,7 +968,30 @@ def run_machines(constellation_name, constellation_directory):
     
     constellation = ConstellationState( constellation_name)
     constellation.set_value("launch_stage", "running")
+
+def change_ip_addresses(constellation_directory):
     
+    router_ip = constellation.get_value("router_public_ip" )
+    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+    
+    change_ip = """# change ip
+set -ex
+exec > ./change_ip_$2_to_$3.log 2>&1
+
+file=$1
+new_ip=$2
+
+cp $file interfaces.back
+rm $file
+sed  "s/^address 10.41.*/address $new_ip/" interfaces.back > interfaces.new
+cp interfaces.new $file
+
+/etc/init.d/networking restart
+echo done
+    """
+    ssh_router.create_file(change_ip, "cloudsim/change_ip.bash")
+    
+
 def launch(username, constellation_name, constellation_prefix, credentials_softlayer, constellation_directory ):
 
     drc_package = "drcsim"
@@ -1001,11 +1000,12 @@ def launch(username, constellation_name, constellation_prefix, credentials_softl
         constellation.set_value("launch_stage", "nothing")
    
     reload_os_machines(constellation_name, constellation_prefix, credentials_softlayer)
+    change_ip_addresses(constellation_directory)
     initialize_router(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory)
     initialize_private_machines(constellation_name, constellation_prefix, drc_package, credentials_softlayer, constellation_directory)
 
-    startup_scripts(constellation_name)
     configure_ssh(constellation_name, constellation_directory)
+    startup_scripts(constellation_name)
     reboot_machines(constellation_name, constellation_directory)
     run_machines(constellation_name, constellation_directory)
 
@@ -1065,18 +1065,22 @@ class VrcCase(unittest.TestCase):
         create_private_machine_zip("fc1", FC1_IP, constellation_name, constellation_directory)
     
     def atest_script(self):
-        s = get_sim_script('drcsim')
+        s = get_sim_script('drcsim', '50.97.149.35')
         print(s)
         
     def test_launch(self):
         
-        constellation_prefix = "01"
+        constellation_prefix = "02"
         launch_stage = None # use the current stage
-        #launch_stage = "nothing" #  
-        launch_stage='os_reload'
-        #launch_stage =  "nothing" #
-        #launch_stage = 'init_privates' # before restart 
-        #launch_stage = "init_router"  
+        launch_stage = "nothing" #  
+        #nothing
+        #launch_stage = "os_reload"
+        #init_router
+        #init_privates
+        #startup
+        #configure
+        #reboot
+        #running
         
            
         

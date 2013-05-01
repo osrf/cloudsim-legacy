@@ -19,7 +19,6 @@ def get_ssh_cmd_generator(ssh_client, cmd, expected_output, constellation_data, 
     
     while not done:
         count -= 1
-        
         try:
             result = ssh_client.cmd(cmd)
             if result.strip() == expected_output:

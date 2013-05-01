@@ -2,6 +2,7 @@ from __future__ import print_function
 
 
 
+
 def get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP, machine_ip, ros_master_ip):
     
     return """#!/bin/bash
@@ -28,9 +29,13 @@ dev tun
 ifconfig """ + OPENVPN_SERVER_IP + " " + OPENVPN_CLIENT_IP + """
 secret static.key
 DELIM
+
+
 openvpn --genkey --secret /etc/openvpn/static.key
 service openvpn restart
 chmod 644 /etc/openvpn/static.key
+
+
 sysctl -w net.ipv4.ip_forward=1
 iptables -A FORWARD -i tun0 -o eth0 -j ACCEPT
 iptables -A FORWARD -o tun0 -i eth0 -j ACCEPT

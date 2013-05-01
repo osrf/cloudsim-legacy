@@ -14,14 +14,32 @@ FC2_IP=$4
 sudo apt-get install -y expect
 
 
-# --------------------------------------------
+cat <<DELIM > $DIR/
 
+# --------------------------------------------
 
 cat <<DELIM > $DIR/dpkg_log_fc1.bash
 #!/bin/bash
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_IP "tail -1 /var/log/dpkg.log"
 DELIM
 chmod +x $DIR/dpkg_log_fc1.bash
+
+
+# --------------------------------------------
+
+cat <<DELIM > $DIR/change_ip.bash
+#!/bin/bash
+set -ex
+exec > ./change_ip_$2_to_$3.log 2>&1
+
+file=$1
+new_ip=$2
+
+cp $file $file.back
+sed "s/^address 10.41.*/address $new_ip/" $file.back > $file
+
+DELIM
+chmod +x $DIR/change_ip.bash
 
 
 # --------------------------------------------
