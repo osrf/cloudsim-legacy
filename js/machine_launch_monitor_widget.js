@@ -20,17 +20,28 @@ function create_machine_launch_monitor_widget(machine_div,
             return;
         
         count ++;
-        var colors = ["yellow", "orange"]
-        var color = colors[count % colors.length]
-
+       
+        
         var error_txt = "";
         if ( data.error.length)
         {
             error_txt += "<font color='red'><b>" +data.error  +"</b></font><br>";
             color = 'red';
         }
-
+        
+        
         var machine_state = data[state_key];
+        var colors = ["gray"];
+        
+        if (machine_state == "network_setup") colors = ["gray", "yellow"];     
+        	
+        if(machine_state == "packages_setup") colors = ["gray", "yellow"];
+             
+        if(machine_state == "terminating") colors = ["gray", "orange"];
+   
+
+        var color = colors[count % colors.length]
+        
         if(machine_state == "running")
             color = "blue";
         if(data[state_key] == "terminated")

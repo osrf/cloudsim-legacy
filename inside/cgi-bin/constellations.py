@@ -2,18 +2,20 @@
 
 from __future__ import with_statement
 from __future__ import print_function
-import cgi
+
 import cgitb
 import json
 import os
 import urlparse
 from common import  authorize
 import redis
+import traceback
 
 
 cgitb.enable()
-r = redis.Redis()
 
+
+r = redis.Redis()
 
 
 def log(msg):
@@ -46,12 +48,14 @@ def get_constellation(email, constellation_name):
 
     try:
         key = 'cloudsim/' + constellation_name
+        log("get_constellation %s" % key)
         s = r.get(key)
         c = json.loads(s)
         constellation = clean_constellation_data(c)
         return constellation
     except Exception, e:
-        log("Get const error: %s" % e)
+        tb = traceback.format_exc()
+        log("get_constellation traceback:  %s" % tb)
         return None
     return None
 
@@ -82,7 +86,7 @@ def get_query_param(param):
     p = params[param][0]
     return p
 
-email = authorize()
+email = authorize("officer")
 method = os.environ['REQUEST_METHOD']
 
 
@@ -91,15 +95,13 @@ print("\n")
 
 if method == 'GET':
     s = None
-    # log("[GET] Constellations")
+    #log("[GET] Constellations")
     try:    
         
         constellation = get_constellation_from_path()
-
+        # log("%s" % constellation)
         if len(constellation) > 0:
-            domain = _domain(email)
-            key = "cloudsim/"+ constellation
-            s = r.get(key)
+            s = get_constellation(email, constellation)
         else:
             # log("listing all constellations")
             l = list_constellations(email)
