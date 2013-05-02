@@ -285,7 +285,7 @@ def wait_for_server_reloads(osrf_creds, machine_names, callback = print_cb):
 
 class TestSofty(unittest.TestCase):
     
-    def test_shutdown_public_ip(self):
+    def atest_shutdown_public_ip(self):
         
         machine_names = ["sim-02", "fc1-02", "fc2-02"]
         shutdown_public_ips(osrf_creds, machine_names)

@@ -1069,7 +1069,7 @@ def change_ip_addresses(constellation_name, credentials_softlayer, constellation
     constellation.set_value("launch_stage", "change_ip")
 
 
-def shutdown_public_ips(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory):
+def shutdown_constellation_public_ips(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory):
     
     wait_for_setup_done(constellation_name, constellation_directory)
     private_machines = ["sim-%s"% constellation_prefix, "fc1-%s"% constellation_prefix, "fc2-%s"% constellation_prefix]
@@ -1094,10 +1094,10 @@ def launch(username, constellation_name, constellation_prefix, credentials_softl
     change_ip_addresses(constellation_name, credentials_softlayer, constellation_directory)
     # launch startup scripts
     startup_scripts(constellation_name)
-    
-    shutdown_public_ips(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory)
+    # disable access to sim fc1 and fc2 via their public ip addresses
+    shutdown_constellation_public_ips(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory)
     # reboot fc1, fc2 and sim (but not router)
-    reboot_machines(constellation_name, constellation_prefix,  constellation_directory)
+    reboot_machines(constellation_name, constellation_directory)
     # wait for machines to be back on line
     run_machines(constellation_name, constellation_directory)
 
@@ -1162,12 +1162,12 @@ class VrcCase(unittest.TestCase):
         
     def test_launch(self):
         
-        constellation_prefix = "03"
+        constellation_prefix = "01"
         launch_stage = None # use the current stage
-        launch_stage = "nothing"
-        launch_stage = "os_reload"
+
+        #launch_stage = "nothing" #  
+        #launch_stage = "os_reload"
         #"nothing", "os_reload", "init_router", "init_privates", "zip",  "change_ip", "startup", "reboot", "running"
-        
 
         self.constellation_name = 'test_vrc_contest_%s' % constellation_prefix 
         self.username = "toto@osrfoundation.org"
