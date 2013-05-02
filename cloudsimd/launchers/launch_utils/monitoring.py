@@ -196,7 +196,7 @@ def _monitor_ping(constellation_name, ping_data_key, ping_str):
     latency = record_ping_result(latency, ping_str, LATENCY_TIME_BUFFER)
     constellation.set_value(ping_data_key, latency)
     
-
+    
 def monitor_cloudsim_ping(constellation_name, ip_address_key, ping_data_key):
     """
     Finds the ip of the machine to pind in redis, pings the machine and integrates

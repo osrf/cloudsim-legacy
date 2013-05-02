@@ -4,26 +4,24 @@ import unittest
 import os
 import time
 import zipfile
-
-
-from shutil import copyfile
-
-
+import shutil
 import redis
 import logging
+
+from shutil import copyfile
 
 from launch_utils.traffic_shapping import  run_tc_command
 
 import launch_utils.softlayer
 
 from launch_utils.monitoring import constellation_is_terminated,\
-    monitor_launch_state, monitor_cloudsim_ping,\
-    get_ssh_client, machine_states
-import shutil
+    monitor_launch_state, monitor_cloudsim_ping, machine_states, monitor_ssh_ping
+
 from launch_utils.softlayer import load_osrf_creds, reload_servers,\
     get_softlayer_path, wait_for_server_reloads, get_machine_login_info,\
     setup_ssh_key_access, create_ssh_key, create_openvpn_key,\
     shutdown_public_ips
+
 from launch_utils.launch_db import get_constellation_data, ConstellationState
 from launch_utils import sshclient
 from launch_utils.testing import get_test_runner, get_test_path
@@ -31,6 +29,7 @@ from launch_utils.launch import get_unique_short_name
 from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
     create_vpc_vpn_connect_file, create_ros_connect_file,\
     create_ssh_connect_file
+
 from launch_utils.sshclient import SshClient, clean_local_ssh_key_entry
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
 
@@ -43,7 +42,9 @@ FC1_IP='10.0.0.52'
 FC2_IP='10.0.0.53'
 OPENVPN_SERVER_IP='11.8.0.1'
 OPENVPN_CLIENT_IP='11.8.0.2'
-    
+
+launch_sequence = ["nothing", "os_reload", "init_router", "init_privates",  "zip",  "change_ip", "startup", "block_public_ips", "reboot", "running"]
+   
 def log(msg, channel = "vrc_contest"):
     try:
         redis_client = redis.Redis()
@@ -147,34 +148,37 @@ def monitor_simulator(constellation_name, ssh_client):
                 return False      
     return True
 
+
+
 def monitor(username, constellation_name, credentials_ec2, counter):
     time.sleep(1)
     if constellation_is_terminated(constellation_name):
         return True
     
     constellation = ConstellationState( constellation_name)
-   
-    simulation_state = constellation.get_value('sim_state')
-    sim_ssh = get_ssh_client(constellation_name, simulation_state,'sim_ip_address', 'sim_key_name' )
-    monitor_cloudsim_ping(constellation_name, 'sim_ip_address', 'sim_latency')
-    monitor_launch_state(constellation_name, sim_ssh, simulation_state, "tail -1 /var/log/dpkg.log ", 'sim_launch_msg')
     
-    monitor_simulator(constellation_name, sim_ssh)
+    constellation_directory = constellation.get_value('constellation_directory')
+    router_ip = constellation.get_value("router_public_ip" )
+    
+    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+    monitor_simulator(constellation_name, ssh_router)
     
     router_state = constellation.get_value('router_state')
-    ssh_router = get_ssh_client(constellation_name, router_state,'router_ip_address', 'router_key_name' )
-    monitor_cloudsim_ping(constellation_name, 'router_ip_address', 'router_latency')
+    monitor_cloudsim_ping(constellation_name, 'router_ip', 'router_latency')
     monitor_launch_state(constellation_name, ssh_router, router_state, "tail -1 /var/log/dpkg.log", 'router_launch_msg')
     
-    field1_state = constellation.get_value('field1_state')
-    ssh_field1 = get_ssh_client(constellation_name, field1_state,'field1_ip_address', 'field1_key_name' )
-    monitor_cloudsim_ping(constellation_name, 'field1_ip_address', 'field1_latency')
-    monitor_launch_state(constellation_name, ssh_field1, field1_state, "tail -1 /var/log/dpkg.log", 'field1_launch_msg')
+    fc1_state = constellation.get_value('fc1_state')
+    monitor_ssh_ping(constellation_name, ssh_router, FC1_IP, 'fc1_latency')
+    monitor_launch_state(constellation_name, ssh_router, fc1_state, "cloudsim/find_file_fc1.bash", 'field1_launch_msg')
     
-    field2_state = constellation.get_value('field2_state')
-    ssh_field2 = get_ssh_client(constellation_name, field2_state,'field2_ip_address', 'field1_key_name' )
-    monitor_cloudsim_ping(constellation_name, 'field2_ip_address', 'field2_latency')
-    monitor_launch_state(constellation_name, ssh_field2, field2_state, "tail -1 /var/log/dpkg.log", 'field2_launch_msg')
+    fc2_state = constellation.get_value('fc2_state')
+    monitor_ssh_ping(constellation_name, ssh_router, FC2_IP, 'fc2_latency')
+    monitor_launch_state(constellation_name, ssh_router, fc2_state, "cloudsim/find_file_fc1.bash", 'field1_launch_msg')
+
+    sim_state = constellation.get_value('sim_state')
+    monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'sim_latency')
+    monitor_launch_state(constellation_name, ssh_router, sim_state, "cloudsim/find_file_fc1.bash", 'field1_launch_msg')
+
     # log("monitor not done")
     return False
 
@@ -627,7 +631,6 @@ touch /home/ubuntu/cloudsim/setup/done
 """
     return s
 
-launch_sequence = ["nothing", "os_reload", "init_router", "init_privates",  "zip",  "change_ip", "startup", "reboot", "running"]
 
 class ReloadOsCallBack(object):
     def __init__(self, constellation_name, machines_dict):
@@ -1070,11 +1073,17 @@ def change_ip_addresses(constellation_name, credentials_softlayer, constellation
 
 
 def shutdown_constellation_public_ips(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory):
+    constellation = ConstellationState( constellation_name)
+    launch_stage = constellation.get_value("launch_stage")
+    if launch_sequence.index(launch_stage) >= launch_sequence.index("block_public_ips"):
+        return
     
     wait_for_setup_done(constellation_name, constellation_directory)
     private_machines = ["sim-%s"% constellation_prefix, "fc1-%s"% constellation_prefix, "fc2-%s"% constellation_prefix]
     osrf_creds = load_osrf_creds(credentials_softlayer)
     shutdown_public_ips(osrf_creds, private_machines)
+    
+    constellation.set_value("launch_stage", "block_public_ips")
 
 def launch(username, constellation_name, constellation_prefix, credentials_softlayer, constellation_directory ):
 
@@ -1103,7 +1112,7 @@ def launch(username, constellation_name, constellation_prefix, credentials_softl
 
 def terminate(constellation_name, osrf_creds_fname):
 
-    osrf_creds = load_osrf_creds(osrf_creds_fname)
+    # osrf_creds = load_osrf_creds(osrf_creds_fname)
     constellation = ConstellationState( constellation_name)
     
     constellation.set_value('constellation_state', 'terminating')
