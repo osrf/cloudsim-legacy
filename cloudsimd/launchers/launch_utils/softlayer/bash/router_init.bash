@@ -273,7 +273,7 @@ chmod +x $DIR/stop_sim.bash
 
 cat <<DELIM > $DIR/start_sim.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "bash cloudsim/start_sim.bash \$1 \$2 \$"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "bash cloudsim/start_sim.bash \$1 \$2 \$3"
 DELIM
 chmod +x $DIR/start_sim.bash
 

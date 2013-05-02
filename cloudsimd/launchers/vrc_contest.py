@@ -173,11 +173,11 @@ def monitor(username, constellation_name, credentials_ec2, counter):
     
     fc2_state = constellation.get_value('fc2_state')
     monitor_ssh_ping(constellation_name, ssh_router, FC2_IP, 'fc2_latency')
-    monitor_launch_state(constellation_name, ssh_router, fc2_state, "cloudsim/find_file_fc1.bash", 'field1_launch_msg')
+    monitor_launch_state(constellation_name, ssh_router, fc2_state, "cloudsim/find_file_fc2.bash", 'field2_launch_msg')
 
     sim_state = constellation.get_value('sim_state')
     monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'sim_latency')
-    monitor_launch_state(constellation_name, ssh_router, sim_state, "cloudsim/find_file_fc1.bash", 'field1_launch_msg')
+    monitor_launch_state(constellation_name, ssh_router, sim_state, "cloudsim/find_file_sim.bash", 'sim_launch_msg')
 
     # log("monitor not done")
     return False
@@ -1033,7 +1033,7 @@ def reboot_machines(constellation_name, constellation_directory):
     
     constellation = ConstellationState( constellation_name)
     launch_stage = constellation.get_value("launch_stage")
-    if launch_sequence.index(launch_stage) >= 'reboot':
+    if launch_sequence.index(launch_stage) >= launch_sequence.index('reboot'):
         return
     
     wait_for_setup_done(constellation_name, constellation_directory)
@@ -1171,11 +1171,11 @@ class VrcCase(unittest.TestCase):
         
     def test_launch(self):
         
-        constellation_prefix = "01"
+        constellation_prefix = "03"
         launch_stage = None # use the current stage
 
         #launch_stage = "nothing" #  
-        #launch_stage = "os_reload"
+        launch_stage = "os_reload"
         #"nothing", "os_reload", "init_router", "init_privates", "zip",  "change_ip", "startup", "reboot", "running"
 
         self.constellation_name = 'test_vrc_contest_%s' % constellation_prefix 
