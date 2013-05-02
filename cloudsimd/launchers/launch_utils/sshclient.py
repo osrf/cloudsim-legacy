@@ -41,7 +41,7 @@ class SshClient(object):
         
         self.key_fname = os.path.join(constellation_directory, "%s.pem" % key_name) 
         self.user = '%s@%s' % (username, ip)
-        self.ssh_connect_timeout = 5
+        self.ssh_connect_timeout = 10
         
         
     def cmd(self, cmd, extra_ssh_args=[] ): 

@@ -17,12 +17,13 @@ from launch_utils.traffic_shapping import  run_tc_command
 import launch_utils.softlayer
 
 from launch_utils.monitoring import constellation_is_terminated,\
-    monitor_launch_state, monitor_simulator, monitor_cloudsim_ping,\
-    get_ssh_client
+    monitor_launch_state, monitor_cloudsim_ping,\
+    get_ssh_client, machine_states
 import shutil
 from launch_utils.softlayer import load_osrf_creds, reload_servers,\
     get_softlayer_path, wait_for_server_reloads, get_machine_login_info,\
-    setup_ssh_key_access, create_ssh_key, create_openvpn_key
+    setup_ssh_key_access, create_ssh_key, create_openvpn_key,\
+    shutdown_public_ips
 from launch_utils.launch_db import get_constellation_data, ConstellationState
 from launch_utils import sshclient
 from launch_utils.testing import get_test_runner, get_test_path
@@ -122,6 +123,30 @@ def stop_task(constellation):
     stop_simulator(constellation)
     
 
+def monitor_simulator(constellation_name, ssh_client):
+    """
+    Detects if the simulator is running and writes the 
+    result into the "gazebo" ditionnary key 
+    """
+    if ssh_client == None:
+        #constellation.set_value("gazebo", "not running")
+        return False
+    
+    constellation = ConstellationState(constellation_name)
+    simulation_state = constellation.get_value('sim_state')
+    if machine_states.index(simulation_state) >= machine_states.index('running'):
+        gl_state = constellation.get_value("simulation_glx_state")
+        if gl_state == "running":
+            try:
+                ping_gazebo = ssh_client.cmd("bash cloudsim/ping_gazebo.bash")
+                log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
+                constellation.set_value("gazebo", "running")
+            except Exception, e:
+                log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
+                constellation.set_value("gazebo", "not running")
+                return False      
+    return True
+
 def monitor(username, constellation_name, credentials_ec2, counter):
     time.sleep(1)
     if constellation_is_terminated(constellation_name):
@@ -180,14 +205,38 @@ def get_router_script( machine_private_ip, ros_master_ip):
 set -ex
 exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
-#
-# Change private IP and reload networking
-#
-mv /etc/network/interfaces /home/ubuntu/interfaces.back
-sed  "s/^address 10.41.*/address """ + machine_private_ip + """/" interfaces.back > /home/ubuntu/interfaces.new
-cp /home/ubuntu/interfaces.new /etc/network/interfaces
 
-/etc/init.d/networking restart
+
+cat <<DELIM > /etc/apt/sources.list
+
+
+deb http://us.archive.ubuntu.com/ubuntu/ precise main restricted
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise main restricted
+deb http://us.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+deb http://us.archive.ubuntu.com/ubuntu/ precise universe
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise universe
+deb http://us.archive.ubuntu.com/ubuntu/ precise-updates universe
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates universe
+deb http://us.archive.ubuntu.com/ubuntu/ precise multiverse
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise multiverse
+deb http://us.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+deb http://us.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu precise-security main restricted
+deb-src http://security.ubuntu.com/ubuntu precise-security main restricted
+deb http://security.ubuntu.com/ubuntu precise-security universe
+deb-src http://security.ubuntu.com/ubuntu precise-security universe
+deb http://security.ubuntu.com/ubuntu precise-security multiverse
+deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
+# deb http://archive.canonical.com/ubuntu precise partner
+# deb-src http://archive.canonical.com/ubuntu precise partner
+deb http://extras.ubuntu.com/ubuntu precise main
+deb-src http://extras.ubuntu.com/ubuntu precise main
+
+
+DELIM
 
 
 
@@ -203,6 +252,10 @@ apt-get update
 
 apt-get install -y ntp
 apt-get install -y openvpn
+apt-get install -y vim ipython
+
+
+
 
 cat <<DELIM > /etc/openvpn/openvpn.conf
 dev tun
@@ -221,9 +274,42 @@ chmod 644 /etc/openvpn/static.key
 
 service openvpn restart
 
-sysctl -w net.ipv4.ip_forward=1
-iptables -A FORWARD -i tun0 -o bond0 -j ACCEPT
-iptables -A FORWARD -o tun0 -i bond0 -j ACCEPT
+
+cat <<DELIM > /etc/init.d/iptables_cloudsim
+#! /bin/sh
+
+
+
+
+case "\$1" in
+  start|"")
+  
+    sysctl -w net.ipv4.ip_forward=1
+    #iptables -A FORWARD -i tun0 -o bond0 -j ACCEPT
+    #iptables -A FORWARD -o tun0 -i bond0 -j ACCEPT
+    iptables -t nat -A POSTROUTING -o bond1 -j MASQUERADE
+    
+    ;;
+  stop)
+        
+       echo "N/A" 
+    ;;
+  *)
+    echo "Usage: iptables_cloudsim start|stop" >&2
+    exit 3
+    ;;
+esac
+
+:
+
+DELIM
+
+chmod +x  /etc/init.d/iptables_cloudsim 
+ln -s /etc/init.d/iptables_cloudsim /etc/rc2.d/S99iptables_cloudsim
+
+#invoke it
+/etc/init.d/iptables_cloudsim start
+
 
 # That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
 sudo apt-get install -y ros-fuerte-ros-comm
@@ -309,8 +395,7 @@ def get_sim_script(drc_package_name, machine_ip = SIM_IP):
     
 def get_drc_script(drc_package_name, machine_ip):
     
-    drc_package_name = "drcsim"
-    pcibus_id = "130"
+
     ros_master_ip = SIM_IP
     
     s = """#!/bin/bash
@@ -321,18 +406,35 @@ logfile=/home/ubuntu/launch_stdout_stderr.log
 exec > $logfile 2>&1
 
 
-#cat <<DELIM >> /etc/apt/sources.list
-#deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
-#DELIM
+cat <<DELIM > /etc/apt/sources.list
 
-#
-# Change private IP and reload networking
-#
-mv /etc/network/interfaces /home/ubuntu/interfaces.back
-sed  "s/^address 10.41.*/address """ + machine_ip + """/" interfaces.back > /home/ubuntu/interfaces.new
-cp /home/ubuntu/interfaces.new /etc/network/interfaces
+deb http://us.archive.ubuntu.com/ubuntu/ precise main restricted
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise main restricted
+deb http://us.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+deb http://us.archive.ubuntu.com/ubuntu/ precise universe
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise universe
+deb http://us.archive.ubuntu.com/ubuntu/ precise-updates universe
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates universe
+deb http://us.archive.ubuntu.com/ubuntu/ precise multiverse
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise multiverse
+deb http://us.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+deb http://us.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+deb-src http://us.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu precise-security main restricted
+deb-src http://security.ubuntu.com/ubuntu precise-security main restricted
+deb http://security.ubuntu.com/ubuntu precise-security universe
+deb-src http://security.ubuntu.com/ubuntu precise-security universe
+deb http://security.ubuntu.com/ubuntu precise-security multiverse
+deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
+# deb http://archive.canonical.com/ubuntu precise partner
+# deb-src http://archive.canonical.com/ubuntu precise partner
+deb http://extras.ubuntu.com/ubuntu precise main
+deb-src http://extras.ubuntu.com/ubuntu precise main
 
-/etc/init.d/networking restart
+DELIM
+
 
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
@@ -420,10 +522,13 @@ cat <<DELIM > /etc/init.d/vpcroute
 
 case "\$1" in
   start|"")
+        route del default
         route add """ + OPENVPN_CLIENT_IP+""" gw """ + ROUTER_IP+"""
+        route add default gw """ + ROUTER_IP+"""
     ;;
   stop)
         route del """ + OPENVPN_CLIENT_IP+""" gw """ + ROUTER_IP+"""
+        
     ;;
   *)
     echo "Usage: vpcroute start|stop" >&2
@@ -442,49 +547,11 @@ ln -s /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
     
 echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
 apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
-    
-#
-# The BusID is given by lspci (but lspci gives it in hex, and BusID needs dec)
-# This value is required for Tesla cards
-cat <<DELIM > /etc/X11/xorg.conf
 
-# take the hex from lspci and turn it into dec
-# root@gpu02:/home/ubuntu# lspci | grep Tesla
-
-# SOFTLAYER
-# 82:00.0 3D controller: NVIDIA Corporation Tesla M2090 (rev a1)
-# 82 hex is 130 dec
-# Amazon is 3 dec for cg1.4xLarge
-
-Section "ServerLayout"
-    Identifier     "Layout0"
-    Screen      0  "Screen0"
-EndSection
-Section "Monitor"
-    Identifier     "Monitor0"
-    VendorName     "Unknown"
-    ModelName      "Unknown"
-    HorizSync       28.0 - 33.0
-    VertRefresh     43.0 - 72.0
-    Option         "DPMS"
-EndSection
-Section "Device"
-    Identifier     "Device0"
-    Driver         "nvidia"
-    BusID          "PCI:0:""" + pcibus_id + """:0"
-    VendorName     "NVIDIA Corporation"
-EndSection
-Section "Screen"
-    Identifier     "Screen0"
-    Device         "Device0"
-    Monitor        "Monitor0"
-    DefaultDepth    24
-    SubSection     "Display"
-        Depth       24
-    EndSubSection
-EndSection
-DELIM
-
+# Have the NVIDIA tools create the xorg configuration file for us, retrieiving the PCI BusID for the current system.
+# The BusID can vary from machine to machine.  The || true at the end is to allow this line to succeed on fc2, which doesn't have a GPU.
+nvidia-xconfig --busid `nvidia-xconfig --query-gpu-info | grep BusID | sed 's/PCI BusID : PCI:/PCI:/'` || true
+ 
 
 echo "setup auto xsession login" >> /home/ubuntu/setup.log
 
@@ -605,7 +672,7 @@ def reload_os_machines(constellation_name, constellation_prefix, osrf_creds_fnam
     
     osrf_creds = load_osrf_creds(osrf_creds_fname)
     
-
+    
     # compute the softlayer machine names
     machine_names = [x + "-" + constellation_prefix for x in  machine_names_prefix]
     reload_servers(osrf_creds, machine_names)
@@ -713,6 +780,9 @@ def initialize_router(constellation_name, constellation_prefix, osrf_creds_fname
     sim_pub_ip, sim_priv_ip, sim_root_password = get_machine_login_info(osrf_creds, "sim-%s" % constellation_prefix)
     fc1_pub_ip, fc1_priv_ip, fc1_root_password = get_machine_login_info(osrf_creds, "fc1-%s" % constellation_prefix)
     fc2_pub_ip, fc2_priv_ip, fc2_root_password = get_machine_login_info(osrf_creds, "fc2-%s" % constellation_prefix)
+    
+    
+
 
     log("router %s %s" % (router_ip, password ) )
     log("sim %s %s" % (sim_pub_ip, sim_root_password ) )
@@ -768,7 +838,10 @@ def initialize_private_machines(constellation_name, constellation_prefix, drcsim
     log("upload %s to %s" % (local_fname, remote_fname))
             
     osrf_creds = load_osrf_creds(credentials_softlayer)
-
+    
+#    private_machines = ["sim-%s"% constellation_prefix, "fc1-%s"% constellation_prefix, "fc2-%s"% constellation_prefix]
+#    shutdown_public_ips(osrf_creds, private_machines)
+    
     sim_pub_ip, sim_priv_ip, sim_root_password = get_machine_login_info(osrf_creds, "sim-%s" % constellation_prefix)
     sim_script = get_sim_script(drcsim_package_name)
     log("provision sim [%s / %s] %s" % (sim_pub_ip, sim_priv_ip, sim_root_password))
@@ -794,14 +867,12 @@ def startup_scripts(constellation_name):
         return
 
     constellation_directory = constellation.get_value('constellation_directory')
-
-    router_ip = constellation.get_value("router_public_ip" )
-    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)    
-    
     # if the change of ip was successful, the script should be in the home directory
     # of each machine
     wait_for_find_file(constellation_name, constellation_directory, "change_ip.bash")
-    
+
+    router_ip = constellation.get_value("router_public_ip" )
+    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)    
     # load packages onto router
     ssh_router.cmd("nohup sudo bash cloudsim/router_startup_script.bash > ssh_startup.out 2> ssh_startup.err < /dev/null &")
     # load packages onto fc1
@@ -963,7 +1034,7 @@ def reboot_machines(constellation_name, constellation_directory):
         return
     
     wait_for_setup_done(constellation_name, constellation_directory)
-        
+    
     router_ip = constellation.get_value("router_public_ip" )
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
     
@@ -998,6 +1069,13 @@ def change_ip_addresses(constellation_name, credentials_softlayer, constellation
     constellation.set_value("launch_stage", "change_ip")
 
 
+def shutdown_public_ips(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory):
+    
+    wait_for_setup_done(constellation_name, constellation_directory)
+    private_machines = ["sim-%s"% constellation_prefix, "fc1-%s"% constellation_prefix, "fc2-%s"% constellation_prefix]
+    osrf_creds = load_osrf_creds(credentials_softlayer)
+    shutdown_public_ips(osrf_creds, private_machines)
+
 def launch(username, constellation_name, constellation_prefix, credentials_softlayer, constellation_directory ):
 
     drc_package = "drcsim"
@@ -1016,8 +1094,10 @@ def launch(username, constellation_name, constellation_prefix, credentials_softl
     change_ip_addresses(constellation_name, credentials_softlayer, constellation_directory)
     # launch startup scripts
     startup_scripts(constellation_name)
+    
+    shutdown_public_ips(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory)
     # reboot fc1, fc2 and sim (but not router)
-    reboot_machines(constellation_name, constellation_directory)
+    reboot_machines(constellation_name, constellation_prefix,  constellation_directory)
     # wait for machines to be back on line
     run_machines(constellation_name, constellation_directory)
 
@@ -1085,6 +1165,7 @@ class VrcCase(unittest.TestCase):
         constellation_prefix = "03"
         launch_stage = None # use the current stage
         launch_stage = "nothing"
+        launch_stage = "os_reload"
         #"nothing", "os_reload", "init_router", "init_privates", "zip",  "change_ip", "startup", "reboot", "running"
         
 

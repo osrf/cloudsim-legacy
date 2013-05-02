@@ -42,6 +42,12 @@ new_ip=\$1
 cp \$file \$file.bak
 sed "s/^address 10.41.*/address \$new_ip/" \$file.bak > \$file
 
+#
+# Adjust the DNS to use Google instead of SoftLayer
+#
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+
 /etc/init.d/networking restart
 echo done
 DELIM

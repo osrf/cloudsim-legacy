@@ -43,8 +43,14 @@ def _send_reload_server_cmd(api_username, api_key, server_id):
     result = client.reloadCurrentOperatingSystemConfiguration('FORCE')
     print (result)
 
+def _send_shutdown_public_port(api_username, api_key, server_id):
+    client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, api_username, api_key)
+    # server_id = client.findByIpAddress(server_ip)['id']
+    #result = client.shutdownPublicPort()
+    result = client.setPublicNetworkInterfaceSpeed(0)
+    print (result)
+
 def _wait_for_server_reload(api_username, api_key, server_id, callback):
-    
     status = None
     while True:
         time.sleep(10)
@@ -118,6 +124,7 @@ def hardware_helpers(osrf_creds):
         server_id, host, username, password, priv_ip, pub_ip = server
         print("")
         print("# %s [%s /%s] %s" % (host,pub_ip, priv_ip, password))
+        print("# id: %s user: %s" %(server_id, username))
         prefix = host.split("-")[0]
         print("ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i key-%s.pem ubuntu@%s" % (prefix, pub_ip ) )
         print("ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i key-%s.pem ubuntu@%s" % (prefix, priv_ip ) )
@@ -165,8 +172,14 @@ def reload_servers(osrf_creds, machine_names):
         _send_reload_server_cmd(api_username, api_key, server_id)
     
 
-
-
+def shutdown_public_ips(osrf_creds, machine_names):
+    api_username = osrf_creds['user'] 
+    api_key = osrf_creds['api_key']
+    hardware = _get_hardware(api_username, api_key)
+    server_ids_to_hostname = {server['id']:server['hostname'] for server in hardware if server['hostname'] in machine_names}
+    for server_id in server_ids_to_hostname.keys():
+        _send_shutdown_public_port(api_username, api_key, server_id)
+        
 def get_machine_login_info(osrf_creds, machine):
     api_username = osrf_creds['user'] 
     api_key = osrf_creds['api_key']
@@ -272,6 +285,12 @@ def wait_for_server_reloads(osrf_creds, machine_names, callback = print_cb):
 
 class TestSofty(unittest.TestCase):
     
+    def test_shutdown_public_ip(self):
+        
+        machine_names = ["sim-02", "fc1-02", "fc2-02"]
+        shutdown_public_ips(osrf_creds, machine_names)
+        
+    
     def atest_ssh_setup(self):
         
         ip = '50.97.149.39'
@@ -346,6 +365,6 @@ if __name__ == "__main__":
     
     hardware_info(osrf_creds)
     
-    hardware_scan(osrf_creds)
+    #hardware_scan(osrf_creds)
     
     unittest.main()
