@@ -1,0 +1,87 @@
+# VRC run information
+
+# WARNING The link limits are in bits. However the bytecounter works in bytes WARNING
+
+# Task 1
+run_id: 1
+uplink_limit: 29491200
+downlink_limit: 943718400
+latency_target: 500
+local_start: 2013-06-14 8:00:00.0
+local_stop: 2013-06-14 18:00:00.0
+duration: 1800
+task_num: 1
+task_name: Drive
+ros_package: atlas_utils
+ros_launch: vrc_task_1.launch
+ros_args:
+---
+# Task 2
+run_id: 2
+uplink_limit: 7373800
+downlink_limit: 471859200
+latency_target: 500
+local_start: 2013-06-14 8:00:00.0
+local_stop: 2013-06-14 18:00:00.0
+duration: 1800
+task_num: 1
+task_name: Drive
+ros_package: atlas_utils
+ros_launch: vrc_task_1.launch
+ros_args:
+---
+# Task 3
+run_id: 3
+uplink_limit: 1843200
+downlink_limit: 235929600
+latency_target: 500
+local_start: 2013-06-14 8:00:00.0
+local_stop: 2013-06-14 18:00:00.0
+duration: 1800
+task_num: 2
+task_name: Walk
+ros_package: atlas_utils
+ros_launch: vrc_task_2.launch
+ros_args:
+---
+# Task 4
+run_id: 4
+uplink_limit: 460800
+downlink_limit: 117964800
+latency_target: 500
+local_start: 2013-06-14 8:00:00.0
+local_stop: 2013-06-14 18:00:00.0
+duration: 1800
+task_num: 2
+task_name: Walk
+ros_package: atlas_utils
+ros_launch: vrc_task_2.launch
+ros_args:
+---
+# Task 5
+run_id: 5
+uplink_limit: 115200
+downlink_limit: 58982400
+latency_target: 500
+local_start: 2013-06-14 8:00:00.0
+local_stop: 2013-06-14 18:00:00.0
+duration: 1800
+task_num: 3
+task_name: Hose
+ros_package: atlas_utils
+ros_launch: vrc_task_3.launch
+ros_args:
+---
+# Task 6
+run_id: 6
+uplink_limit: 9491200
+downlink_limit: 43718400
+latency_target: 500
+local_start: 2013-06-14 8:00:00.0
+local_stop: 2013-06-14 18:00:00.0
+duration: 1800
+task_num: 3
+task_name: Hose
+ros_package: atlas_utils
+ros_launch: vrc_task_3.launch
+ros_args:
