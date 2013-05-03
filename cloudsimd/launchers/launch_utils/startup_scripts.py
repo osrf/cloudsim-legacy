@@ -256,10 +256,16 @@ mkdir /home/ubuntu/cloudsim/setup
 chown -R ubuntu:ubuntu /home/ubuntu/
 
 apt-get update
+apt-get install -y python-software-properties
+ 
+apt-add-repository -y ppa:rye/ppa
+apt-get update
+
+echo "ppa:rye/ppa repository added" >> /home/ubuntu/setup.log
 
 echo "Installing packages" >> /home/ubuntu/setup.log
 
-apt-get install -y unzip zip
+apt-get install -y unzip zip expect vim ipython
 echo "unzip installed" >> /home/ubuntu/setup.log
 
 # install mercurial and fetch latest version of the Team Login website
@@ -291,10 +297,14 @@ echo "SoftLayer installed" >> /home/ubuntu/setup.log
 sudo pip install unittest-xml-reporting
 echo "XmlTestRunner installed" >> /home/ubuntu/setup.log
 
- 
-apt-add-repository -y ppa:rye/ppa
-apt-get update
-echo "ppa:rye/ppa repository added" >> /home/ubuntu/setup.log
+#
+# FIREWALL
+#
+ufw default deny
+ufw allow ssh
+ufw allow http
+yes | ufw enable
+
 
 apt-get install -y libapache2-mod-auth-openid
 ln -s /etc/apache2/mods-available/authopenid.load /etc/apache2/mods-enabled

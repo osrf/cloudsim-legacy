@@ -651,6 +651,7 @@ def reload_os_machines(constellation_name, constellation_prefix, osrf_creds_fnam
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('os_reload'):
         return
+
     constellation.set_value("gazebo", "not running")
     constellation.set_value("simulation_glx_state", "not running")    
     constellation.set_value("constellation_state", "launching")
@@ -674,24 +675,22 @@ def reload_os_machines(constellation_name, constellation_prefix, osrf_creds_fnam
     constellation.set_value("error", "")
     
     osrf_creds = load_osrf_creds(osrf_creds_fname)
-    
-    
     # compute the softlayer machine names
     machine_names = [x + "-" + constellation_prefix for x in  machine_names_prefix]
     reload_servers(osrf_creds, machine_names)
-    
+
     constellation.set_value("launch_stage", "os_reload")    
 
 
 
-def add_ubuntu_user_to_router(router_ip, password, constellation_directory):
+def add_ubuntu_user_to_router(router_ip, password, constellation_directory, key_prefix='key-router'):
     
     clean_local_ssh_key_entry(router_ip)
-    create_ssh_key('key-router', constellation_directory)
+    create_ssh_key(key_prefix, constellation_directory)
     # setup a ubuntu sudoer no password user with an ssh key
-    router_pub_key_path = os.path.join(constellation_directory, "key-router.pem.pub"  )
+    router_pub_key_path = os.path.join(constellation_directory, "%s.pem.pub" % key_prefix)
     setup_ssh_key_access(router_ip, password, router_pub_key_path)
-    router_priv_key_path = os.path.join(constellation_directory, "key-router.pem"  )
+    router_priv_key_path = os.path.join(constellation_directory, "%s.pem" % key_prefix)
     log ("ssh -i %s ubuntu@%s" % (router_priv_key_path, router_ip))    
 
 
@@ -1171,11 +1170,11 @@ class VrcCase(unittest.TestCase):
         
     def test_launch(self):
         
-        constellation_prefix = "03"
+        constellation_prefix = "02"
         launch_stage = None # use the current stage
 
         #launch_stage = "nothing" #  
-        launch_stage = "os_reload"
+        #launch_stage = "os_reload"
         #"nothing", "os_reload", "init_router", "init_privates", "zip",  "change_ip", "startup", "reboot", "running"
 
         self.constellation_name = 'test_vrc_contest_%s' % constellation_prefix 
