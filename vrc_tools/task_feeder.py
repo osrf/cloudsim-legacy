@@ -40,8 +40,8 @@ import sys
 import tempfile
 from threading import Thread
 
-NORMAL = '\[\033[00m\]'
-RED = '\[\033[0;31m\]'
+NORMAL = '\033[00m'
+RED = '\033[0;31m'
 
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -84,8 +84,9 @@ def create_task(team, runs_file):
     for run in run_sequence:
 
         if not run in tasks:
-            sys.stdout.write(RED + 'Team %s: Unable to load task %s.'
-                             'Task not found' + NORMAL) % (team['team'], run)
+            sys.stdout.write('%sTeam %s: Unable to load task %s.'
+                             'Task not found%s\n'
+                             % (RED, team['team'], run, NORMAL))
             continue
 
         task = tasks[run]
