@@ -139,6 +139,14 @@ def get_constellation_data(constellation):
         return None    
 
 __CONFIG__KEY__ = "cloudsim_config"
+__CONFIGURATIONS__KEY__ = "cloudsim_configuration_list"
+
+def set_cloudsim_configuration_list(config_list):
+    r = redis.Redis()
+    s = json.dumps(config_list)
+    r.set(__CONFIGURATIONS__KEY__, s)
+    
+
 
 def set_cloudsim_config(config):
     r = redis.Redis()
@@ -151,10 +159,9 @@ def get_cloudsim_config():
     config = json.loads(s)
     return config
 
-    
-        
-             
-        
+
+
+
 if __name__ == '__main__':
     print('Machine TESTS')
     unittest.main(testRunner = testing.get_test_runner())

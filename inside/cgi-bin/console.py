@@ -77,6 +77,7 @@ page =  """<!DOCTYPE html>
         setTimeout(constellation_update , 500);        
     }
     
+    
     function constellation_update()
     {
         try

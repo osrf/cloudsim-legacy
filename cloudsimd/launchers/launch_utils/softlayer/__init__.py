@@ -16,7 +16,9 @@ def get_softlayer_path():
     r = os.path.abspath(d +'../../../../../../softlayer.ini' )
     return r
     
+domain_id = None
 
+    
 def _get_hardware(api_username, api_key, server_name = None):
     domain_id = None   
     client = SoftLayer.API.Client('SoftLayer_Account', domain_id, api_username, api_key)
@@ -117,7 +119,13 @@ def hardware_info(osrf_creds):
         server_id, host, username, password, priv_ip, pub_ip = server
         print ("[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip))
 
-
+def get_constellation_prefixes(osrf_creds):
+    servers = get_servers_info(osrf_creds)
+    routers = [s[1] for s in servers if s[1].startswith('router-') ]
+    prefixes = [x.split('-')[1] for x in routers]
+    return prefixes
+    
+        
 def hardware_helpers(osrf_creds):
     servers = get_servers_info(osrf_creds)
     for server in servers:
@@ -249,7 +257,7 @@ def setup_ssh_key_access(ip, root_password, key_path):
 
 class SoftLayerCredentials(object):
     """
-    Class that manages all the AWS credentials.
+    Class that manages the SoftLayer credentials.
     """
 
     def __init__(self,
@@ -284,6 +292,11 @@ def wait_for_server_reloads(osrf_creds, machine_names, callback = print_cb):
 
 
 class TestSofty(unittest.TestCase):
+    
+    def test_get_constellation_prefixes(self):
+        osrf_creds = load_osrf_creds(get_softlayer_path())
+        prefixes = get_constellation_prefixes(osrf_creds)
+        print prefixes
     
     def atest_shutdown_public_ip(self):
         
@@ -341,6 +354,23 @@ class TestSofty(unittest.TestCase):
         print("%s %s : %s" % (machine, ip, password))
         setup_ssh_key_access(ip, password, key_prefix, dst_dir)
         print ("ssh -i %s/%s.pem ubuntu@%s" % (dst_dir, key_prefix, ip))
+
+    def test_validate(self):
+        osrf_creds = load_osrf_creds(get_softlayer_path())
+        api_username = osrf_creds['user'] 
+        api_key = osrf_creds['api_key']
+
+        client = SoftLayer.API.Client('SoftLayer_Account', domain_id, api_username, api_key)
+        valid = True 
+        try:
+            x = client['Account'].getObject()
+            print(x)
+        except Exception, e:
+            valid = False
+            print("not valid: %s" % e)
+            
+        print(valid)
+
 
     def atest_ubuntu_upload_and_execute(self):
         pass

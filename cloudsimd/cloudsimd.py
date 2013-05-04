@@ -33,6 +33,8 @@ from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
 from launchers.launch_utils.launch import aws_connect
+from launchers.launch_utils.softlayer import get_constellation_prefixes
+from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 
 
 
@@ -50,8 +52,7 @@ def launch_constellation(username, configuration, args = None, count =1):
         d['count'] = count
     if args:
         d['args'] = args
-    
-    
+
     s = json.dumps(d)
     print("LAUNCH constellation... command: %s " % s)
     r.publish('cloudsim_cmds', s)
@@ -555,7 +556,47 @@ def async_stop_task(constellation_name):
     p = multiprocessing.Process(target= stop_task, 
                                 args=(constellation_name, ))
     p.start()
-         
+
+def update_cloudsim_configuration_list():
+    
+        
+    configs = {}
+    configs['trio AWS (prerelease)'] = {'description': "3 machines for the VRC competition: a GPU field computer, a router and a GPU simulator, using gazebo and drcsim pre-release packages"} 
+    #configs['vpc_micro_trio'] = {'description': "3 micro instances for testing constellations: field computer, router and simulator"} 
+    configs['trio AWS'] = {'description': "3 machines for the VRC competition: a GPU field computer, a router and a GPU simulator, using gazebo and drcsim packages"}
+    configs['simulator AWS'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
+    configs['simulator AWS (prerelease)'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim pre-release packages installed"}
+    configs['cloudsim AWS'] = {'description': "1 machine for starting a CloudSim on the cloud: A micro instance web app clone"}
+
+    def get_configs_as_json(self):
+        configs = self.get_configs()
+        s = json.dumps(configs)
+        return s
+    const_prefixes = []
+    try:
+        config = get_cloudsim_config()
+        # log("asdddddd %s" % config
+        osrf_creds_path = config['softlayer_path']
+        log("ds")
+        osrf_creds = load_osrf_creds(osrf_creds_path)
+        log("sdfs")
+        const_prefixes = get_constellation_prefixes(osrf_creds)
+        log("321313 %s" % const_prefixes)
+    except:
+        pass
+
+    for prefix in const_prefixes: 
+        configs['cloudsim_%s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
+        configs['vrc contest_%s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
+
+    set_cloudsim_configuration_list(configs)
+    
+        
+def async_update_cloudsim_configuration_list():
+    p = multiprocessing.Process(target= update_cloudsim_configuration_list, 
+                                args=())
+    p.start()
+    
 def run(boto_path, root_dir, tick_interval):
     
     red = redis.Redis()
@@ -580,7 +621,11 @@ def run(boto_path, root_dir, tick_interval):
             # config = data['configuration']
 
             log("CMD= \"%s\" DATA=\"%s\" " % (cmd,data) )
-     
+            
+            if cmd == 'update_cloudsim_configuration_list':
+                async_update_cloudsim_configuration_list()
+                continue
+            
             if cmd == 'launch':
                 username = data['username']
                 config = data['configuration']
@@ -689,10 +734,11 @@ if __name__ == "__main__":
         config['boto_path'] = boto_path
         config['softlayer_path'] = softlayer_path
         config['machines_directory'] = root_dir
-        config['cloudsim_version'] = '1.x.x'
+        config['cloudsim_version'] = '1.5.0'
         set_cloudsim_config(config)
+        update_cloudsim_configuration_list()
         
-        run(boto_path, root_dir, tick_interval)
+        #run(boto_path, root_dir, tick_interval)
         
     except Exception, e:
         log("cloudsimd.py error: %s" % e)

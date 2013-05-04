@@ -976,8 +976,6 @@ def create_private_machine_zip(machine_name_prefix, machine_ip, constellation_na
     fname_zip = os.path.join(machine_dir, "%s_%s.zip" % (machine_name_prefix, constellation_name) )
     create_zip_file(fname_zip, "%s_%s" % (machine_name_prefix, constellation_name), files_to_zip)
 
-    
-    
 def create_zip_files(constellation_name, constellation_directory):
 
     constellation = ConstellationState( constellation_name)

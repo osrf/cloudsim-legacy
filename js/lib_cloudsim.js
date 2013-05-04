@@ -47,6 +47,20 @@ function remove_user(user_name)
     return x;
 }
 
+function change_osrf_credentials(user, api_key)
+{
+    var user = encodeURIComponent(user);
+    var api_key = encodeURIComponent(api_key);
+    var url = '/cloudsim/inside/cgi-bin/cloud_credentials_softlayer?user=';
+    url += user+'&api_key=' +api_key;
+    console.log("[PUT] " + url);
+    var msg = httpPut(url);
+    
+    var jmsg = eval('(' + msg + ')');
+    console.log("change_credentials: " + msg);
+    return jmsg;	
+}
+
 function change_credentials(access_key, secret_access_key, availability_zone)
 {
     var key = encodeURIComponent(access_key);

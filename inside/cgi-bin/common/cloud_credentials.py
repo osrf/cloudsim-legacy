@@ -1,8 +1,45 @@
 import unittest
 import os
+import json
+import redis
+from common.constants import update_cloudsim_configuration_list
+import SoftLayer.API
 
+class SoftLayerCredentials(object):
+    """
+    Class that manages the SoftLayer credentials.
+    """
 
+    def __init__(self,
+                 name,
+                 api_key,
+                 fname):
+        self.fname = fname
+        self.osrf_creds = {'user':name, 'api_key': api_key}
+ 
 
+    def save(self):
+        with open(self.fname, 'w') as f:
+            s = json.dumps(self.osrf_creds)
+            f.write(s)
+        update_cloudsim_configuration_list()
+        
+            
+    def validate(self):
+        
+        api_username = self.osrf_creds['user'] 
+        api_key = self.osrf_creds['api_key']
+
+        domain_id = None
+        client = SoftLayer.API.Client('SoftLayer_Account', domain_id, api_username, api_key)
+        valid = True
+        try:
+            x = client['Account'].getObject()
+            print("valid SoftLayerCredentials %s" % x)
+        except Exception, e:
+            valid = False
+            print("not valid: %s" % e)
+        return valid
 
 class CloudCredentials(object):
     """

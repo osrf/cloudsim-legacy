@@ -17,12 +17,13 @@ sudo mkdir -p /var/www
 # Copy dev files to website directory
 #
 sudo cp -a $DIR/* /var/www/
+sudo find /var/www -name "*.pyc" -exec rm {} \;
 
 #
 # Change 
 #
 sudo rm -rf /var/www/distfiles
-# sudo chown -R www-data:www-data /var/www
+sudo chown -R www-data:www-data /var/www
 sudo mkdir -p /var/www-cloudsim-auth/machines
 
 sudo cp -f $DIR/../boto.ini /var/www-cloudsim-auth/boto-useast
