@@ -40,6 +40,9 @@ import sys
 import tempfile
 from threading import Thread
 
+NORMAL = '\[\033[00m\]'
+RED = '\[\033[0;31m\]'
+
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -52,54 +55,51 @@ from launch_utils import sshclient
 from cloudsimd import cloudsimd
 
 
-def create_task(team, runs_file):
+def create_task(team, tasks):
     '''
     Generate a python list containing the set of tasks for a given team
     @param team Unique team id (string)
-    @param runs_file YAML file path containing the tasks definition
+    @param tasks Dictionary containing the task definitions
     '''
     team_tasks = []
+    counter = 0
+    run_sequence = team['runs']
+    for run in run_sequence:
 
-    try:
-        # Read YAML runs file
-        with open(runs_file) as runsf:
-            runs_info = yaml.load_all(runsf)
+        if not run in tasks:
+            print RED + 'Unable to load task %s. Task not found' + NORMAL
+            continue
 
-            counter = 0
-            for task in runs_info:
+        task = tasks[run]
 
-                # Get the start and stop local datetimes
-                naive_dt_start = task['local_start']
-                naive_dt_stop = task['local_stop']
+        # Get the start and stop local datetimes
+        naive_dt_start = task['local_start']
+        naive_dt_stop = task['local_stop']
 
-                local = pytz.timezone(team['timezone'])
-                local_dt_start = local.localize(naive_dt_start, is_dst=None)
-                local_dt_stop = local.localize(naive_dt_stop, is_dst=None)
+        local = pytz.timezone(team['timezone'])
+        local_dt_start = local.localize(naive_dt_start, is_dst=None)
+        local_dt_stop = local.localize(naive_dt_stop, is_dst=None)
 
-                # Add the UTC start/stop time of the task using the timezone
-                utc_dt_start = local_dt_start.astimezone(pytz.utc)
-                utc_dt_stop = local_dt_stop.astimezone(pytz.utc)
+        # Add the UTC start/stop time of the task using the timezone
+        utc_dt_start = local_dt_start.astimezone(pytz.utc)
+        utc_dt_stop = local_dt_stop.astimezone(pytz.utc)
 
-                # Convert from datetime to a string in ISO 8061 format
-                task['local_start'] = local_dt_start.isoformat(' ')
-                task['local_stop'] = local_dt_stop.isoformat(' ')
-                task['utc_start'] = utc_dt_start.isoformat(' ')
-                task['utc_stop'] = utc_dt_stop.isoformat(' ')
+        # Convert from datetime to a string in ISO 8061 format
+        task['local_start'] = local_dt_start.isoformat(' ')
+        task['local_stop'] = local_dt_stop.isoformat(' ')
+        task['utc_start'] = utc_dt_start.isoformat(' ')
+        task['utc_stop'] = utc_dt_stop.isoformat(' ')
 
-                # A team ClousSim will use this command to update its task list
-                task['command'] = 'create_task'
+        # A team ClousSim will use this command to update its task list
+        task['command'] = 'create_task'
 
-                # Constellation id containing the sim, where the tasks will run
-                task['constellation'] = team['quadro']
+        # Constellation id containing the sim, where the tasks will run
+        task['constellation'] = team['quadro']
 
-                # Add the modified task to the list
-                team_tasks.append(task)
+        # Add the modified task to the list
+        team_tasks.append(task)
 
-                counter += 1
-
-    except Exception, excep:
-        print ('Error reading runs file (%s): %s'
-               % (runs_file, repr(excep)))
+        counter += 1
 
     return (team_tasks, counter)
 
@@ -115,17 +115,17 @@ def get_constellation_info(my_constellation):
     return None
 
 
-def feed_cloudsim(team, runs_file, user, is_verbose):
+def feed_cloudsim(team, tasks, user, is_verbose):
     '''
     For a given team, create a list of tasks, upload them to its cloudsim,
     and update Redis with the new task information.
     @param team Team id (string)
-    @param runs_file YAML file with the task definition
+    @param tasks Dictionary containing the task definitions
     @param user CloudSim user (default: ubuntu)
     @param is_verbose Show some stats if True
     '''
     # Create the new list of tasks
-    cs_tasks, num_tasks = create_task(team, runs_file)
+    cs_tasks, num_tasks = create_task(team, tasks)
 
     # Get the cloudsim constellation associated to this team
     constellation = team['cloudsim']
@@ -173,6 +173,23 @@ def feed(teams_file, runs_file, one_team_only, user, is_verbose):
     @param user CloudSim user (default: ubuntu)
     @param is_verbose Show some stats if True
     '''
+    # Create a dictionaty with the tasks (key = task_id)
+    tasks = {}
+
+    # Read YAML runs file
+    try:
+        with open(runs_file) as runsf:
+            runs_info = yaml.load_all(runsf)
+
+            for task in runs_info:
+                key = task['task_id']
+                tasks[key] = task
+
+    except Exception, excep:
+        print (RED + 'Error reading runs file (%s): %s + NORMAL'
+               % (runs_file, repr(excep)))
+        return
+
     # Read YAML teams file
     try:
         with open(teams_file) as teamsf:
@@ -183,10 +200,10 @@ def feed(teams_file, runs_file, one_team_only, user, is_verbose):
                 if ((one_team_only and team['team'] == one_team_only) or
                    not one_team_only):
                     Thread(target=feed_cloudsim,
-                           args=[team, runs_file, user, is_verbose]).start()
+                           args=[team, tasks, user, is_verbose]).start()
 
     except Exception, excep:
-        print ('Error reading teams file (%s): %s'
+        print (RED + 'Error reading teams file (%s): %s + NORMAL'
                % (teams_file, repr(excep)))
 
 

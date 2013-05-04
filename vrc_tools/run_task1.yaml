@@ -1,6 +1,6 @@
 # Task 1
 task_title: Task 1
-task_id: t1
+task_id: 1
 uplink_data_cap: 29491200
 downlink_data_cap: 943718400
 latency: 500
