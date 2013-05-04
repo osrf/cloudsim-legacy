@@ -128,7 +128,7 @@ def feed_cloudsim(team, runs_file, user, is_verbose):
               (team['team']))
 
 
-def feed(teams_file, runs_file, user, is_verbose):
+def feed(teams_file, runs_file, one_team_only, user, is_verbose):
     '''
     Feed a set of CloudSim instances with each set of tasks.
     '''
@@ -139,8 +139,10 @@ def feed(teams_file, runs_file, user, is_verbose):
 
             # Prepare the task for each team
             for team in teams_info:
-                Thread(target=feed_cloudsim,
-                       args=[team, runs_file, user, is_verbose]).start()
+                if ((one_team_only and team['team'] == one_team_only) or
+                   not one_team_only):
+                    Thread(target=feed_cloudsim,
+                           args=[team, runs_file, user, is_verbose]).start()
 
     except Exception, excep:
         print ('Error reading teams file (%s): %s'
@@ -154,6 +156,7 @@ if __name__ == '__main__':
 
     parser.add_argument('teams_file', help='YAML file with teams info')
     parser.add_argument('runs_file', help='YAML file with runs info')
+    parser.add_argument('-t', '--team', help='Feed tasks only for this team')
     parser.add_argument('-u', '--user', default='ubuntu', help='Cloudsim user')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='Show verbose output of the command')
@@ -162,8 +165,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     arg_teams_file = args.teams_file
     arg_runs_file = args.runs_file
+    arg_team = args.team
     arg_user = args.user
     arg_verbose = args.verbose
 
     # Feed the tasks!
-    feed(arg_teams_file, arg_runs_file, arg_user, arg_verbose)
+    feed(arg_teams_file, arg_runs_file, arg_team, arg_user, arg_verbose)

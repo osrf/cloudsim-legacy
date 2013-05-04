@@ -11,16 +11,16 @@ runs: [1,13,14,15,8,3,12,6,10,5,11,9,7,4,2]
 timezone: 'US/Pacific'
 cloudsim: cx679cb074
 quadro: cx18f963e2
-#---
-#username: [nate@osrfoundation.org, steffi@osrfoundation.org, hugo@osrfoundation.org]
-#name: Team 2
-#team: T002
-#role: user
-#runs: [9,13,6,7,4,10,5,15,11,1,8,12,2,3,14]
-#timezone: 'US/Pacific'
-#constellation: cs-test
-#cloudsim: cx679cb074
-#quadro: cx18f963e2
+---
+username: [nate@osrfoundation.org, steffi@osrfoundation.org, hugo@osrfoundation.org]
+name: Team 2
+team: T002
+role: user
+runs: [9,13,6,7,4,10,5,15,11,1,8,12,2,3,14]
+timezone: 'US/Pacific'
+constellation: cs-test
+cloudsim: cx679cb074
+quadro: cx18f963e2
 #---
 #username: [brawner@osrfoundation.org, jrivero@osrfoundation.org]
 #name: Team 3
