@@ -119,7 +119,7 @@ def feed_cloudsim(team, runs_file, user, is_verbose):
 
     # Print stats if verbose mode is activated
     if is_verbose:
-        sys.stdout.write('Team %s: %d tasks loaded into CloudSim\n---\n' %
+        sys.stdout.write('Team %s: %d tasks loaded into CloudSim\n' %
                         (team['team'], num_tasks))
 
 
