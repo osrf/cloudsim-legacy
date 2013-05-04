@@ -10,6 +10,25 @@ performs the next operations:
   2. Convert the local start/stop times to UTC.
   3. Update a JSON file containing the tasks to the Team's CloudSim.
   4. Load the set of tasks into Redis running on Team's CloudSim.
+
+                            __SIM-01
+                           |
+                           |__FC-01
+                 __ CS-01__|
+                |  (CS-01) |__FC-01
+                |  [tasks] |
+                |          |__Router-01
+                |             (quad-01)
+      CS-Local__|
+                |
+                |           __SIM-02
+                |          |
+                |          |__FC-02
+                |__ CS-02__|
+                   (CS-02) |__FC-02
+                   [tasks] |
+                           |__Router-02
+                              (quad-02)
 """
 
 import pytz
