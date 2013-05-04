@@ -68,7 +68,7 @@ def create_task(team, runs_file, is_verbose):
                 counter += 1
 
             if is_verbose:
-                sys.stdout.write('Team %s: %d tasks created'
+                sys.stdout.write('Team %s: %d tasks created\n'
                                  % (team['team'], counter))
 
     except Exception, excep:
@@ -115,7 +115,7 @@ def feed_cloudsim(team, runs_file, user, is_verbose):
         ssh.upload_file(temp_file.name, temp_file.name)
 
     if is_verbose:
-        sys.stdout.write('Team %s: Tasks uploaded' % (team['team']))
+        sys.stdout.write('Team %s: Tasks uploaded\n' % (team['team']))
 
     # Upload the script to update the set of tasks
     ssh.upload_file('vrc_update_tasks.py', '')
