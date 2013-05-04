@@ -55,20 +55,37 @@ from launch_utils import sshclient
 from cloudsimd import cloudsimd
 
 
-def create_task(team, tasks):
+def create_task(team, runs_file):
     '''
     Generate a python list containing the set of tasks for a given team
     @param team Unique team id (string)
     @param tasks Dictionary containing the task definitions
     '''
+    # Read YAML runs file
+    try:
+        with open(runs_file) as runsf:
+            runs_info = yaml.load_all(runsf)
+
+            # Create a dictionaty with the tasks (key = task_id)
+            tasks = {}
+
+            for task in runs_info:
+                key = task['task_id']
+                tasks[key] = task
+
+    except Exception, excep:
+        print (RED + 'Error reading runs file (%s): %s + NORMAL'
+               % (runs_file, repr(excep)))
+        return
+
     team_tasks = []
     counter = 0
     run_sequence = team['runs']
     for run in run_sequence:
 
         if not run in tasks:
-            print (RED + 'Team %s: Unable to load task %s. Task not found' +
-                   NORMAL) % (team['team'], run)
+            sys.stdout.write(RED + 'Team %s: Unable to load task %s.'
+                             'Task not found' + NORMAL) % (team['team'], run)
             continue
 
         task = tasks[run]
@@ -116,7 +133,7 @@ def get_constellation_info(my_constellation):
     return None
 
 
-def feed_cloudsim(team, tasks, user, is_verbose):
+def feed_cloudsim(team, runs_file, user, is_verbose):
     '''
     For a given team, create a list of tasks, upload them to its cloudsim,
     and update Redis with the new task information.
@@ -126,7 +143,7 @@ def feed_cloudsim(team, tasks, user, is_verbose):
     @param is_verbose Show some stats if True
     '''
     # Create the new list of tasks
-    cs_tasks, num_tasks = create_task(team, tasks)
+    cs_tasks, num_tasks = create_task(team, runs_file)
 
     # Get the cloudsim constellation associated to this team
     constellation = team['cloudsim']
@@ -174,23 +191,6 @@ def feed(teams_file, runs_file, one_team_only, user, is_verbose):
     @param user CloudSim user (default: ubuntu)
     @param is_verbose Show some stats if True
     '''
-    # Create a dictionaty with the tasks (key = task_id)
-    tasks = {}
-
-    # Read YAML runs file
-    try:
-        with open(runs_file) as runsf:
-            runs_info = yaml.load_all(runsf)
-
-            for task in runs_info:
-                key = task['task_id']
-                tasks[key] = task
-
-    except Exception, excep:
-        print (RED + 'Error reading runs file (%s): %s + NORMAL'
-               % (runs_file, repr(excep)))
-        return
-
     # Read YAML teams file
     try:
         with open(teams_file) as teamsf:
@@ -201,7 +201,7 @@ def feed(teams_file, runs_file, one_team_only, user, is_verbose):
                 if ((one_team_only and team['team'] == one_team_only) or
                    not one_team_only):
                     Thread(target=feed_cloudsim,
-                           args=[team, tasks, user, is_verbose]).start()
+                           args=[team, runs_file, user, is_verbose]).start()
 
     except Exception, excep:
         print (RED + 'Error reading teams file (%s): %s + NORMAL'

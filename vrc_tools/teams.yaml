@@ -19,8 +19,8 @@ role: user
 runs: [6,5,4,3,2,1]
 timezone: 'US/Pacific'
 constellation: cs-test
-cloudsim: cx679cb074
-quadro: cx18f963e2
+cloudsim: cx6af5cfa8
+quadro: cx01cc2a30
 #---
 #username: [brawner@osrfoundation.org, jrivero@osrfoundation.org]
 #name: Team 3
