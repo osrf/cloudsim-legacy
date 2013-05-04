@@ -12,7 +12,7 @@ local_start: 2013-06-14 8:00:00.0
 local_stop: 2013-06-14 18:00:00.0
 timeout: 1800
 task_num: 1
-task_name: Drive
+task_tag: Drive
 ros_package: atlas_utils
 ros_launch: vrc_task_1.launch
 ros_args:
@@ -27,7 +27,7 @@ local_start: 2013-06-14 8:00:00.0
 local_stop: 2013-06-14 18:00:00.0
 timeout: 1800
 task_num: 1
-task_name: Drive
+task_tag: Drive
 ros_package: atlas_utils
 ros_launch: vrc_task_1.launch
 ros_args:
@@ -42,7 +42,7 @@ local_start: 2013-06-14 8:00:00.0
 local_stop: 2013-06-14 18:00:00.0
 timeout: 1800
 task_num: 2
-task_name: Walk
+task_tag: Walk
 ros_package: atlas_utils
 ros_launch: vrc_task_2.launch
 ros_args:
@@ -57,7 +57,7 @@ local_start: 2013-06-14 8:00:00.0
 local_stop: 2013-06-14 18:00:00.0
 timeout: 1800
 task_num: 2
-task_name: Walk
+task_tag: Walk
 ros_package: atlas_utils
 ros_launch: vrc_task_2.launch
 ros_args:
@@ -72,7 +72,7 @@ local_start: 2013-06-14 8:00:00.0
 local_stop: 2013-06-14 18:00:00.0
 timeout: 1800
 task_num: 3
-task_name: Hose
+task_tag: Hose
 ros_package: atlas_utils
 ros_launch: vrc_task_3.launch
 ros_args:
@@ -87,7 +87,7 @@ local_start: 2013-06-14 8:00:00.0
 local_stop: 2013-06-14 18:00:00.0
 timeout: 1800
 task_num: 3
-task_name: Hose
+task_tag: Hose
 ros_package: atlas_utils
 ros_launch: vrc_task_3.launch
 ros_args:

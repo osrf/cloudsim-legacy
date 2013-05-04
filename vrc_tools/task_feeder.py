@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 
 """
-Create a set of fake tasks for testing
+This program requires two YAML files. The first file contains a list of teams,
+with the team information (name, timezone, cloudsim constellation, ...). The
+second file contains a list of tasks with its information (title, latency,
+uplink, local times to start/stop the task, ...). For each team, this program
+performs the next operations:
+  1. Create a set of tasks according to the YAML tasks file.
+  2. Convert the local start/stop times to UTC.
+  3. Update a JSON file containing the tasks to the Team's CloudSim.
+  4. Load the set of tasks into Redis running on Team's CloudSim.
 """
-
-# ToDo1: Get the Constellations numbers automatically
 
 import pytz
 import argparse
@@ -27,22 +33,21 @@ from launch_utils import sshclient
 from cloudsimd import cloudsimd
 
 
-def create_task(team, runs_file, is_verbose):
+def create_task(team, runs_file):
     '''
-    Generate a python list containing the set of tasks for a given competition
+    Generate a python list containing the set of tasks for a given team
+    @param team Unique team id (string)
+    @param runs_file YAML file path containing the tasks definition
     '''
     team_tasks = []
 
-    # Read YAML runs file
     try:
+        # Read YAML runs file
         with open(runs_file) as runsf:
             runs_info = yaml.load_all(runsf)
 
             counter = 0
             for task in runs_info:
-
-                task['command'] = 'create_task'
-                task['constellation'] = team['quadro']
 
                 # Get the start and stop local datetimes
                 naive_dt_start = task['local_start']
@@ -62,6 +67,12 @@ def create_task(team, runs_file, is_verbose):
                 task['utc_start'] = utc_dt_start.isoformat(' ')
                 task['utc_stop'] = utc_dt_stop.isoformat(' ')
 
+                # A team ClousSim will use this command to update its task list
+                task['command'] = 'create_task'
+
+                # Constellation id containing the sim, where the tasks will run
+                task['constellation'] = team['quadro']
+
                 # Add the modified task to the list
                 team_tasks.append(task)
 
@@ -77,6 +88,7 @@ def create_task(team, runs_file, is_verbose):
 def get_constellation_info(my_constellation):
     '''
     Look up a given constellation on Redis
+    @param my_constellation Constellation id (string)
     '''
     for constellation in cloudsimd.list_constellations():
         if constellation['constellation_name'] == my_constellation:
@@ -85,22 +97,32 @@ def get_constellation_info(my_constellation):
 
 
 def feed_cloudsim(team, runs_file, user, is_verbose):
-    cs_tasks, num_tasks = create_task(team, runs_file, is_verbose)
+    '''
+    For a given team, create a list of tasks, upload them to its cloudsim,
+    and update Redis with the new task information.
+    @param team Team id (string)
+    @param runs_file YAML file with the task definition
+    @param user CloudSim user (default: ubuntu)
+    @param is_verbose Show some stats if True
+    '''
+    # Create the new list of tasks
+    cs_tasks, num_tasks = create_task(team, runs_file)
 
-    # Get the cloudsim constellation associated to that team
+    # Get the cloudsim constellation associated to this team
     constellation = team['cloudsim']
     cloudsim = get_constellation_info(constellation)
 
     if cloudsim is None:
         return
 
+    # Get the CloudSim credentials associated to this team
     directory = cloudsim['constellation_directory']
     machine_name = cloudsim['sim_machine_name']
     key_dir = os.path.join(directory, machine_name)
     ip = cloudsim['simulation_ip']
     key_name = cloudsim['sim_key_pair_name']
 
-    # Convert the CloudSim list of tasks from a python list to JSON
+    # Convert the CloudSim list of tasks from a python list to a JSON temp file
     cs_json_tasks = json.dumps(cs_tasks)
     with tempfile.NamedTemporaryFile() as temp_file:
         temp_file.write(cs_json_tasks)
@@ -126,6 +148,11 @@ def feed_cloudsim(team, runs_file, user, is_verbose):
 def feed(teams_file, runs_file, one_team_only, user, is_verbose):
     '''
     Feed a set of CloudSim instances with each set of tasks.
+    @param teams_file YAML file with the team information
+    @param runs_file YAML file with the task definition
+    @param one_team_only Create tasks only for one team (if the arg is not None)
+    @param user CloudSim user (default: ubuntu)
+    @param is_verbose Show some stats if True
     '''
     # Read YAML teams file
     try:
@@ -145,6 +172,7 @@ def feed(teams_file, runs_file, one_team_only, user, is_verbose):
 
 
 if __name__ == '__main__':
+
     # Specify command line arguments
     parser = argparse.ArgumentParser(
         description=('Feed every CloudSim with the task information'))
