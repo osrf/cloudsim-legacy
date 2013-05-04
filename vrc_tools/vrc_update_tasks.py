@@ -7,6 +7,7 @@ Update Redis with a new set of VRC tasks
 import argparse
 import redis
 import json
+import os
 
 
 def update_redis_tasks(json_file):
@@ -14,10 +15,13 @@ def update_redis_tasks(json_file):
 
     with open(json_file) as f:
         tasks = json.load(f)
-        #json_tasks = json.dumps(tasks)
 
         for task in tasks:
             db.publish('cloudsim_cmds', json.dumps(task))
+
+    # Remove the tasks file
+    os.remove(json_file)
+
 
 if __name__ == '__main__':
 
