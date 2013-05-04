@@ -5,7 +5,6 @@ Create a set of fake tasks for testing
 """
 
 # ToDo1: Get the Constellations numbers automatically
-# Todo2: Feed only one team with all or a given task
 
 import pytz
 import argparse
@@ -69,7 +68,8 @@ def create_task(team, runs_file, is_verbose):
                 counter += 1
 
             if is_verbose:
-                print 'Team %s: %d tasks created' % (team['team'], counter)
+                sys.stdout.write('Team %s: %d tasks created'
+                                 % (team['team'], counter))
 
     except Exception, excep:
         print ('Error reading runs file (%s): %s'
@@ -115,7 +115,7 @@ def feed_cloudsim(team, runs_file, user, is_verbose):
         ssh.upload_file(temp_file.name, temp_file.name)
 
     if is_verbose:
-        print 'Team %s: Tasks uploaded' % (team['team'])
+        sys.stdout.write('Team %s: Tasks uploaded' % (team['team']))
 
     # Upload the script to update the set of tasks
     ssh.upload_file('vrc_update_tasks.py', '')
@@ -124,8 +124,8 @@ def feed_cloudsim(team, runs_file, user, is_verbose):
     cmd = ('./vrc_update_tasks.py ' + temp_file.name)
     ssh.cmd(cmd)
     if is_verbose:
-        print ('Team %s: Tasks loaded into CloudSim\n---\n' %
-              (team['team']))
+        sys.stdout.write('Team %s: Tasks loaded into CloudSim\n---\n' %
+                        (team['team']))
 
 
 def feed(teams_file, runs_file, one_team_only, user, is_verbose):
