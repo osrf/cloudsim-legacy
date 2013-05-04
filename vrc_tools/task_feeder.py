@@ -67,7 +67,8 @@ def create_task(team, tasks):
     for run in run_sequence:
 
         if not run in tasks:
-            print RED + 'Unable to load task %s. Task not found' + NORMAL
+            print (RED + 'Team %s: Unable to load task %s. Task not found' +
+                   NORMAL) % (team['team'], run)
             continue
 
         task = tasks[run]
