@@ -4,7 +4,8 @@
 Create a set of fake tasks for testing
 """
 
-# ToDo1: Fix the problem of multiples entries in the teams
+# ToDo1: Get the Constellations numbers automatically
+# Todo2: Feed only one team with all or a given task
 
 import pytz
 import argparse

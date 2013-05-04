@@ -69,24 +69,6 @@ def process_http_post(role, constellation, task_id):
     d['timeout'] =  get_query_param('timeout')
     d['uplink_data_cap'] =  get_query_param('uplink_data_cap')
     d['downlink_data_cap'] =  get_query_param('downlink_data_cap')
-
-# --- REMOVE
-'''
-d = {}
-d['command'] = 'create_task'
-d['constellation'] = constellation
-d['task_title'] =  'task_title'
-d['ros_package'] =  'ros_package'
-d['ros_launch'] =  'ros_launch'
-d['ros_args'] =  'ros_args'
-d['latency'] = 'latency'
-d['timeout'] =  'timeout'
-d['uplink_data_cap'] =  'uplink_data_cap'
-d['downlink_data_cap'] =  'downlink_data_cap'
-d['task_id'] = 't3'  
-
-'''
-# --- REMOVE
     
     log("Create (post) tasks: %s" % d)
     

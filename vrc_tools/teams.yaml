@@ -3,16 +3,7 @@
 # ///////
 # Testing
 # ///////
-username: cen.aguero@gmail.com
-name: Team 1
-team: T001
-role: user
-runs: [1,13,14,15,8,3,12,6,10,5,11,9,7,4,2]
-timezone: 'US/Pacific'
-cloudsim: cx679cb074
-quadro: cx18f963e2
----
-username: cen.aguero@gmail.com
+username: [cen.aguero@gmail.com, ichen@osrfoundation.org, gerkey@osrfoundation.org]
 name: Team 1
 team: T001
 role: user
@@ -21,74 +12,43 @@ timezone: 'US/Pacific'
 cloudsim: cx679cb074
 quadro: cx18f963e2
 #---
-#username: ichen@osrfoundation.org
-#name: Team 1
-#team: T001
-#role: user
-#runs: [1,13,14,15,8,3,12,6,10,5,11,9,7,4,2]
-#timezone: 'US/Pacific'
-#constellation: cs-test
-#---
-#username: gerkey@osrfoundation.org
-#name: Team 1
-#team: T001
-#role: user
-#runs: [1,13,14,15,8,3,12,6,10,5,11,9,7,4,2]
-#timezone: 'US/Pacific'
-#constellation: cs-test
-#---
-#username: nate@osrfoundation.org
+#username: [nate@osrfoundation.org, steffi@osrfoundation.org, hugo@osrfoundation.org]
 #name: Team 2
 #team: T002
 #role: user
 #runs: [9,13,6,7,4,10,5,15,11,1,8,12,2,3,14]
 #timezone: 'US/Pacific'
 #constellation: cs-test
+#cloudsim: cx679cb074
+#quadro: cx18f963e2
 #---
-#username: steffi@osrfoundation.org
-#name: Team 2
-#team: T002
+#username: [brawner@osrfoundation.org, jrivero@osrfoundation.org]
+#name: Team 3
+#team: T003
 #role: user
-#runs: [9,13,6,7,4,10,5,15,11,1,8,12,2,3,14]
+#runs: [8,2,4,15,6,9,5,13,12,3,14,1,11,7,10]
 #timezone: 'US/Pacific'
 #constellation: cs-test
+#cloudsim: cx679cb074
+#quadro: cx18f963e2
 #---
-#username: hugo@osrfoundation.org
-#name: Team 2
-#team: T002
-#role: user
-#runs: [9,13,6,7,4,10,5,15,11,1,8,12,2,3,14]
-#timezone: 'US/Pacific'
-#constellation: cs-test
-#---
-#username: hsu@osrfoundation.org
+#username: [hsu@osrfoundation.org]
 #name: Team 4
 #team: T004
 #role: user
 #runs: [5,13,12,2,15,4,10,11,7,3,1,9,6,8,14]
 #timezone: 'US/Pacific'
 #constellation: cs-test
+#cloudsim: cx679cb074
+#quadro: cx18f963e2
 #---
-#username: scpeters@osrfoundation.org
+#username: [scpeters@osrfoundation.org]
 #name: Team 5
 #team: T005
 #role: user
 #runs: [10,14,8,15,6,2,1,7,9,11,13,3,12,4,5]
 #timezone: 'US/Pacific'
 #constellation: cs-test
+#cloudsim: cx679cb074
+#quadro: cx18f963e2
 #---
-#username: brawner@osrfoundation.org
-#name: Team 3
-#team: T003
-#role: user
-#runs: [8,2,4,15,6,9,5,13,12,3,14,1,11,7,10]
-#timezone: 'US/Pacific'
-#constellation: cs-test
-#---
-#username: jrivero@osrfoundation.org
-#name: Team 3
-#team: T003
-#role: user
-#runs: [8,2,4,15,6,9,5,13,12,3,14,1,11,7,10]
-#timezone: 'US/Pacific'
-#constellation: cs-test
