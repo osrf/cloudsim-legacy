@@ -67,15 +67,11 @@ def create_task(team, runs_file, is_verbose):
 
                 counter += 1
 
-            if is_verbose:
-                sys.stdout.write('Team %s: %d tasks created\n'
-                                 % (team['team'], counter))
-
     except Exception, excep:
         print ('Error reading runs file (%s): %s'
                % (runs_file, repr(excep)))
 
-    return team_tasks
+    return (team_tasks, counter)
 
 
 def get_constellation_info(my_constellation):
@@ -89,7 +85,7 @@ def get_constellation_info(my_constellation):
 
 
 def feed_cloudsim(team, runs_file, user, is_verbose):
-    cs_tasks = create_task(team, runs_file, is_verbose)
+    cs_tasks, num_tasks = create_task(team, runs_file, is_verbose)
 
     # Get the cloudsim constellation associated to that team
     constellation = team['cloudsim']
@@ -114,18 +110,17 @@ def feed_cloudsim(team, runs_file, user, is_verbose):
         ssh = sshclient.SshClient(key_dir, key_name, user, ip)
         ssh.upload_file(temp_file.name, temp_file.name)
 
-    if is_verbose:
-        sys.stdout.write('Team %s: Tasks uploaded\n' % (team['team']))
-
     # Upload the script to update the set of tasks
     ssh.upload_file('vrc_update_tasks.py', '')
 
     # Update Redis with the new information sent
     cmd = ('./vrc_update_tasks.py ' + temp_file.name)
     ssh.cmd(cmd)
+
+    # Print stats if verbose mode is activated
     if is_verbose:
-        sys.stdout.write('Team %s: Tasks loaded into CloudSim\n---\n' %
-                        (team['team']))
+        sys.stdout.write('Team %s: %d tasks loaded into CloudSim\n---\n' %
+                        (team['team'], num_tasks))
 
 
 def feed(teams_file, runs_file, one_team_only, user, is_verbose):
