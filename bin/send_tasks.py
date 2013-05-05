@@ -8,7 +8,7 @@ uplink, local times to start/stop the task, ...). For each team, this program
 performs the next operations:
   1. Create a set of tasks according to the YAML tasks file.
   2. Convert the local start/stop times to UTC.
-  3. Update a JSON file containing the tasks to the Team's CloudSim.
+  3. Update a JSON file containing the tasks into the Team's CloudSim.
   4. Load the set of tasks into Redis running on Team's CloudSim.
 
                             __SIM-01
@@ -42,6 +42,7 @@ from threading import Thread
 
 NORMAL = '\033[00m'
 RED = '\033[0;31m'
+UPDATE_PROGRAM = 'update_tasks.py'
 
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -55,45 +56,45 @@ from launch_utils import sshclient
 from cloudsimd import cloudsimd
 
 
-def create_task(team, runs_file):
+def create_task(team, tasks_file):
     '''
     Generate a python list containing the set of tasks for a given team
     @param team Unique team id (string)
-    @param tasks Dictionary containing the task definitions
+    @param tasks_file JSON file containing the task definitions
     '''
-    # Read YAML runs file
+    # Read YAML tasks file
     try:
-        with open(runs_file) as runsf:
-            runs_info = yaml.load_all(runsf)
+        with open(tasks_file) as tasksf:
+            tasks_info = yaml.load_all(tasksf)
 
             # Create a dictionaty with the tasks (key = task_id)
-            tasks = {}
+            all_tasks = {}
 
-            for task in runs_info:
+            for task in tasks_info:
                 key = task['task_id']
-                tasks[key] = task
+                all_tasks[key] = task
 
     except Exception, excep:
-        print (RED + 'Error reading runs file (%s): %s + NORMAL'
-               % (runs_file, repr(excep)))
+        print (RED + 'Error reading tasks file (%s): %s + NORMAL'
+               % (tasks_file, repr(excep)))
         return
 
-    team_tasks = []
+    my_tasks = []
     counter = 0
-    run_sequence = team['runs']
-    for run in run_sequence:
+    my_task_sequence = team['task_sequence']
+    for my_task_id in my_task_sequence:
 
-        if not run in tasks:
+        if my_task_id not in all_tasks:
             sys.stdout.write('%sTeam %s: Unable to load task %s.'
-                             'Task not found%s\n'
-                             % (RED, team['team'], run, NORMAL))
+                             ' Task not found%s\n'
+                             % (RED, team['team'], my_task_id, NORMAL))
             continue
 
-        task = tasks[run]
+        my_task = all_tasks[my_task_id]
 
         # Get the start and stop local datetimes
-        naive_dt_start = task['local_start']
-        naive_dt_stop = task['local_stop']
+        naive_dt_start = my_task['local_start']
+        naive_dt_stop = my_task['local_stop']
 
         local = pytz.timezone(team['timezone'])
         local_dt_start = local.localize(naive_dt_start, is_dst=None)
@@ -104,23 +105,23 @@ def create_task(team, runs_file):
         utc_dt_stop = local_dt_stop.astimezone(pytz.utc)
 
         # Convert from datetime to a string in ISO 8061 format
-        task['local_start'] = local_dt_start.isoformat(' ')
-        task['local_stop'] = local_dt_stop.isoformat(' ')
-        task['utc_start'] = utc_dt_start.isoformat(' ')
-        task['utc_stop'] = utc_dt_stop.isoformat(' ')
+        my_task['local_start'] = local_dt_start.isoformat(' ')
+        my_task['local_stop'] = local_dt_stop.isoformat(' ')
+        my_task['utc_start'] = utc_dt_start.isoformat(' ')
+        my_task['utc_stop'] = utc_dt_stop.isoformat(' ')
 
         # A team ClousSim will use this command to update its task list
-        task['command'] = 'create_task'
+        my_task['command'] = 'create_task'
 
         # Constellation id containing the sim, where the tasks will run
-        task['constellation'] = team['quadro']
+        my_task['constellation'] = team['quad']
 
         # Add the modified task to the list
-        team_tasks.append(task)
+        my_tasks.append(my_task)
 
         counter += 1
 
-    return (team_tasks, counter)
+    return (my_tasks, counter)
 
 
 def get_constellation_info(my_constellation):
@@ -134,17 +135,17 @@ def get_constellation_info(my_constellation):
     return None
 
 
-def feed_cloudsim(team, runs_file, user, is_verbose):
+def feed_cloudsim(team, tasks_file, user, is_verbose):
     '''
     For a given team, create a list of tasks, upload them to its cloudsim,
     and update Redis with the new task information.
     @param team Team id (string)
-    @param tasks Dictionary containing the task definitions
+    @param tasks_file JSON file containing the task definitions
     @param user CloudSim user (default: ubuntu)
-    @param is_verbose Show some stats if True
+    @param is_verbose If True, show some stats
     '''
     # Create the new list of tasks
-    cs_tasks, num_tasks = create_task(team, runs_file)
+    cs_tasks, num_tasks = create_task(team, tasks_file)
 
     # Get the cloudsim constellation associated to this team
     constellation = team['cloudsim']
@@ -153,7 +154,7 @@ def feed_cloudsim(team, runs_file, user, is_verbose):
     if cloudsim is None:
         return
 
-    # Get the CloudSim credentials associated to this team
+    # Get the CloudSim credentials for this team
     directory = cloudsim['constellation_directory']
     machine_name = cloudsim['sim_machine_name']
     key_dir = os.path.join(directory, machine_name)
@@ -166,15 +167,15 @@ def feed_cloudsim(team, runs_file, user, is_verbose):
         temp_file.write(cs_json_tasks)
         temp_file.flush()
 
-        # Scp the JSON to the team CloudSim
+        # Scp the JSON into the team's CloudSim
         ssh = sshclient.SshClient(key_dir, key_name, user, ip)
         ssh.upload_file(temp_file.name, temp_file.name)
 
     # Upload the script to update the set of tasks
-    ssh.upload_file('vrc_update_tasks.py', '')
+    ssh.upload_file(os.path.join(basepath, 'bin/', UPDATE_PROGRAM), '')
 
     # Update Redis with the new information sent
-    cmd = ('./vrc_update_tasks.py ' + temp_file.name)
+    cmd = ('./' + UPDATE_PROGRAM + ' ' + temp_file.name)
     ssh.cmd(cmd)
 
     # Print stats if verbose mode is activated
@@ -183,26 +184,26 @@ def feed_cloudsim(team, runs_file, user, is_verbose):
                         (team['team'], num_tasks))
 
 
-def feed(teams_file, runs_file, one_team_only, user, is_verbose):
+def go(teams_file, tasks_file, one_team_only, user, is_verbose):
     '''
     Feed a set of CloudSim instances with each set of tasks.
     @param teams_file YAML file with the team information
-    @param runs_file YAML file with the task definition
+    @param tasks_file YAML file with the task definition
     @param one_team_only Create tasks only for one team (if the arg is not None)
     @param user CloudSim user (default: ubuntu)
-    @param is_verbose Show some stats if True
+    @param is_verbose If True, show some stats
     '''
-    # Read YAML teams file
     try:
+        # Read YAML teams file
         with open(teams_file) as teamsf:
             teams_info = yaml.load_all(teamsf)
 
-            # Prepare the task for each team
+            # Start a thread for each team and load the tasks
             for team in teams_info:
                 if ((one_team_only and team['team'] == one_team_only) or
                    not one_team_only):
                     Thread(target=feed_cloudsim,
-                           args=[team, runs_file, user, is_verbose]).start()
+                           args=[team, tasks_file, user, is_verbose]).start()
 
     except Exception, excep:
         print (RED + 'Error reading teams file (%s): %s + NORMAL'
@@ -213,10 +214,10 @@ if __name__ == '__main__':
 
     # Specify command line arguments
     parser = argparse.ArgumentParser(
-        description=('Feed every CloudSim with the task information'))
+        description=('Send a task list to a remote cloudsim'))
 
-    parser.add_argument('teams_file', help='YAML file with teams info')
-    parser.add_argument('runs_file', help='YAML file with runs info')
+    parser.add_argument('teams_file', help='YAML file with the team info')
+    parser.add_argument('tasks_file', help='YAML file with the tasks info')
     parser.add_argument('-t', '--team', help='Feed tasks only for this team')
     parser.add_argument('-u', '--user', default='ubuntu', help='Cloudsim user')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -225,10 +226,10 @@ if __name__ == '__main__':
     # Parse command line arguments
     args = parser.parse_args()
     arg_teams_file = args.teams_file
-    arg_runs_file = args.runs_file
+    arg_tasks_file = args.tasks_file
     arg_team = args.team
     arg_user = args.user
     arg_verbose = args.verbose
 
     # Feed the tasks!
-    feed(arg_teams_file, arg_runs_file, arg_team, arg_user, arg_verbose)
+    go(arg_teams_file, arg_tasks_file, arg_team, arg_user, arg_verbose)
