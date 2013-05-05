@@ -10,18 +10,6 @@ cloudsim constellation, ...). The program performs the next operations:
    the local Redis.
 2. Scp the file to the vrcportal using its ssh key.
 3. Run a script on the vrcportal to update its database.
-
-                __ CS-01
-               |  (IP-01)
-     CS-Local__|
-               |__ CS-02                                     _______________
-                  (IP-02)       attach                     | Team1 | IP-01 |
-                              cloudsim.py ==>   vrcportal__|_______|_______|
-             _______________                               | Team2 | IP-02 |
-            | Team1 | CS-01 |                              |_______|_______|
-teams.yaml__|_______|_______|
-            | Team2 | CS-02 |
-            |_______|_______|
 """
 import argparse
 import os
@@ -29,7 +17,6 @@ import sys
 import tempfile
 import yaml
 import subprocess
-import time
 
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -41,7 +28,7 @@ sys.path.insert(0, basepath)
 
 from cloudsimd import cloudsimd
 
-UPDATE_PORTAL_PROGRAM = 'update_cloudsim_list.sh'
+UPDATE_PORTAL_PROGRAM = 'sudo /var/www/vrc-portal/vrc_attach_cloudsims.py'
 NORMAL = '\033[00m'
 RED = '\033[0;31m'
 
@@ -73,7 +60,7 @@ def add(team, portal_file):
     portal_file.write(new_entry)
 
 
-def go(teams_file, portal_key, one_team_only, user, portal_url, is_verbose):
+def go(teams_file, portal_key, one_team_only, user, portal_url):
     '''
     Feed a set of CloudSim instances with each set of tasks.
     @param teams_file YAML file with the team information
@@ -81,7 +68,6 @@ def go(teams_file, portal_key, one_team_only, user, portal_url, is_verbose):
     @param one_team_only Attach CS only for one team (if the arg is not None)
     @param user VRC Portal user (default: ubuntu)
     @param portal_url VRC Portal URL (default: vrcportal.osrfoundation.org)
-    @param is_verbose If True, show some stats
     '''
     try:
         # Create text temp file with one line per team
@@ -97,23 +83,25 @@ def go(teams_file, portal_key, one_team_only, user, portal_url, is_verbose):
                        not one_team_only):
 
                         # Add a new entry (team, CloudSimIP) into the temp file
-                        add(team, temp_file.name)
+                        add(team, temp_file)
+
+            temp_file.flush()
+
+            # Prepare the private key if present
+            identity_opt = ''
+            if portal_key:
+                identity_opt = '-i ' + portal_key
 
             # Updload the text file into the VRC Portal
-            cmd = ('scp -i ' + portal_key + ' ' +
+            cmd = ('scp ' + identity_opt + ' ' + temp_file.name + ' ' +
                    user + '@' + portal_url + ':' + temp_file.name)
 
-            print cmd
-            #subprocess.check_call(cmd.split())
+            subprocess.check_call(cmd.split())
 
             # Update the VRC Portal's database
-            cmd = ('ssh -i ' + portal_key + ' ' + user + '@' + portal_url +
+            cmd = ('ssh ' + identity_opt + ' ' + user + '@' + portal_url +
                    ' ' + UPDATE_PORTAL_PROGRAM + ' ' + temp_file.name)
-            print cmd
-            #subprocess.check_call(cmd.split())
-
-            print temp_file.name
-            time.sleep(30)
+            subprocess.check_call(cmd.split())
 
     except Exception, excep:
         print ('%sError reading teams file (%s): %s%s'
@@ -134,9 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--user', help='VRC Portal user',
                         default='ubuntu')
     parser.add_argument('-p', '--portal-url', help='VRC Portal URL',
-                        default='vrcportal.osrfoundation.org')
-    parser.add_argument('-v', '--verbose', action='store_true', default=False,
-                        help='Show verbose output of the command')
+                        default='vrcportal-test.osrfoundation.org')
 
     # Parse command line arguments
     args = parser.parse_args()
@@ -145,8 +131,6 @@ if __name__ == '__main__':
     arg_team = args.team
     arg_user = args.user
     arg_portal_url = args.portal_url
-    arg_verbose = args.verbose
 
-    # Feed the tasks!
-    go(arg_teams_file, arg_portal_key, arg_team, arg_user, arg_portal_url,
-       arg_verbose)
+    # Attach the cloudsims!
+    go(arg_teams_file, arg_portal_key, arg_team, arg_user, arg_portal_url)
