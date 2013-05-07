@@ -7,7 +7,7 @@ function create_constellation(div_name, configuration, constellation, username, 
     
     var machines_div =  constellation_div.querySelector("#machines" );
     
-    if(configuration == "vrc_contest" )
+    if(configuration.indexOf ("OSRF VRC Constellation") == 0 )
     {
     	create_task_list_widget(constellation_div, constellation);
     	// field computer 1
@@ -69,7 +69,7 @@ function create_constellation(div_name, configuration, constellation, username, 
         }
     }
     	 
-    if(configuration == "cloudsim")
+    if( (configuration == "AWS CloudSim") || (configuration.indexOf("OSRF CloudSim") ==0) )
     {
         var machine_name = "cloudsim_" + constellation;
         var machine_div = create_machine(machines_div, machine_name);
