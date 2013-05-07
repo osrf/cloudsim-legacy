@@ -51,9 +51,9 @@ if email not in users:
         <a href="/cloudsim/login.html">login</a>
         """)
         sys.exit(0)
-    
 
-    
+
+
 # Save session ID and email to our own database
 
 sdb.db[openid_session] = email

@@ -439,6 +439,13 @@ deb-src http://extras.ubuntu.com/ubuntu precise main
 
 DELIM
 
+#
+# we need python-software-properties for ad
+# it requires apt-get update for some reason
+#
+apt-get update
+apt-get install -y python-software-properties
+
 
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
@@ -517,8 +524,12 @@ echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
 wget http://packages.ros.org/ros.key -O - | apt-key add -
 wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
     
+# add new NVIDIA repos too for K10 support
+apt-add-repository ppa:ubuntu-x-swat/x-updates
+
+    
 echo "update packages" >> /home/ubuntu/setup.log
-apt-get update || apt-get update || apt-get update
+apt-get update  
 
  
 cat <<DELIM > /etc/init.d/vpcroute
@@ -550,11 +561,13 @@ ln -s /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
 /etc/init.d/vpcroute start 
     
 echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
-apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
+apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` gnome-session-fallback
+apt-get install -y nvidia-current nvidia-current-dev nvidia-settings
+
 
 # Have the NVIDIA tools create the xorg configuration file for us, retrieiving the PCI BusID for the current system.
 # The BusID can vary from machine to machine.  The || true at the end is to allow this line to succeed on fc2, which doesn't have a GPU.
-nvidia-xconfig --busid `nvidia-xconfig --query-gpu-info | grep BusID | sed 's/PCI BusID : PCI:/PCI:/'` || true
+nvidia-xconfig --busid `nvidia-xconfig --query-gpu-info | grep BusID | head -n 1 | sed 's/PCI BusID : PCI:/PCI:/'`
  
 
 echo "setup auto xsession login" >> /home/ubuntu/setup.log
@@ -569,8 +582,10 @@ user-session=gnome-fallback
 initctl stop lightdm || true
 initctl start lightdm 
 
+#
+# Install drc sim and related packages
+#
 apt-get install -y vim ipython 
-
 apt-get install -y ntp 
 
 echo "install """ + drc_package_name+ """ ">> /home/ubuntu/setup.log
@@ -1171,7 +1186,7 @@ class VrcCase(unittest.TestCase):
         constellation_prefix = "02"
         launch_stage = None # use the current stage
 
-        #launch_stage = "nothing" #  
+        launch_stage = "nothing" #  
         #launch_stage = "os_reload"
         #"nothing", "os_reload", "init_router", "init_privates", "zip",  "change_ip", "startup", "reboot", "running"
 

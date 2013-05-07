@@ -4,22 +4,29 @@ import boto
 from boto.pyami.config import Config as BotoConfig
 
 from launch_db import log
+from launch_db import get_cloudsim_config
 
 
 class LaunchException(Exception):
     pass
 
-def aws_connect(credentials_ec2):    
+
+
+def aws_connect():
+    config =get_cloudsim_config()
+    credentials_ec2 = config['boto_path']     
     boto.config = BotoConfig(credentials_ec2)
     ec2conn = boto.connect_ec2()
     vpcconn =  boto.connect_vpc()    
     return ec2conn, vpcconn
 
-def get_amazon_amis(credentials_ec2):
+def get_amazon_amis():
     """
     AMIs are the Amazon disk images. They have unique ids, and those ids vary
     in different regions
     """
+    config =get_cloudsim_config()
+    credentials_ec2 = config['boto_path'] 
     boto.config = BotoConfig(credentials_ec2)
     availability_zone = boto.config.get('Boto','ec2_region_name')
 

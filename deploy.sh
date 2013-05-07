@@ -20,13 +20,17 @@ sudo cp -a $DIR/* /var/www/
 sudo find /var/www -name "*.pyc" -exec rm {} \;
 
 #
-# Change 
+# Change owner of CloudSim files for security: 
 #
 sudo rm -rf /var/www/distfiles
 sudo chown -R www-data:www-data /var/www
 sudo mkdir -p /var/www-cloudsim-auth/machines
 
+#
+# copy cloud credentials
+#
 sudo cp -f $DIR/../boto.ini /var/www-cloudsim-auth/boto-useast
+sudo cp -f $DIR/../softlayer.ini /var/www-cloudsim-auth/softlayer.json 
 
 cd $DIR/..
 zip -r cloudsim.zip cloudsim

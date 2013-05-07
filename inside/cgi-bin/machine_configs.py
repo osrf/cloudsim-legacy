@@ -5,7 +5,10 @@ from __future__ import print_function
 import cgitb
 import json
 import redis
+import collections
+
 from common import UserDatabase
+
 
 cgitb.enable()
 
@@ -29,7 +32,7 @@ cdb = ConfigsDb(email)
 
 admin_configs = ['vpc_micro_trio',] # 'cloudsim', ]
 
-        
+
 configs = cdb.get_configs()
 
 udb = UserDatabase()
@@ -38,7 +41,9 @@ if not udb.has_role(email, "admin"):
         if bad_config in configs:
             del(configs[bad_config]) # remove it
             log("configs removing %s =  %s" % (bad_config, len(configs) ) )
-            
 
-s = json.dumps(configs)
+#s = json.dumps(configs)
+
+od = collections.OrderedDict(sorted(configs.items()))
+s = json.dumps(od)
 print(s)

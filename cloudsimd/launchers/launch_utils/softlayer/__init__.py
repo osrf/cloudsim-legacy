@@ -120,6 +120,10 @@ def hardware_info(osrf_creds):
         print ("[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip))
 
 def get_constellation_prefixes(osrf_creds):
+    """
+    SoftLayer credentials give access to a set of machines (constellation).
+    This functions returns the list of constellation (by counting the routers)
+    """
     servers = get_servers_info(osrf_creds)
     routers = [s[1] for s in servers if s[1].startswith('router-') ]
     prefixes = [x.split('-')[1] for x in routers]
@@ -155,22 +159,26 @@ def _wait_for_multiple_server_reloads(api_username, api_key, server_ids_to_hostn
     booting_servers = {server_id:status for server_id in server_ids_to_hostname.keys()}
 
     while booting_servers:
-        ready_servers = []
-        for server_id, status in booting_servers.iteritems():
-            current_status = _get_boot_status(api_username, api_key, server_id)
-            # check for status change
-            hostname = server_ids_to_hostname[server_id]
-            if status != current_status:
-                booting_servers[server_id]=current_status
-                callback(hostname, current_status)
-            if current_status == "ready":
-                print("%s reloaded" % hostname)
-                ready_servers.append(server_id)
+        try:
+            ready_servers = []
+            for server_id, status in booting_servers.iteritems():
+                
+                current_status = _get_boot_status(api_username, api_key, server_id)
+                # check for status change
+                hostname = server_ids_to_hostname[server_id]
+                if status != current_status:
+                    booting_servers[server_id]=current_status
+                    callback(hostname, current_status)
+                if current_status == "ready":
+                    print("%s reloaded" % hostname)
+                    ready_servers.append(server_id)
+            
+            for server_id in ready_servers:
+                booting_servers.pop(server_id)
+            time.sleep(10)
+        except:
+            pass
         
-        for server_id in ready_servers:
-            booting_servers.pop(server_id)
-        time.sleep(10)
-
 def reload_servers(osrf_creds, machine_names):
     api_username = osrf_creds['user'] 
     api_key = osrf_creds['api_key']

@@ -80,7 +80,7 @@ def record_ping_result(data_str, ping_str, cutoff_time_span):
     s = "%s" % data
     return s
 
-def update_machine_aws_states(credentials_ec2, constellation_name, aws_id_keys_to_state_keys_dict):
+def update_machine_aws_states( constellation_name, aws_id_keys_to_state_keys_dict):
     """
     Updates the redis database with aws state of machines for a constellation.
     The dictionnary contains the keys to the aws ids and mapped to the keys of the states
@@ -101,7 +101,7 @@ def update_machine_aws_states(credentials_ec2, constellation_name, aws_id_keys_t
             pass # machine is not up yet
         
     if len(aws_ids):   
-        ec2conn = aws_connect(credentials_ec2)[0] 
+        ec2conn = aws_connect()[0] 
         aws_states = get_aws_states(ec2conn, aws_ids)
         for aws_id_key, aws_state in  aws_states.iteritems():
             state_key = aws_id_keys_to_state_keys_dict[aws_id_key]

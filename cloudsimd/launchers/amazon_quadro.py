@@ -5,6 +5,7 @@ import os
 import time
 import zipfile
 from shutil import copyfile
+import shutil
 
 import boto
 from boto.pyami.config import Config as BotoConfig
@@ -16,7 +17,6 @@ from launch_utils.traffic_shapping import  run_tc_command
 from launch_utils import get_unique_short_name
 from launch_utils import wait_for_multiple_machines_to_terminate
 from launch_utils import get_ec2_instance 
-from launch_utils import set_constellation_data
 from launch_utils import get_constellation_data
 from launch_utils import SshClient
 from launch_utils import get_ssh_cmd_generator, empty_ssh_queue # task_list
@@ -28,19 +28,20 @@ from launch_utils.startup_scripts import get_drc_startup_script,\
     get_open_vpn_single, create_openvpn_client_cfg_file, create_vpn_connect_file,\
     create_ros_connect_file, create_ssh_connect_file, get_vpc_open_vpn,\
     get_vpc_router_script
-from launch_utils.launch import LaunchException, aws_connect, get_amazon_amis,\
-    wait_for_multiple_machines_to_run, wait_for_multiple_machines_instances
+from launch_utils.launch import LaunchException, aws_connect, get_amazon_amis
 
 from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
-from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
-from launch_utils.monitoring import LATENCY_TIME_BUFFER, record_ping_result,\
-    machine_states, update_machine_aws_states, constellation_is_terminated,\
+
+from launch_utils.monitoring import  update_machine_aws_states, constellation_is_terminated,\
     monitor_launch_state, monitor_simulator, monitor_cloudsim_ping,\
     get_ssh_client
-import shutil
-from launch_utils.launch_db import get_aws_instance_by_name,\
-    get_constellation_to_config_dict
 
+ROUTER_IP='10.0.0.50'
+SIM_IP='10.0.0.51'
+FC1_IP='10.0.0.52'
+FC2_IP='10.0.0.53'
+OPENVPN_SERVER_IP='11.8.0.1'
+OPENVPN_CLIENT_IP='11.8.0.2'
 
 
 def log(msg, channel = "vrc_constellation"):
@@ -123,7 +124,7 @@ def stop_task(constellation):
     stop_simulator(constellation)
     
 
-def monitor(username, constellation_name, credentials_ec2, counter):
+def monitor(username, constellation_name, counter):
     time.sleep(1)
     if constellation_is_terminated(constellation_name):
         return True
@@ -132,7 +133,7 @@ def monitor(username, constellation_name, credentials_ec2, counter):
    
     
 
-    update_machine_aws_states(credentials_ec2, constellation_name, {'sim_aws_id':"sim_aws_state",
+    update_machine_aws_states( constellation_name, {'sim_aws_id':"sim_aws_state",
                                                                     'router_aws_id': 'router_aws_state',
                                                                     'field1_aws_id': 'field1_aws_state',
                                                                     'field2_aws_id': 'field2_aws_state',
@@ -648,7 +649,21 @@ timeout 5 gztopic list
 
     log("provisionning done")
 
-    
+
+def get_aws_instance_by_name(instance_name, boto_path="../../boto.ini"):
+    """
+    Gets a boto instance of a running machine
+    Raises exceptions if the credentials are not there or invalid
+    """
+    ec2conn = aws_connect(boto_path)[0]
+    reservations = ec2conn.get_all_instances()
+    instances = [i for r in reservations for i in r.instances]
+    for i in instances:
+        if id.tags.has_key('Name'):
+            name = id.tags['Name']
+            if name == instance_name:
+                return i
+    return None    
     
 def terminate(constellation_name, credentials_ec2):
 #    _terminate(username, 'simulator', constellation_name, credentials_ec2, constellation_directory)
