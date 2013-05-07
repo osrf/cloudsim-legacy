@@ -69,7 +69,7 @@ function create_constellation(div_name, configuration, constellation, username, 
     	 
     if( (configuration == "AWS CloudSim") || (configuration.indexOf("OSRF CloudSim") ==0) )
     {
-        var machine_name = "cloudsim_" + constellation;
+        var machine_name = "CloudSim";
         var machine_div = create_machine(machines_div, machine_name);
 
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file" );
@@ -78,13 +78,12 @@ function create_constellation(div_name, configuration, constellation, username, 
         // create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
 
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file" );
-        
         create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to its parent CloudSim");
 
 
     }
 
-    if(configuration == "vpc_trio" || configuration == "vpc_micro_trio" || configuration == "vpc_trio_prerelease" )
+    if(configuration.indexOf("AWS trio") ==0 || configuration.indexOf("AWS micro trio") ==0  )
     {
     	create_task_list_widget(constellation_div, constellation);
     	// field computer
@@ -115,7 +114,6 @@ function create_constellation(div_name, configuration, constellation, username, 
             create_hostname_widget(machine_div, constellation, machine_name, "router_public_ip", "router_aws_id", "username", "gmt", "router_zip_file");
             
             create_latency_widget(machine_div, constellation, machine_name, "router_latency", "RTT latency to CloudSim"); 
-
         }
         
         // simulator computer
@@ -134,14 +132,11 @@ function create_constellation(div_name, configuration, constellation, username, 
         }
     }
     
-    if(configuration == "simulator" || configuration == "simulator_prerelease")
+    if(configuration == "AWS simulator")
     {
-
         var machine_name = "simulator_" + constellation;
-
         create_task_list_widget(constellation_div, constellation);
         var machine_name = "simulator_" +constellation;
-
         var machine_div = create_machine(machines_div, machine_name);
         
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file" );	

@@ -191,6 +191,7 @@ def _monitor_ping(constellation_name, ping_data_key, ping_str):
     """
     internal implementation for monitor_cloudsim_ping and monitor_ssh_ping
     """
+    log("_monitor_ping %s %s %s" % (constellation_name, ping_data_key, ping_str) )
     constellation = ConstellationState(constellation_name)
     latency = constellation.get_value(ping_data_key)
     latency = record_ping_result(latency, ping_str, LATENCY_TIME_BUFFER)

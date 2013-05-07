@@ -13,7 +13,7 @@ function create_latency_widget(machine_div,
                                data_key,
                                title)
 {
-    var unique_plot_id = "latency_"+machine_name;
+    var unique_plot_id = "latency_"+ constellation_name + "_" + machine_name;
     var widget_div = _create_empty_widget(machine_div, unique_plot_id);
     widget_div.style.height = "150px";
     
@@ -123,6 +123,10 @@ function create_latency_widget(machine_div,
 
 function _set_latency_data(latency_plot_data, values)
 {
+	if (values == undefined)
+	{
+		return;
+	}
 	if(values.length ==0)
 		return;
 	

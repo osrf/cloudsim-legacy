@@ -17,7 +17,6 @@ def log(msg, channel = "launch_db"):
     except:
         print("Warning: redis not installed.")
     #print("cloudsim log> %s" % msg)
-  
 
 def publish_event(username, type, data):
     msg = {}
@@ -25,14 +24,12 @@ def publish_event(username, type, data):
     msg['type'] = type
     msg['username'] = username
     try:
-        
         redis_cli = redis.Redis()
         channel_name = msg['username'].split("@")[1]
         j_msg = json.dumps(msg)
         redis_cli.publish(channel_name, j_msg)
     except Exception, e:
         log("publish_event: [%s] type %s msg[%s]" % (username, type, msg))
-        
 
 class ConstellationState(object):
     """
@@ -48,6 +45,10 @@ class ConstellationState(object):
     def get_value(self, name):
         resources = get_constellation_data( self.constellation_name)
         return resources[name]
+    
+    def get_values(self):
+        resources = get_constellation_data( self.constellation_name)
+        return resources
     
     def set_value(self, name, value):
         log("%s/%s = %s " % (self.constellation_name, name, value) )

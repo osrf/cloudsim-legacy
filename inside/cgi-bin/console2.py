@@ -86,16 +86,7 @@ page =  """<!DOCTYPE html>
             
             var callback = function(str_data)
             {
-               var constellations = null;
-               try
-               {
-                   constellations = eval( '(' + str_data + ')' );
-                }
-                catch(err)
-                {
-                    // the user is probably logged out.
-                    document.reload(true);
-                }
+               var constellations = eval( '(' + str_data + ')' );
                for (var i=0; i< constellations.length; i++)
                {
                    var constellation = constellations[i];

@@ -270,7 +270,7 @@ def launch( username,
             
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
-            terminate(username, constellation_name, constellation_directory)
+            terminate(constellation_name, constellation_directory)
             constellation.set_value('error', '%s' % error_msg)
             constellation.expire(10)
             raise
