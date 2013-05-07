@@ -25,8 +25,6 @@ function create_constellation(div_name, configuration, constellation, username, 
     	// field computer 2
         { 
             var div =  constellation_div.querySelector("#machines" );
-            
-
             var machine_name = "field_computer2_" + constellation;
 			var machine_div = create_machine(machines_div, machine_name);
 
