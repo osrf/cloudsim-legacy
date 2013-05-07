@@ -613,6 +613,8 @@ def launch_cmd(root_dir, data):
             async_monitor(username, config, constellation_name)
     
     elif config.startswith("OSRF"):
+        
+        
         constellation_name = config.replace(" ", "_")
         constellation_path = os.path.join(root_dir, constellation_name)
         
