@@ -8,26 +8,25 @@ import shutil
 import datetime
 import commands
 
+
 class SoftLayerException(Exception):
     pass
+
 
 def get_softlayer_path():
     d = os.path.dirname(__file__)
     r = os.path.abspath(d +'../../../../../../softlayer.ini' )
     return r
-    
-domain_id = None
 
-    
+
 def _get_hardware(api_username, api_key, server_name = None):
     domain_id = None   
     client = SoftLayer.API.Client('SoftLayer_Account', domain_id, api_username, api_key)
-    object_mask = {                                                
+    object_mask = {
         'hardware' : {
             'operatingSystem' : {
                 'passwords' : {},
             },
-            
             #'networkComponents' : {},
             'frontendNetworkComponents' :{},
             'backendNetworkComponents' :{},
@@ -39,11 +38,13 @@ def _get_hardware(api_username, api_key, server_name = None):
     hardware = client.getHardware()
     return hardware
 
+
 def _send_reload_server_cmd(api_username, api_key, server_id):
     client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, api_username, api_key)
     # server_id = client.findByIpAddress(server_ip)['id']
     result = client.reloadCurrentOperatingSystemConfiguration('FORCE')
     print (result)
+
 
 def _send_shutdown_public_port(api_username, api_key, server_id):
     client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, api_username, api_key)
@@ -51,6 +52,7 @@ def _send_shutdown_public_port(api_username, api_key, server_id):
     #result = client.shutdownPublicPort()
     result = client.setPublicNetworkInterfaceSpeed(0)
     print (result)
+
 
 def _wait_for_server_reload(api_username, api_key, server_id, callback):
     status = None

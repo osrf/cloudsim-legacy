@@ -151,11 +151,13 @@ def get_plugin(configuration):
     This is the switch.
     """
     plugin = None
+    log("get_plugin '%s'" % configuration)
+    
     if configuration == 'AWS CloudSim':
         from launchers import amazon_cloudsim as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.monitor, None, None)
-         
-    if configuration == 'AWS simulator':
+    
+    elif configuration == 'AWS simulator':
         from launchers import simulator as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.monitor, c.start_task, c.stop_task) 
         

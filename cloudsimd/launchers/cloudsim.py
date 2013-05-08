@@ -268,10 +268,10 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     #!/bin/bash
     
     tail -1 /var/log/dpkg.log
-    
+
     """ 
     ssh_sim.create_file(dpkg_log_sim, "cloudsim/dpkg_log_sim.bash")
-    
+
     constellation.set_value('simulation_launch_msg', "waiting for packages to install")
     sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 100)
     empty_ssh_queue([sim_setup_done], sleep=2)
@@ -279,33 +279,32 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     short_file_name = os.path.split(website_distribution)[1] 
     remote_fname = "/home/ubuntu/%s" % ( short_file_name)
     log("uploading '%s' to the server to '%s'" % (website_distribution, remote_fname) )
-    
+
     constellation.set_value('simulation_launch_msg', "uploading CloudSim distribution")
     out = ssh_sim.upload_file(website_distribution, remote_fname)
     log(" upload: %s" % out)
     constellation.set_value('simulation_launch_msg', "uploading web app")
     #upload_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 100)
     #empty_ssh_queue([upload_done], sleep=2)
-    
+
     constellation.set_value('simulation_launch_msg', "unzip web app")
     log("unzip web app")
     out = ssh_sim.cmd("unzip " + remote_fname )
     log ("\t%s"% out)
-    
+
     log("Setup admin user %s" % username)
     add_user_cmd = 'echo \'{"%s":"admin"}\' > cloudsim/distfiles/users' % username 
     log("add user to cloudsim: %s" % add_user_cmd)
     out = ssh_sim.cmd(add_user_cmd)
     log ("\t%s"% out)
-     
+
     # fname_zip = os.path.join(constellation_directory, "cs","cs.zip")
     log("Uploading the key file to the server")
     remote_fname = "/home/ubuntu/cloudsim/cloudsim_ssh.zip"
     log("uploading '%s' to the server to '%s'" % (fname_zip, remote_fname) )
     out = ssh_sim.upload_file(fname_zip , remote_fname)
     log ("\t%s"% out)
-    
-    
+
     # todo ... set the name, upload both files
     log("Uploading the ec2 credentials to the server")
     remote_fname = "/home/ubuntu/boto.ini" 
@@ -318,7 +317,7 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     log("uploading '%s' to the server to '%s'" % (osrf_creds_fname, remote_fname) )
     out = ssh_sim.upload_file(osrf_creds_fname , remote_fname)
     log ("\t%s"% out)
-    
+
     constellation.set_value('simulation_launch_msg', "deploying web app")
     # out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)
     log("Deploying the cloudsim web app")
