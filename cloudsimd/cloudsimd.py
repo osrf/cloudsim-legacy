@@ -227,7 +227,6 @@ def launch( username,
     log("launch constellation_name %s" % constellation_name)
     log("launch args %s" % args)
     log("launch constellation_directory %s" % constellation_directory)
-    
 
     constellation = ConstellationState(constellation_name)
     try:
@@ -235,23 +234,22 @@ def launch( username,
         
         cloudsim_config = get_cloudsim_config()
         version = cloudsim_config['cloudsim_version']
-        
+
         #log("cloudsimd.py launch")
         log("CloudSim [%s] Launching constellation [%s], config [%s] for user [%s] from proc [%s]" % (version, constellation_name, config,  username, proc)) 
-        
+
         constellation_plugin = get_plugin(config)
-        
+
         gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-        
+
         tags = {'username': username, 
                'constellation_name':constellation_name, 
                'CloudSim': version, 
                'GMT': gmt}
-        
+
         if args != None:
             tags['args'] =  args
 
-        
         constellation.set_value('username', username)
         constellation.set_value('constellation_name', constellation_name)
         constellation.set_value('gmt', gmt)
@@ -262,7 +260,7 @@ def launch( username,
 
         constellation.set_value('current_task', "")
         constellation.set_value('tasks', [])
-        
+
         try:
             constellation_plugin.launch(username, config, constellation_name, tags, constellation_directory)
         except Exception, e:
@@ -274,7 +272,7 @@ def launch( username,
             constellation.set_value('error', '%s' % error_msg)
             constellation.expire(10)
             raise
-        
+
         log("Launch of constellation %s done" % constellation_name)
         
     except Exception, e:
@@ -283,9 +281,6 @@ def launch( username,
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
 
-        #terminate(username, constellation_name, credentials_ec2, constellation_directory)
-    
-    
 """
 Terminates the machine via the cloud interface. Files will be removed by the 
 monitoring process

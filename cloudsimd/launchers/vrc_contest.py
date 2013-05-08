@@ -22,7 +22,8 @@ from launch_utils.softlayer import load_osrf_creds, reload_servers,\
     setup_ssh_key_access, create_ssh_key, create_openvpn_key,\
     shutdown_public_ips
 
-from launch_utils.launch_db import get_constellation_data, ConstellationState
+from launch_utils.launch_db import get_constellation_data, ConstellationState,\
+    get_cloudsim_config
 from launch_utils import sshclient
 from launch_utils.testing import get_test_runner, get_test_path
 from launch_utils.launch import get_unique_short_name
@@ -1108,9 +1109,9 @@ def launch(username, config, constellation_name, tags, constellation_directory):
         drc_package = "drcsim-nightly"
         constellation_prefix = config.split("OSRF VRC Constellation (nightly build) ")[1]
     else:
-         constellation_prefix = config.split("OSRF VRC Constellation ")[1]
+        constellation_prefix = config.split("OSRF VRC Constellation ")[1]
     
-    credentials_softlayer = osrf_creds_fname = get_cloudsim_config()['softlayer_path']
+    credentials_softlayer = get_cloudsim_config()['softlayer_path']
     constellation = ConstellationState( constellation_name)
     if not constellation.has_value("launch_stage"):
         constellation.set_value("launch_stage", "nothing")
