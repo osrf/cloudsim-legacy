@@ -22,8 +22,7 @@ from launch_utils.softlayer import load_osrf_creds, reload_servers,\
     setup_ssh_key_access, create_ssh_key, create_openvpn_key,\
     shutdown_public_ips
 
-from launch_utils.launch_db import get_constellation_data, ConstellationState,\
-    get_cloudsim_config
+from launch_utils.launch_db import get_constellation_data, ConstellationState
 from launch_utils import sshclient
 from launch_utils.testing import get_test_runner, get_test_path
 from launch_utils.launch import get_unique_short_name

@@ -20,7 +20,7 @@ red = redis.Redis()
 def get_machine_zip_key(email, constellation_name, machine_name):
     constellation = get_constellation_data(email, constellation_name)
     directory = constellation['constellation_directory']
-    path = os.path.join(directory,machine_name,machine_name + ".zip" )
+    path = os.path.join(directory, machine_name + ".zip" )
     return path
 
 def log(msg):

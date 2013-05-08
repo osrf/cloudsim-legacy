@@ -30,7 +30,7 @@ from launch_utils.monitoring import  constellation_is_terminated, monitor_clouds
 
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
 
-from launch_utils.softlayer import get_softlayer_path, load_osrf_creds,\
+from launch_utils.softlayer import load_osrf_creds,\
     reload_servers, wait_for_server_reloads, get_machine_login_info
 from vrc_contest import ReloadOsCallBack, add_ubuntu_user_to_router,\
     create_private_machine_zip
@@ -59,6 +59,7 @@ def start_task(constellation, package_name, launch_file_name,
     log(" start_task constellation %s, package_name %s, launch_file_name %s, timeout %s, launch_args %s, latency %s, data_cap %s" % 
         (constellation, package_name, launch_file_name, timeout, launch_args, latency, data_cap) )
 
+
 def get_softlayer_path():
     config =get_cloudsim_config()
     osrf_creds_fname = config['softlayer_path']
@@ -78,11 +79,11 @@ def monitor(username, constellation_name, counter):
     simulation_state = constellation.get_value('simulation_state')
         
     constellation_directory= constellation.get_value("constellation_directory")
-    ip = constellation.get_value("public_ip" )
+    ip = constellation.get_value("simulation_ip" )
     log("%s simulation machine ip %s" % (constellation_name, ip))
     ssh_sim = SshClient(constellation_directory, "key-cs", 'ubuntu', ip)
     
-    monitor_cloudsim_ping(constellation_name, 'public_ip', 'simulation_latency')
+    monitor_cloudsim_ping(constellation_name, 'simulation_ip', 'simulation_latency')
     monitor_launch_state(constellation_name, ssh_sim, simulation_state, "bash cloudsim/dpkg_log_sim.bash", 'simulation_launch_msg')
     return False #log("monitor not done")    
 
@@ -111,8 +112,7 @@ def reload_os(constellation_name, constellation_prefix, osrf_creds_fname):
     # compute the softlayer machine names
     machine_names = ["cs-%s" % constellation_prefix]
     pub_ip, priv_ip, password = get_machine_login_info(osrf_creds, machine_names[0]) 
-    log("ubuntu user setup for machine %s [%s / %s] %s " % (machine_names[0], pub_ip, priv_ip, password) )
-    constellation.set_value("public_ip", pub_ip )
+    log("reload os for machine %s [%s / %s] password %s " % (machine_names[0], pub_ip, priv_ip, password) )
     reload_servers(osrf_creds, machine_names)
     constellation.set_value("launch_stage", "os_reload")
 
@@ -140,29 +140,29 @@ def initialize_ubuntu_user(constellation_name, constellation_prefix, osrf_creds_
     log("ubuntu user setup for machine cs %s [%s / %s] " % (name, pub_ip, priv_ip) )
     # dst_dir = os.path.abspath('.')
     
-    log("cs %s %s : %s" % (name, pub_ip, password))
+    log("machine details cs %s %s : %s" % (name, pub_ip, password))
     add_ubuntu_user_to_router(pub_ip, password, constellation_directory, 'key-cs')
-
     constellation.set_value("launch_stage", "init")
     
 
 def create_zip(constellation_name):
-    
-    constellation = ConstellationState( constellation_name)
-    constellation_directory= constellation.get_value("constellation_directory")
-    fname_zip = os.path.join(constellation_directory, "cs","%s_%s.zip" % ("cs", constellation_name) )
+    constellation = ConstellationState(constellation_name)
+    constellation_directory = constellation.get_value("constellation_directory")
+    fname_zip = os.path.join(constellation_directory, "cs","%s_%s.zip" % ("cs", constellation_name))
+       
     launch_stage = constellation.get_value("launch_stage")
+    
     if launch_sequence.index(launch_stage) >= launch_sequence.index('zip'):
         return fname_zip
     
-    constellation = ConstellationState( constellation_name)
-    ip = constellation.get_value("public_ip" )
-    constellation_directory= constellation.get_value("constellation_directory")
+    log("constellation name %s" % constellation_name)
+    constellation = ConstellationState(constellation_name)
+    ip = constellation.get_value("simulation_ip" )
+
+    constellation_directory = constellation.get_value("constellation_directory")
     create_private_machine_zip("cs", ip, constellation_name, constellation_directory)
-    
     constellation.set_value('sim_zip_file', 'ready')
     constellation.set_value("launch_stage", "zip")
-    
     return fname_zip
 
 def startup_script(constellation_name):
@@ -173,7 +173,7 @@ def startup_script(constellation_name):
 
     constellation_directory = constellation.get_value('constellation_directory')
 
-    ip = constellation.get_value("public_ip" )
+    ip = constellation.get_value("simulation_ip" )
     ssh_client = SshClient(constellation_directory, "key-cs", 'ubuntu', ip)   
     
     local_fname = os.path.join(constellation_directory, 'cs_startup.bash')
@@ -192,27 +192,45 @@ def startup_script(constellation_name):
         
 def launch(username, configuration, constellation_name, tags, constellation_directory, website_distribution = CLOUDSIM_ZIP_PATH ):
     
-    osrf_creds_fname = get_cloudsim_config()['softlayer_path']
-    
+    cfg = get_cloudsim_config()
+    osrf_creds_fname = cfg['softlayer_path']
+    ec2_creds_fname = cfg['boto_path']
     constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
-     
+
     log('launch!!! tags = %s' % tags)
-    constellation = ConstellationState( constellation_name)
+    constellation = ConstellationState(constellation_name)
+
+    constellation.set_value("simulation_launch_msg", "launching")
+
     if not constellation.has_value("launch_stage"):
         constellation.set_value("launch_stage", "nothing") # "os_reload"
         constellation.set_value("launch_stage", "os_reload")
         
+    osrf_creds = load_osrf_creds(osrf_creds_fname)    
+    pub_ip, priv_ip, password = get_machine_login_info(osrf_creds, "cs-%s" % constellation_prefix) 
+    log("reload os for machine [%s / %s] password %s " % (pub_ip, priv_ip, password))
+    constellation.set_value("simulation_ip", pub_ip )
+        
     auto_launch_configuration = None
     if tags.has_key('args'):
-        auto_launch_configuration  = tags['args']
-    
+        auto_launch_configuration = tags['args']
+        
     log('auto_launch_configuration %s' % auto_launch_configuration)
+    constellation.set_value("simulation_launch_msg", "waiting for Operating System reload")
     reload_os(constellation_name, constellation_prefix, osrf_creds_fname)
-    
+
+    constellation.set_value("simulation_launch_msg", "seting up user accounts and keys")
     initialize_ubuntu_user(constellation_name, constellation_prefix, osrf_creds_fname, constellation_directory)
-    
+    constellation.set_value("simulation_launch_msg", "create zip file")
+    log("create zip")
     fname_zip = create_zip(constellation_name)
     
+    #create a copy for downloads
+    local_zip = os.path.join(constellation_directory, "CloudSim.zip")
+    shutil.copy(fname_zip, local_zip)
+    
+    log("install packages")
+    constellation.set_value("simulation_launch_msg", "install packages")
     startup_script(constellation_name)
 
     print ("\n##############################################")
@@ -222,10 +240,10 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     print ("#                Stay tuned!                 #")
     print ("##############################################\n")
 
-    ip = constellation.get_value("public_ip" )
+    ip = constellation.get_value("simulation_ip" )
     clean_local_ssh_key_entry(ip)
     
-    constellation.set_value('public_ip', ip)
+    constellation.set_value('simulation_ip', ip)
     log("%s simulation machine ip %s" % (constellation_name, ip))
     ssh_sim = SshClient(constellation_directory, "key-cs", 'ubuntu', ip)
     
@@ -250,7 +268,8 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     
     """ 
     ssh_sim.create_file(dpkg_log_sim, "cloudsim/dpkg_log_sim.bash")
-
+    
+    constellation.set_value('simulation_launch_msg', "waiting for packages to install")
     sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 100)
     empty_ssh_queue([sim_setup_done], sleep=2)
 
@@ -258,6 +277,7 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     remote_fname = "/home/ubuntu/%s" % ( short_file_name)
     log("uploading '%s' to the server to '%s'" % (website_distribution, remote_fname) )
     
+    constellation.set_value('simulation_launch_msg', "uploading CloudSim distribution")
     out = ssh_sim.upload_file(website_distribution, remote_fname)
     log(" upload: %s" % out)
     constellation.set_value('simulation_launch_msg', "uploading web app")
@@ -281,9 +301,17 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     log("uploading '%s' to the server to '%s'" % (fname_zip, remote_fname) )
     out = ssh_sim.upload_file(fname_zip , remote_fname)
     log ("\t%s"% out)
+    
+    
     # todo ... set the name, upload both files
     log("Uploading the ec2 credentials to the server")
     remote_fname = "/home/ubuntu/boto.ini" 
+    log("uploading '%s' to the server to '%s'" % (ec2_creds_fname, remote_fname) )
+    out = ssh_sim.upload_file(osrf_creds_fname , remote_fname)
+    log ("\t%s"% out)
+
+    log("Uploading the SoftLayer credentials to the server")
+    remote_fname = "/home/ubuntu/softlayer.ini" 
     log("uploading '%s' to the server to '%s'" % (osrf_creds_fname, remote_fname) )
     out = ssh_sim.upload_file(osrf_creds_fname , remote_fname)
     log ("\t%s"% out)
@@ -307,7 +335,7 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
         constellation.set_value('simulation_launch_msg', msg)
         ssh_sim.cmd("/home/ubuntu/cloudsim/launch.py %s %s" % (username, auto_launch_configuration) )
         time.sleep(5)
-         
+    constellation.set_value('simulation_launch_msg', "Complete")     
     log('setup complete')
 
     print ("\033[1;32mCloudSim ready. Visit http://%s \033[0m\n"% ip)
@@ -445,7 +473,7 @@ class JustInCase(unittest.TestCase):
             monitor(self.username, self.constellation_name, self.credentials_softlayer, i)
             time.sleep(1)
 
-        terminate(self.constellation_name, self.credentials_softlayer)
+        terminate(self.constellation_name, self.credentials_softlayer, self.constellation_directory)
 
 
 if __name__ == "__main__":

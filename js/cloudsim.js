@@ -38,7 +38,7 @@ function create_constellation(div_name, configuration, constellation, username, 
     	}
         // router computer
         {
-            var machine_name = "router_";
+            var machine_name = "router";
             var machine_div = create_machine(machines_div, machine_name);
             
 
