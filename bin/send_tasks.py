@@ -59,7 +59,7 @@ from cloudsimd import cloudsimd
 def create_task(team, tasks_file):
     '''
     Generate a python list containing the set of tasks for a given team
-    @param team Unique team id (string)
+    @param team Dictionary containing team information (accounts, timezone, ...)
     @param tasks_file JSON file containing the task definitions
     '''
     # Read YAML tasks file
@@ -139,7 +139,7 @@ def feed_cloudsim(team, tasks_file, user, is_verbose):
     '''
     For a given team, create a list of tasks, upload them to its cloudsim,
     and update Redis with the new task information.
-    @param team Team id (string)
+    @param team Dictionary containing team information (accounts, timezone, ...)
     @param tasks_file JSON file containing the task definitions
     @param user CloudSim user (default: ubuntu)
     @param is_verbose If True, show some stats
