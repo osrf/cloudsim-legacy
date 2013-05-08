@@ -82,7 +82,7 @@ def monitor(username, constellation_name, counter):
     log("%s simulation machine ip %s" % (constellation_name, ip))
     ssh_sim = SshClient(constellation_directory, "key-cs", 'ubuntu', ip)
     
-    monitor_cloudsim_ping(constellation_name, 'simulation_ip', 'simulation_latency')
+    monitor_cloudsim_ping(constellation_name, 'public_ip', 'simulation_latency')
     monitor_launch_state(constellation_name, ssh_sim, simulation_state, "bash cloudsim/dpkg_log_sim.bash", 'simulation_launch_msg')
     return False #log("monitor not done")    
 
@@ -111,7 +111,7 @@ def reload_os(constellation_name, constellation_prefix, osrf_creds_fname):
     # compute the softlayer machine names
     machine_names = ["cs-%s" % constellation_prefix]
     pub_ip, priv_ip, password = get_machine_login_info(osrf_creds, machine_names[0]) 
-    log("ubuntu user setup for machine %s [%s / %s] %d " % (machine_names[0], pub_ip, priv_ip, password) )
+    log("ubuntu user setup for machine %s [%s / %s] %s " % (machine_names[0], pub_ip, priv_ip, password) )
     constellation.set_value("public_ip", pub_ip )
     reload_servers(osrf_creds, machine_names)
     constellation.set_value("launch_stage", "os_reload")
@@ -192,7 +192,7 @@ def startup_script(constellation_name):
         
 def launch(username, configuration, constellation_name, tags, constellation_directory, website_distribution = CLOUDSIM_ZIP_PATH ):
     
-    osrf_creds_fname = get_softlayer_path()
+    osrf_creds_fname = get_cloudsim_config()['softlayer_path']
     
     constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
      
@@ -200,14 +200,13 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     constellation = ConstellationState( constellation_name)
     if not constellation.has_value("launch_stage"):
         constellation.set_value("launch_stage", "nothing") # "os_reload"
-        #constellation.set_value("launch_stage", "os_reload")
+        constellation.set_value("launch_stage", "os_reload")
         
     auto_launch_configuration = None
     if tags.has_key('args'):
         auto_launch_configuration  = tags['args']
     
-    log('auto_launch_configuration %s' % auto_launch_configuration )
-
+    log('auto_launch_configuration %s' % auto_launch_configuration)
     reload_os(constellation_name, constellation_prefix, osrf_creds_fname)
     
     initialize_ubuntu_user(constellation_name, constellation_prefix, osrf_creds_fname, constellation_directory)
@@ -226,7 +225,7 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     ip = constellation.get_value("public_ip" )
     clean_local_ssh_key_entry(ip)
     
-    constellation.set_value('simulation_ip', ip)
+    constellation.set_value('public_ip', ip)
     log("%s simulation machine ip %s" % (constellation_name, ip))
     ssh_sim = SshClient(constellation_directory, "key-cs", 'ubuntu', ip)
     

@@ -167,7 +167,7 @@ def get_plugin(configuration):
         from launchers import amazon_micro_trio as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.monitor, c.start_task, c.stop_task)
 
-    elif configuration.startswith("OSRF VRC constellation "):
+    elif configuration.startswith("OSRF VRC Constellation "):
         from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.monitor, c.start_task, c.stop_task)
 
@@ -210,8 +210,8 @@ def update_cloudsim_configuration_list():
     
     for prefix in const_prefixes: 
         configs['OSRF CloudSim %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim server"}
-        configs['OSRF VRC constellation %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
-        configs['OSRF VRC constellation (nightly build) %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
+        configs['OSRF VRC Constellation %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
+        configs['OSRF VRC Constellation (nightly build) %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
     set_cloudsim_configuration_list(configs)
     #log("cloudsim configurations list updated: %s" % configs)
 

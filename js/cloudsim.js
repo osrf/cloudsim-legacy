@@ -13,7 +13,7 @@ function create_constellation(div_name, configuration, constellation, username, 
     	// field computer 1
         { 
             var div =  constellation_div.querySelector("#machines" );
-            var machine_name = "field_computer1_" + constellation;
+            var machine_name = "field_computer1";
             var machine_div = create_machine(machines_div, machine_name);
             create_hostname_widget(machine_div, constellation, machine_name, "fc1_ip", "fc1_aws_id", "username", "gmt", "fc1_zip_file");
             create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "fc1_launch_msg", "fc1_state");
@@ -25,7 +25,7 @@ function create_constellation(div_name, configuration, constellation, username, 
     	// field computer 2
         { 
             var div =  constellation_div.querySelector("#machines" );
-            var machine_name = "field_computer2_" + constellation;
+            var machine_name = "field_computer2";
 			var machine_div = create_machine(machines_div, machine_name);
 
             create_hostname_widget(machine_div, constellation, machine_name, "fc2_ip", "fc2_aws_id", "username", "gmt", "fc2_zip_file");
@@ -38,7 +38,7 @@ function create_constellation(div_name, configuration, constellation, username, 
     	}
         // router computer
         {
-            var machine_name = "router_" + constellation;
+            var machine_name = "router_";
             var machine_div = create_machine(machines_div, machine_name);
             
 
@@ -53,7 +53,7 @@ function create_constellation(div_name, configuration, constellation, username, 
         
         // simulator computer
         {            
-            var machine_name = "simulator_" + constellation;
+            var machine_name = "simulator";
             var machine_div = create_machine(machines_div, machine_name);
             
             create_hostname_widget (machine_div, constellation, machine_name, "sim_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file");	
