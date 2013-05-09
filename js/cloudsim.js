@@ -45,10 +45,9 @@ function create_constellation(div_name, configuration, constellation, username, 
             create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "router_launch_msg", "router_state");
             create_machine_state_widget(machine_div,constellation, machine_name, "router_aws_state");
             //create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
-            create_hostname_widget(machine_div, constellation, machine_name, "router_public_ip", "router_aws_id", "username", "gmt", "router_zip_file");
+            create_hostname_widget(machine_div, constellation, machine_name, "router_ip", "router_aws_id", "username", "gmt", "router_zip_file");
             
             create_latency_widget(machine_div, constellation, machine_name, "router_latency", "RTT latency to CloudSim"); 
-
         }
         
         // simulator computer
@@ -56,9 +55,9 @@ function create_constellation(div_name, configuration, constellation, username, 
             var machine_name = "simulator";
             var machine_div = create_machine(machines_div, machine_name);
             
-            create_hostname_widget (machine_div, constellation, machine_name, "sim_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file");	
-            create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "simulation_launch_msg", "simulation_state");
-            create_machine_state_widget(machine_div, constellation, machine_name,"simulation_aws_state");
+            create_hostname_widget (machine_div, constellation, machine_name, "sim_ip", "sim_aws_id", "username", "gmt", "sim_zip_file");	
+            create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "simulation_launch_msg", "sim_state");
+            create_machine_state_widget(machine_div, constellation, machine_name,"sim_aws_state");
             // create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
             //create_glx_state_widget(machine_div, constellation, machine_name, "simulation_glx_state");
             

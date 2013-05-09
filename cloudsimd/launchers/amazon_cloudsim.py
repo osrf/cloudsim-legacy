@@ -285,7 +285,9 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
 
     config = get_cloudsim_config()
     credentials_ec2 = config['boto_path']
-    osrf_creds_fname = cfg['softlayer_path']
+    osrf_creds_fname = config['softlayer_path']
+    cloudsim_portal_key_fname = config['cloudsim_portal_key_path']
+    cloudsim_portal_json_fname = config['cloudsim_portal_json_path']
     
     log("Uploading the ec2 credentials to the server")
     remote_fname = "/home/ubuntu/boto.ini" 
@@ -294,9 +296,21 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     log ("\t%s"% out)
 
     log("Uploading the SoftLayer credentials to the server")
-    remote_fname = "/home/ubuntu/softlayer.ini" 
+    remote_fname = "/home/ubuntu/softlayer.json" 
     log("uploading '%s' to the server to '%s'" % (osrf_creds_fname, remote_fname) )
     out = ssh_sim.upload_file(osrf_creds_fname, remote_fname)
+    log ("\t%s"% out)
+    
+    log("Uploading the Portal key to the server")
+    remote_fname = "/home/ubuntu/cloudsim_portal.key" 
+    log("uploading '%s' to the server to '%s'" % (cloudsim_portal_key_fname, remote_fname) )
+    out = ssh_sim.upload_file(cloudsim_portal_key_fname, remote_fname)
+    log ("\t%s"% out)
+    
+    log("Uploading the Portal JSON file to the server")
+    remote_fname = "/home/ubuntu/cloudsim_portal.json" 
+    log("uploading '%s' to the server to '%s'" % (cloudsim_portal_json_fname, remote_fname) )
+    out = ssh_sim.upload_file(cloudsim_portal_json_fname, remote_fname)
     log ("\t%s"% out)
     
     # out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)
@@ -305,7 +319,6 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     log("running deploy script '%s' remotely" % deploy_script_fname)
     out = ssh_sim.cmd("bash " + deploy_script_fname  )
     log ("\t%s"% out)
-
 
 
     #

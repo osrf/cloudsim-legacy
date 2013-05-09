@@ -411,8 +411,8 @@ def stop_task(constellation_name):
             log('task_state stopping')
             cs.update_task(task_id, task)
             
-            constellation_plugin.stop_task(constellation_name)
-            
+            constellation_plugin.stop_task(constellation_name, task)
+                        
             task['task_state'] = 'stopped'
             cs.update_task(task_id, task)
             log('task_state stopped')
@@ -728,6 +728,8 @@ if __name__ == "__main__":
         boto_path = '/var/www-cloudsim-auth/boto-useast'
         softlayer_path = '/var/www-cloudsim-auth/softlayer.json'
         root_dir  = '/var/www-cloudsim-auth/machines'
+        cloudsim_portal_key_path = '/var/www-cloudsim-auth/cloudsim_portal.key'
+        cloudsim_portal_json_path = '/var/www-cloudsim-auth/cloudsim_portal.json'
 
         if len(sys.argv) > 1:
            boto_path = os.path.abspath(sys.argv[1])
@@ -738,11 +740,19 @@ if __name__ == "__main__":
         if len(sys.argv) > 3:
            root_dir = os.path.abspath(sys.argv[3])
            
+        if len(sys.argv) > 4:
+           cloudsim_portal_key_path = os.path.abspath(sys.argv[4])
+           
+        if len(sys.argv) > 5:
+           cloudsim_portal_json_path = os.path.abspath(sys.argv[5])
+           
         config = {}
         config['cloudsim_version'] = '1.5.0'
         config['boto_path'] = boto_path
         config['softlayer_path'] = softlayer_path
         config['machines_directory'] = root_dir
+        config['cloudsim_portal_key_path'] = cloudsim_portal_key_path
+        config['cloudsim_portal_json_path'] = cloudsim_portal_json_path
         
         
         set_cloudsim_config(config)

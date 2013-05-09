@@ -94,7 +94,7 @@ page =  """<!DOCTYPE html>
                 catch(err)
                 {
                     // the user is probably logged out.
-                    document.reload(true);
+                    location.reload(true);
                 }
                for (var i=0; i< constellations.length; i++)
                {

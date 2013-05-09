@@ -35,7 +35,7 @@ def kill_all_ec2_instances(ec2):
 
 def get_softlayer_path():
     d = get_test_dir()
-    r = os.path.abspath(d +'/../../softlayer.ini' )
+    r = os.path.abspath(d +'/../../softlayer.json' )
     return r
 
 def get_boto_path():

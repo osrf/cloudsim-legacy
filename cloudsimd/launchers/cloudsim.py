@@ -199,6 +199,8 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     osrf_creds_fname = cfg['softlayer_path']
     ec2_creds_fname = cfg['boto_path']
     constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
+    cloudsim_portal_key_fname = cfg['cloudsim_portal_key_path']
+    cloudsim_portal_json_fname = cfg['cloudsim_portal_json_path']
 
     log('launch!!! tags = %s' % tags)
     constellation = ConstellationState(constellation_name)
@@ -313,9 +315,21 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     log ("\t%s"% out)
 
     log("Uploading the SoftLayer credentials to the server")
-    remote_fname = "/home/ubuntu/softlayer.ini" 
+    remote_fname = "/home/ubuntu/softlayer.json" 
     log("uploading '%s' to the server to '%s'" % (osrf_creds_fname, remote_fname) )
     out = ssh_sim.upload_file(osrf_creds_fname , remote_fname)
+    log ("\t%s"% out)
+    
+    log("Uploading the Portal key to the server")
+    remote_fname = "/home/ubuntu/cloudsim_portal.key" 
+    log("uploading '%s' to the server to '%s'" % (cloudsim_portal_key_fname, remote_fname) )
+    out = ssh_sim.upload_file(cloudsim_portal_key_fname, remote_fname)
+    log ("\t%s"% out)
+    
+    log("Uploading the Portal JSON file to the server")
+    remote_fname = "/home/ubuntu/cloudsim_portal.json" 
+    log("uploading '%s' to the server to '%s'" % (cloudsim_portal_json_fname, remote_fname) )
+    out = ssh_sim.upload_file(cloudsim_portal_json_fname, remote_fname)
     log ("\t%s"% out)
 
     constellation.set_value('simulation_launch_msg', "deploying web app")

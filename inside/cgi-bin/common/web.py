@@ -41,7 +41,8 @@ class UserDatabase (object):
         role = self.get_role(email)
         roles = ["user", "officer", "admin"]
         if roles.index(role) >= roles.index( minimum_role):
-            return email
+            return True
+        return False
         
     def get_role(self, email):
         role = self.get_users()[email]

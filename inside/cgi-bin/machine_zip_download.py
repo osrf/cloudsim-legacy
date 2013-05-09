@@ -8,7 +8,7 @@ import cgitb
 import os
 import sys
 import redis
-from common.web import print_http_header
+from common.web import print_http_header, UserDatabase
 from common.machine_configuration import get_constellation_data
 
 cgitb.enable()
@@ -18,9 +18,20 @@ from common import  authorize
 red = redis.Redis()
 
 def get_machine_zip_key(email, constellation_name, machine_name):
+    """
+    Returns the zip file for the machine. The path may have a "user_" prefix
+    if the email does not correspond to an officer or admin
+    """
     constellation = get_constellation_data(email, constellation_name)
     directory = constellation['constellation_directory']
-    path = os.path.join(directory, machine_name + ".zip" )
+    
+    udb = UserDatabase()
+    user_is_officer = udb.has_role(email, "officer")
+    log("is_officer %s = %s" % (user_is_officer, user_is_officer))
+    path = os.path.join(directory,  "%s.zip" % machine_name)
+    if not user_is_officer:
+        path = os.path.join(directory,  "user_%s.zip" % machine_name)
+    log("path is %s" % path)
     return path
 
 def log(msg):
@@ -30,6 +41,8 @@ def download(filename):
     short_name = os.path.split(filename)[1]
     
     # print ("\nStatus:200\n)
+    if short_name.startswith("user_"):
+        short_name = short_name.split("user_")[1]
     
     print ("Content-Type: application/octet-stream")
     print ("Content-Disposition: attachment; filename=%s" % short_name)
@@ -43,6 +56,8 @@ def download(filename):
             break
 
 email = authorize()
+
+
 
 form = cgi.FieldStorage()
 constellation_name = form.getfirst('constellation')

@@ -30,7 +30,9 @@ sudo mkdir -p /var/www-cloudsim-auth/machines
 # copy cloud credentials
 #
 sudo cp -f $DIR/../boto.ini /var/www-cloudsim-auth/boto-useast
-sudo cp -f $DIR/../softlayer.ini /var/www-cloudsim-auth/softlayer.json 
+sudo cp -f $DIR/../softlayer.json /var/www-cloudsim-auth/softlayer.json 
+sudo cp -f $DIR/../cloudsim_portal.key /var/www-cloudsim-auth/cloudsim_portal.key
+sudo cp -f $DIR/../cloudsim_portal.json /var/www-cloudsim-auth/cloudsim_portal.json
 
 cd $DIR/..
 zip -r cloudsim.zip cloudsim

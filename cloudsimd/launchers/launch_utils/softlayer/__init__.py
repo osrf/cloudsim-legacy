@@ -15,7 +15,7 @@ class SoftLayerException(Exception):
 
 def get_softlayer_path():
     d = os.path.dirname(__file__)
-    r = os.path.abspath(d +'../../../../../../softlayer.ini' )
+    r = os.path.abspath(d +'../../../../../../softlayer.json' )
     return r
 
 
@@ -204,10 +204,15 @@ def get_machine_login_info(osrf_creds, machine):
    
     hardware = _get_hardware(api_username, api_key)
     server = [server for server in hardware if server['hostname']==machine][0]
-    user = server['operatingSystem']['passwords'][0]
+    os = server['operatingSystem']
+    user = None
+    if len(os['passwords']):
+        user = os['passwords'][0]
     pub_ip = _get_pub_ip(server) 
     priv_ip = _get_priv_ip(server)
-    psswd = user['password']
+    psswd = None
+    if user:
+        psswd = user['password']
     return pub_ip, priv_ip, psswd
     
 def get_cloudsin_ip(osrf_creds, constellation_id):
@@ -338,7 +343,7 @@ class TestSofty(unittest.TestCase):
         
         osrf_creds = load_osrf_creds(get_softlayer_path())
         machine_names = ['router-01', 'fc1-01', 'fc2-01', 'sim-01']
-        reload_servers(osrf_creds, machine_names, print_cb)
+        reload_servers(osrf_creds, machine_names)
         wait_for_server_reloads(osrf_creds, machine_names, print_cb)
 
     def stest_reload_bxx(self):
@@ -348,9 +353,8 @@ class TestSofty(unittest.TestCase):
         
         wait_for_server_reloads(osrf_creds, machine_names, print_cb)
 
-    def atest_user_setup(self):
+    def test_user_setup(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
-        
         print("ubuntu user setup")
         machine = "router-01"
         dst_dir = os.path.abspath('.')
@@ -362,14 +366,14 @@ class TestSofty(unittest.TestCase):
         # must create key first now :-)
         
         print("%s %s : %s" % (machine, ip, password))
-        setup_ssh_key_access(ip, password, key_prefix, dst_dir)
+        setup_ssh_key_access(ip, password, key_prefix)
         print ("ssh -i %s/%s.pem ubuntu@%s" % (dst_dir, key_prefix, ip))
 
     def test_validate(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         api_username = osrf_creds['user'] 
         api_key = osrf_creds['api_key']
-
+        domain_id = None
         client = SoftLayer.API.Client('SoftLayer_Account', domain_id, api_username, api_key)
         valid = True 
         try:
