@@ -170,11 +170,10 @@ def monitor_simulator(constellation_name, ssh_client):
 def monitor_score_and_network(constellation_name, ssh_router):
 
     constellation = ConstellationState(constellation_name)
-    score_str = ssh_router("bash cloudsim/get_score.bash")
-
-    net_str = ssh_router("bash cloudsim/get_network_usage.bash")
-
+    score_str = ssh_router.cmd("bash cloudsim/get_score.bash")
     constellation.set_value("score", score_str)
+
+    net_str = ssh_router.cmd("bash cloudsim/get_network_usage.bash")
     constellation.set_value("network", net_str)
 
 
@@ -1346,7 +1345,8 @@ class VrcCase(unittest.TestCase):
         launch_stage = "nothing"
         launch_stage = "os_reload"
         #"nothing", "os_reload", "init_router", "init_privates", "zip",  "change_ip", "startup", "reboot", "running"
-
+        launch_stage = "running"
+        
         self.constellation_name = 'test_vrc_contest_%s' % constellation_prefix
         self.username = "toto@osrfoundation.org"
         self.credentials_softlayer = get_softlayer_path()
@@ -1375,7 +1375,7 @@ class VrcCase(unittest.TestCase):
             constellation.set_value("launch_stage", launch_stage)
         config = "OSRF VRC Constellation %s" % constellation_prefix
         
-        launch(self.username, config, self.constellation_name, self.tags, self.constellation_directory)
+        #launch(self.username, config, self.constellation_name, self.tags, self.constellation_directory)
         
         sweep_count = 2
         for i in range(sweep_count):
