@@ -184,30 +184,31 @@ def monitor(username, constellation_name, counter):
         return True
 
     constellation = ConstellationState(constellation_name)
-
-    constellation_directory = constellation.get_value('constellation_directory')
-    router_ip = constellation.get_value("router_public_ip")
-
-    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
-    monitor_simulator(constellation_name, ssh_router)
-
-    router_state = constellation.get_value('router_state')
-    monitor_cloudsim_ping(constellation_name, 'router_ip', 'router_latency')
-    monitor_launch_state(constellation_name, ssh_router, router_state, "tail -1 /var/log/dpkg.log", 'router_launch_msg')
-
-    fc1_state = constellation.get_value('fc1_state')
-    monitor_ssh_ping(constellation_name, ssh_router, FC1_IP, 'fc1_latency')
-    monitor_launch_state(constellation_name, ssh_router, fc1_state, "cloudsim/find_file_fc1.bash", 'field1_launch_msg')
-
-    fc2_state = constellation.get_value('fc2_state')
-    monitor_ssh_ping(constellation_name, ssh_router, FC2_IP, 'fc2_latency')
-    monitor_launch_state(constellation_name, ssh_router, fc2_state, "cloudsim/find_file_fc2.bash", 'field2_launch_msg')
-
-    sim_state = constellation.get_value('sim_state')
-    monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'sim_latency')
-    monitor_launch_state(constellation_name, ssh_router, sim_state, "cloudsim/find_file_sim.bash", 'sim_launch_msg')
-
-    monitor_score_and_network(constellation_name, ssh_router)
+    launch_stage = constellation.get_value("launch_stage")
+    if launch_sequence.index(launch_stage) >= launch_sequence.index('init_router'):
+        constellation_directory = constellation.get_value('constellation_directory')
+        router_ip = constellation.get_value("router_public_ip")
+    
+        ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+        monitor_simulator(constellation_name, ssh_router)
+    
+        router_state = constellation.get_value('router_state')
+        monitor_cloudsim_ping(constellation_name, 'router_ip', 'router_latency')
+        monitor_launch_state(constellation_name, ssh_router, router_state, "tail -1 /var/log/dpkg.log", 'router_launch_msg')
+    
+        fc1_state = constellation.get_value('fc1_state')
+        monitor_ssh_ping(constellation_name, ssh_router, FC1_IP, 'fc1_latency')
+        monitor_launch_state(constellation_name, ssh_router, fc1_state, "cloudsim/find_file_fc1.bash", 'field1_launch_msg')
+    
+        fc2_state = constellation.get_value('fc2_state')
+        monitor_ssh_ping(constellation_name, ssh_router, FC2_IP, 'fc2_latency')
+        monitor_launch_state(constellation_name, ssh_router, fc2_state, "cloudsim/find_file_fc2.bash", 'field2_launch_msg')
+    
+        sim_state = constellation.get_value('sim_state')
+        monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'sim_latency')
+        monitor_launch_state(constellation_name, ssh_router, sim_state, "cloudsim/find_file_sim.bash", 'sim_launch_msg')
+    
+        monitor_score_and_network(constellation_name, ssh_router)
 
     # log("monitor not done")
     return False
@@ -708,7 +709,7 @@ class ReloadOsCallBack(object):
 def reload_os_machines(constellation_name, constellation_prefix, osrf_creds_fname):
 
     constellation = ConstellationState(constellation_name)
-    constellation.set_value("error", "")
+ 
 
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('os_reload'):
@@ -931,7 +932,11 @@ def startup_scripts(constellation_name):
     ssh_router.cmd("cloudsim/fc2_init.bash")
     # load packages onto simulator
     ssh_router.cmd("cloudsim/sim_init.bash")
-
+    
+    constellation.set_value("sim_state", "packages_setup")
+    constellation.set_value("router_state", "packages_setup")
+    constellation.set_value("fc1_state", "packages_setup")
+    constellation.set_value("fc2_state", "packages_setup")
     constellation.set_value("launch_stage", "startup")
 
 
@@ -1151,6 +1156,14 @@ def run_machines(constellation_name, constellation_directory):
     constellation.set_value('fc2_launch_msg', m)
     constellation.set_value('sim_launch_msg', m)
     constellation.set_value('router_launch_msg', m)
+    
+    m = "running"
+    constellation.set_value("sim_state", m)
+    constellation.set_value("router_state", m)
+    constellation.set_value("fc1_state", m)
+    constellation.set_value("fc2_state", m)
+    constellation.set_value("constellation_state", m)
+    
     constellation.set_value("launch_stage", "running")
 
 
@@ -1209,9 +1222,15 @@ def launch(username, config, constellation_name, tags, constellation_directory):
     else:
         constellation_prefix = config.split("OSRF VRC Constellation ")[1]
 
-    credentials_softlayer = get_cloudsim_config()['softlayer_path']
+    cs_cfg = get_cloudsim_config()
+    credentials_softlayer = cs_cfg['softlayer_path']
+    log("softlayer %s" % credentials_softlayer)
     constellation = ConstellationState(constellation_name)
-
+    
+    if cs_cfg.has_key('launch_stage'):
+        constellation.set_value("launch_stage", cs_cfg["launch_stage"])
+    else:
+        constellation.set_value("launch_stage", "nothing")
     # init the redis db info
     constellation.set_value("gazebo", "not running")
     constellation.set_value("simulation_glx_state", "not running")
@@ -1237,8 +1256,8 @@ def launch(username, config, constellation_name, tags, constellation_directory):
     #
     # Skip the OS reload
     #
-    #constellation.set_value("launch_stage", "os_reload")
-    constellation.set_value("launch_stage", "nothing")
+    constellation.set_value("launch_stage", "os_reload")
+    
 
     log("Reload OS machines: %s" % constellation_name)
     reload_os_machines(constellation_name, constellation_prefix, credentials_softlayer)
@@ -1260,6 +1279,7 @@ def launch(username, config, constellation_name, tags, constellation_directory):
     reboot_machines(constellation_name, constellation_directory)
     # wait for machines to be back on line
     run_machines(constellation_name, constellation_directory)
+
 
 
 def terminate(constellation_name, osrf_creds_fname):
@@ -1307,7 +1327,7 @@ class VrcCase(unittest.TestCase):
         constellation_name = 'test_vrc_contest_toto'
         startup_scripts(constellation_name)
 
-    def test_zip_create(self):
+    def atest_zip_create(self):
         constellation_name = "toto"
         constellation_directory = os.path.join(get_test_path("zip_test"))
         router_ip = '50.23.225.173'
@@ -1318,13 +1338,13 @@ class VrcCase(unittest.TestCase):
         s = get_sim_script('drcsim', '50.97.149.35')
         print(s)
 
-    def atest_launch(self):
+    def test_launch(self):
 
         constellation_prefix = "02"
         launch_stage = None  # use the current stage
 
         launch_stage = "nothing"
-        #launch_stage = "os_reload"
+        launch_stage = "os_reload"
         #"nothing", "os_reload", "init_router", "init_privates", "zip",  "change_ip", "startup", "reboot", "running"
 
         self.constellation_name = 'test_vrc_contest_%s' % constellation_prefix
@@ -1353,8 +1373,10 @@ class VrcCase(unittest.TestCase):
 
         if launch_stage:
             constellation.set_value("launch_stage", launch_stage)
-        launch(self.username, self.constellation_name, constellation_prefix, self.credentials_softlayer, self.constellation_directory)
-
+        config = "OSRF VRC Constellation %s" % constellation_prefix
+        
+        launch(self.username, config, self.constellation_name, self.tags, self.constellation_directory)
+        
         sweep_count = 2
         for i in range(sweep_count):
             print("monitoring %s/%s" % (i, sweep_count))
