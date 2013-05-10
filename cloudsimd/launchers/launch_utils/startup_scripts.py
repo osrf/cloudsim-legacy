@@ -278,6 +278,9 @@ echo "mercurial installed" >> /home/ubuntu/setup.log
 apt-get install -y ntp
 echo "ntp installed" >> /home/ubuntu/setup.log
 
+apt-get install -y openvpn
+echo "ntp installed" >> /home/ubuntu/setup.log
+
 apt-get install -y apache2
 echo "apache2 installed" >> /home/ubuntu/setup.log
 

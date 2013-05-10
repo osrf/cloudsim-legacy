@@ -252,7 +252,7 @@ chmod +x $DIR/reboot_sim.bash
 
 cat <<DELIM > $DIR/ping_gazebo.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP ". /usr/share/drcsim/setup.sh; timeout 5 gztopic list"
+ssh -t -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP ". /usr/share/drcsim/setup.sh; timeout 5 gztopic list"
 DELIM
 chmod +x $DIR/ping_gazebo.bash
 

@@ -166,7 +166,7 @@ def monitor_launch_state(constellation_name, ssh_client,  machine_state, dpkg_cm
 def monitor_simulator(constellation_name, ssh_client):
     """
     Detects if the simulator is running and writes the 
-    result into the "gazebo" ditionnary key 
+    result into the "gazebo" dictionary key 
     """
     if ssh_client == None:
         #constellation.set_value("gazebo", "not running")
