@@ -1375,7 +1375,7 @@ class VrcCase(unittest.TestCase):
             constellation.set_value("launch_stage", launch_stage)
         config = "OSRF VRC Constellation %s" % constellation_prefix
         
-        #launch(self.username, config, self.constellation_name, self.tags, self.constellation_directory)
+        launch(self.username, config, self.constellation_name, self.tags, self.constellation_directory)
         
         sweep_count = 2
         for i in range(sweep_count):
