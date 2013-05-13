@@ -24,7 +24,6 @@ from launchers.launch_utils.launch_db import get_cloudsim_config, set_cloudsim_c
 import traceback
 
 
-
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
