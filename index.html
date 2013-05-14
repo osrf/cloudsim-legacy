@@ -4,144 +4,54 @@
 	<meta charset="utf-8"/>
 	<title>CloudSim</title>
 </head>
-<body style="text-align: center; background-color: #f7f7f7; padding-top: 100px;">
-		<div style="padding-bottom: 25px;">
-			<img src="/js/images/CloudSim_Logo.png" height="90px"/>
-		</div>
-		<div class="roundboxshadow" style="text-align: center; margin: 0 auto; width: 450px; border: solid 2px #b3b3b3">
-			<form action="/cloudsim/inside/cgi-bin/usercheck.py" method="GET">
-			<!-- input type="text" name="openid_identifier" / -->
-			<input type="hidden" name="openid_identifier" value="https://www.google.com/accounts/o8/id"/>
-			<input type="hidden" name="openid.ns.ext1" value="http://openid.net/srv/ax/1.0" />
-			<input type="hidden" name="openid.ext1.mode" value="fetch_request" />
-			<input type="hidden" name="openid.ext1.type.email" value="http://axschema.org/contact/email" />
-			<input type="hidden" name="openid.ext1.required" value="email" />
-			<p style="padding-top:10px;">
-			<button type="submit" class="loginButton">Login with your Google ID</button>
-			</p>
-		    </form>
-			<p><a href="http://www.google.com/accounts/logout" class="logoutButton">Logout of your Google ID</a></p>
-			<p style="padding: 5px 20px; font-family: arial; font-size: 15px;">Welcome to the OSRF CloudSim service. Using this service, you can launch and access simulation machines. For more information please contact The Open Source Robotics Foundation at <a style="white-space: nowrap; color:#333;" href="mailto:cloudsim-info@osrfoundation.org">cloudsim-info@osrfoundation.org</a>.</p>
-			<p><a style="white-space: nowrap; text-decoration: none; color:#3b73c3;font-weight: bold; font-size: 18px;" href="http://www.osrfoundation.org">Open Source Robotics Foundation</a></p>
-		<br/><br/><br/><br/>
-		</div>
+<body>
+   <img src="/cloudsim/js/images/CloudSim_Logo.png" width="200px"/>
+   <div class="roundboxshadow">
+      <form action="/cloudsim/inside/cgi-bin/usercheck.py" method="GET">
+         <input type="hidden" name="openid_identifier" value="https://www.google.com/accounts/o8/id"/>
+         <input type="hidden" name="openid.ns.ext1" value="http://openid.net/srv/ax/1.0" />
+         <input type="hidden" name="openid.ext1.mode" value="fetch_request" />
+         <input type="hidden" name="openid.ext1.type.email" value="http://axschema.org/contact/email" />
+         <input type="hidden" name="openid.ext1.required" value="email" />
+         <p><button type="submit" class="loginButton">Login with your Google ID</button></p>
+      </form>
+      <p><a href="http://www.google.com/accounts/logout" class="logoutButton">Logout of your Google ID</a></p>
+      <p class="welcomeMsg">Welcome to the OSRF CloudSim service. Using this service, you can launch and access
+         simulation machines. For more information please contact The Open Source Robotics Foundation at
+         <a href="mailto:cloudsim-info@osrfoundation.org">cloudsim-info@osrfoundation.org</a>.</p>
+      <p><a class="osrfButton" href="http://www.osrfoundation.org">Open Source Robotics Foundation</a></p>
+   </div>
 </body>
 </html>
 <style type="text/css">
-.roundboxshadow 
-{
-	height: 275px;
-	background-color: #e7e7e7;
-  -moz-box-shadow: 3px 3px 5px #535353;
-  -webkit-box-shadow: 3px 3px 5px #535353;       
-  box-shadow: 3px 3px 5px #535353;
-  -moz-border-radius: 6px 6px 6px 6px;
-  -webkit-border-radius: 6px;  
-  border-radius: 6px 6px 6px 6px;
-}
-
-
-    .loginButton {
-        
-        -moz-box-shadow:inset 0px 1px 0px 0px #bee2f9;
-        -webkit-box-shadow:inset 0px 1px 0px 0px #bee2f9;
-        box-shadow:inset 0px 1px 0px 0px #bee2f9;
-        
-        background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #63b8ee), color-stop(1, #468ccf));
-        background:-moz-linear-gradient(top, #63b8ee 5%, #468ccf 100%);
-        background:-webkit-linear-gradient(top, #63b8ee 5%, #468ccf 100%);
-        background:-o-linear-gradient(top, #63b8ee 5%, #468ccf 100%);
-        background:-ms-linear-gradient(top, #63b8ee 5%, #468ccf 100%);
-        background:linear-gradient(to bottom, #63b8ee 5%, #468ccf 100%);
-        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#63b8ee', endColorstr='#468ccf',GradientType=0);
-        
-        background-color:#63b8ee;
-        
-        -moz-border-radius:6px;
-        -webkit-border-radius:6px;
-        border-radius:6px;
-        
-        border:1px solid #3866a3;
-        
-        display:inline-block;
-        color:#14396a;
-        font-family:arial;
-        font-size:18px;
-        font-weight:bold;
-        padding:6px 24px;
-        text-decoration:none;
-        
-        text-shadow:0px 1px 0px #7cacde;
-        
-    }
-    .loginButton:hover {
-        
-        background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #468ccf), color-stop(1, #63b8ee));
-        background:-moz-linear-gradient(top, #468ccf 5%, #63b8ee 100%);
-        background:-webkit-linear-gradient(top, #468ccf 5%, #63b8ee 100%);
-        background:-o-linear-gradient(top, #468ccf 5%, #63b8ee 100%);
-        background:-ms-linear-gradient(top, #468ccf 5%, #63b8ee 100%);
-        background:linear-gradient(to bottom, #468ccf 5%, #63b8ee 100%);
-        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#468ccf', endColorstr='#63b8ee',GradientType=0);
-        
-        background-color:#468ccf;
-    }
-    .loginButton:active {
-        position:relative;
-        top:1px;
-    }
-
-
-    .logoutButton {
-        
-        -moz-box-shadow:inset 0px 1px 3px 0px #91b8b3;
-        -webkit-box-shadow:inset 0px 1px 3px 0px #91b8b3;
-        box-shadow:inset 0px 1px 3px 0px #91b8b3;
-        
-        background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #768d87), color-stop(1, #6c7c7c));
-        background:-moz-linear-gradient(top, #768d87 5%, #6c7c7c 100%);
-        background:-webkit-linear-gradient(top, #768d87 5%, #6c7c7c 100%);
-        background:-o-linear-gradient(top, #768d87 5%, #6c7c7c 100%);
-        background:-ms-linear-gradient(top, #768d87 5%, #6c7c7c 100%);
-        background:linear-gradient(to bottom, #768d87 5%, #6c7c7c 100%);
-        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#768d87', endColorstr='#6c7c7c',GradientType=0);
-        
-        background-color:#768d87;
-        
-        -moz-border-radius:5px;
-        -webkit-border-radius:5px;
-        border-radius:5px;
-        
-        border:1px solid #566963;
-        
-        display:inline-block;
-        color:#ffffff;
-        font-family:arial;
-        font-size:15px;
-        font-weight:bold;
-        padding:9px 23px;
-        text-decoration:none;
-        
-        text-shadow:0px -1px 0px #2b665e;
-        
-    }
-    .logoutButton:hover {
-        
-        background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #6c7c7c), color-stop(1, #768d87));
-        background:-moz-linear-gradient(top, #6c7c7c 5%, #768d87 100%);
-        background:-webkit-linear-gradient(top, #6c7c7c 5%, #768d87 100%);
-        background:-o-linear-gradient(top, #6c7c7c 5%, #768d87 100%);
-        background:-ms-linear-gradient(top, #6c7c7c 5%, #768d87 100%);
-        background:linear-gradient(to bottom, #6c7c7c 5%, #768d87 100%);
-        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#6c7c7c', endColorstr='#768d87',GradientType=0);
-        
-        background-color:#6c7c7c;
-    }
-    .logoutButton:active {
-        position:relative;
-        top:1px;
-    }
-
-
-
+body{text-align: center; background-color: #f7f7f7; padding-top: 75px;}
+a{ color:#333;white-space: nowrap}
+.logo{background: url('/js/images/CloudSim_Logo.png') no-repeat; padding-bottom: 25px;}
+.welcomeMsg{padding: 5px 20px; font-family: arial; font-size: 15px;}
+.osrfButton{white-space: nowrap; text-decoration: none; color:#3b73c3;font-weight: bold; font-size: 18px;}
+.roundboxshadow {height: 275px; background-color: #e7e7e7;-moz-box-shadow: 3px 3px 5px #535353;-webkit-box-shadow: 3px 3px 5px #535353;
+   box-shadow: 3px 3px 5px #535353;-moz-border-radius: 6px 6px 6px 6px;-webkit-border-radius: 6px; border-radius: 6px 6px 6px 6px;
+   text-align: center; margin: 0 auto; width: 450px; border: solid 2px #b3b3b3; margin-top:50px;}
+.loginButton {-moz-box-shadow:inset 0px 1px 0px 0px #bee2f9;-webkit-box-shadow:inset 0px 1px 0px 0px #bee2f9;box-shadow:inset 0px 1px 0px 0px #bee2f9;
+   background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #63b8ee), color-stop(1, #468ccf));background:-moz-linear-gradient(top, #63b8ee 5%, #468ccf 100%);
+   background:-webkit-linear-gradient(top, #63b8ee 5%, #468ccf 100%);background:-o-linear-gradient(top, #63b8ee 5%, #468ccf 100%);background:-ms-linear-gradient(top, #63b8ee 5%, #468ccf 100%);
+   background:linear-gradient(to bottom, #63b8ee 5%, #468ccf 100%);filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#63b8ee', endColorstr='#468ccf',GradientType=0);
+   background-color:#63b8ee;-moz-border-radius:6px;-webkit-border-radius:6px;border-radius:6px;border:1px solid #3866a3;display:inline-block;color:#14396a;font-family:arial;
+   font-size:18px;font-weight:bold;padding:6px 24px;text-decoration:none;text-shadow:0px 1px 0px #7cacde;margin-top:10px;}
+.loginButton:hover{background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #468ccf), color-stop(1, #63b8ee));
+   background:-moz-linear-gradient(top, #468ccf 5%, #63b8ee 100%);background:-webkit-linear-gradient(top, #468ccf 5%, #63b8ee 100%);
+   background:-o-linear-gradient(top, #468ccf 5%, #63b8ee 100%);background:-ms-linear-gradient(top, #468ccf 5%, #63b8ee 100%);
+   background:linear-gradient(to bottom, #468ccf 5%, #63b8ee 100%);background-color:#468ccf;
+   filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#468ccf', endColorstr='#63b8ee',GradientType=0);}
+.loginButton:active{position:relative;top:1px;}
+.logoutButton{-moz-box-shadow:inset 0px 1px 3px 0px #91b8b3;-webkit-box-shadow:inset 0px 1px 3px 0px #91b8b3;box-shadow:inset 0px 1px 3px 0px #91b8b3;
+   background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #768d87), color-stop(1, #6c7c7c));background:-moz-linear-gradient(top, #768d87 5%, #6c7c7c 100%);
+   background:-webkit-linear-gradient(top, #768d87 5%, #6c7c7c 100%);background:-o-linear-gradient(top, #768d87 5%, #6c7c7c 100%);background:-ms-linear-gradient(top, #768d87 5%, #6c7c7c 100%);
+   background:linear-gradient(to bottom, #768d87 5%, #6c7c7c 100%);filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#768d87', endColorstr='#6c7c7c',GradientType=0);
+   background-color:#768d87;-moz-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;border:1px solid #566963;display:inline-block;color:#ffffff;font-family:arial;
+   font-size:15px;font-weight:bold;padding:9px 23px;text-decoration:none;text-shadow:0px -1px 0px #2b665e;}
+.logoutButton:hover {background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #6c7c7c), color-stop(1, #768d87));background:-moz-linear-gradient(top, #6c7c7c 5%, #768d87 100%);
+   background:-webkit-linear-gradient(top, #6c7c7c 5%, #768d87 100%);background:-o-linear-gradient(top, #6c7c7c 5%, #768d87 100%);background:-ms-linear-gradient(top, #6c7c7c 5%, #768d87 100%);
+   background:linear-gradient(to bottom, #6c7c7c 5%, #768d87 100%);filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#6c7c7c', endColorstr='#768d87',GradientType=0);background-color:#6c7c7c;}
+.logoutButton:active{position:relative;top:1px;}
 </style>
