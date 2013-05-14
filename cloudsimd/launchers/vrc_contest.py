@@ -609,10 +609,10 @@ esac
 DELIM
 
 chmod +x  /etc/init.d/vpcroute
-ln -s /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
+ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
 
 # invoke it now to add route to the router
-/etc/init.d/vpcroute start
+/etc/init.d/vpcroute start || true
 
 echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
 apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` gnome-session-fallback
@@ -693,8 +693,8 @@ respawn
 DELIM
 
 # start vrc_sniffer and vrc_controllers
-start vrc_sniffer
-start vrc_controller
+start vrc_sniffer || true
+start vrc_controller || true
 
 
 
