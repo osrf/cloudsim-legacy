@@ -4,14 +4,17 @@ var machine_configurations = null;
 function add_osrf_cloud_credentials_widget(place_holder_div_name)
 {
 
-    //var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs");
-    //machine_configurations = eval( '(' + x + ')' );
     var the_div = document.getElementById(place_holder_div_name);
-    var str  = '<h2>OSRF cloud robotics credentials</h2>'; 
-    str += '';
-    str += 'Name <input type="text" name="user"/>';
-    str += 'API key <input type="text" name="api_key"/>';
-    str += '<button type="button">Override</button><br><br>Set new credentials. Those changes will be used for each new constellations';
+    var str = '<fieldset style="padding-right:5%;">';
+    str += '<label>Name</label>';
+    str += '<input type="text" name="user"/>';
+    str += '</fieldset>';
+    str += '<fieldset style="padding-right:5%;">';
+    str += '<label>API Key</label>';
+    str += '<input type="text" name="api_key"/>';
+    str += '</fieldset>';
+    str += '<button type="button" style="background: #3573c0; color: white; font: bold 14px; padding: 4px; cursor: pointer; -moz-border-radius: 4px; -webkit-border-radius: 4px;">Override</button>';
+    str += '<p>Set new credentials. Those changes will be used for each new constellations</p>';
     the_div.innerHTML = str;
     
     var button = the_div.querySelector("button");
