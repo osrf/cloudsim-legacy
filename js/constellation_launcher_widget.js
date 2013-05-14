@@ -8,9 +8,18 @@ function create_constellation_launcher_widget(div_name)
     var machine_configurations = get_configurations();
 
     var div = document.getElementById(div_name);
+    div.setAttribute("class","module_content")
+    div.setAttribute("style","overflow:hidden;")
     
-    var desc = document.createElement("div");
-    desc.setAttribute("style", "width: 100%; float: left; height: 10px; padding: 5px 0px 0px 0px; position: relative;");
+    var desc = document.createElement("p");
+    desc.setAttribute("style", "font: bold 12px;");
+    
+    var wrapper_select = document.createElement('fieldset');
+    wrapper_select.setAttribute('style', 'width:48%; margin-right: 3%; margin-top: 0;');
+    var label1 = document.createElement('label');
+    label1.innerHTML = 'Constellation';
+    
+    wrapper_select.appendChild(label1);
     
     var configs_select = document.createElement('select');
     for(var configuration in machine_configurations)
@@ -28,7 +37,11 @@ function create_constellation_launcher_widget(div_name)
         desc.innerHTML = description;	
     }
     
+    wrapper_select.appendChild(configs_select);
+    
     var launch_button= document.createElement('input');
+    launch_button.setAttribute('style','background: #3573c0; margin-top:4px; color: #fff; padding:2px 6px;\
+                                  cursor: pointer; border-radius: 4px; -moz-border-radius: 4px; -webkit-border-radius: 4px;');
     launch_button.setAttribute('type','button');
     launch_button.setAttribute('value','Launch');
     
@@ -49,15 +62,17 @@ function create_constellation_launcher_widget(div_name)
        
     };
     
-    var title = document.createElement('h2');
-    title.innerHTML = 'Launch a machine constellation';
+    //var title = document.createElement('h2');
+    //title.innerHTML = 'Launch a machine constellation';
     
     configs_select.onchange();
     
-    div.appendChild(title);
-    div.appendChild(configs_select);
-    div.appendChild(launch_button);
+    //div.appendChild(title);
+    div.appendChild(wrapper_select);
     div.appendChild(desc);
+    div.appendChild(launch_button);
+    
+    //alert(div);
     
 }
 
