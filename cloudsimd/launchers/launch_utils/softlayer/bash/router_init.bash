@@ -266,7 +266,7 @@ chmod +x $DIR/ping_gl.bash
 
 cat <<DELIM > $DIR/stop_sim.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "killall -INT roslaunch"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "bash cloudsim/stop_sim.bash"
 DELIM
 chmod +x $DIR/stop_sim.bash
 

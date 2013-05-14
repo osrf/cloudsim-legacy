@@ -60,26 +60,26 @@ def get_ping_data(ping_str):
     return (mini, avg, maxi, mdev)
 
 
-def start_simulator(constellation, package_name, launch_file_name, launch_args, task_timeout):
-    constellation_dict = get_constellation_data(constellation)
+def start_simulator(constellation_name, package_name, launch_file_name, launch_args, task_timeout):
+    constellation = ConstellationState(constellation_name)
+    constellation_dict = get_constellation_data(constellation_name)
     constellation_directory = constellation_dict['constellation_directory']
-
-    sim_ip = constellation_dict['sim_ip']
+    router_ip = constellation.get_value("router_public_ip")
     c = "bash cloudsim/start_sim.bash %s %s %s" % (package_name, launch_file_name, launch_args)
     cmd = c.strip()
-    ssh_sim = SshClient(constellation_directory, 'key-sim', 'ubuntu', sim_ip)
-
-    r = ssh_sim.cmd(cmd)
+    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+    r = ssh_router.cmd(cmd)
     log('start_simulator %s' % r)
 
 
-def stop_simulator(constellation):
-    constellation_dict = get_constellation_data(constellation)
+def stop_simulator(constellation_name):
+    constellation = ConstellationState(constellation_name)
+    constellation_dict = get_constellation_data(constellation_name)
     constellation_directory = constellation_dict['constellation_directory']
-    sim_ip = constellation_dict['sim_ip']
+    router_ip = constellation.get_value("router_public_ip")
     cmd = "bash cloudsim/stop_sim.bash"
-    ssh_sim = SshClient(constellation_directory, 'key-sim', 'ubuntu', sim_ip)
-    r = ssh_sim.cmd(cmd)
+    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+    r = ssh_router.cmd(cmd)
     log('stop_simulator %s' % r)
 
 
@@ -521,6 +521,9 @@ cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
 echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
 
 . /usr/share/drcsim/setup.sh
+if [ -f /home/ubuntu/local/share/vrc_arenas/setup.sh ]; then
+ . /home/ubuntu/local/share/vrc_arenas/setup.sh 
+fi
 export ROS_IP=""" + machine_ip + """
 export GAZEBO_IP=""" + machine_ip + """
 export DISPLAY=:0
@@ -530,16 +533,17 @@ DELIM
 
 cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
 
-gzlog stop
-# Let cleanup start, which pauses the world
-sleep 5
-#echo `date`
-  while [ "`timeout 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1`" != " F" ]; do
-    #echo "(`date`) Waiting for world to be unpaused, signaling end of log cleanup"
+. /usr/share/drcsim/setup.sh
+
+if gztopic list; then
+  gzlog stop
+  # Let cleanup start, which pauses the world
+  sleep 5
+  while [ "\`timeout 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1\`" != " F" ]; do
     sleep 1
   done
-  #echo `date`
-  killall -INT roslaunch pub_atlas_command
+fi
+killall -INT roslaunch || true
 
 DELIM
 
