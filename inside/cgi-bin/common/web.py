@@ -192,6 +192,75 @@ def get_javascripts(exclude_list=[]):
                 scripts.append(s + f + '"></script>')
     return '\n'.join(scripts)
 
+def get_javascripts(exclude_list=[]):
+    
+    current = os.path.split(__file__)[0]
+    script_dir = os.path.join(current,'..','..','..','js')
+    script_dir = os.path.abspath(script_dir)
+    files = os.listdir(script_dir)
+    scripts = []
+    s = '<script language="javascript" type="text/javascript" src="/js/'
+    for f in files:
+        if f.endswith('.js'):
+            if f not in exclude_list:
+                scripts.append(s + f + '"></script>')
+    return '\n'.join(scripts)
+
+
+def get_meta():
+   meta = "<meta charset='utf-8'/>\n\
+               <link href='/cloudsim/js/layout.css' rel='stylesheet'  type='text/css' media='screen' />\n\
+               <script src='/cloudsim/js/jquery/jquery-1.8.3.min.js'></script>\n\
+               <script src='/cloudsim/js/jquery/jquery-ui.min.js'></script>\n\
+               <script type='text/javascript'>\n\
+                   $(function(){\n\
+                       if ($('#sidebar').height() < $(document).height()){\n\
+                           $('#sidebar').css('height', $(document).height()+'px');\n\
+                       }\n\
+                   });\n\
+               </script>"
+   return meta
+
+def get_frame(email, section = ""):
+    udb = UserDatabase()
+    role = udb.get_role(email)
+    
+    first = "<header id='header'><hgroup><h1 class='site_title'>\n\
+             <img src='/cloudsim/js/images/logocs.png' style='height:50px;padding-top: 7px;'/>\n\
+             </h1><h2 class='section_title'>" + section + "</h2></hgroup></header>"
+    
+    sb_user = "<section id='secondary_bar'><div class='user'><p>" + email + "</p></div>"
+    
+    if not section == "Home":
+        sb_breadcrumb = "<div class='breadcrumbs_container'><article class='breadcrumbs'><a href='/cloudsim/inside/cgi-bin/home'>Home</a> <div class='breadcrumb_divider'></div><a class='current'>" + section + "</a></article></div>"
+    else:
+        sb_breadcrumb = "<div class='breadcrumbs_container'><article class='breadcrumbs'><a class='current'>Home</a></article></div>"
+    
+    if(role == "admin"):
+        li_settings = "<li class='icn_settings'><a href='/cloudsim/inside/cgi-bin/settings.py'>Settings</a></li>"
+    else:
+        li_settings = ""        
+    
+    sb_menu = " <aside id='sidebar' class='column'>\n\
+                    <h3><a href='/cloudsim/inside/cgi-bin/home'>Home</a></h3>\n\
+                    <ul class='toggle'>\n\
+                        <li class='icn_categories'><a href='/cloudsim/inside/cgi-bin/console2.py'>Console</a></li>" + li_settings + "\n\
+                        <li class='icn_folder'><a target='_blank' href='https://bitbucket.org/osrf/cloudsim'>Source</a></li>\n\
+                        <li class='icn_video'><a target='_blank' href='http://gazebosim.org/wiki/CloudSim/Tutorials'>Tutorials</a></li>\n\
+                        <li class='icn_new_article'><a target='_blank' href='https://bitbucket.org/osrf/cloudsim/issues'>Issue Tracker</a></li>\n\
+                        <li class='icn_tags'><a target='_blank' href='http://www.osrfoundation.org'>OSRF</a></li>\n\
+                        <li class='icn_security'><a href='/cloudsim/inside/cgi-bin/logout'>Logout</a></li>\n\
+                    </ul>\n\
+                    <footer>\n\
+                        <hr />\n\
+                        <p><strong>CloudSim Version 1.4.0</strong></p>\n\
+                        <p><a href='http://osrfoundation.org'>Open Source Robotics Foundation</a></p>\n\
+                    </footer>\n\
+                </aside><!-- end of sidebar -->"
+    
+    frame = first + sb_user + sb_breadcrumb + sb_menu
+    return frame
+
 #########################################################################
     
    
