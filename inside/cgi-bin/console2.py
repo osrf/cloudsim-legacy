@@ -7,7 +7,7 @@ import json
 import os
 
 from common.web import get_javascripts, authorize, UserDatabase,\
-    get_cloudsim_version_txt, print_http_header
+    print_http_header, get_meta, get_frame
 cgitb.enable()
 
 
@@ -21,7 +21,8 @@ if method != 'GET':
 email = authorize()
 udb = UserDatabase()
 role = udb.get_role(email)
-version = get_cloudsim_version_txt()
+meta = get_meta()
+frame = get_frame(email, 'Console')
 
 user_info = json.dumps({'user':email, 'role':role})
 scripts = get_javascripts(['jquery-1.8.3.min.js', 'jquery.flot.js' ])
@@ -29,61 +30,32 @@ scripts = get_javascripts(['jquery-1.8.3.min.js', 'jquery.flot.js' ])
 print_http_header()
 
 page =  """<!DOCTYPE html>
-<html>
- <head>
- 
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Cloudsim console</title>
-
-
-    
-<link href="/js/layout.css" rel="stylesheet" type="text/css">
-<link rel="stylesheet" href="/js/jquery-ui.css" />
-
-
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.1/jquery-ui.min.js"></script>
-
-<script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
-
-
-""" + scripts +"""
-    
-    
-<script language="javascript">
-
+<html lang="en">
+<head>
+    <title>CloudSim - Console</title>""" + meta + """
+    <script language="javascript">
+    $(function(){
+        var user_info = get_user_info();
+        console.log("User role: " +  user_info.role);
+        if(user_info.role != "user")
+        {
+            $('.officer_only').show();
+            create_constellation_launcher_widget("launcher_div");
+        }
+        create_constellations_widget("constellations_div");
+        setTimeout(constellation_update , 500); 
+    });
     function get_user_info()
     {
        var user_info = """ + user_info + """;
        return user_info; 
     }
     
-    function on_load_page()
-    {
-        var user_info = get_user_info();
-        console.log("User role: " +  user_info.role);
-        if(user_info.role != "user")
-        {
-            $('#officer_only').show();
-            create_constellation_launcher_widget("launcher_div");
-        }
-        if(user_info.role == "admin")
-        {
-            $('.admin_only').show();
-        }
-        
-        create_constellations_widget("constellations_div");
-        
-        setTimeout(constellation_update , 500);        
-    }
-    
-    
     function constellation_update()
     {
         try
         {
             console.log("update");
-            
             var callback = function(str_data)
             {
                var constellations = eval( '(' + str_data + ')' );
@@ -103,58 +75,26 @@ page =  """<!DOCTYPE html>
         // lets do it when we get the constellations data
         async_get_constellations(callback);
     }
-    </script>
-    
-    
+    </script> 
 </head>
-<body onload = "on_load_page()">
-
-    <div style="float:left;">
-        <!-- img src="/js/images/osrf.png" width="200px"/ -->
-        <img src="/js/images/CloudSim_Logo.png" width="200px"/>
-        <div  id="server_monitor_div" style="float:left">
-        
-        <!-- img src="/js/images/DARPA_Logo.jpg" width="200px"/ -->
-        <!-- HOLA -->
-        
-    </div>
-
-<div style="float:right;">
-
-Welcome, """ + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-<div class="admin_only" style="display:none; padding: 20px 0px 0px 0px;" align="right">
-    <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
-</div>
-</div>    
-
-
-<div style="width:100%; float:left;"><br><hr><br></div>
-
-    <div id='officer_only' style="display: none;">
-    <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  background-color:#f1f1f2;">
-    </div>
-    </div>
-    
-    <div id="constellations_div" style="width:100%; float:left; border-radius: 15px;  border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
-    </div>
-
-
-<div id="footer" style="width:100%; float:left; ">
-   
-    <br>
-    <hr>
-    
-    <div style="width:50%; float:left; margin-top:5px;">
-            CloudSim Version """ + version + """
-    </div>
-    
-    <div style="width:50%; float:right; " align="right">
-     <img src="/js/images/osrf-pos-horz-cmyk.png" height="30px"/>
-    </div>
-</div>
-
-    
+<body>""" + frame + """
+    <section id="main" class="column">
+        <article class="module width_full officer_only" style="display:none;">
+            <header><h3>Launch a Machine Constellation</h3></header>
+            <div id="launcher_div"></div>
+        </article>
+        <article class="module width_full">
+            <header><h3>Constellations</h3></header>
+            <div class="module_content" style="overflow:hidden;">
+                <div id="constellations_div"></div>
+            </div>
+        </article>
+        <div class="clear"></div>
+        <div class="spacer"></div>
+    </section>    
 </body>
+<script language="javascript" type="text/javascript" src="/cloudsim/js/jquery/jquery.flot.js"></script>
+""" + scripts +"""
 </html>
 
 """

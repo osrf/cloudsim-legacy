@@ -7,7 +7,7 @@ import json
 import os
 
 from common.web import get_javascripts, authorize, UserDatabase,\
-    get_cloudsim_version_txt, print_http_header
+    get_cloudsim_version_txt, print_http_header, get_meta, get_frame
 cgitb.enable()
 
 
@@ -28,34 +28,26 @@ user_info = json.dumps(user)
 scripts = get_javascripts(['jquery-1.8.3.min.js'])
 
 print_http_header()
+meta = get_meta()
+frame = get_frame(email, 'Settings')
 
 page =  """<!DOCTYPE html>
-<html>
- <head>
- 
-   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-   <title>Settings</title>
-
-    
-   <link href="/js/layout.css" rel="stylesheet" type="text/css">
-   <link rel="stylesheet" href="/js/jquery-ui.css" />
-
-   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-
-""" + scripts +"""
+<html lang="en">
+<head>
+    """ + meta + """
+    <title>CloudSim - Settings</title>
+    """ + scripts +"""
     
 <script language="javascript">
-
-    function on_load_page()
-    {        
+    $(function(){
         $('.admin_only').show();
         
         add_osrf_cloud_credentials_widget("osrf_credentials_div");
         add_cloud_credentials_widget("amazon_credentials_div");
         add_users_admin_widget("users_div");
         
-        setTimeout(users_update , 500);        
-    }
+        setTimeout(users_update , 500);
+    });
     
     function users_update()
     {
@@ -78,56 +70,38 @@ page =  """<!DOCTYPE html>
     
 
 </head>
-<body onload = "on_load_page()">
-
-    <div style="float:left;">
-        <img src="/js/images/CloudSim_Logo.png" width="200px"/>
-        <div  id="server_monitor_div" style="float:left">       
-    </div>
-
-<div style="float:right;">
-
-Welcome, """ + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-<div class="admin_only" style="display:none; padding: 20px 0px 0px 0px;" align="right">
-    <a href="/cloudsim/inside/cgi-bin/admin_download">SSH key download</a><br>
-    <a href="/cloudsim/inside/cgi-bin/console">Back to the console</a><br>
-</div>
-</div>    
-
-
-<div style="width:100%; float:left;"><br><hr><br></div>
-
-    <div class="admin_only" style="display:none;" >
-
-        <div id="osrf_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
-        </div>
+<body onload = "on_load_page()">""" + frame + """
+    <section id="main" class="column admin_only" style="display:none;">
+        <article class="module width_3_quarter">
+            <header><h3>OSRF Cloud Credentials</h3></header>
+            <div class="module_content">
+                <div id="osrf_credentials_div"></div>
+            </div>
+        </article>
+        <article class="module width_quarter">
+                <div class="module_content" style="text-align:center;">
+                <p style="text-align:left;">Download the CloudSim SSH key below for sftp access.</p>
+                    <a href="/cloudsim/inside/cgi-bin/admin_download">
+                    <button type="button" style="background: #3573c0; color: white; font: bold 14px; padding: 4px; cursor: pointer; -moz-border-radius: 4px; -webkit-border-radius: 4px;">Download SSH Key</button></a>
+                </div>
+        </article>
+        <article class="module width_3_quarter">
+            <header><h3>Amazon Web Services Credentials</h3></header>
+            <div class="module_content">
+                <div id="amazon_credentials_div"></div>
+            </div>
+        </article>
+        <article class="module width_3_quarter">
+            <header><h3>CloudSim Users</h3></header>           
+            <div id="users_div"></div>
+        </article>
         
-        <div id="amazon_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
-        </div>
         
-        <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
-        </div>
-
-    </div>
-
-<div id="footer" style="width:100%; float:left; ">
- 
-    <br>
-    <hr>
-    
-    <div style="width:50%; float:left; margin-top:5px;">
-            CloudSim Version """ + version + """
-    </div>
-    
-    <div style="width:50%; float:right; " align="right">
-     <img src="/js/images/osrf-pos-horz-cmyk.png" height="30px"/>
-    </div>
-</div>
-
-   
+        <div class="clear"></div>
+        <div class="spacer"></div>
+    </section>   
 </body>
 </html>
-
 """
 
 print(page)
