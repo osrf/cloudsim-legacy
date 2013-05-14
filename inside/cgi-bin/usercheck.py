@@ -60,34 +60,20 @@ sdb.db[openid_session] = email
 sdb.save()
 common.print_http_header()
 
-version_info = common.get_cloudsim_version_txt()
-
 page = """
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-<link href="/js/layout.css" rel="stylesheet" type="text/css">
+    <meta charset="utf-8"/>
+    <meta http-equiv="refresh" content="0;url=/cloudsim/inside/cgi-bin/home" />
+    <title>CloudSim</title>
 </head>
-<body>
-<img src="/js/images/osrf.png" width="400px"/>
-<div>
-
-<h1>CloudSim %s</h1>
-
-</div>
-
-<div style="padding: 10px; margin-bottom:20px; margin-top:20px;" more="border-radius: 15px; border: 1px solid black; "> 
-<pre>
-
-</pre>
-</div>
-
-<a href="/cloudsim/inside/cgi-bin/console">Console</a><br>
-<a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-<a href="https://bitbucket.org/osrf/cloudsim">Source</a>
+<body style="text-align:center;padding-top:75px;background-color: #f7f7f7;">
+   <img src="/cloudsim/js/images/CloudSim_Logo.png" width="200px"/><br/>
+   <img src="/cloudsim/js/images/loading.gif" width="200px"/>
 </body>
-</html>
-""" % version_info
+<html>
+"""
 print(page)
 #print("Location: /cloudsim/inside/cgi-bin/console\n")
 
