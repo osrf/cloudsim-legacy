@@ -3,10 +3,10 @@ function create_constellations_widget(div_name)
 {
     console.log("create_constellations_widget " + div_name);
     var div = document.getElementById(div_name);
+    div.setAttribute("style","background-color: #a8a7a7;border:1px solid #535453;border-radius: 15px;-moz-border-radius: 15px;-webkit-border-radius: 15px;");
     
-    
-    var str = "<h2>Constellations</h2>";
-    div.innerHTML = str;
+    //var str = "<h2>Constellations</h2>";
+    //div.innerHTML = str;
 
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name)
@@ -60,19 +60,21 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     var top_div = document.createElement("div");
     
     top_div.id = "top";
+    top_div.setAttribute("style","background-color: #3573c0; border-top-left-radius: 15px; -moz-border-radius-topleft: 15px;\
+                         -webkit-border-top-left-radius: 15px; border-top-right-radius: 15px; -moz-border-radius-topright:  15px;\
+                         -webkit-border-top-right-radius: 15px;color: #ffffff; font-family: sans-serif; font-size:16px; margin-top: 0; padding:6px 20px;\
+                         background-image: linear-gradient(bottom, rgb(30,55,117) 16%, rgb(100,109,217) 87%);\
+                         background-image: -o-linear-gradient(bottom, rgb(30,55,117) 16%, rgb(100,109,217) 87%);\
+                         background-image: -moz-linear-gradient(bottom, rgb(30,55,117) 16%, rgb(100,109,217) 87%);\
+                         background-image: -webkit-linear-gradient(bottom, rgb(30,55,117) 16%, rgb(100,109,217) 87%);\
+                         background-image: -ms-linear-gradient(bottom, rgb(30,55,117) 16%, rgb(100,109,217) 87%);\
+                         background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0.16, rgb(30,55,117)), color-stop(0.87, rgb(100,109,217)));");
+  
+    var title_str = "<div><span>Constellation: <b>" + constellation_name + "</b></span>";
+    title_str    += "<span style='float: right;'>Launched By: <b>" + username + "</b></span></div>";
+    title_str    += "<div><span>Configuration: " + configuration_name + "</span>";
+    title_str    += "<span style='float: right;'>Launch Datetime: " + gmt + "</span></div>";
     
-    var title_str = " <h3 style=' margin-top:0; margin-bottom:0;'><table width='100%'><tr><td align='left'>";
-    title_str    +=   constellation_name + "</td><td align='right'><FONT SIZE=2> Launched by " + username + "</FONT></td></tr><tr><td><FONT SIZE=2>" + configuration_name + "</FONT></td><td align='right'><FONT SIZE=2> at GMT " + gmt + "</FONT></td></tr></table></h3>";
-    
-    top_div.style.backgroundColor ="#44497a";
-    top_div.style.borderTopLeftRadius = "15px";
-    top_div.style.borderTopRightRadius = "15px";
-    top_div.style.color = "white";
-    top_div.style.marginTop = "0";
-    top_div.style.color = "0";
-    top_div.style.float = "left";
-    top_div.style.width = "100%";
-    top_div.style.height = "100%";
     top_div.innerHTML = title_str;
     
     const_div.appendChild(top_div);
@@ -83,12 +85,13 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     var msg_div = document.createElement("div");
     msg_div.id = "error";
     msg_div.style.color = "red"; 
-    msg_div.style.float = "left";
     const_div.appendChild(msg_div);
 
     var terminate_button= document.createElement('input');
     terminate_button.setAttribute('type','button');
     terminate_button.setAttribute('value','Terminate');
+    terminate_button.setAttribute('style','margin-top:4px; background: #f4f4f4; color: #000; padding:2px 6px;\
+                                  cursor: pointer; border-radius: 4px; -moz-border-radius: 4px; -webkit-border-radius: 4px;');
 
     terminate_button.onclick =  function()
     {   
@@ -143,11 +146,11 @@ function constellation_remove(div_name, constellation_name)
 function _set_const_style(style)
 {
     style.width = "98%";
-    style.float = "left";
     style.border="1px solid #535453";
     style.borderRadius = "15px";
     style.margin = "1%";
-    style.backgroundColor = "#a8a7a7"; // f1f1f2
+    style.backgroundColor = "#cccccc"; // f1f1f2
+    style.overflow = "hidden";
 }
 
 
