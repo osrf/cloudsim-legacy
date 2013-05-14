@@ -489,8 +489,8 @@ apt-get update
 apt-get install -y python-software-properties
 
 
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
+mkdir -p /home/ubuntu/cloudsim
+mkdir -p /home/ubuntu/cloudsim/setup
 
 
 cat <<DELIM > /etc/rc.local
