@@ -645,7 +645,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     
     stop_sim = """#!/bin/bash
 
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "killall -INT roslaunch"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "gzlog stop && sleep 5 && while [ "`timeout 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1`" != " F" ]; do sleep 1; done && killall -INT roslaunch"
     
     """ % (sim_key_pair_name, SIM_IP)
     ssh_router.create_file(stop_sim, "cloudsim/stop_sim.bash")
