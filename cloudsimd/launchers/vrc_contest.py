@@ -225,7 +225,7 @@ def init_computer_data(constellation_name, prefixes):
         constellation.set_value('%s_key_name' % prefix, None)
 
 
-def get_router_script(machine_private_ip, ros_master_ip):
+def get_router_script(machine_private_ip, ros_master_ip, drc_package_name):
 
     s = """#!/bin/bash
 # Exit on error
@@ -356,14 +356,18 @@ ln -s /etc/init.d/iptables_cloudsim /etc/rc2.d/S99iptables_cloudsim
 /etc/init.d/iptables_cloudsim start
 
 
+# At least in some cases, we need to explicitly install graphviz before ROS to avoid apt-get dependency problems.
+sudo apt-get install -y graphviz
 # That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
 sudo apt-get install -y ros-fuerte-ros-comm
+# We need atlas_msgs, which is in drcsim
+sudo apt-get install -y """ + drc_package_name + """
 
 # roscore is in simulator's machine
 cat <<DELIM >> /etc/environment
 export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
 export ROS_IP=""" + machine_private_ip + """
-source /opt/ros/fuerte/setup.sh
+source /usr/share/drcsim/setup.sh
 DELIM
 
 apt-get install -y cloudsim-client-tools
@@ -398,9 +402,9 @@ exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -s 0.5 -v -d eth
 respawn
 DELIM
 
-# Create upstart vrc_bandwidth job
-cat <<DELIM > /etc/init/vrc_bandwidth.conf
-# /etc/init/vrc_bandwidth.conf
+# Create upstart vrc_bytecounter job
+cat <<DELIM > /etc/init/vrc_bytecounter.conf
+# /etc/init/vrc_bytecounter.conf
 
 description "OSRF cloud simulation platform"
 author  "Carlos Aguero<caguero@osrfoundation.org>"
@@ -408,15 +412,31 @@ author  "Carlos Aguero<caguero@osrfoundation.org>"
 start on runlevel [234]
 stop on runlevel [0156]
 
-exec vrc_wrapper.sh vrc_bandwidth.py -d /tmp > /var/log/vrc_bandwidth.log 2>&1
+exec vrc_bytecounter bond0 > /var/log/vrc_bytecounter.log 2>&1
+
+respawn
+DELIM
+
+# Create upstart vrc_netwatcher job
+cat <<DELIM > /etc/init/vrc_netwatcher.conf
+# /etc/init/vrc_netwatcher.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero<caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_wrapper.sh vrc_netwatcher.py > /var/log/vrc_netwatcher.log 2>&1
 
 respawn
 DELIM
 
 # start vrc_sniffer and vrc_controllers
-start vrc_sniffer
-start vrc_controller
-start vrc_bandwidth
+start vrc_sniffer || true
+start vrc_controller || true
+# Don't start the bytecounter here; netwatcher will start it as needed
+#start vrc_bytecounter
 
 mkdir -p /home/ubuntu/cloudsim/setup
 touch /home/ubuntu/cloudsim/setup/done
@@ -886,7 +906,7 @@ def initialize_private_machines(constellation_name, constellation_prefix, drcsim
     router_ip = constellation.get_value("router_public_ip")
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
 
-    router_script = get_router_script(ROUTER_IP, SIM_IP)
+    router_script = get_router_script(ROUTER_IP, SIM_IP, drc_package_name)
     local_fname = os.path.join(constellation_directory, 'router_startup.bash')
     with open(local_fname, 'w') as f:
         f.write(router_script)
