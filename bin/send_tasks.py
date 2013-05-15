@@ -56,7 +56,7 @@ from cloudsimd import cloudsimd
 def create_task(team, tasks_file):
     '''
     Generate a python list containing the set of tasks for a given team
-    @param team Unique team id (string)
+    @param team Dictionary containing team information (accounts, timezone, ...)
     @param tasks_file JSON file containing the task definitions
     '''
     # Read YAML tasks file
@@ -87,7 +87,7 @@ def create_task(team, tasks_file):
                              % (RED, team['team'], my_task_id, NORMAL))
             continue
 
-        my_task = all_tasks[my_task_id]
+        my_task = all_tasks[my_task_id].copy()
 
         # Get the start and stop local datetimes
         naive_dt_start = my_task['local_start']
@@ -113,6 +113,10 @@ def create_task(team, tasks_file):
         # Constellation id containing the sim, where the tasks will run
         my_task['constellation'] = team['quad']
 
+        # Don't let ros_args be null
+        if not my_task['ros_args']:
+            my_task['ros_args'] = ''
+
         # Add the modified task to the list
         my_tasks.append(my_task)
 
@@ -136,7 +140,7 @@ def feed_cloudsim(team, tasks_file, user, is_verbose):
     '''
     For a given team, create a list of tasks, upload them to its cloudsim,
     and update Redis with the new task information.
-    @param team Team id (string)
+    @param team Dictionary containing team information (accounts, timezone, ...)
     @param tasks_file JSON file containing the task definitions
     @param user CloudSim user (default: ubuntu)
     @param is_verbose If True, show some stats
@@ -153,10 +157,10 @@ def feed_cloudsim(team, tasks_file, user, is_verbose):
 
     # Get the CloudSim credentials for this team
     directory = cloudsim['constellation_directory']
-    machine_name = cloudsim['sim_machine_name']
+    machine_name = 'cs'
     key_dir = os.path.join(directory, machine_name)
     ip = cloudsim['simulation_ip']
-    key_name = cloudsim['sim_key_pair_name']
+    key_name = 'key-cs'
 
     # Convert the CloudSim list of tasks from a python list to a JSON temp file
     cs_json_tasks = json.dumps(cs_tasks)
