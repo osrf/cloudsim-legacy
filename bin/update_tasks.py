@@ -8,6 +8,7 @@ import argparse
 import redis
 import json
 import os
+import time
 
 
 def update_redis_tasks(json_file):
@@ -23,6 +24,8 @@ def update_redis_tasks(json_file):
         # The tasks are registered using Redis pub service
         for task in tasks:
             db.publish('cloudsim_cmds', json.dumps(task))
+            # Apparently need to sleep to not overwhelm Redis
+            time.sleep(0.5)
 
     # Remove the tasks file
     os.remove(json_file)
