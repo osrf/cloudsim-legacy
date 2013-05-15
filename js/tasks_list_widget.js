@@ -60,6 +60,16 @@ function _split_tasks(task_div_list,
     
 }
 
+function _add_form_textinput(form_div, title)
+{
+    var input_field  = document.createElement("input");
+    input_field.size = "35";
+    form_div.appendChild(document.createTextNode(title));
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(input_field);
+    return input_field;
+}
+
 function _create_task_form(form_id)
 {
     var form_div = document.createElement("div");
