@@ -1289,7 +1289,7 @@ def launch(username, config, constellation_name, tags, constellation_directory):
     #
     # Skip the OS reload
     #
-    constellation.set_value("launch_stage", "os_reload")
+    #constellation.set_value("launch_stage", "os_reload")
 
     log("Reload OS machines: %s" % constellation_name)
     reload_os_machines(constellation_name, constellation_prefix, credentials_softlayer)
