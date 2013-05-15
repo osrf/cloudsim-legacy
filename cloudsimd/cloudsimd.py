@@ -544,7 +544,7 @@ def run_tc_command(_username, _constellationName, _targetPacketLatency):
         log("cloudsim::run_tc_command() Unknown constellation type: (%s)" % (config) )
         return
     
-    cmd = 'redis-cli set ts_targetLatency ' + str(_targetPacketLatency)
+    cmd = 'redis-cli set vrc_target_outbound_latency ' + str(_targetPacketLatency)
     ssh = SshClient(keyDirectory, keyPairName, 'ubuntu', ip)
     ssh.cmd(cmd)                   
     
