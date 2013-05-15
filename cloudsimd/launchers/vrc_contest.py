@@ -854,11 +854,11 @@ def initialize_router(constellation_name, constellation_prefix, osrf_creds_fname
     router_name = "router-%s" % constellation_prefix
     log("Get login info: %s" % constellation_name)
 
-    router_ip, priv_ip, password = get_machine_login_info(osrf_creds, router_name)
-    constellation.set_value("router_public_ip", router_ip)
-
     reload_monitor = ReloadOsCallBack(constellation_name, machines_dict)
     wait_for_server_reloads(osrf_creds, machines_dict.keys(), reload_monitor.callback)
+
+    router_ip, priv_ip, password = get_machine_login_info(osrf_creds, router_name)
+    constellation.set_value("router_public_ip", router_ip)
 
     sim_pub_ip, sim_priv_ip, sim_root_password = get_machine_login_info(osrf_creds, "sim-%s" % constellation_prefix)
     fc1_pub_ip, fc1_priv_ip, fc1_root_password = get_machine_login_info(osrf_creds, "fc1-%s" % constellation_prefix)
@@ -906,7 +906,7 @@ def initialize_private_machines(constellation_name, constellation_prefix, drcsim
     router_ip = constellation.get_value("router_public_ip")
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
 
-    router_script = get_router_script(ROUTER_IP, SIM_IP, drc_package_name)
+    router_script = get_router_script(ROUTER_IP, SIM_IP, drcsim_package_name)
     local_fname = os.path.join(constellation_directory, 'router_startup.bash')
     with open(local_fname, 'w') as f:
         f.write(router_script)
