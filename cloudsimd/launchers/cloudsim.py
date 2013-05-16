@@ -307,30 +307,33 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     out = ssh_sim.upload_file(fname_zip , remote_fname)
     log ("\t%s"% out)
 
-    # todo ... set the name, upload both files
-    log("Uploading the ec2 credentials to the server")
-    remote_fname = "/home/ubuntu/boto.ini" 
-    log("uploading '%s' to the server to '%s'" % (ec2_creds_fname, remote_fname) )
-    out = ssh_sim.upload_file(osrf_creds_fname , remote_fname)
-    log ("\t%s"% out)
-
-    log("Uploading the SoftLayer credentials to the server")
-    remote_fname = "/home/ubuntu/softlayer.json" 
-    log("uploading '%s' to the server to '%s'" % (osrf_creds_fname, remote_fname) )
-    out = ssh_sim.upload_file(osrf_creds_fname , remote_fname)
-    log ("\t%s"% out)
+    if os.path.exists(ec2_creds_fname):
+        # todo ... set the name, upload both files
+        log("Uploading the ec2 credentials to the server")
+        remote_fname = "/home/ubuntu/boto.ini" 
+        log("uploading '%s' to the server to '%s'" % (ec2_creds_fname, remote_fname) )
+        out = ssh_sim.upload_file(ec2_creds_fname , remote_fname)
+        log ("\t%s"% out)
     
-    log("Uploading the Portal key to the server")
-    remote_fname = "/home/ubuntu/cloudsim_portal.key" 
-    log("uploading '%s' to the server to '%s'" % (cloudsim_portal_key_fname, remote_fname) )
-    out = ssh_sim.upload_file(cloudsim_portal_key_fname, remote_fname)
-    log ("\t%s"% out)
+    if os.path.exists(osrf_creds_fname):
+        log("Uploading the SoftLayer credentials to the server")
+        remote_fname = "/home/ubuntu/softlayer.json" 
+        log("uploading '%s' to the server to '%s'" % (osrf_creds_fname, remote_fname) )
+        out = ssh_sim.upload_file(osrf_creds_fname , remote_fname)
+        log ("\t%s"% out)
     
-    log("Uploading the Portal JSON file to the server")
-    remote_fname = "/home/ubuntu/cloudsim_portal.json" 
-    log("uploading '%s' to the server to '%s'" % (cloudsim_portal_json_fname, remote_fname) )
-    out = ssh_sim.upload_file(cloudsim_portal_json_fname, remote_fname)
-    log ("\t%s"% out)
+    if os.path.exists(cloudsim_portal_key_fname):
+        log("Uploading the Portal key to the server")
+        remote_fname = "/home/ubuntu/cloudsim_portal.key" 
+        log("uploading '%s' to the server to '%s'" % (cloudsim_portal_key_fname, remote_fname) )
+        out = ssh_sim.upload_file(cloudsim_portal_key_fname, remote_fname)
+        log ("\t%s"% out)
+    
+        log("Uploading the Portal JSON file to the server")
+        remote_fname = "/home/ubuntu/cloudsim_portal.json" 
+        log("uploading '%s' to the server to '%s'" % (cloudsim_portal_json_fname, remote_fname) )
+        out = ssh_sim.upload_file(cloudsim_portal_json_fname, remote_fname)
+        log ("\t%s"% out)
 
     constellation.set_value('simulation_launch_msg', "deploying web app")
     # out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)

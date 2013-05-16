@@ -435,7 +435,7 @@ def monitor(username, config, constellation_name):
             try:
                 #log("monitor %s (%s)" % (constellation_name, counter) )
                 done = constellation_plugin.monitor(username, constellation_name, counter)
-                log("monitor return value %s" % ( done) )
+                #log("monitor return value %s" % ( done) )
                 counter += 1
             except Exception, e:
                 done = False
