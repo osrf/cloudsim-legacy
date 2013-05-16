@@ -143,15 +143,22 @@ function get_constellation(constellation)
     return msg;
 }
 
-function create_task(constellation, task_title, 
-                  ros_package, 
-                  launch_file, 
-                  timeout, 
-                  launch_args,
-                  latency,
-                  uplink_data_cap, 
-                  downlink_data_cap)
+function _get_task_url(constellation, 
+                        task_id,
+                        task_title, 
+                        ros_package, 
+                        launch_file, 
+                        timeout, 
+                        launch_args,
+                        latency,
+                        uplink_data_cap, 
+                        downlink_data_cap,
+                        local_start,
+                        local_stop,
+                        vrc_id,
+                        vrc_num)
 {
+    console.log("task_id " + task_id)
     console.log("task_title " + task_title)
     console.log("ros_package " + ros_package)
     console.log("launch_file " + launch_file)
@@ -159,34 +166,73 @@ function create_task(constellation, task_title,
     console.log("timeout " + timeout)
     console.log("latency " + latency)
     console.log("uplink_data_cap " + uplink_data_cap)
-    console.log("downllink_data_cap " + downlink_data_cap)    
-    
-    
+    console.log("downllink_data_cap " + downlink_data_cap)
+    console.log("local_start " + local_start)
+    console.log("local_stop " + local_stop)
+    console.log("vrc_id " + vrc_id)
+    console.log("vrc_num " + vrc_num)
+
     var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + "?";
     
-    if(task_title != "")  
+    if(task_id)
+        url += 'task_id=' + encodeURIComponent(task_id);
+        url += '&'
+    if(task_title != "")
         url += 'task_title=' + encodeURIComponent(task_title);
-    
     if(ros_package != "")
         url += '&ros_package=' + encodeURIComponent(ros_package);
-    
     if(launch_file != "")
         url += '&ros_launch=' + encodeURIComponent(launch_file);
-    
     if(launch_args != "")
     	url += '&ros_args=' + encodeURIComponent(launch_args);
     if(timeout != "")
     	url += '&timeout=' + encodeURIComponent(timeout);
-
     if(latency != "")
         url += '&latency=' + encodeURIComponent(latency);
-    
     if(uplink_data_cap != "")
         url += '&uplink_data_cap=' + encodeURIComponent(uplink_data_cap);
-    
     if(downlink_data_cap != "")
         url += '&downlink_data_cap=' + encodeURIComponent(downlink_data_cap);   
+    if( local_start != "")
+        url += '&local_start=' + encodeURIComponent(local_start);
+    if( local_stop != "")
+        url += '&local_stop=' + encodeURIComponent(local_stop);
+    if( vrc_id != "")
+        url += '&vrc_id=' + encodeURIComponent(vrc_id);
+    if( vrc_num != "")
+        url += '&vrc_num=' + encodeURIComponent(vrc_num);
+
+    return url;
+}
+
+function create_task(constellation, task_title, 
+                  ros_package, 
+                  launch_file, 
+                  timeout, 
+                  launch_args,
+                  latency,
+                  uplink_data_cap, 
+                  downlink_data_cap,
+                  local_start,
+                  local_stop,
+                  vrc_id,
+                  vrc_num)
+{
     
+    
+    var url = _get_task_url(constellation, task_title, 
+                  ros_package, 
+                  launch_file, 
+                  timeout, 
+                  launch_args,
+                  latency,
+                  uplink_data_cap, 
+                  downlink_data_cap,
+                  local_start,
+                  local_stop,
+                  vrc_id,
+                  vrc_num)
+
     console.log("[POST (create)]" + url);
     msg = httpPost(url);
     console.log(msg);
@@ -203,50 +249,37 @@ function read_task(constellation, task_id)
     return jmsg;
 }
 
-function update_task(constellation, task_id, task_title, 
-        ros_package, launch_file, 
-        timeout, launch_args,  latency, uplink_data_cap, downlink_data_cap)
+function update_task(constellation, 
+                     task_id,
+                     task_title, 
+                    ros_package, 
+                    launch_file, 
+                    timeout, 
+                    launch_args,
+                    latency,
+                    uplink_data_cap, 
+                    downlink_data_cap,
+                    local_start,
+                    local_stop,
+                    vrc_id,
+                    vrc_num)
 {
 
-    console.log("task_title " + task_title)
-    console.log("ros_package " + ros_package)
-    console.log("launch_file " + launch_file)
-    console.log("launch_args " + launch_args)
-    console.log("timeout " + timeout)
-    console.log("latency " + latency)
-    console.log("uplink_data_cap " + uplink_data_cap)
-    console.log("downlink_data_cap " + downlink_data_cap) 
+    var url = _get_task_url(constellation, 
+                  task_id, 
+                  task_title, 
+                  ros_package, 
+                  launch_file, 
+                  timeout, 
+                  launch_args,
+                  latency,
+                  uplink_data_cap, 
+                  downlink_data_cap,
+                  local_start,
+                  local_stop,
+                  vrc_id,
+                  vrc_num)
 
-    
-    var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
-    url += "?";
-
-    if(task_title != "")
-        url += 'task_title=' + encodeURIComponent(task_title);
-   
-
-    if(ros_package != "")
-        url += '&ros_package=' + encodeURIComponent(ros_package);
-    
-    if(launch_file != "")
-    	url += '&ros_launch=' + encodeURIComponent(launch_file);
-
-
-    if(launch_args != "")
-    	url += '&ros_args=' + encodeURIComponent(launch_args);
-
-
-    if(timeout != "")
-        url += '&timeout=' + encodeURIComponent(timeout);
-
-    if(latency != "")
-        url += '&latency=' + encodeURIComponent(latency);
-
-    if(uplink_data_cap != "")
-        url += '&uplink_data_cap=' + encodeURIComponent(uplink_data_cap);
-
-    if(downlink_data_cap != "")
-        url += '&downlink_data_cap=' + encodeURIComponent(downlink_data_cap);
     
     console.log("[PUT (update)]" + url);
     msg = httpPut(url);

@@ -10,6 +10,7 @@ import urlparse
 from common import  authorize
 import redis
 import traceback
+from common.web import UserDatabase
 
 
 cgitb.enable()
@@ -18,8 +19,8 @@ cgitb.enable()
 r = redis.Redis()
 
 
-def log(msg):
-    r.publish('constellations', msg)
+def log(msg, channel='constellations'):
+    r.publish(channel, msg)
 
 def _domain(email):
     domain = email.split('@')[1]
@@ -41,11 +42,10 @@ def clean_constellation_data(constellation):
              'task_state': task['task_state'],
              'task_id' : task['task_id']}
         constellation['tasks'].append(t)
-        
     return constellation
 
-def get_constellation(email, constellation_name):
 
+def get_constellation(email, constellation_name):
     try:
         key = 'cloudsim/' + constellation_name
         log("get_constellation %s" % key)
@@ -59,6 +59,7 @@ def get_constellation(email, constellation_name):
         return None
     return None
 
+
 def list_constellations(email):
     constellations = []
     for key in r.keys():
@@ -68,8 +69,8 @@ def list_constellations(email):
             c = get_constellation(email, constellation_name)
             if c:
                 log(constellation_name)
-                constellations.append(c )
-    return constellations          
+                constellations.append(c)
+    return constellations
 
 
 def get_constellation_from_path():
@@ -81,12 +82,15 @@ def get_constellation_from_path():
 
 
 def get_query_param(param):
-    qs= os.environ['QUERY_STRING']
+    qs = os.environ['QUERY_STRING']
     params = urlparse.parse_qs(qs)
     p = params[param][0]
     return p
 
-email = authorize("officer")
+email = authorize()
+udb = UserDatabase()
+role = udb.get_role(email)
+
 method = os.environ['REQUEST_METHOD']
 
 
@@ -96,8 +100,7 @@ print("\n")
 if method == 'GET':
     s = None
     #log("[GET] Constellations")
-    try:    
-        
+    try:
         constellation = get_constellation_from_path()
         # log("%s" % constellation)
         if len(constellation) > 0:
@@ -109,7 +112,6 @@ if method == 'GET':
 
     except Exception, e:
         s = "%s" % e
-        
     print("%s" % s)
     exit(0)
 
@@ -124,7 +126,11 @@ d['type'] = 'launchers'
 if method == 'DELETE':
     d['command'] = 'terminate'
     d['constellation'] = get_constellation_from_path()
-    
+    if role == 'user':
+        d['error'] = "Insufficient privileges"
+        s = json.dumps(d)
+        print("%s" % s)
+        exit(0)
   
 if method == 'POST':
     d = {}

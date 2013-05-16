@@ -649,17 +649,15 @@ def run(root_dir, tick_interval):
             
             if cmd == 'update_cloudsim_configuration_list':
                 async_update_cloudsim_configuration_list()
-                
-            
+
             elif cmd == 'launch':
                 launch_cmd(root_dir, data)
-                
 
             elif cmd == 'terminate':
                 constellation = data['constellation']
                 constellation_path = os.path.join(root_dir, constellation )
                 async_terminate(constellation, constellation_path )
-                
+
             #
             # tasks stuff
             #
@@ -668,53 +666,51 @@ def run(root_dir, tick_interval):
                 data.pop('constellation')
                 data.pop('command')
                 async_create_task(constellation, data)
-            
+
             elif cmd == "update_task":
                 constellation = data['constellation']
                 data.pop('constellation')
                 data.pop('command')
                 async_update_task(constellation ,data)
-            
+
             elif cmd == 'delete_task':
                 constellation = data['constellation']
                 task_id = data['task_id']
                 async_delete_task(constellation, task_id)
-            
+
             elif cmd == 'start_task':
                 log('start_task')
                 constellation = data['constellation']
                 task_id = data['task_id']
                 log('start_task %s' % task_id)
                 async_start_task(constellation, task_id)
-            
+
             elif cmd == 'stop_task':
                 constellation = data['constellation']
                 async_stop_task(constellation)
-            
+
             elif cmd == "start_simulator" :
                 machine = data['machine']
                 package_name = data['package_name']
                 launch_file_name = data['launch_file_name'] 
                 launch_args = data['launch_args']
                 async_start_simulator(username, constellation, machine, package_name, launch_file_name, launch_args) 
-                
-            
+
             elif cmd == "stop_simulator" :
                 constellation = data['constellation']
                 machine = data['machine']
                 async_stop_simulator(username, constellation, machine)
-                
-            
+
             elif cmd == 'update_tc' :
                 constellation = data['constellation']
                 targetPacketLatency = int(data['targetPacketLatency'])
                 run_tc_command(username, constellation, targetPacketLatency)
-            
+
         except Exception, e:
             log("Error processing message [%s]" % msg)
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)             
-            
+
 
 if __name__ == "__main__":
     

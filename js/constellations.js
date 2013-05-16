@@ -56,11 +56,11 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     var const_div = document.createElement("div");
     const_div.id = constellation_name;
     _set_const_style(const_div.style);
-    
+
     var top_div = document.createElement("div");
-    
+
     top_div.id = "top";
-    
+
     var title_str = " <h3 style=' margin-top:0; margin-bottom:0;'><table width='100%'><tr><td align='left'>";
     title_str    +=   constellation_name + "</td><td align='right'><FONT SIZE=2> Launched by " + username + "</FONT></td></tr><tr><td><FONT SIZE=2>" + configuration_name + "</FONT></td><td align='right'><FONT SIZE=2> at GMT " + gmt + "</FONT></td></tr></table></h3>";
     
@@ -86,22 +86,27 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     msg_div.style.float = "left";
     const_div.appendChild(msg_div);
 
-    var terminate_button= document.createElement('input');
-    terminate_button.setAttribute('type','button');
-    terminate_button.setAttribute('value','Terminate');
 
-    terminate_button.onclick =  function()
-    {   
-        var r = confirm("terminate " + constellation_name + "?");
-        if (r==false)
-        {
-            return;
-        }
-        terminate_constellation(constellation_name);
-    };
-    
-    top_div.appendChild(terminate_button);
+    // do not allow simple users to terminate constellations
+    if(get_user_info()['role'] != 'user')
+	{
+        var terminate_button= document.createElement('input');
+        terminate_button.setAttribute('type','button');
+        terminate_button.setAttribute('value','Terminate');
 
+        // do not allow users to Terminate constellations 
+        terminate_button.onclick =  function()
+        {   
+            var r = confirm("terminate " + constellation_name + "?");
+            if (r==false)
+            {
+                return;
+            }
+            terminate_constellation(constellation_name);
+        };
+        
+        top_div.appendChild(terminate_button);
+	}
 
 
     //create_task_list_widget(const_div, constellation_name);

@@ -857,6 +857,12 @@ def initialize_router(constellation_name, constellation_prefix, osrf_creds_fname
     reload_monitor = ReloadOsCallBack(constellation_name, machines_dict)
     wait_for_server_reloads(osrf_creds, machines_dict.keys(), reload_monitor.callback)
 
+    m = "running"
+    constellation.set_value('fc1_aws_state', m)
+    constellation.set_value('fc2_aws_state', m)
+    constellation.set_value('sim_aws_state', m)
+    constellation.set_value('router_aws_state', m)
+    
     router_ip, priv_ip, password = get_machine_login_info(osrf_creds, router_name)
     constellation.set_value("router_public_ip", router_ip)
 
@@ -1039,9 +1045,9 @@ def create_router_zip(router_ip, constellation_name, constellation_directory):
     router_fname_zip = os.path.join(router_machine_dir, "router_%s.zip" % constellation_name)
     create_zip_file(router_fname_zip, "router_%s" % constellation_name, files_to_zip)
 
-    # create another zip file, this time for users only (without the ssh key)
+    # create another zip file, this time for users only
+    # (without the ssh key or the ssh-router.bash)
     files_to_zip = [fname_start_vpn,
-                    fname_ssh_sh,
                     fname_vpn_cfg,
                     vpnkey_fname,
                     fname_ros, ]
@@ -1144,10 +1150,16 @@ def reboot_machines(constellation_name, constellation_directory):
     if launch_sequence.index(launch_stage) >= launch_sequence.index('reboot'):
         return
 
-    m = "Rebooting"
+    m = "Rebooting after software installation"
     constellation.set_value('fc1_launch_msg', m)
     constellation.set_value('fc2_launch_msg', m)
     constellation.set_value('sim_launch_msg', m)
+    
+    m = "rebooting"
+    constellation.set_value('fc1_aws_state', m)
+    constellation.set_value('fc2_aws_state', m)
+    constellation.set_value('sim_aws_state', m)
+    constellation.set_value('router_aws_state', m)
     wait_for_setup_done(constellation_name, constellation_directory)
 
     router_ip = constellation.get_value("router_public_ip")
@@ -1196,7 +1208,13 @@ def run_machines(constellation_name, constellation_directory):
     constellation.set_value("fc1_state", m)
     constellation.set_value("fc2_state", m)
     constellation.set_value("constellation_state", m)
-
+    
+    m = "running"
+    constellation.set_value('fc1_aws_state', m)
+    constellation.set_value('fc2_aws_state', m)
+    constellation.set_value('sim_aws_state', m)
+    constellation.set_value('router_aws_state', m)
+    
     constellation.set_value("launch_stage", "running")
 
 

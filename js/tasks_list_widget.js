@@ -1,4 +1,23 @@
 
+//
+//  Example task
+//
+/*
+task_title: Task 1
+task_id: 1
+uplink_data_cap: 29491200
+downlink_data_cap: 943718400
+latency: 500
+local_start: 2013-06-14 8:00:00.0
+local_stop: 2013-06-14 18:00:00.0
+timeout: 1800
+task_num: 1
+task_tag: Drive
+ros_package: atlas_utils
+ros_launch: vrc_task_1.launch
+*/
+
+
 function _find_task_data(task_id, tasks)
 {
     try
@@ -64,12 +83,28 @@ function _add_form_textinput(form_div, title)
 {
     var input_field  = document.createElement("input");
     input_field.size = "35";
-    form_div.appendChild(document.createTextNode(title));
+    
+    var title_text = document.createTextNode(title);
+    var title_line = document.createElement("i")
+    
+    title_line.appendChild(title_text);
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(title_line);
     form_div.appendChild(document.createElement("br"));
     form_div.appendChild(input_field);
     return input_field;
 }
 
+function _add_form_separator(form_div, title)
+{
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(document.createElement("br"));
+    section = document.createElement("b");
+    section.appendChild(document.createTextNode(title));
+    form_div.appendChild(section);	
+}
+
+                             
 function _create_task_form(form_id)
 {
     var form_div = document.createElement("div");
@@ -77,76 +112,49 @@ function _create_task_form(form_id)
     form_div.id = form_id;
 	
     form_div.title = "Task properties";
-    var task_title_input = document.createElement("input");
-    task_title_input.size = "35";
-    form_div.appendChild(document.createTextNode("Task title"));
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(task_title_input);
+    var task_title_input = _add_form_textinput(form_div, "Task title" );
     
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createElement("br"));
-    var section = document.createElement("b");
-    section.appendChild(document.createTextNode("Simulation parameters"));
-    form_div.appendChild(section);
+    _add_form_separator(form_div, "Simulation parameters");
+    
+    var ros_package =  _add_form_textinput(form_div, "ROS package" );
+    var launch_file =  _add_form_textinput(form_div, "Launch file" );
+    var timeout =  _add_form_textinput(form_div, "Maximum time (sec)" );
+    var launch_arguments =  _add_form_textinput(form_div, "Arguments" );
 
-    var ros_package = document.createElement("input");
-    ros_package.size = "35";
     
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("ROS package"));
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(ros_package);
-    
-    var launch_file = document.createElement("input");
-    launch_file.size = "35";
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Launch file"));
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(launch_file);
+//    form_div.appendChild(document.createElement("br"));
+//    form_div.appendChild(document.createElement("br"));
+//    var section = document.createElement("b");
+//    section.appendChild(document.createTextNode("Simulation parameters"));
+//    form_div.appendChild(section);
 
-    var timeout = document.createElement("input");
-    timeout.size = "35";
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Maximum time (sec)"));
-    form_div.appendChild(document.createElement("br"));
-    timeout.value = "1800";
-    form_div.appendChild(timeout);
-
-    var launch_arguments = document.createElement("input");
-    launch_arguments.size = "35";
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Arguments"));
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(launch_arguments);
+//    // section
+//    form_div.appendChild(document.createElement("br"));
+//    form_div.appendChild(document.createElement("br"));
+//    section = document.createElement("b");
+//    section.appendChild(document.createTextNode("Network parameters"));
+//    form_div.appendChild(section);
+//    
+    _add_form_separator(form_div, "Network parameters");
     
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createElement("br"));
-    section = document.createElement("b");
-    section.appendChild(document.createTextNode("Network parameters"));
-    form_div.appendChild(section);
-    form_div.appendChild(document.createElement("br"));
-    
-    var latency = document.createElement("input");
-    latency.size = "35";
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Minimum latency (ms, round trip)"));
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(latency);
-    
-    var uplink_data_cap = document.createElement("input");
-    uplink_data_cap.size = "35";
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Uplink data cap (bits)"));
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(uplink_data_cap);
+    var latency =  _add_form_textinput(form_div, "Minimum latency (ms, round trip)" );
+    var uplink_data_cap=  _add_form_textinput(form_div, "Uplink data cap (bits)" );
+    var downlink_data_cap = _add_form_textinput(form_div, "Downlink data cap (bits)" );
 
-    var downlink_data_cap = document.createElement("input");
-    downlink_data_cap.size = "35";
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createTextNode("Downlink data cap (bits)"));
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(downlink_data_cap);    
+    // section
+//    form_div.appendChild(document.createElement("br"));
+//    form_div.appendChild(document.createElement("br"));
+//    section = document.createElement("b");
+//    section.appendChild(document.createTextNode("VRC parameters"));
+//    form_div.appendChild(section);
+    _add_form_separator(form_div, "VRC parameters");
+    
+    var local_start = _add_form_textinput(form_div, "Availability start date")
+    var local_stop = _add_form_textinput(form_div, "Availability end date")
+    var vrc_id = _add_form_textinput(form_div, "VRC task ID")
+    var vrc_num = _add_form_textinput(form_div, "VRC task num")
 
+    // default values
     ros_package.value = "atlas_utils";
     launch_file.value = "atlas.launch";
     timeout.value = "1800";
@@ -157,6 +165,7 @@ function _create_task_form(form_id)
     return form_div;
 
 }
+
 
 
 function create_task_list_widget(const_div, constellation_name)
@@ -179,12 +188,20 @@ function create_task_list_widget(const_div, constellation_name)
 	               var latency = inputs[5].value;
 	               var uplink_data_cap = inputs[6].value;
 	               var downlink_data_cap = inputs[7].value;
+	               var local_start = inputs[8].value;
+	               var local_stop = inputs[9].value;
+	               var vrc_id = inputs[10].value;
+	               var vrc_num = inputs[11].value;
 	               
 	               console.log("timeout is " + timeout);
 	               create_task(constellation_name, title, 
 	                       ros_package, launch, timeout,
 	                       args, latency, uplink_data_cap,
-	                       downlink_data_cap);
+	                       downlink_data_cap,
+	                       local_start,
+	                       local_stop,
+	                       vrc_id,
+	                       vrc_num);
 	               
 	               $( this ).dialog( "close" );
                 }
@@ -326,10 +343,18 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 var latency = inputs[5].value;
                 var uplink_data_cap = inputs[6].value;
                 var downlink_data_cap = inputs[7].value;
+                var local_start = inputs[8].value;
+                var local_stop = inputs[9].value;
+                var vrc_id = inputs[10].value;
+                var vrc_num = inputs[11].value;
                 
                 update_task(constellation_name, task_id,
                        title, ros_package,launch, timeout, args, latency, 
-                       uplink_data_cap, downlink_data_cap); 
+                       uplink_data_cap, downlink_data_cap,
+                       local_start,
+                       local_stop,
+                       vrc_id,
+                       vrc_num); 
                 
                 $( this ).dialog( "close" );
                  }
@@ -394,6 +419,11 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         var uplink_data_cap = inputs[6];
         var downlink_data_cap = inputs[7];
         
+        var local_start = inputs[8];
+        var local_stop = inputs[9];
+        var vrc_id = inputs[10];
+        var vrc_num = inputs[11];
+        
         task = read_task(constellation_name, task_id);
         if (task == "Unauthorized")
         {
@@ -408,6 +438,12 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         latency.value = task.latency;
         uplink_data_cap.value = task.uplink_data_cap;
         downlink_data_cap.value = task.downlink_data_cap;
+        
+        local_start.value = task.local_start;
+        local_stop.value = task.local_stop;
+        vrc_id.value = task.vrc_id;
+        vrc_num.value = task.vrc_num;
+        
         $("#" + form_id ).dialog( "open" );
     };
 
@@ -467,7 +503,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     	
         if(data.constellation_name != constellation_name)
             return;
-        
+
         var tasks = data.tasks;
         var task = _find_task_data(task_id, tasks);
         if(task)
@@ -478,7 +514,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 console.log("task state " + task.state);
                 task_title_div.innerHTML = task.task_title;
             }
-            
+
             //  console.log('TASK _set_state_widget: ' + constellation_name + ': '+ task.task_state)
             state_widget.src = "/js/images/gray_status.png";
             if (task.task_state == "running")
@@ -497,7 +533,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 x_button.disabled=true;
                 edit_button.disabled=false;
             }
-            
+
             if (task.task_state == "ready")
             {
                 state_widget.src = "/js/images/gray_status.png";
@@ -506,7 +542,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 	edit_button.disabled=true;
                 }
             }
-            
+
             if (task.task_state == "stopping")
             {
             	colors =  ["/js/images/gray_status.png", "/js/images/red_status.png"];
@@ -516,18 +552,14 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 x_button.disabled=true;
 
             }
-                        
+
             if (task.task_state == "stopped")
             {
                 state_widget.src = "/js/images/red_status.png";
                 action_button.disabled=true;
                 x_button.disabled=true;
-
             }
-            
 
-            
-            
             // _set_state_widget(state_widget, task.task_state, count);
             
             // the count is used to blink the status
