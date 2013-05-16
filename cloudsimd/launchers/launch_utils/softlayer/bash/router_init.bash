@@ -266,17 +266,20 @@ chmod +x $DIR/ping_gl.bash
 
 cat <<DELIM > $DIR/stop_sim.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "sudo stop vrc_netwatcher; sudo stop vrc_bytecounter"
+sudo stop vrc_netwatcher
+sudo stop vrc_bytecounter
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "bash cloudsim/stop_sim.bash"
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "sudo iptables -F FORWARD"
+sudo iptables -F FORWARD
 DELIM
 chmod +x $DIR/stop_sim.bash
 
 
 cat <<DELIM > $DIR/start_sim.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "sudo iptables -F FORWARD"
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "sudo stop vrc_netwatcher; sudo stop vrc_bytecounter; sudo start vrc_netwatcher"
+sudo iptables -F FORWARD
+sudo stop vrc_netwatcher
+sudo stop vrc_bytecounter
+sudo start vrc_netwatcher
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "bash cloudsim/start_sim.bash \$1 \$2 \$3"
 DELIM
 chmod +x $DIR/start_sim.bash
