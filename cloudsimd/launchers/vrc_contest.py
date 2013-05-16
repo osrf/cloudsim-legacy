@@ -442,9 +442,8 @@ author  "Carlos Aguero<caguero@osrfoundation.org>"
 start on runlevel [234]
 stop on runlevel [0156]
 
-exec vrc_wrapper.sh vrc_netwatcher.py > /var/log/vrc_netwatcher.log 2>&1
+exec vrc_wrapper.sh vrc_netwatcher.py -o -m replace -d /tmp -p vrc_netwatcher_usage > /var/log/vrc_netwatcher.log 2>&1
 
-respawn
 DELIM
 
 # start vrc_sniffer and vrc_controllers
