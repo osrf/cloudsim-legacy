@@ -544,7 +544,7 @@ def run_tc_command(_username, _constellationName, _targetPacketLatency):
         log("cloudsim::run_tc_command() Unknown constellation type: (%s)" % (config) )
         return
     
-    cmd = 'redis-cli set ts_targetLatency ' + str(_targetPacketLatency)
+    cmd = 'redis-cli set vrc_target_outbound_latency ' + str(_targetPacketLatency)
     ssh = SshClient(keyDirectory, keyPairName, 'ubuntu', ip)
     ssh.cmd(cmd)                   
     
@@ -725,7 +725,8 @@ if __name__ == "__main__":
         root_dir  = '/var/www-cloudsim-auth/machines'
         cloudsim_portal_key_path = '/var/www-cloudsim-auth/cloudsim_portal.key'
         cloudsim_portal_json_path = '/var/www-cloudsim-auth/cloudsim_portal.json'
-
+        cloudsim_bitbucket_key_path = '/var/www-cloudsim-auth/cloudsim_bitbucket.key'
+        
         if len(sys.argv) > 1:
            boto_path = os.path.abspath(sys.argv[1])
         
@@ -748,7 +749,7 @@ if __name__ == "__main__":
         config['machines_directory'] = root_dir
         config['cloudsim_portal_key_path'] = cloudsim_portal_key_path
         config['cloudsim_portal_json_path'] = cloudsim_portal_json_path
-        
+        config['cloudsim_bitbucket_key_path'] = cloudsim_bitbucket_key_path
         
         set_cloudsim_config(config)
         update_cloudsim_configuration_list()

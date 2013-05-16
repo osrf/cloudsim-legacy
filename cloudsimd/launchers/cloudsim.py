@@ -197,10 +197,9 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
 
     cfg = get_cloudsim_config()
     osrf_creds_fname = cfg['softlayer_path']
-    ec2_creds_fname = cfg['boto_path']
+
     constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
-    cloudsim_portal_key_fname = cfg['cloudsim_portal_key_path']
-    cloudsim_portal_json_fname = cfg['cloudsim_portal_json_path']
+
 
     log('launch!!! tags = %s' % tags)
     constellation = ConstellationState(constellation_name)
@@ -307,33 +306,53 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     out = ssh_sim.upload_file(fname_zip , remote_fname)
     log ("\t%s"% out)
 
-    if os.path.exists(ec2_creds_fname):
-        # todo ... set the name, upload both files
-        log("Uploading the ec2 credentials to the server")
-        remote_fname = "/home/ubuntu/boto.ini" 
-        log("uploading '%s' to the server to '%s'" % (ec2_creds_fname, remote_fname) )
-        out = ssh_sim.upload_file(ec2_creds_fname , remote_fname)
-        log ("\t%s"% out)
-    
     if os.path.exists(osrf_creds_fname):
-        log("Uploading the SoftLayer credentials to the server")
+        constellation.set_value('simulation_launch_msg', "Uploading the SoftLayer credentials to the server")
         remote_fname = "/home/ubuntu/softlayer.json" 
         log("uploading '%s' to the server to '%s'" % (osrf_creds_fname, remote_fname) )
         out = ssh_sim.upload_file(osrf_creds_fname , remote_fname)
         log ("\t%s"% out)
-    
-    if os.path.exists(cloudsim_portal_key_fname):
-        log("Uploading the Portal key to the server")
+    else:
+        constellation.set_value('simulation_launch_msg',"No SoftLayer credentials loaded")
+
+    ec2_creds_fname = cfg['boto_path']    
+    if os.path.exists(ec2_creds_fname):
+        # todo ... set the name, upload both files
+        constellation.set_value('simulation_launch_msg',"Uploading the ec2 credentials to the server")
+        remote_fname = "/home/ubuntu/boto.ini" 
+        log("uploading '%s' to the server to '%s'" % (ec2_creds_fname, remote_fname) )
+        out = ssh_sim.upload_file(ec2_creds_fname , remote_fname)
+        log ("\t%s"% out)
+    else:
+        constellation.set_value('simulation_launch_msg',"No Amazon Web Services credentials loaded")
+
+    cloudsim_portal_key_fname = cfg['cloudsim_portal_key_path']
+    cloudsim_portal_json_fname = cfg['cloudsim_portal_json_path']
+    if os.path.exists(cloudsim_portal_key_fname) and os.path.exists(cloudsim_portal_json_fname):
+        constellation.set_value('simulation_launch_msg',"Uploading the Portal key to the server")
         remote_fname = "/home/ubuntu/cloudsim_portal.key" 
         log("uploading '%s' to the server to '%s'" % (cloudsim_portal_key_fname, remote_fname) )
         out = ssh_sim.upload_file(cloudsim_portal_key_fname, remote_fname)
         log ("\t%s"% out)
-    
-        log("Uploading the Portal JSON file to the server")
+
+        constellation.set_value('simulation_launch_msg',"Uploading the Portal JSON file to the server")
         remote_fname = "/home/ubuntu/cloudsim_portal.json" 
         log("uploading '%s' to the server to '%s'" % (cloudsim_portal_json_fname, remote_fname) )
         out = ssh_sim.upload_file(cloudsim_portal_json_fname, remote_fname)
         log ("\t%s"% out)
+    else:
+        constellation.set_value('simulation_launch_msg',"No portal key or json file found")
+
+    bitbucket_key_fname = cfg['cloudsim_bitbucket_key_path']
+    if os.path.exists(bitbucket_key_fname):
+        # todo ... set the name, upload both files
+        constellation.set_value('simulation_launch_msg',"Uploading the bitbucket key to the server")
+        remote_fname = "/home/ubuntu/cloudsim_bitbucket.key"
+        log("uploading '%s' to the server to '%s'" % (bitbucket_key_fname, remote_fname) )
+        out = ssh_sim.upload_file(ec2_creds_fname , remote_fname)
+        log ("\t%s"% out)
+    else:
+        constellation.set_value('simulation_launch_msg',"No bitbucket key uploaded")
 
     constellation.set_value('simulation_launch_msg', "deploying web app")
     # out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)

@@ -23,16 +23,17 @@ def run_tc_command(constellation_name, machine_name_key, keyPairName, ip_address
     #keyPairName = constellation[sshkey_key]
     ip = constellation[ip_address_key]
     
-    cmd = 'redis-cli set ts_targetLatency ' + str(target_packet_latency)
+    cmd = 'redis-cli set vrc_target_outbound_latency ' + str(target_packet_latency)
     ssh = sshclient.SshClient(keyDirectory, keyPairName, 'ubuntu', ip)
     r = ssh.cmd(cmd)  
     log("ssh %s = %s" % (cmd, r) )
     
-    cmd = 'redis-cli set cloudsim/network/uplink_max_bits ' + str(uplink_data_cap)
+    # Note that we convert from bits (specified in the task description) to bytes (used by the vrc network monitoring tools)
+    cmd = 'redis-cli set vrc/bytes/limit/uplink ' + str(int(uplink_data_cap)/8)
     ssh = sshclient.SshClient(keyDirectory, keyPairName, 'ubuntu', ip)
     r = ssh.cmd(cmd)  
      
-    cmd = 'redis-cli set cloudsim/network/downlink_max_bits ' + str(downlink_data_cap)
+    cmd = 'redis-cli set vrc/bytes/limit/downlink ' + str(int(downlink_data_cap)/8)
     ssh = sshclient.SshClient(keyDirectory, keyPairName, 'ubuntu', ip)
     r = ssh.cmd(cmd)  
     log("ssh %s = %s" % (cmd, r) )

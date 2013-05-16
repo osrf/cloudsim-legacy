@@ -387,9 +387,9 @@ exec vrc_sniffer.py -t 11.8.0.2 -l vrc_current_outbound_latency > /var/log/vrc_s
 respawn
 DELIM
 
-# Create upstart vrc_controller job
-cat <<DELIM > /etc/init/vrc_controller.conf
-# /etc/init/vrc_controller.conf
+# Create upstart vrc_controller job for the private interface
+cat <<DELIM > /etc/init/vrc_controller_private.conf
+# /etc/init/vrc_controller_private.conf
 
 description "OSRF cloud simulation platform"
 author  "Carlos Aguero <caguero@osrfoundation.org>"
@@ -397,7 +397,22 @@ author  "Carlos Aguero <caguero@osrfoundation.org>"
 start on runlevel [234]
 stop on runlevel [0156]
 
-exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -s 0.5 -v -d eth0 > /var/log/vrc_controller.log 2>&1
+exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d bond0 > /var/log/vrc_controller_private.log 2>&1
+
+respawn
+DELIM
+
+# Create upstart vrc_controller job for the public interface
+cat <<DELIM > /etc/init/vrc_controller_public.conf
+# /etc/init/vrc_controller_public.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero <caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d bond1 > /var/log/vrc_controller_public.log 2>&1
 
 respawn
 DELIM
@@ -427,9 +442,8 @@ author  "Carlos Aguero<caguero@osrfoundation.org>"
 start on runlevel [234]
 stop on runlevel [0156]
 
-exec vrc_wrapper.sh vrc_netwatcher.py > /var/log/vrc_netwatcher.log 2>&1
+exec vrc_wrapper.sh vrc_netwatcher.py -o -m replace -d /tmp -p vrc_netwatcher_usage > /var/log/vrc_netwatcher.log 2>&1
 
-respawn
 DELIM
 
 # start vrc_sniffer and vrc_controllers
@@ -685,42 +699,6 @@ DELIM
 
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
-
-# Create upstart vrc_sniffer job
-cat <<DELIM > /etc/init/vrc_sniffer.conf
-# /etc/init/vrc_sniffer.conf
-
-description "OSRF cloud simulation platform"
-author  "Carlos Aguero <caguero@osrfoundation.org>"
-
-start on runlevel [234]
-stop on runlevel [0156]
-
-exec vrc_sniffer.py -t 11.8.0.2 -l vrc_current_outbound_latency > /var/log/vrc_sniffer.log 2>&1
-
-respawn
-DELIM
-
-# Create upstart vrc_controller job
-cat <<DELIM > /etc/init/vrc_controller.conf
-# /etc/init/vrc_controller.conf
-
-description "OSRF cloud simulation platform"
-author  "Carlos Aguero <caguero@osrfoundation.org>"
-
-start on runlevel [234]
-stop on runlevel [0156]
-
-exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -v -d eth0 > /var/log/vrc_controller.log 2>&1
-
-respawn
-DELIM
-
-# start vrc_sniffer and vrc_controllers
-start vrc_sniffer || true
-start vrc_controller || true
-
-
 
 touch /home/ubuntu/cloudsim/setup/done
 
