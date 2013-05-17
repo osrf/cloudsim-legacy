@@ -13,6 +13,7 @@ constellation_states = ['terminated', 'terminating','launching', 'running']
 
 LATENCY_TIME_BUFFER = 60
 
+
 def log(msg, channel = "monitoring"):
     try:
         
@@ -22,6 +23,7 @@ def log(msg, channel = "monitoring"):
     except:
         print("Warning: redis not installed.")
     print("monitoring log> %s" % msg)
+
 
 def get_aws_states(ec2conn, machine_names_to_ids):
     aws_states = {}
@@ -84,10 +86,10 @@ def update_machine_aws_states( constellation_name, aws_id_keys_to_state_keys_dic
     """
     Updates the redis database with aws state of machines for a constellation.
     The dictionnary contains the keys to the aws ids and mapped to the keys of the states
-    
+
     in the case of {'router_aws_id':'router_aws_state'}, the aws id is read from the 'router_aws_id' value and
     written to the 'router_aws_state' value
-    
+
     Some keys may not exist (too early in the launch process)
     """
     constellation = ConstellationState(constellation_name)
@@ -99,7 +101,7 @@ def update_machine_aws_states( constellation_name, aws_id_keys_to_state_keys_dic
                 aws_ids[aws_id_key] = aws_id
         except:
             pass # machine is not up yet
-        
+
     if len(aws_ids):   
         ec2conn = aws_connect()[0] 
         aws_states = get_aws_states(ec2conn, aws_ids)
@@ -108,7 +110,6 @@ def update_machine_aws_states( constellation_name, aws_id_keys_to_state_keys_dic
             constellation.set_value(state_key, aws_state)
 
 
-    
 def constellation_is_terminated(constellation_name):
     try:
         constellation = ConstellationState(constellation_name)
@@ -137,15 +138,15 @@ def get_ssh_client(constellation_name, machine_state, ip_key, sshkey_key):
 
 
 def monitor_launch_state(constellation_name, ssh_client,  machine_state, dpkg_cmd, launch_msg_key):
-    
+
     if ssh_client == None: # too early to verify 
         return 
-    
+
     #log("monitor_launch_state %s/%s %s" % (constellation_name, launch_msg_key, machine_state) )
     constellation = ConstellationState(constellation_name)
     constellation_state = constellation.get_value("constellation_state")
     #log("const state %s" % constellation_state)
-    
+
     if constellation_states.index(constellation_state ) >= constellation_states.index("launching"):
         if machine_state == "running":
             constellation.set_value(launch_msg_key, "complete")       
@@ -162,6 +163,7 @@ def monitor_launch_state(constellation_name, ssh_client,  machine_state, dpkg_cm
                     log('%s/%s = %s' % (constellation_name, dpkg_cmd, robot_package) )
             except Exception, e:
                 log("%s error: %s" % (dpkg_cmd, e))            
+
 
 def monitor_simulator(constellation_name, ssh_client, sim_state_key = 'simulation_state'):
     """
@@ -197,8 +199,8 @@ def _monitor_ping(constellation_name, ping_data_key, ping_str):
     latency = constellation.get_value(ping_data_key)
     latency = record_ping_result(latency, ping_str, LATENCY_TIME_BUFFER)
     constellation.set_value(ping_data_key, latency)
-    
-    
+
+
 def monitor_cloudsim_ping(constellation_name, ip_address_key, ping_data_key):
     """
     Finds the ip of the machine to pind in redis, pings the machine and integrates
@@ -211,7 +213,8 @@ def monitor_cloudsim_ping(constellation_name, ip_address_key, ping_data_key):
         o, ping_str = commands.getstatusoutput("ping -c3 %s" % ip_address)
         if o == 0:
             _monitor_ping(constellation_name, ping_data_key, ping_str) 
-        
+
+
 def monitor_ssh_ping(constellation_name, ssh_client, ip_address, ping_data_key):
     """
     Pings a machine and integrates the results with the existing data into the 
@@ -221,8 +224,6 @@ def monitor_ssh_ping(constellation_name, ssh_client, ip_address, ping_data_key):
         return 
     ping_str = ssh_client.cmd("ping -c3 %s" % ip_address)
     _monitor_ping(constellation_name, ping_data_key, ping_str)
-    
-
 
 
 def monitor_score_and_network(constellation_name, ssh_router):
@@ -279,11 +280,11 @@ cmd = "rostopic echo /vrc_score -n 1"
         final_score = ""
         task = constellation.get_task(task_id)
         try:
-            score_str = ssh_router.cmd("bash cloudsim/get_score.bash")
+            score_str = ssh_router.cmd("cloudsim/get_score.bash")
             s = " ".join(score_str.split()[10:-1])
 
             #net_str = "clocky clokclok 12345 8765"
-            net_str = ssh_router.cmd("bash cloudsim/get_score.bash")
+            net_str = ssh_router.cmd("cloudsim/get_network_usage.bash")
             toks = net_str.split()
             n = "uplink: %s downlink: %s" % (toks[2], toks[3])
             final_score = "%s %s" % (s,n)

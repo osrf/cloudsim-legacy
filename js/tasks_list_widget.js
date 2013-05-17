@@ -513,6 +513,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         var task = _find_task_data(task_id, tasks);
         if(task)
         {
+        	// create a string with the task title and score message
         	var task_display_msg = "<b>" + task.task_title + "</b>";
         	task_display_msg += " " + task.task_message;
         	
