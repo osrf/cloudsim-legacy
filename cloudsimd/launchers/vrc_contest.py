@@ -1116,7 +1116,7 @@ def reboot_machines(constellation_name, constellation_directory):
     constellation.set_value('fc1_aws_state', m)
     constellation.set_value('fc2_aws_state', m)
     constellation.set_value('sim_aws_state', m)
-    constellation.set_value('router_aws_state', m)
+    #constellation.set_value('router_aws_state', m)
     wait_for_setup_done(constellation_name, constellation_directory)
 
     router_ip = constellation.get_value("router_public_ip")
@@ -1204,13 +1204,13 @@ def shutdown_constellation_public_ips(constellation_name, constellation_prefix, 
     if launch_sequence.index(launch_stage) >= launch_sequence.index("block_public_ips"):
         return
 
+    wait_for_setup_done(constellation_name, constellation_directory)
+
     m = "Switching off public network interfaces"
     constellation.set_value('fc1_launch_msg', m)
     constellation.set_value('fc2_launch_msg', m)
     constellation.set_value('sim_launch_msg', m)
-    constellation.set_value('router_launch_msg', m)
-
-    wait_for_setup_done(constellation_name, constellation_directory)
+    #constellation.set_value('router_launch_msg', m)
     private_machines = ["sim-%s" % constellation_prefix, "fc1-%s" % constellation_prefix, "fc2-%s" % constellation_prefix]
     osrf_creds = load_osrf_creds(credentials_softlayer)
     shutdown_public_ips(osrf_creds, private_machines)

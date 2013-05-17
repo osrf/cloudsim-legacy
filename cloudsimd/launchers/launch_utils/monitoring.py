@@ -257,36 +257,43 @@ score_str.split()
 (26, '---')
 cmd = "rostopic echo /vrc_score -n 1"
 """
+#        score_str = """wall_time: 
+#  secs: 1368752045
+#  nsecs: 78800440
+#sim_time: 
+#  secs: 51
+#  nsecs: 0
+#wall_time_elapsed: 
+#  secs: 0
+#  nsecs: 0
+#sim_time_elapsed: 
+#  secs: 0
+#  nsecs: 0
+#completion_score: 0
+#falls: 0
+#message: ''
+#---"""
     constellation = ConstellationState(constellation_name)
     task_id = constellation.get_value("current_task")
     if task_id != "":
+        final_score = ""
         task = constellation.get_task(task_id)
-        score_str = ssh_router.cmd("bash cloudsim/get_score.bash")
+        try:
+            score_str = ssh_router.cmd("bash cloudsim/get_score.bash")
+            s = " ".join(score_str.split()[10:-1])
 
-        score_str = """wall_time: 
-  secs: 1368752045
-  nsecs: 78800440
-sim_time: 
-  secs: 51
-  nsecs: 0
-wall_time_elapsed: 
-  secs: 0
-  nsecs: 0
-sim_time_elapsed: 
-  secs: 0
-  nsecs: 0
-completion_score: 0
-falls: 0
-message: ''
----"""
-        s = " ".join(score_str.split()[10:-1])
-        net_str = "clocky clokclok 12345 8765"
-        toks = net_str.split()
-        n = "uplink: %s downlink: %s" % (toks[2], toks[3])
-        final_score = "%s %s" % (s,n)
-        task['score'] = final_score 
+            #net_str = "clocky clokclok 12345 8765"
+            net_str = ssh_router.cmd("bash cloudsim/get_score.bash")
+            toks = net_str.split()
+            n = "uplink: %s downlink: %s" % (toks[2], toks[3])
+            final_score = "%s %s" % (s,n)
+            
+        except Exception, e:
+            final_score = "Monitor score Error: %s" % e
+        task['task_message'] = final_score
         constellation.update_task(task_id, task)
-
+        log(final_score)
+        
 
 class Testos(unittest.TestCase):
     def test_me(self):

@@ -129,8 +129,8 @@ function _create_task_form(form_id)
 
     _add_form_separator(form_div, "VRC parameters");
 
-    var local_start = _add_form_textinput(form_div, "Availability start date");
-    var local_stop = _add_form_textinput(form_div, "Availability end date");
+    var local_start = _add_form_textinput(form_div, "Valid from (UTC)");
+    var local_stop = _add_form_textinput(form_div, "Valid until (UTC)");
     var vrc_id = _add_form_textinput(form_div, "VRC task ID");
     var vrc_num = _add_form_textinput(form_div, "VRC task num");
 
@@ -246,6 +246,16 @@ function create_task_list_widget(const_div, constellation_name)
     $.subscribe("/constellation", function(event, data){
             if(data.constellation_name != constellation_name)
                 return;
+            
+            var disable_stop = true;
+            if (data.constellation_state = "running")
+            {
+            	if (data.current_task != "")
+            	{
+            		disable_stop = false;
+            	}
+            }
+            stop_current_task_button.disabled = disable_stop;
             
             
             var new_tasks = [];
@@ -535,6 +545,21 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 if(get_user_info().role == "user")
                 {
                 	edit_button.disabled=true;
+                }
+                
+                // constellation is ready
+                if(data.constellation_state == "running")
+                {
+                	// no other task running
+                	if(data.current_task == "")
+                	{
+                		action_button.disabled=false;
+                	}
+                	else
+                	{
+                		action_button.disabled=true;
+                	}
+                	
                 }
             }
 
