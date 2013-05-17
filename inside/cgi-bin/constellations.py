@@ -22,36 +22,50 @@ r = redis.Redis()
 def log(msg, channel='constellations'):
     r.publish(channel, msg)
 
-def _domain(email):
-    domain = email.split('@')[1]
-    return domain
+
+def get_user_tasks(tasks):
+    """
+    Returns the next available task
+    """
+    latest_tasks =[]
+    
+    for task in tasks:
+        
+        
+        latest_tasks.append(task)
+    
+    return latest_tasks
 
 
-def clean_constellation_data(constellation):
+def clean_constellation_data(constellation, role):
     """
     Remove data from the constellation to avoid cheating in the VRC
     """
     constellation.pop("constellation_directory")
-    # remove tasks data 
+    # remove tasks data
     tasks = constellation.pop('tasks')
-    # log("clean %s" % constellation['constellation_name'])
     # and replace with a censored version
     constellation['tasks'] = []
+
+    if role == 'user':
+        tasks = get_user_tasks(tasks)
+
     for task in tasks:
-        t = {'task_title':task['task_title'], 
+        t = {'task_title': task['task_title'],
              'task_state': task['task_state'],
-             'task_id' : task['task_id']}
+             'task_id': task['task_id'],
+             'task_message': task['task_message']}
         constellation['tasks'].append(t)
     return constellation
 
 
-def get_constellation(email, constellation_name):
+def get_constellation( constellation_name, role):
     try:
         key = 'cloudsim/' + constellation_name
         log("get_constellation %s" % key)
         s = r.get(key)
         c = json.loads(s)
-        constellation = clean_constellation_data(c)
+        constellation = clean_constellation_data(c, role)
         return constellation
     except Exception, e:
         tb = traceback.format_exc()
@@ -60,13 +74,13 @@ def get_constellation(email, constellation_name):
     return None
 
 
-def list_constellations(email):
+def list_constellations(role):
     constellations = []
     for key in r.keys():
         toks = key.split('cloudsim/')
         if len(toks) == 2:
             constellation_name = toks[1]
-            c = get_constellation(email, constellation_name)
+            c = get_constellation(constellation_name, role)
             if c:
                 log(constellation_name)
                 constellations.append(c)
@@ -93,7 +107,6 @@ role = udb.get_role(email)
 
 method = os.environ['REQUEST_METHOD']
 
-
 print('Content-type: application/json')
 print("\n")
 
@@ -112,6 +125,7 @@ if method == 'GET':
 
     except Exception, e:
         s = "%s" % e
+        
     print("%s" % s)
     exit(0)
 
@@ -131,13 +145,14 @@ if method == 'DELETE':
         s = json.dumps(d)
         print("%s" % s)
         exit(0)
-  
+
 if method == 'POST':
     d = {}
     d['username'] = email
     d['command'] = 'launch'
     d['configuration'] = get_query_param('configuration')
-    
+
+
 s = json.dumps(d)
 r.publish('cloudsim_cmds', s)
 print("%s" % s)

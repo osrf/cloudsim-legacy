@@ -297,7 +297,7 @@ function _set_button_state(action_button, task_state)
     action_button.setAttribute();
 }
 
-
+// add a new task line and widgets. Also subscribes to changes
 function add_task_widget(const_div, constellation_name, task_id, state, task_title, task_data )
 {
     //var const_div = document.getElementById(constellation_name);
@@ -513,11 +513,12 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         var task = _find_task_data(task_id, tasks);
         if(task)
         {
-            if(task.task_title != task_title_div.innerHTML)
+        	var task_display_msg = "<b>" + task.task_title + "</b>";
+        	task_display_msg += " " + task.task_message;
+        	
+            if(task_display_msg != task_title_div.innerHTML)
             {
-                console.log("title change " + task_id);
-                console.log("task state " + task.state);
-                task_title_div.innerHTML = task.task_title;
+                task_title_div.innerHTML = task_display_msg;
             }
 
             //  console.log('TASK _set_state_widget: ' + constellation_name + ': '+ task.task_state)
