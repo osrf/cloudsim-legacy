@@ -206,7 +206,6 @@ function _get_task_url(constellation,
 }
 
 function create_task(constellation,
-					null,
 					task_title, 
                   ros_package, 
                   launch_file, 
@@ -223,6 +222,7 @@ function create_task(constellation,
     
     
     var url = _get_task_url(constellation, 
+    			  null,
     			  task_title, 
                   ros_package, 
                   launch_file, 
