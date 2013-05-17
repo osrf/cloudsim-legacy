@@ -283,9 +283,10 @@ chmod +x /home/ubuntu/cloudsim/get_network_usage.bash
 cat <<DELIM > /home/ubuntu/cloudsim/get_score.bash
 #!/bin/bash
 
-/opt/ros/fuerte/setup.sh
+. /usr/share/drcsim/setup.sh
 # rostopic echo the last message of the score
-rostopic echo /vrc_score -n 1
+rostopic echo -p /vrc_score -n 1
+
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/get_score.bash

@@ -286,15 +286,20 @@ cmd = "rostopic echo /vrc_score -n 1"
             #net_str = "clocky clokclok 12345 8765"
             net_str = ssh_router.cmd("cloudsim/get_network_usage.bash")
             toks = net_str.split()
-            n = "uplink: %s downlink: %s" % (toks[2], toks[3])
+            up = int(toks[2]) * 8
+            down = int(toks[3]) * 8
+            n = "uplink/downlink bits: %s / %s" % (up, down)
             final_score = "%s %s" % (s,n)
-            
+
         except Exception, e:
-            final_score = "Monitor score Error: %s" % e
+            task['task_message'] = "No score available"
+            constellation.update_task(task_id, task)
+            raise
+
         task['task_message'] = final_score
         constellation.update_task(task_id, task)
         log(final_score)
-        
+
 
 class Testos(unittest.TestCase):
     def test_me(self):
@@ -303,7 +308,7 @@ class Testos(unittest.TestCase):
             _accumulate_ping_data(data, mini=i, avg=i, maxi=i, mdev=i, cutoff_time_span = 0.4)
             time.sleep(0.1)
             print(data)
-        
+
 if __name__ == "__main__":
     print("test")
     unittest.main()

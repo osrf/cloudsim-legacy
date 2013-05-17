@@ -121,14 +121,20 @@ def hardware_info(osrf_creds):
         server_id, host, username, password, priv_ip, pub_ip = server
         print ("[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip))
 
+
+def _extract_prefixes(servers):
+    routers = [s[1] for s in servers if s[1].startswith('router-') ]
+    prefixes = [x.split('-')[1] for x in routers]
+    return prefixes
+
+
 def get_constellation_prefixes(osrf_creds):
     """
     SoftLayer credentials give access to a set of machines (constellation).
     This functions returns the list of constellation (by counting the routers)
     """
     servers = get_servers_info(osrf_creds)
-    routers = [s[1] for s in servers if s[1].startswith('router-') ]
-    prefixes = [x.split('-')[1] for x in routers]
+    prefixes = _extract_prefixes(servers)
     return prefixes
     
         
@@ -308,7 +314,7 @@ def wait_for_server_reloads(osrf_creds, machine_names, callback = print_cb):
 
 class TestSofty(unittest.TestCase):
     
-    def test_get_constellation_prefixes(self):
+    def atest_get_constellation_prefixes(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         prefixes = get_constellation_prefixes(osrf_creds)
         print prefixes
@@ -317,8 +323,7 @@ class TestSofty(unittest.TestCase):
         
         machine_names = ["sim-02", "fc1-02", "fc2-02"]
         shutdown_public_ips(osrf_creds, machine_names)
-        
-    
+
     def atest_ssh_setup(self):
         
         ip = '50.97.149.39'
@@ -328,17 +333,17 @@ class TestSofty(unittest.TestCase):
         setup_ssh_key_access(ip, 'SapRekx3', key_path )
         router_priv_key_path = os.path.join(d,'test-key.pem')
         print ("ssh -i %s ubuntu@%s" % (router_priv_key_path, ip))
-        
-    
+
+
     def atest_a_write_cred(self):
         fname = get_softlayer_path()
         c = SoftLayerCredentials('hugo','xxx', fname)
         c.save()
-        
+
         creds = load_osrf_creds(fname)
         print(creds)
-    
-    
+
+
     def xtest_reload_axx(self):
         
         osrf_creds = load_osrf_creds(get_softlayer_path())
@@ -347,21 +352,19 @@ class TestSofty(unittest.TestCase):
         wait_for_server_reloads(osrf_creds, machine_names, print_cb)
 
     def stest_reload_bxx(self):
-        
+
         osrf_creds = load_osrf_creds(get_softlayer_path())
         machine_names = ['router-01', 'fc1-01', 'fc2-01', 'sim-01']
-        
         wait_for_server_reloads(osrf_creds, machine_names, print_cb)
 
-    def test_user_setup(self):
+    def atest_user_setup(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         print("ubuntu user setup")
         machine = "router-01"
         dst_dir = os.path.abspath('.')
-        
         key_prefix = 'key_%s' %  machine
         ip, priv_ip, password = get_machine_login_info(osrf_creds, machine)
-        
+
         #
         # must create key first now :-)
         
@@ -369,7 +372,7 @@ class TestSofty(unittest.TestCase):
         setup_ssh_key_access(ip, password, key_prefix)
         print ("ssh -i %s/%s.pem ubuntu@%s" % (dst_dir, key_prefix, ip))
 
-    def test_validate(self):
+    def atest_validate(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         api_username = osrf_creds['user'] 
         api_key = osrf_creds['api_key']
@@ -401,14 +404,41 @@ class TestSofty(unittest.TestCase):
 #        setup_ssh_key_access(ip, password, 'sim_key')
 
 
+def soft_layer_dash_board(soft_layer_creds_fname):
+
+    def get_server(name):
+        server = [s for s in servers if s[1] ==  name][0]
+        return server
+
+    osrf_creds = load_osrf_creds(soft_layer_creds_fname)
+    servers = get_servers_info(osrf_creds)
+    prefixes = _extract_prefixes(servers)
+
+    for prefix in prefixes:
+        fc1 = get_server('fc1-%s' % prefix)
+        fc2 = get_server('fc2-%s' % prefix)
+        sim = get_server('sim-%s' % prefix)
+        router = get_server('router-%s' % prefix)
+        cs = get_server('cs-%s' % prefix)
+
+        print(prefix)
+        print ("  ", cs) 
+        print ("  ", router)
+        print ("  ", sim) 
+        print ("  ", fc1) 
+        print ("  ", fc2) 
+        
+
 if __name__ == "__main__": 
     p = get_softlayer_path()
-    osrf_creds = load_osrf_creds(p)
+    #osrf_creds = load_osrf_creds(p)
     
-    hardware_helpers(osrf_creds)
     
-    hardware_info(osrf_creds)
+    #hardware_helpers(osrf_creds)
+    
+    #hardware_info(osrf_creds)
     
     #hardware_scan(osrf_creds)
+    soft_layer_dash_board(p)
     
     unittest.main()
