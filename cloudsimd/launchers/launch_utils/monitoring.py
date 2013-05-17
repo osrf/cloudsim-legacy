@@ -163,7 +163,7 @@ def monitor_launch_state(constellation_name, ssh_client,  machine_state, dpkg_cm
             except Exception, e:
                 log("%s error: %s" % (dpkg_cmd, e))            
 
-def monitor_simulator(constellation_name, ssh_client):
+def monitor_simulator(constellation_name, ssh_client, sim_state_key = 'simulation_state'):
     """
     Detects if the simulator is running and writes the 
     result into the "gazebo" dictionary key 
@@ -173,7 +173,7 @@ def monitor_simulator(constellation_name, ssh_client):
         return False
     
     constellation = ConstellationState(constellation_name)
-    simulation_state = constellation.get_value('simulation_state')
+    simulation_state = constellation.get_value(sim_state_key)
     if machine_states.index(simulation_state) >= machine_states.index('running'):
         gl_state = constellation.get_value("simulation_glx_state")
         if gl_state == "running":
@@ -186,6 +186,7 @@ def monitor_simulator(constellation_name, ssh_client):
                 constellation.set_value("gazebo", "not running")
                 return False      
     return True
+
 
 def _monitor_ping(constellation_name, ping_data_key, ping_str):
     """
@@ -221,7 +222,71 @@ def monitor_ssh_ping(constellation_name, ssh_client, ip_address, ping_data_key):
     ping_str = ssh_client.cmd("ping -c3 %s" % ip_address)
     _monitor_ping(constellation_name, ping_data_key, ping_str)
     
-    
+
+
+
+def monitor_score_and_network(constellation_name, ssh_router):
+    """
+score_str.split()
+(0, 'wall_time:')
+(1, 'secs:')
+(2, '1368752045')
+(3, 'nsecs:')
+(4, '78800440')
+(5, 'sim_time:')
+(6, 'secs:')
+(7, '51')
+(8, 'nsecs:')
+(9, '0')
+(10, 'wall_time_elapsed:')
+(11, 'secs:')
+(12, '0')
+(13, 'nsecs:')
+(14, '0')
+(15, 'sim_time_elapsed:')
+(16, 'secs:')
+(17, '0')
+(18, 'nsecs:')
+(19, '0')
+(20, 'completion_score:')
+(21, '0')
+(22, 'falls:')
+(23, '0')
+(24, 'message:')
+(25, "''")
+(26, '---')
+cmd = "rostopic echo /vrc_score -n 1"
+"""
+    constellation = ConstellationState(constellation_name)
+    task_id = constellation.get_value("current_task")
+    if task_id != "":
+        task = constellation.get_task(task_id)
+        score_str = ssh_router.cmd("bash cloudsim/get_score.bash")
+
+        score_str = """wall_time: 
+  secs: 1368752045
+  nsecs: 78800440
+sim_time: 
+  secs: 51
+  nsecs: 0
+wall_time_elapsed: 
+  secs: 0
+  nsecs: 0
+sim_time_elapsed: 
+  secs: 0
+  nsecs: 0
+completion_score: 0
+falls: 0
+message: ''
+---"""
+        s = " ".join(score_str.split()[10:-1])
+        net_str = "clocky clokclok 12345 8765"
+        toks = net_str.split()
+        n = "uplink: %s downlink: %s" % (toks[2], toks[3])
+        final_score = "%s %s" % (s,n)
+        task['score'] = final_score 
+        constellation.update_task(task_id, task)
+
 
 class Testos(unittest.TestCase):
     def test_me(self):

@@ -200,12 +200,11 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
 
     constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
 
-
     log('launch!!! tags = %s' % tags)
     constellation = ConstellationState(constellation_name)
 
     constellation.set_value("simulation_launch_msg", "launching")
-
+    constellation.set_value('simulation_state', 'starting')
     if not constellation.has_value("launch_stage"):
         constellation.set_value("launch_stage", "nothing") # "os_reload"
         #constellation.set_value("launch_stage", "os_reload")

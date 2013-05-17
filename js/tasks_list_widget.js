@@ -79,7 +79,7 @@ function _split_tasks(task_div_list,
     
 }
 
-function _add_form_textinput(form_div, title)
+function _add_form_textinput(form_div, title, readonly)
 {
     var input_field  = document.createElement("input");
     input_field.size = "35";
@@ -112,7 +112,7 @@ function _create_task_form(form_id)
     form_div.id = form_id;
 	
     form_div.title = "Task properties";
-    var task_title_input = _add_form_textinput(form_div, "Task title" );
+    var task_title_input = _add_form_textinput(form_div, "Task title");
     
     _add_form_separator(form_div, "Simulation parameters");
     
@@ -121,38 +121,18 @@ function _create_task_form(form_id)
     var timeout =  _add_form_textinput(form_div, "Maximum time (sec)" );
     var launch_arguments =  _add_form_textinput(form_div, "Arguments" );
 
-    
-//    form_div.appendChild(document.createElement("br"));
-//    form_div.appendChild(document.createElement("br"));
-//    var section = document.createElement("b");
-//    section.appendChild(document.createTextNode("Simulation parameters"));
-//    form_div.appendChild(section);
-
-//    // section
-//    form_div.appendChild(document.createElement("br"));
-//    form_div.appendChild(document.createElement("br"));
-//    section = document.createElement("b");
-//    section.appendChild(document.createTextNode("Network parameters"));
-//    form_div.appendChild(section);
-//    
     _add_form_separator(form_div, "Network parameters");
     
-    var latency =  _add_form_textinput(form_div, "Minimum latency (ms, round trip)" );
-    var uplink_data_cap=  _add_form_textinput(form_div, "Uplink data cap (bits)" );
-    var downlink_data_cap = _add_form_textinput(form_div, "Downlink data cap (bits)" );
+    var latency =  _add_form_textinput(form_div, "Minimum latency (ms, round trip)");
+    var uplink_data_cap=  _add_form_textinput(form_div, "Uplink data cap (bits)");
+    var downlink_data_cap = _add_form_textinput(form_div, "Downlink data cap (bits)");
 
-    // section
-//    form_div.appendChild(document.createElement("br"));
-//    form_div.appendChild(document.createElement("br"));
-//    section = document.createElement("b");
-//    section.appendChild(document.createTextNode("VRC parameters"));
-//    form_div.appendChild(section);
     _add_form_separator(form_div, "VRC parameters");
-    
-    var local_start = _add_form_textinput(form_div, "Availability start date")
-    var local_stop = _add_form_textinput(form_div, "Availability end date")
-    var vrc_id = _add_form_textinput(form_div, "VRC task ID")
-    var vrc_num = _add_form_textinput(form_div, "VRC task num")
+
+    var local_start = _add_form_textinput(form_div, "Availability start date");
+    var local_stop = _add_form_textinput(form_div, "Availability end date");
+    var vrc_id = _add_form_textinput(form_div, "VRC task ID");
+    var vrc_num = _add_form_textinput(form_div, "VRC task num");
 
     // default values
     ros_package.value = "atlas_utils";
@@ -297,7 +277,6 @@ function _set_task_style(style)
 }
 
 
-
 function _set_button_state(action_button, task_state)
 {
     action_button.setAttribute();
@@ -410,6 +389,16 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         
         var dlg = document.querySelector( "#" + form_id);
         var inputs = dlg.querySelectorAll("input");
+        
+        // disable editing for users
+        if(get_user_info().role == "user")
+        {
+            for (var i=0; i< 12; i++)
+            {
+                inputs[i].readOnly = true;
+            }
+        }
+        
         var task_title_input = inputs[0];
         var ros_package = inputs[1];
         var launch_file = inputs[2];
@@ -430,6 +419,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         	alert("You do not have sufficient privileges for this operation");
         	return;
         }
+        
         task_title_input.value = task.task_title;
         ros_package.value = task.ros_package;
         launch_file.value = task.ros_launch;
@@ -557,7 +547,14 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
             {
                 state_widget.src = "/js/images/red_status.png";
                 action_button.disabled=true;
-                x_button.disabled=true;
+                if(get_user_info().role == "user")
+                {
+                	x_button.disabled=true;
+                }
+                else
+                {
+                	x_button.disabled=false;
+                }
             }
 
             // _set_state_widget(state_widget, task.task_state, count);

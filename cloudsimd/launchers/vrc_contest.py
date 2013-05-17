@@ -15,7 +15,8 @@ from launch_utils.traffic_shapping import  run_tc_command
 import launch_utils.softlayer
 
 from launch_utils.monitoring import constellation_is_terminated,\
-    monitor_launch_state, monitor_cloudsim_ping, machine_states, monitor_ssh_ping
+    monitor_launch_state, monitor_cloudsim_ping, machine_states, monitor_ssh_ping,\
+    monitor_score_and_network, monitor_simulator
 
 from launch_utils.softlayer import load_osrf_creds, reload_servers,\
     get_softlayer_path, wait_for_server_reloads, get_machine_login_info,\
@@ -93,22 +94,27 @@ def notify_portal(constellation, task):
 
     config = get_cloudsim_config()
     portal_info_fname = config['cloudsim_portal_json_path']
-    portal_info = None
-    with open(portal_info_fname, 'r') as f:
-        portal_info = json.loads(f.read())
+    ssh_portal_key_fname = config['cloudsim_portal_key_path']
 
-    ssh_portal = SshClient('xxx', 'xxx', portal_info['user'], portal_info['hostname'])
-    # this is a hack
-    ssh_portal.key_fname = config['cloudsim_portal_key_path']
+    if os.path.exists(portal_info_fname) and os.path.exists(ssh_portal_key_fname):
+        portal_info = None
+        with open(portal_info_fname, 'r') as f:
+            portal_info = json.loads(f.read())
 
-    # Upload the file to the Portal temp dir
-    dest = os.path.join(portal_info['upload_dir'], portal_info['team'] + '_score.json')
-    ssh_portal.upload_file(portal_info_fname, dest)
+        ssh_portal = SshClient('xxx', 'xxx', portal_info['user'], portal_info['hostname'])
+        # this is a hack
+        ssh_portal.key_fname = ssh_portal_key_fname
+    
+        # Upload the file to the Portal temp dir
+        dest = os.path.join(portal_info['upload_dir'], portal_info['team'] + '_score.json')
+        ssh_portal.upload_file(portal_info_fname, dest)
 
-    # Move the file to the final destination into the Portal
-    final_dest = os.path.join(portal_info['final_destination_dir'], portal_info['team'] + '_score_final.json')
-    cmd = 'mv %s %s' % (dest, final_dest)
-    r = ssh_portal.cmd(cmd)
+        # Move the file to the final destination into the Portal
+        final_dest = os.path.join(portal_info['final_destination_dir'], portal_info['team'] + '_score_final.json')
+        cmd = 'mv %s %s' % (dest, final_dest)
+        r = ssh_portal.cmd(cmd)
+    else:
+        log("no portal present")
 
 def start_task(constellation, task):
 
@@ -137,43 +143,14 @@ def stop_task(constellation, task):
 
     log("** stop simulator ***")
     stop_simulator(constellation)
-
+    
+    log("** Notify portal ***")
     notify_portal(constellation, task)
 
 
-def monitor_simulator(constellation_name, ssh_client):
-    """
-    Detects if the simulator is running and writes the
-    result into the "gazebo" ditionnary key
-    """
-    if ssh_client is None:
-        #constellation.set_value("gazebo", "not running")
-        return False
-
-    constellation = ConstellationState(constellation_name)
-    simulation_state = constellation.get_value('sim_state')
-    if machine_states.index(simulation_state) >= machine_states.index('running'):
-        gl_state = constellation.get_value("simulation_glx_state")
-        if gl_state == "running":
-            try:
-                ping_gazebo = ssh_client.cmd("bash cloudsim/ping_gazebo.bash")
-                log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo)
-                constellation.set_value("gazebo", "running")
-            except Exception, e:
-                log("monitor: cloudsim/ping_gazebo.bash error: %s" % e)
-                constellation.set_value("gazebo", "not running")
-                return False
-    return True
 
 
-def monitor_score_and_network(constellation_name, ssh_router):
 
-    constellation = ConstellationState(constellation_name)
-    score_str = ssh_router.cmd("bash cloudsim/get_score.bash")
-    constellation.set_value("score", score_str)
-
-    net_str = ssh_router.cmd("bash cloudsim/get_network_usage.bash")
-    constellation.set_value("network", net_str)
 
 
 def monitor(username, constellation_name, counter):
@@ -188,7 +165,7 @@ def monitor(username, constellation_name, counter):
         router_ip = constellation.get_value("router_public_ip")
 
         ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
-        monitor_simulator(constellation_name, ssh_router)
+        monitor_simulator(constellation_name, ssh_router, "sim_state")
 
         router_state = constellation.get_value('router_state')
         monitor_cloudsim_ping(constellation_name, 'router_ip', 'router_latency')
@@ -294,18 +271,21 @@ DELIM
 cat <<DELIM > /home/ubuntu/cloudsim/get_network_usage.bash
 #!/bin/bash
 
-# tail -f
-echo 424242 666666
+#
+# wall or sim clock, wall or sim clock, uplink downlink 
+# space is the separator
+tail -1 /tmp/vrc_netwatcher_usage.log
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/get_network_usage.bash
+
 
 cat <<DELIM > /home/ubuntu/cloudsim/get_score.bash
 #!/bin/bash
 
 /opt/ros/fuerte/setup.sh
 # rostopic echo the last message of the score
-echo score 99 wte 1500
+rostopic echo /vrc_score -n 1
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/get_score.bash
@@ -853,7 +833,6 @@ def initialize_router(constellation_name, constellation_prefix, osrf_creds_fname
     log("fc1 %s %s" % (fc1_pub_ip, fc1_root_password))
     log("fc2 %s %s" % (fc2_pub_ip, fc2_root_password))
     log("ubuntu user setup for machine router %s [%s / %s] " % (router_name, router_ip, priv_ip))
-    # dst_dir = os.path.abspath('.')
 
     log("router %s %s : %s" % (router_name, router_ip, password))
     add_ubuntu_user_to_router(router_ip, password, constellation_directory)

@@ -312,7 +312,7 @@ function stop_task(constellation_name)
 {
     var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=stop_task';
     url += '&constellation=' + constellation_name;
-    
+
     console.log(url);
     msg = httpGet(url);
     console.log(msg);

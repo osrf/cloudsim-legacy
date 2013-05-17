@@ -61,8 +61,13 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
 
     top_div.id = "top";
 
+    //var title_str = " <h3 style=' margin-top:0; margin-bottom:0;'><table width='100%'><tr><td align='left'>";
+    //title_str    +=   constellation_name + "</td><td align='right'><FONT SIZE=2> Launched by " + username + "</FONT></td></tr><tr><td><FONT SIZE=2>" + configuration_name + "</FONT></td><td align='right'><FONT SIZE=2> at GMT " + gmt + "</FONT></td></tr></table></h3>";
+    
     var title_str = " <h3 style=' margin-top:0; margin-bottom:0;'><table width='100%'><tr><td align='left'>";
-    title_str    +=   constellation_name + "</td><td align='right'><FONT SIZE=2> Launched by " + username + "</FONT></td></tr><tr><td><FONT SIZE=2>" + configuration_name + "</FONT></td><td align='right'><FONT SIZE=2> at GMT " + gmt + "</FONT></td></tr></table></h3>";
+    title_str    +=   constellation_name + "</td><td align='right'><FONT SIZE=2> Launched by " + username + " (UTC " + gmt + ")</FONT></td></tr>"; //"<tr><td><FONT SIZE=2>" + configuration_name + "</FONT></td><td align='right'><FONT SIZE=2> at UTC " + gmt + "</FONT></td></tr></table></h3>";
+
+    
     
     top_div.style.backgroundColor ="#44497a";
     top_div.style.borderTopLeftRadius = "15px";
