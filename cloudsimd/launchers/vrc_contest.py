@@ -135,22 +135,11 @@ def stop_task(constellation, task):
 
     log("** SIMULATOR *** STOP TASK %s ***" % constellation)
 
-    latency = 0
-    up = -1
-    down = -1
-    log("** TC COMMAND ***")
-    run_tc_command(constellation, 'sim_machine_name', 'key-router', 'router_public_ip', latency, up, down)
-
     log("** stop simulator ***")
     stop_simulator(constellation)
     
     log("** Notify portal ***")
     notify_portal(constellation, task)
-
-
-
-
-
 
 
 def monitor(username, constellation_name, counter):
