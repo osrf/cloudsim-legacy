@@ -174,14 +174,19 @@ function create_task_list_widget(const_div, constellation_name)
 	               var vrc_num = inputs[11].value;
 	               
 	               console.log("timeout is " + timeout);
-	               create_task(constellation_name, title, 
-	                       ros_package, launch, timeout,
-	                       args, latency, uplink_data_cap,
-	                       downlink_data_cap,
-	                       local_start,
-	                       local_stop,
-	                       vrc_id,
-	                       vrc_num);
+	               create_task(constellation_name, 
+	            		   	   title, 
+	                           ros_package, 
+	                           launch, 
+	                           timeout,
+	                           args, 
+	                           latency, 
+	                           uplink_data_cap,
+	                           downlink_data_cap,
+	                           local_start,
+	                           local_stop,
+	                           vrc_id,
+	                           vrc_num);
 	               
 	               $( this ).dialog( "close" );
                 }
