@@ -548,11 +548,12 @@ echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
 
 . /usr/share/drcsim/setup.sh
 if [ -f /home/ubuntu/local/share/vrc_arenas/setup.sh ]; then
- . /home/ubuntu/local/share/vrc_arenas/setup.sh 
+ . /home/ubuntu/local/share/vrc_arenas/setup.sh
 fi
 export ROS_IP=""" + machine_ip + """
 export GAZEBO_IP=""" + machine_ip + """
 export DISPLAY=:0
+ulimit -c unlimited
 roslaunch \$1 \$2 \$3 gzname:=gzserver  &
 
 DELIM
@@ -619,7 +620,7 @@ PORTAL_LOG_DIR=/home/ubuntu/cloudsim/logs/portal/\$TASK_DIRNAME
 
 if [ ! -f $PORTAL_KEY ];
 then
-    echo VRC Portal key not found (\$PORTAL_KEY)
+    echo VRC Portal key not found \$PORTAL_KEY
     exit 0
 fi
 

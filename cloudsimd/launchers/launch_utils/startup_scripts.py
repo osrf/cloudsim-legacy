@@ -419,10 +419,11 @@ cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
 
 echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
 
-. /usr/share/drcsim/setup.sh 
-export ROS_IP=""" + machine_ip +""" 
-export GAZEBO_IP=""" + machine_ip +"""
-export DISPLAY=:0 
+. /usr/share/drcsim/setup.sh
+export ROS_IP=""" + machine_ip + """
+export GAZEBO_IP=""" + machine_ip + """
+export DISPLAY=:0
+ulimit -c unlimited
 roslaunch \$1 \$2 \$3 gzname:=gzserver  &
 
 DELIM
@@ -442,11 +443,11 @@ oldrpp=$ROS_PACKAGE_PATH
 
 . /usr/share/drcsim/setup.sh
 eval export ROS_PACKAGE_PATH=\$oldrpp:\\$ROS_PACKAGE_PATH
-export ROS_IP=""" + machine_ip +"""
-export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311 
+export ROS_IP=""" + machine_ip + """
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
 
-export GAZEBO_IP=""" + machine_ip +"""
-export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
+export GAZEBO_IP=""" + machine_ip + """
+export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:113451
 
 DELIM
 
@@ -467,15 +468,15 @@ date >> /home/ubuntu/setup.log
 echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
 wget http://packages.ros.org/ros.key -O - | apt-key add -
 wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
-    
+
 echo "update packages" >> /home/ubuntu/setup.log
 apt-get update
 
 """ + open_vpn_script + """
-    
+
 echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
 apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
-    
+
 #
 # The BusID is given by lspci (but lspci gives it in hex, and BusID needs dec)
 # This value is required for Tesla cards
