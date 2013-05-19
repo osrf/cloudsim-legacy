@@ -512,7 +512,7 @@ DELIM
 # it requires apt-get update for some reason
 #
 apt-get update
-apt-get install -y python-software-properties
+apt-get install -y python-software-properties zip
 
 
 mkdir -p /home/ubuntu/cloudsim
@@ -604,34 +604,37 @@ cat <<DELIM > /home/ubuntu/cloudsim/send_to_portal.bash
 
 USAGE="Usage: send_to_portal <task_dirname> <zipname> <portal_key> <portal_url>"
 
-if [ $# -ne 4 ]; then
-  echo $USAGE
+if [ \$# -ne 4 ]; then
+  echo \$USAGE
   exit 1
 fi
 
-TASK_DIRNAME=$1
-ZIPNAME=$2
-PORTAL_KEY=$3
-PORTAL_URL=$4
-LOG_DIR=/home/ubuntu/cloudsim/logs/$TASK_DIRNAME
-SIM_LOG_DIR=/tmp/$TASK_DIRNAME
-PORTAL_LOG_DIR=/home/ubuntu/cloudsim/logs/portal/$TASK_DIRNAME
+TASK_DIRNAME=\$1
+ZIPNAME=\$2
+PORTAL_KEY=\$3
+PORTAL_URL=\$4
+LOG_DIR=/home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
+SIM_LOG_DIR=/tmp/\$TASK_DIRNAME
+PORTAL_LOG_DIR=/home/ubuntu/cloudsim/logs/portal/\$TASK_DIRNAME
 
-if [ ! -f PORTAL_KEY ];
+if [ ! -f $PORTAL_KEY ];
 then
-    echo VRC Portal key not found ($PORTAL_KEY)
+    echo VRC Portal key not found (\$PORTAL_KEY)
     exit 0
 fi
 
-mkdir -p $PORTAL_LOG_DIR
+mkdir -p \$PORTAL_LOG_DIR
 
-# Create a zip file using multiple cores
-zip -j $PORTAL_LOG_DIR/$ZIPNAME $SIM_LOG_DIR/* $LOG_DIR/*
+# Create a zip file
+zip -j \$PORTAL_LOG_DIR/\$ZIPNAME \$SIM_LOG_DIR/* \$LOG_DIR/* || true
 
-# Send the zip file to the VRC Portal
-scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $PORTAL_KEY $PORTAL_LOG_DIR/*.zip ubuntu@$PORTAL_URL:/tmp
+if [ -f \$PORTAL_LOG_DIR/\$ZIPNAME ];
+then
+    # Send the zip file to the VRC Portal
+    scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$PORTAL_KEY \$PORTAL_LOG_DIR/*.zip ubuntu@\$PORTAL_URL:/tmp
 
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $PORTAL_KEY ubuntu@$PORTAL_URL sudo mv /tmp/$ZIPNAME /vrc_logs/end_incoming
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$PORTAL_KEY ubuntu@\$PORTAL_URL sudo mv /tmp/\$ZIPNAME /vrc_logs/end_incoming
+fi
 DELIM
 
 
