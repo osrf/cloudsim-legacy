@@ -457,7 +457,7 @@ DISPLAY=localhost:0 timeout 10 glxinfo
 DELIM
 
 
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim  
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
 # Add ROS and OSRF repositories
 echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list

@@ -85,36 +85,58 @@ def stop_simulator(constellation_name):
 
 
 def notify_portal(constellation, task):
-#    constellation = ConstellationState(constellation_name)
-#    constellation_directory = constellation.get_value('constellation_directory')
-#    sim_ip = constellation.get_value('sim_ip')
-#    cmd = "bash cloudsim/stop_sim.bash"
-#    ssh_sim = SshClient(constellation_directory, 'key-sim', 'ubuntu', sim_ip)
-#    r = ssh_sim.cmd(cmd)
 
-    config = get_cloudsim_config()
-    portal_info_fname = config['cloudsim_portal_json_path']
-    ssh_portal_key_fname = config['cloudsim_portal_key_path']
+    try:
+        # ToDo: Get these fields from CloudSim
+        team = 'osrf'
+        comp = 'practice'
 
-    if os.path.exists(portal_info_fname) and os.path.exists(ssh_portal_key_fname):
-        portal_info = None
-        with open(portal_info_fname, 'r') as f:
-            portal_info = json.loads(f.read())
+        task_num = task['vrc_num']
+        run = task['vrc_id']
 
-        ssh_portal = SshClient('xxx', 'xxx', portal_info['user'], portal_info['hostname'])
-        # this is a hack
-        ssh_portal.key_fname = ssh_portal_key_fname
-    
-        # Upload the file to the Portal temp dir
-        dest = os.path.join(portal_info['upload_dir'], portal_info['team'] + '_score.json')
-        ssh_portal.upload_file(portal_info_fname, dest)
+        # Create JSON file with the task metadata
+        data = json.dumps({'team': team, 'event': comp, 'task': task_num,
+                           'start_time': '12:15:03', 'result': 'Terminated',
+                           'runtime': '10:09', 'score': '1'},
+                          sort_keys=True, indent=4, separators=(',', ': '))
 
-        # Move the file to the final destination into the Portal
-        final_dest = os.path.join(portal_info['final_destination_dir'], portal_info['team'] + '_score_final.json')
-        cmd = 'mv %s %s' % (dest, final_dest)
-        r = ssh_portal.cmd(cmd)
-    else:
-        log("no portal present")
+        with open('/tmp/end_task.json', 'w') as f:
+            f.write(str(data))
+
+        log("** JSON Task Created ***")
+
+        # Copy the JSON into the router (CS)
+        const = ConstellationState(constellation)
+        constellation_dict = get_constellation_data(constellation)
+        constellation_directory = constellation_dict['constellation_directory']
+        router_ip = const.get_value("router_public_ip")
+
+        task_id = task['ros_launch']
+        task_dirname = task_id.split('.')[0]
+        task_router_dirname = os.path.join('/home/ubuntu/cloudsim/logs/',
+                                           task_dirname)
+
+        cmd = 'mkdir -p ' + task_router_dirname
+        ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu',
+                               router_ip)
+        ssh_router.cmd(cmd)
+        log("** Log directory created into the router ***")
+        ssh_router.upload_file('/tmp/end_task.json', task_router_dirname)
+        log("** JSON task file copied into the router ***")
+
+        # Copy JSON+NETusage into the sim (Router). This script on the router
+        # will send the json and the network usage log file to the simulator.
+        # Another script on the simulator will copy all the log files to the
+        # VRC Portal.
+        zip_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(run) +
+                    '.zip')
+        cmd = ("bash cloudsim/copy_net_usage.bash %s %s" %
+               (task_dirname, zip_name))
+        ssh_router.cmd(cmd)
+        log("** Copying JSON+NETusage into the sim***")
+    except Exception, excep:
+        print ('Notify_portal() Exception: %s' % (repr(excep)))
+
 
 def start_task(constellation, task):
 
@@ -137,9 +159,9 @@ def stop_task(constellation, task):
 
     log("** stop simulator ***")
     stop_simulator(constellation)
-    
-    log("** Notify portal ***")
-    notify_portal(constellation, task)
+
+    #log("** Notify portal ***")
+    #notify_portal(constellation, task)
 
 
 def monitor(username, constellation_name, counter):
@@ -572,6 +594,44 @@ cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
 
 DISPLAY=localhost:0 timeout 10 glxinfo
 
+DELIM
+
+cat <<DELIM > /home/ubuntu/cloudsim/send_to_portal.bash
+#!/bin/bash
+
+# Create a zip file with the JSON task file, network usage and the sim log
+# Then, the zip file is sent to the VRC portal
+
+USAGE="Usage: send_to_portal <task_dirname> <zipname> <portal_key> <portal_url>"
+
+if [ $# -ne 4 ]; then
+  echo $USAGE
+  exit 1
+fi
+
+TASK_DIRNAME=$1
+ZIPNAME=$2
+PORTAL_KEY=$3
+PORTAL_URL=$4
+LOG_DIR=/home/ubuntu/cloudsim/logs/$TASK_DIRNAME
+SIM_LOG_DIR=/tmp/$TASK_DIRNAME
+PORTAL_LOG_DIR=/home/ubuntu/cloudsim/logs/portal/$TASK_DIRNAME
+
+if [ ! -f PORTAL_KEY ];
+then
+    echo VRC Portal key not found ($PORTAL_KEY)
+    exit 0
+fi
+
+mkdir -p $PORTAL_LOG_DIR
+
+# Create a zip file using multiple cores
+zip -j $PORTAL_LOG_DIR/$ZIPNAME $SIM_LOG_DIR/* $LOG_DIR/*
+
+# Send the zip file to the VRC Portal
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $PORTAL_KEY $PORTAL_LOG_DIR/*.zip ubuntu@$PORTAL_URL:/tmp
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $PORTAL_KEY ubuntu@$PORTAL_URL sudo mv /tmp/$ZIPNAME /vrc_logs/end_incoming
 DELIM
 
 

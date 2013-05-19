@@ -286,6 +286,27 @@ DELIM
 chmod +x $DIR/start_sim.bash
 
 
+cat <<DELIM > $DIR/copy_net_usage.bash
+#!/bin/bash
+
+# 1. Copy the directory containing the JSON task file and the network usage to the simulator
+# 2. Run a script on the simulator that zip all the log files and send them to the portal
+USAGE="Usage: copy_net_usage <task_dirname> <zipname>"
+
+if [ $# -ne 2 ]; then
+  echo $USAGE
+  exit 1
+fi
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@10.0.0.51 mkdir -p /home/ubuntu/cloudsim/logs
+
+TASK_DIRNAME=$1
+cp /tmp/vrc_netwatcher_usage.log $TASK_DIRNAME
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem -r /home/ubuntu/cloudsim/logs/$TASK_DIRNAME ubuntu@10.0.0.51:/home/ubuntu/cloudsim/logs/
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@10.0.0.51 bash /home/ubuntu/cloudsim/send_to_portal.bash $1 $2 /home/ubuntu/ubuntu-portal.key vrcportal-test.osrfoundation.org
+DELIM
+chmod +x $DIR/copy_net_usage.bash
 
 echo "done :-)"
 
