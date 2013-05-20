@@ -463,6 +463,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         if(state == 'ready')
         {
             start_task(constellation_name, task_id);
+            location.reload(true);
         }
     };
     

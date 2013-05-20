@@ -296,7 +296,7 @@ cat <<DELIM > /home/ubuntu/cloudsim/get_score.bash
 
 . /usr/share/drcsim/setup.sh
 # rostopic echo the last message of the score
-rostopic echo -p /vrc_score -n 1
+timeout 2 rostopic echo -p /vrc_score -n 1
 
 
 DELIM

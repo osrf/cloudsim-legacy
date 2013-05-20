@@ -252,7 +252,7 @@ def monitor_score_and_network(constellation_name, ssh_router):
         s += "<b>falls:</b> %s." % fall_count
         return s
 
-    log("score 1")
+
     constellation = ConstellationState(constellation_name)
     task_id = constellation.get_value("current_task")
     if task_id != "":
@@ -285,13 +285,10 @@ def monitor_score_and_network(constellation_name, ssh_router):
             log("score monitoring error %s" % e)
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
-        
-        log("score 2")
         final_score = "%s %s" % (score_str, net_str)
         task['task_message'] = final_score
         constellation.update_task(task_id, task)
-    log("score 3")
-    
+
 
 class Testos(unittest.TestCase):
     def test_me(self):
