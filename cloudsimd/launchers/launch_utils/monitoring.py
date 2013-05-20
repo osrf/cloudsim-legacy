@@ -262,6 +262,7 @@ def monitor_score_and_network(constellation_name, ssh_router):
         score_str = ""
         try:
             s = ssh_router.cmd("cloudsim/get_score.bash")
+            log(s)
             score_str = parse_score_data(s)
         except Exception, e:
             score_str = "No score available."
@@ -272,6 +273,7 @@ def monitor_score_and_network(constellation_name, ssh_router):
         net_str = ""
         try:
             n = ssh_router.cmd("cloudsim/get_network_usage.bash")
+            log(n)
             toks = n.split()
             up_bits = int(toks[2]) * 8
             down_bits = int(toks[3]) * 8
