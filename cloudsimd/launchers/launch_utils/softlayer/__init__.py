@@ -409,6 +409,8 @@ class TestSofty(unittest.TestCase):
 
 def softlayer_dash_board(osrf_creds):
 
+    def pr(server):
+        print ("   %10s %s ssh root@%s" % (server[1], server[3], server[5] ))
     def get_server(name):
         server = [s for s in servers if s[1] == name][0]
         return server
@@ -416,7 +418,10 @@ def softlayer_dash_board(osrf_creds):
     # osrf_creds = load_osrf_creds(soft_layer_creds_fname)
     servers = get_servers_info(osrf_creds)
     prefixes = _extract_prefixes(servers)
-
+    
+    for i in range(5):
+        print('')
+    
     for prefix in prefixes:
         fc1 = get_server('fc1-%s' % prefix)
         fc2 = get_server('fc2-%s' % prefix)
@@ -424,20 +429,45 @@ def softlayer_dash_board(osrf_creds):
         router = get_server('router-%s' % prefix)
         cs = get_server('cs-%s' % prefix)
 
+<<<<<<< local
+        print('')
+        print("constellation %s" % prefix)
+        
+        pr(cs) 
+        pr(router)
+        pr(sim) 
+        pr(fc1) 
+        pr(fc2) 
+        
+=======
         print(prefix)
         print ("  ", cs)
         print ("  ", router)
         print ("  ", sim)
         print ("  ", fc1)
         print ("  ", fc2)
+>>>>>>> other
 
 
 if __name__ == "__main__":
     p = get_softlayer_path()
     #hardware_helpers(osrf_creds)
     #hardware_info(osrf_creds)
+<<<<<<< local
+    soft_layer_dash_board(p)
+=======
+>>>>>>> other
     osrf_creds = load_osrf_creds(p)
+<<<<<<< local
+    
+    print("\nScanning for pending transactions")
+    hardware_scan(osrf_creds)
+=======
+>>>>>>> other
 
+<<<<<<< local
+=======
     softlayer_dash_board(osrf_creds)
     softlayer_server_scan(osrf_creds)
+>>>>>>> other
     unittest.main()

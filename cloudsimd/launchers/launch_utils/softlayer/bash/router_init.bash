@@ -249,6 +249,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.
 DELIM
 chmod +x $DIR/reboot_sim.bash
 
+# --------------------------------------------
 
 cat <<DELIM > $DIR/ping_gazebo.bash
 #!/bin/bash
@@ -256,13 +257,14 @@ ssh -t -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-s
 DELIM
 chmod +x $DIR/ping_gazebo.bash
 
-
+# --------------------------------------------
 cat <<DELIM > $DIR/ping_gl.bash
 #!/bin/bash
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "DISPLAY=localhost:0 timeout 5 glxinfo"
 DELIM
 chmod +x $DIR/ping_gl.bash
 
+# --------------------------------------------
 
 cat <<DELIM > $DIR/stop_sim.bash
 #!/bin/bash
@@ -274,6 +276,7 @@ sudo iptables -F FORWARD
 DELIM
 chmod +x $DIR/stop_sim.bash
 
+# --------------------------------------------
 
 cat <<DELIM > $DIR/start_sim.bash
 #!/bin/bash
@@ -285,6 +288,8 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.
 DELIM
 chmod +x $DIR/start_sim.bash
 
+
+# --------------------------------------------
 
 cat <<DELIM > $DIR/copy_net_usage.bash
 #!/bin/bash

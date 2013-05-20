@@ -457,7 +457,7 @@ def monitor(username, config, constellation_name):
             
         log("monitor %s from proc %s DONE" % (proc, constellation_name) )    
     except Exception, e:
-        log("cloudsimd.py terminate error: %s" % e)
+        log("cloudsimd.py monitor error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb) 
 
