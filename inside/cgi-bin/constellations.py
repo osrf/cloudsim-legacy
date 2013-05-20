@@ -29,11 +29,12 @@ def get_user_tasks(tasks):
     """
     Returns the next available task
     """
-    datetime.datetime.now()
-    
+    now = datetime.datetime.now()
+
     latest_tasks =[]
     for task in tasks:
-        task 
+        task_start = dateutil.parser.parse(task['local_start'])
+        task_stop  = dateutil.parser.parse(task['local_stop']) 
         latest_tasks.append(task)
     return latest_tasks
 
