@@ -138,12 +138,15 @@ function _create_task_form(form_id)
     ros_package.value = "atlas_utils";
     launch_file.value = "atlas.launch";
     timeout.value = "1800";
-    launch_arguments.value ="";
+    launch_arguments.value = "";
     latency.value ="0";
-    uplink_data_cap.value="1000000";
-    downlink_data_cap.value="1000000";
+    uplink_data_cap.value = "1000000";
+    downlink_data_cap.value = "1000000";
+    
+    local_start.value = 'Thu Jan 31 2013 16:00:00 GMT-0800 (PST)';
+    local_stop.value = 'Fri Jan 31 2014 16:00:00 GMT-0800 (PST)';
+    
     return form_div;
-
 }
 
 

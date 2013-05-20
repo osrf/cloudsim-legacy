@@ -7,16 +7,19 @@ import redis
 import logging
 from sshclient import SshClient
 import commands
+import traceback
 
-machine_states = [ 'terminated', 'terminating', 'stopped' 'stopping', 'nothing', 'starting', 'booting','network_setup', 'packages_setup', 'rebooting', 'running',  'simulation_running']
-constellation_states = ['terminated', 'terminating','launching', 'running']
+machine_states = ['terminated', 'terminating', 'stopped' 'stopping',
+                  'nothing', 'starting', 'booting',
+                  'network_setup', 'packages_setup', 'rebooting',
+                  'running',  'simulation_running']
+constellation_states = ['terminated', 'terminating', 'launching', 'running']
 
 LATENCY_TIME_BUFFER = 60
 
 
-def log(msg, channel = "monitoring"):
+def log(msg, channel="monitoring"):
     try:
-        
         redis_client = redis.Redis()
         redis_client.publish(channel, msg)
         logging.info(msg)
@@ -27,8 +30,8 @@ def log(msg, channel = "monitoring"):
 
 def get_aws_states(ec2conn, machine_names_to_ids):
     aws_states = {}
-    ids_to_machine_names = dict((v,k) for k,v in machine_names_to_ids.iteritems())
-    
+    ids_to_machine_names = dict((v, k) for k, v in machine_names_to_ids.iteritems())
+
     reservations = ec2conn.get_all_instances()
     instances = [i for r in reservations for i in r.instances]
     for instance in instances:
@@ -37,7 +40,6 @@ def get_aws_states(ec2conn, machine_names_to_ids):
             state = instance.state
             machine = ids_to_machine_names[aws_is]
             aws_states[machine] = state
-            
     return aws_states
 
 
@@ -47,20 +49,20 @@ def parse_dpkg_line(s):
     removes the date part of the file for readability
     """
     r = s.split("status ")[1]
-    if len(r) ==  0:
+    if len(r) == 0:
         return s
     return r.strip()
 
 
 def _parse_ping_data(ping_str):
-    mini, avg, maxi, mdev  =  [float(x) for x in ping_str.split()[-2].split('/')]
+    mini, avg, maxi, mdev = [float(x) for x in ping_str.split()[-2].split('/')]
     return (mini, avg, maxi, mdev)
 
 
 def _accumulate_ping_data(data, mini, avg, maxi, mdev, cutoff_time_span = 40):
     time_now = time.time()
     data.insert(0, [time_now, mini, avg, maxi, mdev])
-    
+
     done = False
     while not done:
         time_of_oldest_sample = data[-1][0]
@@ -77,12 +79,13 @@ def record_ping_result(data_str, ping_str, cutoff_time_span):
     Old samples are discarded
     """
     data = eval(data_str)
-    mini, avg, maxi, mdev  = _parse_ping_data(ping_str)
+    mini, avg, maxi, mdev = _parse_ping_data(ping_str)
     _accumulate_ping_data(data, mini, avg, maxi, mdev, cutoff_time_span)
     s = "%s" % data
     return s
 
-def update_machine_aws_states( constellation_name, aws_id_keys_to_state_keys_dict):
+
+def update_machine_aws_states(constellation_name, aws_id_keys_to_state_keys_dict):
     """
     Updates the redis database with aws state of machines for a constellation.
     The dictionnary contains the keys to the aws ids and mapped to the keys of the states
@@ -100,9 +103,9 @@ def update_machine_aws_states( constellation_name, aws_id_keys_to_state_keys_dic
             if aws_id != None: 
                 aws_ids[aws_id_key] = aws_id
         except:
-            pass # machine is not up yet
+            pass  # machine is not up yet
 
-    if len(aws_ids):   
+    if len(aws_ids):
         ec2conn = aws_connect()[0] 
         aws_states = get_aws_states(ec2conn, aws_ids)
         for aws_id_key, aws_state in  aws_states.iteritems():
@@ -123,6 +126,7 @@ def constellation_is_terminated(constellation_name):
         log("Can't access constellation  %s data" % constellation_name)
         return True
 
+
 def get_ssh_client(constellation_name, machine_state, ip_key, sshkey_key):
     """
     Checks to see if machine is ready and creates an ssh client accordingly
@@ -137,24 +141,27 @@ def get_ssh_client(constellation_name, machine_state, ip_key, sshkey_key):
     return ssh_client
 
 
-def monitor_launch_state(constellation_name, ssh_client,  machine_state, dpkg_cmd, launch_msg_key):
+def monitor_launch_state(constellation_name, ssh_client,
+                         machine_state, 
+                         dpkg_cmd,
+                         launch_msg_key):
 
-    if ssh_client == None: # too early to verify 
+    if ssh_client == None:  # too early to verify
         return 
 
-    #log("monitor_launch_state %s/%s %s" % (constellation_name, launch_msg_key, machine_state) )
+    #log("monitor_launch_state %s/%s %s" % (constellation_name, launch_msg_key, machine_state))
     constellation = ConstellationState(constellation_name)
     constellation_state = constellation.get_value("constellation_state")
     #log("const state %s" % constellation_state)
 
-    if constellation_states.index(constellation_state ) >= constellation_states.index("launching"):
+    if constellation_states.index(constellation_state) >= constellation_states.index("launching"):
         if machine_state == "running":
-            constellation.set_value(launch_msg_key, "complete")       
+            constellation.set_value(launch_msg_key, "complete")
             log("complete")
-            
+
         if machine_state == 'packages_setup':
             try:
-                dpkg_line = ssh_client.cmd(dpkg_cmd)# "bash cloudsim/dpkg_log_robot.bash"
+                dpkg_line = ssh_client.cmd(dpkg_cmd)  # "bash cloudsim/dpkg_log_robot.bash"
                 robot_package = parse_dpkg_line(dpkg_line)
                 current_value = constellation.get_value(launch_msg_key)
                 log("xx %s" % robot_package)
@@ -162,10 +169,10 @@ def monitor_launch_state(constellation_name, ssh_client,  machine_state, dpkg_cm
                     constellation.set_value(launch_msg_key, robot_package)
                     log('%s/%s = %s' % (constellation_name, dpkg_cmd, robot_package) )
             except Exception, e:
-                log("%s error: %s" % (dpkg_cmd, e))            
+                log("%s error: %s" % (dpkg_cmd, e))
 
 
-def monitor_simulator(constellation_name, ssh_client, sim_state_key = 'simulation_state'):
+def monitor_simulator(constellation_name, ssh_client, sim_state_key='simulation_state'):
     """
     Detects if the simulator is running and writes the 
     result into the "gazebo" dictionary key 
@@ -173,7 +180,7 @@ def monitor_simulator(constellation_name, ssh_client, sim_state_key = 'simulatio
     if ssh_client == None:
         #constellation.set_value("gazebo", "not running")
         return False
-    
+
     constellation = ConstellationState(constellation_name)
     simulation_state = constellation.get_value(sim_state_key)
     if machine_states.index(simulation_state) >= machine_states.index('running'):
@@ -186,7 +193,7 @@ def monitor_simulator(constellation_name, ssh_client, sim_state_key = 'simulatio
             except Exception, e:
                 log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
                 constellation.set_value("gazebo", "not running")
-                return False      
+                return False
     return True
 
 
@@ -227,78 +234,59 @@ def monitor_ssh_ping(constellation_name, ssh_client, ip_address, ping_data_key):
 
 
 def monitor_score_and_network(constellation_name, ssh_router):
-    """
-score_str.split()
-(0, 'wall_time:')
-(1, 'secs:')
-(2, '1368752045')
-(3, 'nsecs:')
-(4, '78800440')
-(5, 'sim_time:')
-(6, 'secs:')
-(7, '51')
-(8, 'nsecs:')
-(9, '0')
-(10, 'wall_time_elapsed:')
-(11, 'secs:')
-(12, '0')
-(13, 'nsecs:')
-(14, '0')
-(15, 'sim_time_elapsed:')
-(16, 'secs:')
-(17, '0')
-(18, 'nsecs:')
-(19, '0')
-(20, 'completion_score:')
-(21, '0')
-(22, 'falls:')
-(23, '0')
-(24, 'message:')
-(25, "''")
-(26, '---')
-cmd = "rostopic echo /vrc_score -n 1"
-"""
-#        score_str = """wall_time: 
-#  secs: 1368752045
-#  nsecs: 78800440
-#sim_time: 
-#  secs: 51
-#  nsecs: 0
-#wall_time_elapsed: 
-#  secs: 0
-#  nsecs: 0
-#sim_time_elapsed: 
-#  secs: 0
-#  nsecs: 0
-#completion_score: 0
-#falls: 0
-#message: ''
-#---"""
+    def parse_score_data(score_str):
+        toks = score_str.split()
+        keys = [x[6:] for x in toks[-2].split(',')]
+        keys[0] = 'time'
+        # keys = ['time', 'wall_time', 'sim_time', 'wall_time_elapsed', 'sim_time_elapsed', 'completion_score', 'falls', 'message',  'task_type']
+        values_str = toks[-1]
+        values = values_str.split(',')
+        d = dict(zip(keys, values))
+        s = ""
+        s += "<b>%s</b>: %s. " % ("score", d['completion_score'])
+        s += "<b>%s</b>: %s. " % ("time",  d['wall_time_elapsed'])
+        s += " %s" % (d['message'])
+
+        fall_count = d['falls']
+        s += "<b>falls:</b> %s." % fall_count
+        return s
+
     constellation = ConstellationState(constellation_name)
     task_id = constellation.get_value("current_task")
     if task_id != "":
-        final_score = ""
         task = constellation.get_task(task_id)
+
+        score_str = ""
         try:
-            score_str = ssh_router.cmd("cloudsim/get_score.bash")
-            s = " ".join(score_str.split()[10:-1])
-
-            #net_str = "clocky clokclok 12345 8765"
-            net_str = ssh_router.cmd("cloudsim/get_network_usage.bash")
-            toks = net_str.split()
-            up = int(toks[2]) * 8
-            down = int(toks[3]) * 8
-            n = "uplink/downlink bits: %s / %s" % (up, down)
-            final_score = "%s %s" % (s,n)
-
+            s = ssh_router.cmd("cloudsim/get_score.bash")
+            score_str = parse_score_data(s)
         except Exception, e:
-            task['task_message'] = "No score available"
-            constellation.update_task(task_id, task)
-            raise
+            score_str = "No score available."
+            tb = traceback.format_exc()
+            log("traceback:  %s" % tb)
 
+        net_str = ""
+        try:
+            n = ssh_router.cmd("cloudsim/get_network_usage.bash")
+            toks = n.split()
+            up_bits = int(toks[2]) * 8
+            down_bits = int(toks[3]) * 8
+            up_cap = int(task['uplink_data_cap'])
+            down_cap = int(task['downlink_data_cap'])
+
+            up = 100.0 * up_bits / up_cap
+            down = 100.0 * down_bits / down_cap
+            net_str = "<b>up/down link (%%)</b>: %0.2f / %0.2f" % (up, down)
+        except Exception, e:
+            net_str = "no network usage available"
+            constellation.update_task(task_id, task)
+            log("score monitoring error %s" % e)
+            tb = traceback.format_exc()
+            log("traceback:  %s" % tb)
+
+        final_score = "%s %s" % (score_str, net_str)
         task['task_message'] = final_score
         constellation.update_task(task_id, task)
-        log(final_score)
 
 
 class Testos(unittest.TestCase):

@@ -9,7 +9,6 @@ import redis
 
 def log(msg, channel = "launch_db"):
     try:
-        
         redis_client = redis.Redis()
         redis_client.publish(channel, msg)
         logging.info(msg)
@@ -17,6 +16,7 @@ def log(msg, channel = "launch_db"):
     except:
         print("Warning: redis not installed.")
     #print("cloudsim log> %s" % msg)
+
 
 def publish_event(username, type, data):
     msg = {}
@@ -31,40 +31,46 @@ def publish_event(username, type, data):
     except Exception, e:
         log("publish_event: [%s] type %s msg[%s]" % (username, type, msg))
 
+
 class ConstellationState(object):
     """
     This class is the access point to the constellation information in Redis
     """
     def __init__(self, constellation_name):
         self.constellation_name = constellation_name
-        
+
     def has_value(self, name):
-        resources = get_constellation_data(  self.constellation_name)
-        return resources.has_key(name)
-        
+        resources = get_constellation_data(self.constellation_name)
+        return name in resources
+
     def get_value(self, name):
-        resources = get_constellation_data( self.constellation_name)
+        resources = get_constellation_data(self.constellation_name)
         return resources[name]
-    
+
     def get_values(self):
-        resources = get_constellation_data( self.constellation_name)
+        resources = get_constellation_data(self.constellation_name)
         return resources
-    
+
     def set_value(self, name, value):
-        log("%s/%s = %s " % (self.constellation_name, name, value) )
-        resources = get_constellation_data(  self.constellation_name)
+        log("%s/%s = %s " % (self.constellation_name, name, value))
+        resources = get_constellation_data(self.constellation_name)
         if not resources:
             resources = {}
         resources[name] = value
         expiration = None
         set_constellation_data(self.constellation_name, resources, expiration)
-    
+
     def get_task(self, task_id):
         tasks = self.get_value('tasks')
         for task in tasks:
             if task['task_id'] == task_id:
                 return task
         raise KeyError(task_id)
+
+    def get_task_names(self):
+        tasks = self.get_value('tasks')
+        ids = [task['task_id']  for task in tasks]
+        return ids
 
     def update_task(self, task_id, updated_task):
         tasks = self.get_value('tasks')
@@ -74,7 +80,7 @@ class ConstellationState(object):
                 self.set_value('tasks', tasks)
                 return
         raise KeyError(task_id)
-    
+
     def delete_task(self, task_id):
         tasks = self.get_value('tasks')
         for task in tasks:

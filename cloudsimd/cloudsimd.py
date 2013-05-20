@@ -30,8 +30,13 @@ from launchers.launch_utils import set_constellation_data
 from launchers.launch_utils.launch import aws_connect
 from launchers.launch_utils.softlayer import get_constellation_prefixes
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
-from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.launch import LaunchException
+
+
+from launchers.launch_utils.softlayer import load_osrf_creds
+from launchers.launch_utils.softlayer import softlayer_dash_board
+from launchers.launch_utils.softlayer import softlayer_server_scan
+
 
 
 def log(msg, chan="cloudsimd"):
@@ -314,7 +319,11 @@ def terminate(constellation,
 
 
 
-task_states = ['ready', 'setup', 'running', 'teardown', 'finished']
+task_states = ['ready', 
+               #'setup', 
+               'running', 
+               #'teardown', 
+               'stopped']
 
 def create_task(constellation_name, data):
     try:
@@ -406,16 +415,19 @@ def stop_task(constellation_name):
         if task_id != '':
             task = cs.get_task(task_id)
             
-            task['task_state'] = 'stopping'
-            log('task_state stopping')
-            cs.update_task(task_id, task)
-            
-            constellation_plugin.stop_task(constellation_name, task)
-                        
-            task['task_state'] = 'stopped'
-            cs.update_task(task_id, task)
-            log('task_state stopped')
-            cs.set_value('current_task', '')
+            # you can only stop a running task
+            if task['task_state'] == 'running':
+                
+                task['task_state'] = 'stopping'
+                log('task_state stopping')
+                cs.update_task(task_id, task)
+                
+                constellation_plugin.stop_task(constellation_name, task)
+                            
+                task['task_state'] = 'stopped'
+                cs.update_task(task_id, task)
+                log('task_state stopped')
+                cs.set_value('current_task', '')
         else:
             log('stop_task error: no current task')
     except Exception, e:

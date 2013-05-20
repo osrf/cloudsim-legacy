@@ -67,8 +67,7 @@ def get_softlayer_path():
 
 
 def stop_task(constellation):
-    for i in range(10):
-        log("** STOP TASK %s ***" % constellation)
+    log("** STOP TASK %s ***" % constellation)
 
 
 def monitor(username, constellation_name, counter):

@@ -114,6 +114,7 @@ def get_servers_info(osrf_creds):
         #print "[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip)
     return servers
 
+
 def hardware_info(osrf_creds):
     servers = get_servers_info(osrf_creds)
     
@@ -149,7 +150,8 @@ def hardware_helpers(osrf_creds):
         print("ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i key-%s.pem ubuntu@%s" % (prefix, pub_ip ) )
         print("ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i key-%s.pem ubuntu@%s" % (prefix, priv_ip ) )
 
-def hardware_scan(osrf_creds):
+
+def softlayer_server_scan(osrf_creds):
     servers = get_servers_info(osrf_creds)
     for server  in servers:
         server_id = server[0]
@@ -160,6 +162,7 @@ def hardware_scan(osrf_creds):
     
 def print_cb(server_name, status):
     print("PCB %s  [%s] = %s" % (datetime.datetime.now(),server_name, status))
+
 
 def _wait_for_multiple_server_reloads(api_username, api_key, server_ids_to_hostname, callback):
 
@@ -320,7 +323,7 @@ class TestSofty(unittest.TestCase):
         print prefixes
     
     def atest_shutdown_public_ip(self):
-        
+        osrf_creds = load_osrf_creds(get_softlayer_path())
         machine_names = ["sim-02", "fc1-02", "fc2-02"]
         shutdown_public_ips(osrf_creds, machine_names)
 
@@ -404,13 +407,13 @@ class TestSofty(unittest.TestCase):
 #        setup_ssh_key_access(ip, password, 'sim_key')
 
 
-def soft_layer_dash_board(soft_layer_creds_fname):
+def softlayer_dash_board(osrf_creds):
 
     def get_server(name):
-        server = [s for s in servers if s[1] ==  name][0]
+        server = [s for s in servers if s[1] == name][0]
         return server
 
-    osrf_creds = load_osrf_creds(soft_layer_creds_fname)
+    # osrf_creds = load_osrf_creds(soft_layer_creds_fname)
     servers = get_servers_info(osrf_creds)
     prefixes = _extract_prefixes(servers)
 
@@ -422,23 +425,19 @@ def soft_layer_dash_board(soft_layer_creds_fname):
         cs = get_server('cs-%s' % prefix)
 
         print(prefix)
-        print ("  ", cs) 
+        print ("  ", cs)
         print ("  ", router)
-        print ("  ", sim) 
-        print ("  ", fc1) 
-        print ("  ", fc2) 
-        
+        print ("  ", sim)
+        print ("  ", fc1)
+        print ("  ", fc2)
 
-if __name__ == "__main__": 
+
+if __name__ == "__main__":
     p = get_softlayer_path()
-    #osrf_creds = load_osrf_creds(p)
-    
-    
     #hardware_helpers(osrf_creds)
-    
     #hardware_info(osrf_creds)
-    
-    #hardware_scan(osrf_creds)
-    soft_layer_dash_board(p)
-    
+    osrf_creds = load_osrf_creds(p)
+
+    softlayer_dash_board(osrf_creds)
+    softlayer_server_scan(osrf_creds)
     unittest.main()

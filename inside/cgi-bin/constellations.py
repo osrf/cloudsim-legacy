@@ -12,6 +12,8 @@ import redis
 import traceback
 from common.web import UserDatabase
 
+import datetime
+import dateutil
 
 cgitb.enable()
 
@@ -27,13 +29,12 @@ def get_user_tasks(tasks):
     """
     Returns the next available task
     """
+    datetime.datetime.now()
+    
     latest_tasks =[]
-    
     for task in tasks:
-        
-        
+        task 
         latest_tasks.append(task)
-    
     return latest_tasks
 
 

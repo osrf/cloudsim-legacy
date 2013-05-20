@@ -356,6 +356,9 @@ httpAsyncGet = function(url, callback)
     var request = new XMLHttpRequest();
     request.onreadystatechange = function()
     {
+    	
+    	// if (request.readyState == 4) console.log("url " + url + " ready " + request.readyState + " status " + request.status);
+    	
         if (request.readyState == 4 && request.status == 200)
         {
             callback(request.responseText); 
