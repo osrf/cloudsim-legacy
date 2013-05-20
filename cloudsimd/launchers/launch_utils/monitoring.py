@@ -245,14 +245,15 @@ def monitor_score_and_network(constellation_name, ssh_router):
         d = dict(zip(keys, values))
         s = ""
         s += "<b>%s</b>: %s. " % ("score", d['completion_score'])
-        s += "<b>%s</b>: %s. " % ("time",  d['wall_time_elapsed'])
+        wall_time = int(d['wall_time_elapsed'])
+        s += "<b>%s</b>: %s. " % ("time", wall_time / 1000000000)
         s += " %s" % (d['message'])
 
         fall_count = d['falls']
         s += "<b>falls:</b> %s." % fall_count
         return s
 
-
+    log("monitor_score_and_network BEGIN")
     constellation = ConstellationState(constellation_name)
     task_id = constellation.get_value("current_task")
     if task_id != "":
@@ -266,7 +267,8 @@ def monitor_score_and_network(constellation_name, ssh_router):
             score_str = "No score available."
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
-
+            
+        log("score %s" % score_str)
         net_str = ""
         try:
             n = ssh_router.cmd("cloudsim/get_network_usage.bash")
@@ -285,10 +287,11 @@ def monitor_score_and_network(constellation_name, ssh_router):
             log("score monitoring error %s" % e)
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
+        log("network %s" % net_str)
         final_score = "%s %s" % (score_str, net_str)
         task['task_message'] = final_score
         constellation.update_task(task_id, task)
-
+    log("monitor_score_and_network END")
 
 class Testos(unittest.TestCase):
     def test_me(self):

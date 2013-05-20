@@ -140,7 +140,7 @@ def parse_path():
         return None, None
 
 
-def get_query_param(param, default="N/A"):
+def get_query_param(param, default=""):
     qs = os.environ['QUERY_STRING']
     params = urlparse.parse_qs(qs)
     p = None
