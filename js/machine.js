@@ -45,7 +45,7 @@ function _get_machine_div_str(left_content, right_content)
 {	
     var str = "";
 
-    str += '<div id="top" style="width = 100%; float:left; border-top-left-radius:10px; border-top-right-radius:15px; background-color:#44497a; width:100%; float:left;" ">' // background-color:#FFA500;
+    str += '<div id="top" style="width = 100%; float:left; border-top-left-radius:10px; border-top-right-radius:15px; background-color:#44497a; width:100%; float:left;>' // background-color:#FFA500;
     str += "<h3 style='margin-bottom:0; margin-top:0; color:white'>";
     str += "<table width='100%'>";
     str += "<tr><td align='left'>" + left_content + "</td><td align='right'></td></tr>";
