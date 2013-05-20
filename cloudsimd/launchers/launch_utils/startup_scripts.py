@@ -291,6 +291,9 @@ apt-get install -y redis-server python-pip
 pip install redis
 echo "redis installed" >> /home/ubuntu/setup.log
 
+apt-get install -y python-dateutil
+echo "python-dateutil installed" >> /home/ubuntu/setup.log
+
 sudo pip install --upgrade boto
 echo "boto installed" >> /home/ubuntu/setup.log
 

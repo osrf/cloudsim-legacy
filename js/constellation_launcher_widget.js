@@ -50,7 +50,7 @@ function create_constellation_launcher_widget(div_name)
     };
     
     var title = document.createElement('h2');
-    title.innerHTML = 'Launch a machine constellation';
+    title.innerHTML = 'Deploy a constellation';
     
     configs_select.onchange();
     
