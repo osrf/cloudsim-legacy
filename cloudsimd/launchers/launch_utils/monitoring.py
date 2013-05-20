@@ -245,8 +245,8 @@ def monitor_score_and_network(constellation_name, ssh_router):
         d = dict(zip(keys, values))
         s = ""
         s += "<b>%s</b>: %s. " % ("score", d['completion_score'])
-        wall_time = int(d['wall_time_elapsed'])
-        s += "<b>%s</b>: %s. " % ("time", wall_time / 1000000000)
+        wall_time = float(d['time'])
+        s += "<b>%s</b>: %s. " % ("time",   wall_time / 1e9)
         s += " %s" % (d['message'])
 
         fall_count = d['falls']
