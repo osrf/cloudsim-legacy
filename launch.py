@@ -22,10 +22,28 @@ count = 1
 if len(sys.argv) > 4:
     count = int(sys.argv[4])
 
+# launch hugo@osrfoundation.orf "OSRF CloudSim 02" "OSRF VRC Constellation nightly 02"
 
-launch_constellation(username, configuration, args, count)
+print (sys.argv)
+print ('username "%s", configuration "%s", args "%s"'  % (username, configuration, args))
+launch_constellation(username, configuration, args)
 
 
 
+# CMD= "launch" DATA="{u\'username\': u\'hugo@osrfoundation.org\', u\'configuration\': u\'OSRF CloudSim 01\', u\'command\': u\'launch\
 
-
+# OSRF VRC Constellation nightly build 01
+#  
+# 
+# team_dir = '/home/hugo/code/team-01'
+# boto_path = os.path.join(team_dir, "/boto.ini")
+# softlayer_creds_path= os.path.join(team_dir, "/softlayer.json")
+# portal_key_path = os.path.join(team_dir, "/cloudsim_portal.key")
+# cloudsim_portal_json_path = os.path.join(team_dir, "/cloudsim_portal.json")
+# bitbucket_key_path = os.path.join(team_dir, "/cloudsim_bitbucket.key")
+# 
+# "sudo cp -f  %s /var/www-cloudsim-auth/boto-useast" % boto_path
+# "sudo cp -f %s /var/www-cloudsim-auth/softlayer.json" %  softlayer_creds_path
+# "sudo cp -f %s /var/www-cloudsim-auth/cloudsim_portal.key" % portal_key_path
+# "sudo cp -f %s /var/www-cloudsim-auth/cloudsim_portal.json" % cloudsim_portal_json_path
+# "sudo cp -f %s /var/www-cloudsim-auth/cloudsim_bitbucket.key" % bitbucket_key_path
