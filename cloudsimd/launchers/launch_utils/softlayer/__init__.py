@@ -99,13 +99,15 @@ def get_servers_info(osrf_creds):
     hardware = _get_hardware(api_username, api_key)  
     for server in hardware:
         host = server['hostname']
-        o_s = server['operatingSystem']
         username = None
         password = None
-        if o_s['passwords']:
-            user = o_s['passwords'][0]
-            username = user['username']
-            password = user['password']
+        user = None
+        if 'operatingSystem' in server:
+            o_s = server['operatingSystem']
+            if o_s['passwords']:
+                user = o_s['passwords'][0]
+                username = user['username']
+                password = user['password']
 
         priv_ip = _get_priv_ip(server)
         pub_ip = _get_pub_ip(server)
@@ -411,6 +413,7 @@ def softlayer_dash_board(osrf_creds):
 
     def pr(server):
         print ("   %10s %s ssh root@%s" % (server[1], server[3], server[5] ))
+        
     def get_server(name):
         server = [s for s in servers if s[1] == name][0]
         return server
@@ -418,28 +421,29 @@ def softlayer_dash_board(osrf_creds):
     # osrf_creds = load_osrf_creds(soft_layer_creds_fname)
     servers = get_servers_info(osrf_creds)
     prefixes = _extract_prefixes(servers)
-    
+
     for i in range(5):
         print('')
-    
+
     for prefix in prefixes:
-        fc1 = get_server('fc1-%s' % prefix)
-        fc2 = get_server('fc2-%s' % prefix)
-        sim = get_server('sim-%s' % prefix)
-        router = get_server('router-%s' % prefix)
-        cs = get_server('cs-%s' % prefix)
+        try:
+            print('')
+            print("constellation %s" % prefix)
+            fc1 = get_server('fc1-%s' % prefix)
+            fc2 = get_server('fc2-%s' % prefix)
+            sim = get_server('sim-%s' % prefix)
+            router = get_server('router-%s' % prefix)
+            cs = get_server('cs-%s' % prefix)
 
 
-        print('')
-        print("constellation %s" % prefix)
-
-        pr(cs) 
-        pr(router)
-        pr(sim) 
-        pr(fc1) 
-        pr(fc2) 
-
-
+            pr(cs) 
+            pr(router)
+            pr(sim) 
+            pr(fc1) 
+            pr(fc2) 
+        except:
+            print(" ERROR ")
+            
 if __name__ == "__main__":
     p = get_softlayer_path()
     #hardware_helpers(osrf_creds)

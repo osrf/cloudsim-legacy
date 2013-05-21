@@ -272,7 +272,7 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     ssh_sim.create_file(dpkg_log_sim, "cloudsim/dpkg_log_sim.bash")
 
     constellation.set_value('simulation_launch_msg', "waiting for packages to install")
-    sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 100)
+    sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'packages_setup' ,max_retries = 100)
     empty_ssh_queue([sim_setup_done], sleep=2)
 
     short_file_name = os.path.split(website_distribution)[1] 
@@ -365,19 +365,18 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     # For a CLoudSim launch, we look at the tags for a configuration to launch
     # at the end.
     if auto_launch_configuration:
-        
+
         msg = "Launching a constellation of type %s" % auto_launch_configuration
         log(msg)
         constellation.set_value('simulation_launch_msg', msg)
         ssh_sim.cmd("/home/ubuntu/cloudsim/launch.py %s %s" % (username, auto_launch_configuration) )
         time.sleep(5)
-    constellation.set_value('simulation_launch_msg', "Complete")     
-    log('setup complete')
-
+    
     print ("\033[1;32mCloudSim ready. Visit http://%s \033[0m\n"% ip)
     print ("Stop your CloudSim using the AWS console")
     print ("     http://aws.amazon.com/console/\n")
-    
+
+    constellation.set_value('simulation_launch_msg', "Complete")     
     constellation.set_value('simulation_state', 'running')
     constellation.set_value('constellation_state', 'running')
     log("provisioning done")

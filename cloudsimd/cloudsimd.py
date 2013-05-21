@@ -424,6 +424,7 @@ def stop_task(constellation_name):
                 log('task_state stopping')
                 cs.update_task(task_id, task)
                 task['stop_time'] = datetime.datetime.utcnow().isoformat()
+                cs.set_value('current_task', '')
                 try:
                     constellation_plugin.stop_task(constellation_name, task)
                 except Exception, e:
@@ -435,7 +436,7 @@ def stop_task(constellation_name):
                 finally:
                     task['task_state'] = 'stopped'
                     cs.update_task(task_id, task)
-                    cs.set_value('current_task', '')
+                    
         else:
             log('stop_task error: no current task')
     except Exception, e:

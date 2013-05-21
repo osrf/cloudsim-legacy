@@ -155,9 +155,7 @@ def start_task(constellation, task):
 
 def stop_task(constellation, task):
 
-    log("** SIMULATOR *** STOP TASK %s ***" % constellation)
-
-    log("** stop simulator ***")
+    log("** CONSTELLATION %s *** STOP TASK %s ***" % (constellation, task['task_id']))
     stop_simulator(constellation)
 
     #log("** Notify portal ***")
@@ -216,9 +214,9 @@ def monitor(username, constellation_name, counter):
 
         except TaskTimeOut, e:
             task = e.task
-            stop_task(constellation, task)
+            log("TASKTIMEOUT %s" % task)
+            stop_task(constellation_name, task)
 
-    # log("monitor not done")
     return False
 
 
