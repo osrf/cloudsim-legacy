@@ -239,7 +239,9 @@ class TaskTimeOut(Exception):
         self.task = task
 
 def monitor_task(constellation_name, ssh_router):
-
+    """
+    Read score and net usage data
+    """
     def parse_score_data(score_str):
         toks = score_str.split()
         keys = [x[6:] for x in toks[-2].split(',')]
@@ -257,7 +259,7 @@ def monitor_task(constellation_name, ssh_router):
     log("monitor_task BEGIN")
     constellation = ConstellationState(constellation_name)
     task_id = constellation.get_value("current_task")
-    
+
     if task_id != "":
         task = constellation.get_task(task_id)
         timeout = int(task['timeout'])
@@ -284,10 +286,10 @@ def monitor_task(constellation_name, ssh_router):
             log("traceback:  %s" % tb)
         log("score %s" % score_str)
         net_str = ""
-        
+
         if sim_time > timeout:
             raise TaskTimeOut("Task timeout", task)
-            
+
         try:
             n = ssh_router.cmd("cloudsim/get_network_usage.bash")
             log(n)
@@ -306,14 +308,13 @@ def monitor_task(constellation_name, ssh_router):
             log("score monitoring error %s" % e)
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
-        log("network %s" % net_str)
-        final_score = "%s %s" % (score_str, net_str)
+        else:
+            log("network %s" % net_str)
+            final_score = "%s %s" % (score_str, net_str)
         task['task_message'] = final_score
         constellation.update_task(task_id, task)
-        
+
     log("monitor_task END")
-    
-    
 
 
 class Testos(unittest.TestCase):
@@ -327,5 +328,3 @@ class Testos(unittest.TestCase):
 if __name__ == "__main__":
     print("test")
     unittest.main()
-    
-    
