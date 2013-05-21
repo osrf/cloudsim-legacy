@@ -36,6 +36,7 @@ from launchers.launch_utils.launch import LaunchException
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.softlayer import softlayer_dash_board
 from launchers.launch_utils.softlayer import softlayer_server_scan
+import datetime
 
 
 
@@ -387,7 +388,8 @@ def start_task(constellation_name, task_id):
                 cs.set_value('current_task', task_id)
                 log('task_state running')
                 task['task_state'] = 'running'
-                cs.update_task(task_id, task) 
+                task['start_time'] = datetime.datetime.utcnow().isoformat()
+                cs.update_task(task_id, task)
                 # no other task running, and task is ready
                 try:
                     constellation_plugin.start_task(constellation_name, task)
@@ -421,9 +423,8 @@ def stop_task(constellation_name):
                 task['task_state'] = 'stopping'
                 log('task_state stopping')
                 cs.update_task(task_id, task)
-                
+                task['stop_time'] = datetime.datetime.utcnow().isoformat()
                 constellation_plugin.stop_task(constellation_name, task)
-                            
                 task['task_state'] = 'stopped'
                 cs.update_task(task_id, task)
                 log('task_state stopped')
