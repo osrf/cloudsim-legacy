@@ -16,7 +16,7 @@ import launch_utils.softlayer
 
 from launch_utils.monitoring import constellation_is_terminated,\
     monitor_launch_state, monitor_cloudsim_ping, machine_states, monitor_ssh_ping,\
-    monitor_score_and_network, monitor_simulator
+    monitor_task, monitor_simulator, TaskTimeOut
 
 from launch_utils.softlayer import load_osrf_creds, reload_servers,\
     get_softlayer_path, wait_for_server_reloads, get_machine_login_info,\
@@ -164,6 +164,11 @@ def stop_task(constellation, task):
     #notify_portal(constellation, task)
 
 
+def check_for_end_of_task(constellation_name, ssh_router):
+    if monitor_task(constellation_name, ssh_router):
+        raise TaskTimeOut()
+
+
 def monitor(username, constellation_name, counter):
     time.sleep(1)
     if constellation_is_terminated(constellation_name):
@@ -172,33 +177,46 @@ def monitor(username, constellation_name, counter):
     constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('init_router'):
-        constellation_directory = constellation.get_value('constellation_directory')
-        router_ip = constellation.get_value("router_public_ip")
-        
-        ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
-        monitor_simulator(constellation_name, ssh_router, "sim_state")
-        monitor_score_and_network(constellation_name, ssh_router)
-        
-        router_state = constellation.get_value('router_state')
-        monitor_cloudsim_ping(constellation_name, 'router_ip', 'router_latency')
-        monitor_launch_state(constellation_name, ssh_router, router_state, "tail -1 /var/log/dpkg.log", 'router_launch_msg')
-        monitor_score_and_network(constellation_name, ssh_router)
-        
-        
-        fc1_state = constellation.get_value('fc1_state')
-        monitor_ssh_ping(constellation_name, ssh_router, FC1_IP, 'fc1_latency')
-        monitor_launch_state(constellation_name, ssh_router, fc1_state, "cloudsim/find_file_fc1.bash", 'field1_launch_msg')
-        monitor_score_and_network(constellation_name, ssh_router)
 
-        fc2_state = constellation.get_value('fc2_state')
-        monitor_ssh_ping(constellation_name, ssh_router, FC2_IP, 'fc2_latency')
-        monitor_launch_state(constellation_name, ssh_router, fc2_state, "cloudsim/find_file_fc2.bash", 'field2_launch_msg')
-        monitor_score_and_network(constellation_name, ssh_router)
-        
-        sim_state = constellation.get_value('sim_state')
-        monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'sim_latency')
-        monitor_launch_state(constellation_name, ssh_router, sim_state, "cloudsim/find_file_sim.bash", 'sim_launch_msg')
-        monitor_score_and_network(constellation_name, ssh_router)
+        try:
+            constellation_directory = constellation.get_value('constellation_directory')
+            router_ip = constellation.get_value("router_public_ip")
+
+            ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+            monitor_simulator(constellation_name, ssh_router, "sim_state")
+            monitor_task(constellation_name, ssh_router)
+
+            router_state = constellation.get_value('router_state')
+            monitor_cloudsim_ping(constellation_name, 'router_ip', 'router_latency')
+            monitor_task(constellation_name, ssh_router)
+
+            monitor_launch_state(constellation_name, ssh_router, router_state, "tail -1 /var/log/dpkg.log", 'router_launch_msg')
+            monitor_task(constellation_name, ssh_router)
+
+            fc1_state = constellation.get_value('fc1_state')
+            monitor_ssh_ping(constellation_name, ssh_router, FC1_IP, 'fc1_latency')
+            monitor_task(constellation_name, ssh_router)
+
+            monitor_launch_state(constellation_name, ssh_router, fc1_state, "cloudsim/find_file_fc1.bash", 'field1_launch_msg')
+            monitor_task(constellation_name, ssh_router)
+
+            fc2_state = constellation.get_value('fc2_state')
+            monitor_ssh_ping(constellation_name, ssh_router, FC2_IP, 'fc2_latency')
+            monitor_task(constellation_name, ssh_router)
+
+            monitor_launch_state(constellation_name, ssh_router, fc2_state, "cloudsim/find_file_fc2.bash", 'field2_launch_msg')
+            monitor_task(constellation_name, ssh_router)
+
+            sim_state = constellation.get_value('sim_state')
+            monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'sim_latency')
+            monitor_task(constellation_name, ssh_router)
+
+            monitor_launch_state(constellation_name, ssh_router, sim_state, "cloudsim/find_file_sim.bash", 'sim_launch_msg')
+            monitor_task(constellation_name, ssh_router)
+
+        except TaskTimeOut, e:
+            task = e.task
+            stop_task(constellation, task)
 
     # log("monitor not done")
     return False
@@ -1346,7 +1364,7 @@ def launch(username, config, constellation_name, tags, constellation_directory):
     run_machines(constellation_name, constellation_directory)
 
 
-def terminate(constellation_name, osrf_creds_fname):
+def terminate(constellation_name, osrf_creds_fname=None):
 
     # osrf_creds = load_osrf_creds(osrf_creds_fname)
     constellation = ConstellationState(constellation_name)

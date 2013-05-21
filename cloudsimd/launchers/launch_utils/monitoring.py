@@ -233,8 +233,13 @@ def monitor_ssh_ping(constellation_name, ssh_client, ip_address, ping_data_key):
     _monitor_ping(constellation_name, ping_data_key, ping_str)
 
 
-def monitor_score_and_network(constellation_name, ssh_router):
-    
+class TaskTimeOut(Exception):
+    def __init__(self, message, task):
+        Exception.__init__(self, message)
+        self.task = task
+
+def monitor_task(constellation_name, ssh_router):
+
     def parse_score_data(score_str):
         toks = score_str.split()
         keys = [x[6:] for x in toks[-2].split(',')]
@@ -243,37 +248,46 @@ def monitor_score_and_network(constellation_name, ssh_router):
         values_str = toks[-1]
         values = values_str.split(',')
         d = dict(zip(keys, values))
-        s = ""
-        s += "<b>%s</b>: %s. " % ("score", d['completion_score'])
-
-        wall_time = float(d['time'])
-        wall_time = float(d['sim_time'])
-
-        s += "<b>%s</b>: %s. " % ("sim time",   wall_time / 1e9)
-        s += " %s" % (d['message'])
-
+        score = d['completion_score']
+        sim_time = float(d['sim_time']) / 1e9
         fall_count = d['falls']
-        s += "<b>falls:</b> %s." % fall_count
-        return s
+        msg = d['message']
+        return (score, sim_time, fall_count, msg)
 
-    log("monitor_score_and_network BEGIN")
+    log("monitor_task BEGIN")
     constellation = ConstellationState(constellation_name)
     task_id = constellation.get_value("current_task")
+    
     if task_id != "":
         task = constellation.get_task(task_id)
-
+        timeout = int(task['timeout'])
         score_str = ""
+
+        sim_time = 0
+        timeout = 0
         try:
             s = ssh_router.cmd("cloudsim/get_score.bash")
             log(s)
-            score_str = parse_score_data(s)
+            score, sim_time, fall_count, msg = parse_score_data(s)
+            score_str = ""
+            score_str += "<b>%s</b>: %s. " % ("score", score)
+            score_str += "<b>%s</b>: %s. " % ("sim time",   sim_time)
+            score_str += " %s" % (msg)
+            score_str += "<b>falls:</b> %s." % fall_count
+            #
+            # The task has timed out
+            #
+
         except Exception, e:
             score_str = "No score available."
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
-            
         log("score %s" % score_str)
         net_str = ""
+        
+        if sim_time > timeout:
+            raise TaskTimeOut("Task timeout", task)
+            
         try:
             n = ssh_router.cmd("cloudsim/get_network_usage.bash")
             log(n)
@@ -296,7 +310,11 @@ def monitor_score_and_network(constellation_name, ssh_router):
         final_score = "%s %s" % (score_str, net_str)
         task['task_message'] = final_score
         constellation.update_task(task_id, task)
-    log("monitor_score_and_network END")
+        
+    log("monitor_task END")
+    
+    
+
 
 class Testos(unittest.TestCase):
     def test_me(self):
