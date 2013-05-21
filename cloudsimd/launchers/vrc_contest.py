@@ -7,6 +7,7 @@ import zipfile
 import shutil
 import redis
 import logging
+import json
 
 from shutil import copyfile
 
@@ -213,10 +214,19 @@ def monitor(username, constellation_name, counter):
             monitor_task(constellation_name, ssh_router)
 
         except TaskTimeOut, e:
+            #
+            # stop current task
             task = e.task
             log("TASKTIMEOUT %s" % e)
-            log("TASKTIMEOUT %s" % task)
-            stop_task(constellation_name, task)
+            task['task_message'] = "Timeout"
+            constellation.update_task(task['task_id'], task)
+            d = {}
+            d['command'] == 'stop_task'
+            d['constellation'] = constellation_name
+            #stop_task(constellation_name, task)
+            r = redis.Redis()
+            s = json.dumps(d)
+            r.publish("cloudsim_cmds", s)
 
     return False
 
