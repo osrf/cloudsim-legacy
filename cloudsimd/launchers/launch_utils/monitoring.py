@@ -262,12 +262,12 @@ def monitor_task(constellation_name, ssh_router):
     task_id = constellation.get_value("current_task")
 
     if task_id != "":
+        sim_time = 0
+        timeout = 0
+
         task = constellation.get_task(task_id)
         timeout = int(task['timeout'])
         score_str = ""
-
-        sim_time = 0
-        timeout = 0
         try:
             s = ssh_router.cmd("cloudsim/get_score.bash")
             log(s)
