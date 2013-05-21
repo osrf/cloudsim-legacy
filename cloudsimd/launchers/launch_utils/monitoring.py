@@ -240,7 +240,8 @@ class TaskTimeOut(Exception):
 
 def monitor_task(constellation_name, ssh_router):
     """
-    Read score and net usage data
+    Read score and net usage data. 
+    Aborts tasks that timeout
     """
     def parse_score_data(score_str):
         toks = score_str.split()
@@ -288,8 +289,7 @@ def monitor_task(constellation_name, ssh_router):
         net_str = ""
 
         if sim_time > timeout:
-            raise TaskTimeOut("Task timeout", task)
-
+            raise TaskTimeOut("Task timeout %s > %s" % (sim_time, timeout), task)
         try:
             n = ssh_router.cmd("cloudsim/get_network_usage.bash")
             log(n)
@@ -313,7 +313,6 @@ def monitor_task(constellation_name, ssh_router):
             final_score = "%s %s" % (score_str, net_str)
         task['task_message'] = final_score
         constellation.update_task(task_id, task)
-
     log("monitor_task END")
 
 
