@@ -214,6 +214,7 @@ def monitor(username, constellation_name, counter):
 
         except TaskTimeOut, e:
             task = e.task
+            log("TASKTIMEOUT %s" % e)
             log("TASKTIMEOUT %s" % task)
             stop_task(constellation_name, task)
 
