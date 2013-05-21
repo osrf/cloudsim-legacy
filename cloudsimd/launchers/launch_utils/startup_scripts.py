@@ -251,13 +251,37 @@ deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
 
 DELIM
 
+cat <<DELIM > /home/ubuntu/cloudsim/get_logs.bash
+#!/bin/bash
+
+# Get simulator and network logs from the router
+
+USAGE="Usage: get_logs.bash <task_dirname> <public_router_IP> <router_key>"
+
+if [ \$# -ne 3 ]; then
+  echo \$USAGE
+  exit 1
+fi
+
+TASK_DIRNAME=\$1
+ROUTER_IP=\$2
+ROUTER_KEY=\$3
+
+mkdir -p /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
+sudo ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$ROUTER_KEY ubuntu@\$ROUTER_IP bash /home/ubuntu/cloudsim/get_sim_logs.bash \$TASK_DIRNAME
+
+sudo scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$ROUTER_KEY ubuntu@\$ROUTER_IP:/home/ubuntu/cloudsim/logs/\$TASK_DIRNAME/* /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME || true
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/get_logs.bash
+
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
 chown -R ubuntu:ubuntu /home/ubuntu/
 
 apt-get update
 apt-get install -y python-software-properties
- 
+
 apt-add-repository -y ppa:rye/ppa
 apt-get update
 
@@ -324,7 +348,7 @@ echo "apache2 restarted" >> /home/ubuntu/setup.log
 
 # Make sure that www-data can run programs in the background (used inside CGI scripts)
 echo www-data > /etc/at.allow
- 
+
 touch /home/ubuntu/cloudsim/setup/done
 echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
 """

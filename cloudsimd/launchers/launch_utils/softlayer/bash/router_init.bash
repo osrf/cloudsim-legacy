@@ -318,5 +318,38 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
 DELIM
 chmod +x $DIR/copy_net_usage.bash
 
+# --------------------------------------------
+
+cat <<DELIM > $DIR/get_sim_logs.bash
+#!/bin/bash
+
+# Get state.log and score.log from the simulator 
+
+USAGE="Usage: get_sim_logs.bash <task_dirname>"
+
+if [ \$# -ne 1 ]; then
+  echo \$USAGE
+  exit 1
+fi
+
+TASK_DIRNAME=\$1
+
+mkdir -p /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
+
+# Create a zip file
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@10.0.0.51 zip -j /tmp/\$TASK_DIRNAME.zip /tmp/\$TASK_DIRNAME/* || true
+
+# Copy the zip file
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@10.0.0.51:/tmp/\$TASK_DIRNAME.zip /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME || true
+
+# Copy the network usage
+if [ -f /tmp/vrc_netwatcher_usage.log ];
+then
+  cp /tmp/vrc_netwatcher_usage.log /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME >> copy_net_usage.log 2>&1
+fi
+
+DELIM
+chmod +x $DIR/get_sim_logs.bash
+
 echo "done :-)"
 
