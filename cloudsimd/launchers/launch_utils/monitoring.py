@@ -304,13 +304,12 @@ def monitor_task(constellation_name, ssh_router):
             net_str = "<b>up/down link (%%)</b>: %0.2f / %0.2f" % (up, down)
         except Exception, e:
             net_str = "no network usage available"
-            constellation.update_task(task_id, task)
             log("score monitoring error %s" % e)
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
-        else:
-            log("network %s" % net_str)
-            final_score = "%s %s" % (score_str, net_str)
+
+        log("network %s" % net_str)
+        final_score = "%s %s" % (score_str, net_str)
         task['task_message'] = final_score
         constellation.update_task(task_id, task)
     log("monitor_task END")
