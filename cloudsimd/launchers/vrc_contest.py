@@ -221,7 +221,7 @@ def monitor(username, constellation_name, counter):
             task['task_message'] = "Timeout"
             constellation.update_task(task['task_id'], task)
             d = {}
-            d['command'] == 'stop_task'
+            d['command'] = 'stop_task'
             d['constellation'] = constellation_name
             #stop_task(constellation_name, task)
             r = redis.Redis()
