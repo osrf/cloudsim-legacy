@@ -316,7 +316,7 @@ def terminate(constellation,
     constellation = ConstellationState(constellation)
     constellation.set_value('constellation_state', 'terminated')    
     log("Deleting %s from the database" % constellation)
-    constellation.expire(30)    
+    constellation.expire(1)    
 
 
 
