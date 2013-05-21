@@ -79,7 +79,7 @@ function _split_tasks(task_div_list,
     
 }
 
-function _add_form_textinput(form_div, title, readonly)
+function _add_form_textinput(form_div, title)
 {
     var input_field  = document.createElement("input");
     input_field.size = "35";
@@ -408,14 +408,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         var dlg = document.querySelector( "#" + form_id);
         var inputs = dlg.querySelectorAll("input");
         
-        // disable editing for users
-        if(get_user_info().role == "user")
-        {
-            for (var i=0; i< 12; i++)
-            {
-                inputs[i].readOnly = true;
-            }
-        }
+
         
         var task_title_input = inputs[0];
         var ros_package = inputs[1];
@@ -436,6 +429,22 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         {
         	alert("You do not have sufficient privileges for this operation");
         	return;
+        }
+
+        var readOnly = false;
+        // disable editing for users
+        if(get_user_info().role == "user")
+        {
+            readOnly = true;
+        }
+        if(task.task_state != "ready")
+        {
+            readOnly = true;
+        }
+
+        for (var i=0; i< 12; i++)
+        {
+            inputs[i].readOnly = readOnly;
         }
         
         task_title_input.value = task.task_title;

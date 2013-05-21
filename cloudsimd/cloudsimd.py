@@ -355,7 +355,7 @@ def update_task(constellation_name, data):
         log("update_task %s/%s" % (constellation_name, task_id))
         cs = ConstellationState(constellation_name)
         cs.update_task(task_id, data)
-        log("updated: %s" % task)
+        log("updated: %s" % task_id)
     except Exception, e:
         log("update_task error %s" % e)
         tb = traceback.format_exc()
@@ -424,11 +424,18 @@ def stop_task(constellation_name):
                 log('task_state stopping')
                 cs.update_task(task_id, task)
                 task['stop_time'] = datetime.datetime.utcnow().isoformat()
-                constellation_plugin.stop_task(constellation_name, task)
-                task['task_state'] = 'stopped'
-                cs.update_task(task_id, task)
-                log('task_state stopped')
-                cs.set_value('current_task', '')
+                try:
+                    constellation_plugin.stop_task(constellation_name, task)
+                except Exception, e:
+                    tb = traceback.format_exc()
+                    log('task error during stop')
+                    log("traceback:  %s" % tb)
+                else:
+                    log('task stopped successfully')
+                finally:
+                    task['task_state'] = 'stopped'
+                    cs.update_task(task_id, task)
+                    cs.set_value('current_task', '')
         else:
             log('stop_task error: no current task')
     except Exception, e:
