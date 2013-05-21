@@ -11,6 +11,7 @@ import multiprocessing
 from json import loads
 import redis
 import json
+import logging
 
 from launchers.launch_utils import SshClient
 
@@ -46,13 +47,15 @@ def log(msg, chan="cloudsimd"):
         print ("LOG: %s" % msg)
         red = redis.Redis()
         red.publish(chan, msg)
+        logging.info(msg)
     except Exception, e:
-        pass
+        print("Warning: redis not installed.")
+    print("cloudsimd> %s" % msg)
  
 class UnknownConfig(LaunchException):
     pass
 
-def launch_constellation(username, configuration, args = None, count =1):
+def launch_constellation(username, configuration, args = None):
     """
     Launches one (or count) constellation of a given configuration
     """
@@ -62,8 +65,7 @@ def launch_constellation(username, configuration, args = None, count =1):
     d['username'] = username
     d['command'] = 'launch'
     d['configuration'] = configuration
-    if count >1:
-        d['count'] = count
+    
     if args:
         d['args'] = args
 
@@ -106,7 +108,7 @@ def list_constellations():
             c = json.loads(s)
             constellations.append(c)
     return constellations 
-    
+
 
 def get_aws_instance_by_name(instance_name, boto_path="../../boto.ini"):
     """
@@ -275,9 +277,10 @@ def launch( username,
             
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
-            terminate(constellation_name, constellation_directory)
+            
+            # terminate(constellation_name, constellation_directory)
             constellation.set_value('error', '%s' % error_msg)
-            constellation.expire(10)
+            # constellation.expire(10)
             raise
 
         log("Launch of constellation %s done" % constellation_name)

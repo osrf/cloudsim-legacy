@@ -350,7 +350,7 @@ class TestSofty(unittest.TestCase):
 
 
     def xtest_reload_axx(self):
-        
+
         osrf_creds = load_osrf_creds(get_softlayer_path())
         machine_names = ['router-01', 'fc1-01', 'fc2-01', 'sim-01']
         reload_servers(osrf_creds, machine_names)
@@ -372,7 +372,7 @@ class TestSofty(unittest.TestCase):
 
         #
         # must create key first now :-)
-        
+
         print("%s %s : %s" % (machine, ip, password))
         setup_ssh_key_access(ip, password, key_prefix)
         print ("ssh -i %s/%s.pem ubuntu@%s" % (dst_dir, key_prefix, ip))
@@ -390,9 +390,8 @@ class TestSofty(unittest.TestCase):
         except Exception, e:
             valid = False
             print("not valid: %s" % e)
-            
-        print(valid)
 
+        print(valid)
 
     def atest_ubuntu_upload_and_execute(self):
         pass
@@ -413,7 +412,7 @@ def softlayer_dash_board(osrf_creds):
 
     def pr(server):
         print ("   %10s %s ssh root@%s" % (server[1], server[3], server[5] ))
-        
+
     def get_server(name):
         server = [s for s in servers if s[1] == name][0]
         return server
@@ -436,14 +435,14 @@ def softlayer_dash_board(osrf_creds):
             cs = get_server('cs-%s' % prefix)
 
 
-            pr(cs) 
+            pr(cs)
             pr(router)
-            pr(sim) 
-            pr(fc1) 
-            pr(fc2) 
+            pr(sim)
+            pr(fc1)
+            pr(fc2)
         except:
             print(" ERROR ")
-            
+
 if __name__ == "__main__":
     p = get_softlayer_path()
     #hardware_helpers(osrf_creds)

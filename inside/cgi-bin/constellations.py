@@ -36,6 +36,8 @@ def get_user_tasks(tasks):
         task_start = dateutil.parser.parse(task['local_start'])
         task_stop  = dateutil.parser.parse(task['local_stop']) 
         latest_tasks.append(task)
+        if task['task_state'] == 'ready':
+            return latest_tasks
     return latest_tasks
 
 

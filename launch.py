@@ -22,7 +22,7 @@ count = 1
 if len(sys.argv) > 4:
     count = int(sys.argv[4])
 
-# launch hugo@osrfoundation.orf "OSRF CloudSim 02" "OSRF VRC Constellation nightly 02"
+# launch hugo@osrfoundation.org "OSRF CloudSim 02" "OSRF VRC Constellation nightly 02"
 
 print (sys.argv)
 print ('username "%s", configuration "%s", args "%s"'  % (username, configuration, args))
