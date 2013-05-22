@@ -2,9 +2,12 @@
 
 if [ "$1" == "-f" ]; then
   force=1
+  # Wipe out redis keys, so that we'll know later when cloudsimd is up
+  redis-cli flushdb
 else
   force=0
 fi
+
 
 # DIR="/home/ubuntu/cloudsim"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

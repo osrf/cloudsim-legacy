@@ -7,10 +7,17 @@
 from __future__ import print_function
 import sys
 import os
+import redis
+import time
 
 daemon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cloudsimd'))
 sys.path.insert(0, daemon_path)
 print(daemon_path)
+
+# Wait for evidence that cloudsimd is running
+r = redis.Redis()
+while r.get('cloudsim_ready') is None:
+    time.sleep(0.5)
 
 from cloudsimd import launch_constellation
 
