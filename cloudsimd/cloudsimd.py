@@ -392,8 +392,8 @@ def start_task(constellation_name, task_id):
             task_state = task['task_state']
             if task_state == 'ready':
                 cs.set_value('current_task', task_id)
-                log('task_state running')
-                task['task_state'] = 'running'
+                log('task_state starting')
+                task['task_state'] = 'starting'
                 task['start_time'] = datetime.datetime.utcnow().isoformat()
                 cs.update_task(task_id, task)
                 # no other task running, and task is ready
@@ -401,7 +401,8 @@ def start_task(constellation_name, task_id):
                     constellation_plugin.start_task(constellation_name, task)
                 except Exception, e:
                     log("Start task error %s" % e)
-
+                task['task_state'] = 'running'
+                cs.update_task(task_id, task)
             else:
                 log("Task is not ready (%s)" % task_state)
         else:
