@@ -180,7 +180,6 @@ def get_cloudsim_startup_script():
 set -ex
 mkdir -p /home/ubuntu/cloudsim/setup
 chown -R ubuntu:ubuntu /home/ubuntu/
-
 # Redirect everybody's output to a file
 logfile=/home/ubuntu/launch_stdout_stderr.log
 exec > $logfile 2>&1
