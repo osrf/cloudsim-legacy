@@ -37,6 +37,8 @@ from launchers.launch_utils.launch import LaunchException
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.softlayer import softlayer_dash_board
 from launchers.launch_utils.softlayer import softlayer_server_scan
+from launchers.launch_utils.softlayer import get_machine_login_info
+
 import datetime
 
 
