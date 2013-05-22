@@ -409,27 +409,26 @@ def start_task(constellation_name, task_id):
         log("start_task error %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
-                
-    
+
+
 def stop_task(constellation_name):
     try:
         log("stop_task %s" % (constellation_name))
         cs = ConstellationState(constellation_name)
         config = cs.get_value('configuration')
         constellation_plugin = get_plugin(config)
-        
+
         task_id = cs.get_value('current_task')
         if task_id != '':
             task = cs.get_task(task_id)
-            
+
             # you can only stop a running task
             if task['task_state'] == 'running':
-                
+
                 task['task_state'] = 'stopping'
                 log('task_state stopping')
                 cs.update_task(task_id, task)
                 task['stop_time'] = datetime.datetime.utcnow().isoformat()
-                cs.set_value('current_task', '')
                 try:
                     constellation_plugin.stop_task(constellation_name, task)
                 except Exception, e:
@@ -441,7 +440,8 @@ def stop_task(constellation_name):
                 finally:
                     task['task_state'] = 'stopped'
                     cs.update_task(task_id, task)
-                    
+                    cs.set_value('current_task', '')
+
         else:
             log('stop_task error: no current task')
     except Exception, e:

@@ -99,8 +99,8 @@ DELIM
 
 # start vrc_sniffer and vrc_controllers
 start vrc_sniffer
-start vrc_controller
-start vrc_bandwidth
+start vrc_controller_private
+start vrc_controller_public
 
 mkdir -p /home/ubuntu/cloudsim/setup
 touch /home/ubuntu/cloudsim/setup/done
@@ -609,10 +609,11 @@ respawn
 DELIM
 
 # start vrc_sniffer and vrc_controllers
-start vrc_sniffer
-start vrc_controller
+#start vrc_sniffer
+#start vrc_controller_private
+#start vrc_controller_public
 
-rm `which vrc_bandwidth.py`
+#rm `which vrc_bandwidth.py`
 
 """ + extra + """
  

@@ -374,7 +374,7 @@ cat <<DELIM > /home/ubuntu/cloudsim/get_network_usage.bash
 #!/bin/bash
 
 #
-# wall or sim clock, wall or sim clock, uplink downlink 
+# wall or sim clock, wall or sim clock, uplink downlink
 # space is the separator
 tail -1 /tmp/vrc_netwatcher_usage.log
 
@@ -531,7 +531,9 @@ DELIM
 
 # start vrc_sniffer and vrc_controllers
 start vrc_sniffer || true
-start vrc_controller || true
+start vrc_controller_private || true
+start vrc_controller_public || true
+
 # Don't start the bytecounter here; netwatcher will start it as needed
 #start vrc_bytecounter
 
@@ -635,6 +637,8 @@ DELIM
 
 cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
 
+MAX_TIME=30
+
 echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
 
 . /usr/share/drcsim/setup.sh
@@ -645,11 +649,33 @@ export ROS_IP=""" + machine_ip + """
 export GAZEBO_IP=""" + machine_ip + """
 export DISPLAY=:0
 ulimit -c unlimited
+export GAZEBO_IP_WHITE_LIST=127.0.0.1,11.8.0.2
+
+# Kill all previous roslaunch processes
+killall -INT roslaunch || true
+
+tstart=\$(date +%s)
+# Block until all ros process are killed
+while [ "\`ps aux | grep ros | wc -l\`" != "1" ]; do
+
+    tnow=\$(date +%s)
+    if ((tnow-tstart>MAX_TIME)) ;then
+        break
+    fi
+
+    sleep 1
+done
+
+# Kill all remaining ros processes
+kill \$(ps aux | grep ros | awk '{print \$2}') || true
+
 roslaunch \$1 \$2 \$3 gzname:=gzserver  &
 
 DELIM
 
 cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
+
+MAX_TIME=30
 
 . /usr/share/drcsim/setup.sh
 
@@ -662,6 +688,21 @@ if gztopic list; then
   done
 fi
 killall -INT roslaunch || true
+
+tstart=\$(date +%s)
+# Block until all ros process are killed
+while [ "\`ps aux | grep ros | wc -l\`" != "1" ]; do
+
+    tnow=\$(date +%s)
+    if ((tnow-tstart>MAX_TIME)) ;then
+        break
+    fi
+
+    sleep 1
+done
+
+# Kill all remaining ros processes
+kill \$(ps aux | grep ros | awk '{print \$2}') || true
 
 DELIM
 
