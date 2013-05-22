@@ -264,6 +264,7 @@ def setup_ssh_key_access(ip, root_password, key_path):
     
     
     st,output = commands.getstatusoutput(cmd)
+    print('cwd: %s'%(os.getcwd()))
     if st != 0:
         print(cmd)
         raise SoftLayerException(cmd)

@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+
+# IMPORTANT: this script is used when a freshly minted cloudsim auto-starts
+# a new constellation.  Don't change the interface or behavior of this script
+# without also tracking down where it's being called from code.
+
 from __future__ import print_function
 import sys
 import os
