@@ -178,6 +178,8 @@ def get_cloudsim_startup_script():
     s = """#!/bin/bash
 # Exit on error
 set -ex
+mkdir -p /home/ubuntu/cloudsim/setup
+chown -R ubuntu:ubuntu /home/ubuntu/
 # Redirect everybody's output to a file
 logfile=/home/ubuntu/launch_stdout_stderr.log
 exec > $logfile 2>&1
@@ -250,10 +252,6 @@ deb http://security.ubuntu.com/ubuntu precise-security multiverse
 deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
 
 DELIM
-
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
-chown -R ubuntu:ubuntu /home/ubuntu/
 
 apt-get update
 apt-get install -y python-software-properties
