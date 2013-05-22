@@ -99,8 +99,8 @@ DELIM
 
 # start vrc_sniffer and vrc_controllers
 start vrc_sniffer
-start vrc_controller
-start vrc_bandwidth
+start vrc_controller_private
+start vrc_controller_public
 
 mkdir -p /home/ubuntu/cloudsim/setup
 touch /home/ubuntu/cloudsim/setup/done
@@ -178,6 +178,9 @@ def get_cloudsim_startup_script():
     s = """#!/bin/bash
 # Exit on error
 set -ex
+mkdir -p /home/ubuntu/cloudsim/setup
+chown -R ubuntu:ubuntu /home/ubuntu/
+
 # Redirect everybody's output to a file
 logfile=/home/ubuntu/launch_stdout_stderr.log
 exec > $logfile 2>&1
@@ -251,34 +254,6 @@ deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
 
 DELIM
 
-cat <<DELIM > /home/ubuntu/cloudsim/get_logs.bash
-#!/bin/bash
-
-# Get simulator and network logs from the router
-
-USAGE="Usage: get_logs.bash <task_dirname> <public_router_IP> <router_key>"
-
-if [ \$# -ne 3 ]; then
-  echo \$USAGE
-  exit 1
-fi
-
-TASK_DIRNAME=\$1
-ROUTER_IP=\$2
-ROUTER_KEY=\$3
-
-mkdir -p /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
-sudo ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$ROUTER_KEY ubuntu@\$ROUTER_IP bash /home/ubuntu/cloudsim/get_sim_logs.bash \$TASK_DIRNAME
-
-sudo scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$ROUTER_KEY ubuntu@\$ROUTER_IP:/home/ubuntu/cloudsim/logs/\$TASK_DIRNAME/* /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME || true
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/get_logs.bash
-
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
-chown -R ubuntu:ubuntu /home/ubuntu/
-
 apt-get update
 apt-get install -y python-software-properties
 
@@ -326,6 +301,30 @@ echo "SoftLayer installed" >> /home/ubuntu/setup.log
 
 sudo pip install unittest-xml-reporting
 echo "XmlTestRunner installed" >> /home/ubuntu/setup.log
+
+cat <<DELIM > /home/ubuntu/cloudsim/get_logs.bash
+#!/bin/bash
+
+# Get simulator and network logs from the router
+
+USAGE="Usage: get_logs.bash <task_dirname> <public_router_IP> <router_key>"
+
+if [ \$# -ne 3 ]; then
+  echo \$USAGE
+  exit 1
+fi
+
+TASK_DIRNAME=\$1
+ROUTER_IP=\$2
+ROUTER_KEY=\$3
+
+mkdir -p /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
+sudo ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$ROUTER_KEY ubuntu@\$ROUTER_IP bash /home/ubuntu/cloudsim/get_sim_logs.bash \$TASK_DIRNAME
+
+sudo scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$ROUTER_KEY ubuntu@\$ROUTER_IP:/home/ubuntu/cloudsim/logs/\$TASK_DIRNAME/* /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME || true
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/get_logs.bash
 
 #
 # FIREWALL
@@ -609,10 +608,11 @@ respawn
 DELIM
 
 # start vrc_sniffer and vrc_controllers
-start vrc_sniffer
-start vrc_controller
+#start vrc_sniffer
+#start vrc_controller_private
+#start vrc_controller_public
 
-rm `which vrc_bandwidth.py`
+#rm `which vrc_bandwidth.py`
 
 """ + extra + """
  
