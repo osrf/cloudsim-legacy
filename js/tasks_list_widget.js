@@ -537,7 +537,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
 
             //  console.log('TASK _set_state_widget: ' + constellation_name + ': '+ task.task_state)
             state_widget.src = "/js/images/gray_status.png";
-            if (task.task_state == "running")
+            if (task.task_state == "running" || task.task_state == "starting")
             {
             	colors =  ["/js/images/gray_status.png", "/js/images/blue_status.png"];
                 
