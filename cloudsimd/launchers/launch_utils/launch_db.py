@@ -52,6 +52,7 @@ class Lock(object):
                             giving up. A value of 0 means we never wait.
         """
 
+        self.r = redis.Redis()
         self.key = key
         self.timeout = timeout
         self.expires = expires
@@ -61,15 +62,15 @@ class Lock(object):
         while timeout >= 0:
             expires = time.time() + self.expires + 1
 
-            if redis.setnx(self.key, expires):
+            if self.r.setnx(self.key, expires):
                 # We gained the lock; enter critical section
                 return
 
-            current_value = redis.get(self.key)
+            current_value = self.r.get(self.key)
 
             # We found an expired lock and nobody raced us to replacing it
             if current_value and float(current_value) < time.time() and \
-               redis.getset(self.key, expires) == current_value:
+               self.r.getset(self.key, expires) == current_value:
                     return
 
             timeout -= 1
@@ -78,7 +79,7 @@ class Lock(object):
         raise LockTimeout("Timeout whilst waiting for lock")
 
     def __exit__(self, exc_type, exc_value, traceback):
-        redis.delete(self.key)
+        self.r.delete(self.key)
 
 
 class LockTimeout(BaseException):
