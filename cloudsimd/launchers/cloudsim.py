@@ -288,7 +288,7 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
 
     constellation.set_value('simulation_launch_msg', "unzip web app")
     log("unzip web app")
-    out = ssh_sim.cmd("unzip " + remote_fname )
+    out = ssh_sim.cmd("unzip -o " + remote_fname )
     log ("\t%s"% out)
 
     log("Setup admin user %s" % username)
@@ -355,7 +355,8 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     constellation.set_value('simulation_launch_msg', "deploying web app")
     # out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)
     log("Deploying the cloudsim web app")
-    deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh" 
+    # Pass -f to force deploy.sh to overwrite any existing users file
+    deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh -f" 
     log("running deploy script '%s' remotely" % deploy_script_fname)
     out = ssh_sim.cmd("bash " + deploy_script_fname  )
     log ("\t%s"% out)
@@ -366,10 +367,10 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     # at the end.
     if auto_launch_configuration:
 
-        msg = "Launching a constellation of type %s" % auto_launch_configuration
+        msg = "Launching a constellation of type \"%s\"" % auto_launch_configuration
         log(msg)
         constellation.set_value('simulation_launch_msg', msg)
-        ssh_sim.cmd("/home/ubuntu/cloudsim/launch.py %s %s" % (username, auto_launch_configuration) )
+        ssh_sim.cmd("/home/ubuntu/cloudsim/launch.py \"%s\" \"%s\"" % (username, auto_launch_configuration) )
         time.sleep(5)
     
     print ("\033[1;32mCloudSim ready. Visit http://%s \033[0m\n"% ip)

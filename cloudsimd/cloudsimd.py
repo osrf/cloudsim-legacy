@@ -666,7 +666,8 @@ def run(root_dir, tick_interval):
 
     log("CLOUDSIMD STARTED root_dir=%s" % (root_dir))
     for msg in ps.listen():
-        log("=== CLOUDSIMD EVENT ===")
+        red.set('cloudsim_ready', True)
+        log("=== CLOUDSIMD EVENT ===") 
         try:
             try:
                 data = loads(msg['data'])
