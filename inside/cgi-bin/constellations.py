@@ -13,7 +13,7 @@ import traceback
 from common.web import UserDatabase
 
 import datetime
-import dateutil
+#import dateutil
 
 cgitb.enable()
 
@@ -33,9 +33,20 @@ def get_user_tasks(tasks):
     
     latest_tasks =[]
     for task in tasks:
-        task_start = dateutil.parser.parse(task['local_start'])
-        task_stop  = dateutil.parser.parse(task['local_stop']) 
-        latest_tasks.append(task)
+        if task['task_state'] == 'stopped':
+	   latest_tasks.append(task)
+
+    for task in tasks:
+        if task['task_state'] in ['running', 'stopping']:
+           latest_tasks.append(task)
+           return latest_tasks
+    
+    for task in tasks:
+        #task_start = dateutil.parser.parse(task['local_start'])
+        #task_stop  = dateutil.parser.parse(task['local_stop']) 
+        if task['task_state'] in ['ready']:
+	    latest_tasks.append(task)
+            return latest_tasks
     return latest_tasks
 
 
@@ -114,15 +125,15 @@ print("\n")
 
 if method == 'GET':
     s = None
-    #log("[GET] Constellations")
+    log("[GET] Constellations")
     try:
         constellation = get_constellation_from_path()
-        # log("%s" % constellation)
+        log("%s, role: %s" % (constellation, role))
         if len(constellation) > 0:
-            s = get_constellation(email, constellation)
+            s = get_constellation(role, constellation)
         else:
-            # log("listing all constellations")
-            l = list_constellations(email)
+            log("listing all constellations")
+            l = list_constellations(role)
             s = json.dumps(l)
 
     except Exception, e:
