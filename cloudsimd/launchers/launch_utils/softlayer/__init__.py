@@ -22,6 +22,7 @@ def get_softlayer_path():
 def _get_hardware(api_username, api_key, server_name = None):
     domain_id = None   
     client = SoftLayer.API.Client('SoftLayer_Account', domain_id, api_username, api_key)
+    
     object_mask = {
         'hardware' : {
             'operatingSystem' : {
@@ -31,7 +32,7 @@ def _get_hardware(api_username, api_key, server_name = None):
             'frontendNetworkComponents' :{},
             'backendNetworkComponents' :{},
             'datacenter' : {},
-            'processorCount' : {},
+            #'processorCount' : {},
         }
     }
     client.set_object_mask(object_mask)
@@ -349,10 +350,9 @@ class TestSofty(unittest.TestCase):
         print(creds)
 
 
-    def xtest_reload_axx(self):
-
+    def stest_reload_xx(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
-        machine_names = ['router-01', 'fc1-01', 'fc2-01', 'sim-01']
+        machine_names = ['router-17', 'fc1-17', 'fc2-17', 'sim-17']
         reload_servers(osrf_creds, machine_names)
         wait_for_server_reloads(osrf_creds, machine_names, print_cb)
 
@@ -392,6 +392,40 @@ class TestSofty(unittest.TestCase):
             print("not valid: %s" % e)
 
         print(valid)
+
+    def test_softlayer(self):
+
+        
+        object_mask = {
+            'hardware' : {
+                'operatingSystem' : {
+                    'passwords' : {},
+                },
+                
+                'frontendNetworkComponents' :{},
+                'backendNetworkComponents' :{},
+                'datacenter' : {},
+                # 'processorCount' : {},
+            }
+        }
+
+
+        client = SoftLayer.API.Client('SoftLayer_Account', None, "hugo", 'b990c28ad6b37fc5d142ddabe44790b62aed80e84d9dc5df6d1d81e1083c991e')
+        client.set_object_mask(object_mask)
+        hardware = client.getHardware()
+        
+        print('ACCOUNT 1')
+        print([x['hostname'] for x in hardware] )
+        print()
+
+        client = SoftLayer.API.Client('SoftLayer_Account', None, 'osrf', 'a3d642ae81e46b8bb1ef9fbcef6804660ab6e5fd5d5b21a27973ba299973ba4f')
+        client.set_object_mask(object_mask)
+        hardware = client.getHardware()
+        
+        print('ACCOUNT 2')
+        print([x['hostname'] for x in hardware] )
+
+        
 
     def atest_ubuntu_upload_and_execute(self):
         pass
@@ -434,7 +468,6 @@ def softlayer_dash_board(osrf_creds):
             router = get_server('router-%s' % prefix)
             cs = get_server('cs-%s' % prefix)
 
-
             pr(cs)
             pr(router)
             pr(sim)
@@ -444,12 +477,15 @@ def softlayer_dash_board(osrf_creds):
             print(" ERROR ")
 
 if __name__ == "__main__":
+
     p = get_softlayer_path()
-    #hardware_helpers(osrf_creds)
-    #hardware_info(osrf_creds)
     osrf_creds = load_osrf_creds(p)
- 
     softlayer_dash_board(osrf_creds)
     softlayer_server_scan(osrf_creds)
 
     unittest.main()
+
+    #hardware_helpers(osrf_creds)
+    #hardware_info(osrf_creds)
+
+
