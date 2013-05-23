@@ -203,8 +203,8 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     constellation.set_value("simulation_launch_msg", "launching")
     constellation.set_value('simulation_state', 'starting')
     if not constellation.has_value("launch_stage"):
-        #constellation.set_value("launch_stage", "nothing") # "os_reload"
-        constellation.set_value("launch_stage", "os_reload")
+        constellation.set_value("launch_stage", "nothing") # "os_reload"
+        #constellation.set_value("launch_stage", "os_reload")
 
     osrf_creds = load_osrf_creds(osrf_creds_fname)    
     pub_ip, priv_ip, password = get_machine_login_info(osrf_creds, "cs-%s" % constellation_prefix) 
