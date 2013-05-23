@@ -11,6 +11,7 @@ import multiprocessing
 from json import loads
 import redis
 import json
+import logging
 
 from launchers.launch_utils import SshClient
 
@@ -36,6 +37,8 @@ from launchers.launch_utils.launch import LaunchException
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.softlayer import softlayer_dash_board
 from launchers.launch_utils.softlayer import softlayer_server_scan
+from launchers.launch_utils.softlayer import get_machine_login_info
+
 import datetime
 
 
@@ -45,15 +48,16 @@ def log(msg, chan="cloudsimd"):
         print ("LOG: %s" % msg)
         red = redis.Redis()
         red.publish(chan, msg)
-    except Exception:
-        pass
-
+        logging.info(msg)
+    except Exception, e:
+        print("Warning: redis not installed.")
+    print("cloudsimd> %s" % msg)
+ 
 
 class UnknownConfig(LaunchException):
     pass
 
-
-def launch_constellation(username, configuration, args=None, count=1):
+def launch_constellation(username, configuration, args = None):
     """
     Launches one (or count) constellation of a given configuration
     """
@@ -63,8 +67,6 @@ def launch_constellation(username, configuration, args=None, count=1):
     d['username'] = username
     d['command'] = 'launch'
     d['configuration'] = configuration
-    if count > 1:
-        d['count'] = count
     if args:
         d['args'] = args
 
@@ -110,7 +112,9 @@ def list_constellations():
         if key.find('cloudsim/') == 0:
             c = json.loads(s)
             constellations.append(c)
-    return constellations
+
+    return constellations 
+
 
 
 def get_aws_instance_by_name(instance_name, boto_path="../../boto.ini"):
@@ -281,9 +285,10 @@ def launch(username,
 
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
-            terminate(constellation_name, constellation_directory)
+            
+            # terminate(constellation_name, constellation_directory)
             constellation.set_value('error', '%s' % error_msg)
-            constellation.expire(10)
+            # constellation.expire(10)
             raise
 
         log("Launch of constellation %s done" % constellation_name)
@@ -663,8 +668,13 @@ def run(root_dir, tick_interval):
     resume_monitoring(root_dir)
 
     log("CLOUDSIMD STARTED root_dir=%s" % (root_dir))
+    log("Ready to get commands 1 ")
+    red.set('cloudsim_ready', True)
     for msg in ps.listen():
-        red.set('cloudsim_ready', True)
+        log("Ready to get commands 2 ")
+        #red.set('cloudsim_ready', True)
+        log("Ready to get commands 3")
+        
         log("=== CLOUDSIMD EVENT ===") 
         try:
             try:
@@ -732,7 +742,8 @@ if __name__ == "__main__":
         log("args: %s" % sys.argv)
 
         tick_interval = 5
-
+    
+    
         boto_path = '/var/www-cloudsim-auth/boto-useast'
         softlayer_path = '/var/www-cloudsim-auth/softlayer.json'
         root_dir = '/var/www-cloudsim-auth/machines'

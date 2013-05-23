@@ -30,23 +30,24 @@ def get_user_tasks(tasks):
     Returns the next available task
     """
     now = datetime.datetime.now()
-    
+
     latest_tasks =[]
     for task in tasks:
         if task['task_state'] == 'stopped':
-	   latest_tasks.append(task)
+            latest_tasks.append(task)
 
     for task in tasks:
         if task['task_state'] in ['running', 'stopping']:
-           latest_tasks.append(task)
-           return latest_tasks
-    
+            latest_tasks.append(task)
+            return latest_tasks
+
     for task in tasks:
         #task_start = dateutil.parser.parse(task['local_start'])
         #task_stop  = dateutil.parser.parse(task['local_stop']) 
         if task['task_state'] in ['ready']:
-	    latest_tasks.append(task)
+            latest_tasks.append(task)
             return latest_tasks
+
     return latest_tasks
 
 
