@@ -31,6 +31,7 @@ def get_softlayer_path():
 
 
 def _get_hardware(api_username, api_key, server_name = None):
+    print('softlayer._get_hardware(%s, %s, %s)'%(api_username, api_key, server_name))
     domain_id = None   
     object_mask = {
         'hardware' : {
@@ -59,6 +60,7 @@ def _get_hardware(api_username, api_key, server_name = None):
             count += 1
             if count > 100:
                 raise SoftLayerException("Can't enumerate hardware")
+    print('softlayer._get_hardware() result: %s'%(hardware))
     return hardware
 
 
@@ -233,10 +235,12 @@ def shutdown_public_ips(osrf_creds, machine_names):
         _send_shutdown_public_port(api_username, api_key, server_id)
         
 def get_machine_login_info(osrf_creds, machine):
+    print('get_machine_login_info(%s, %s)'%(osrf_creds, machine))
     api_username = osrf_creds['user'] 
     api_key = osrf_creds['api_key']
    
     hardware = _get_hardware(api_username, api_key)
+    print('get_machine_login_info() looking for %s, got %s'%(machine, hardware))
     server = [server for server in hardware if server['hostname']==machine][0]
     os = server['operatingSystem']
     user = None
