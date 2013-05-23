@@ -149,6 +149,17 @@ class ConstellationState(object):
                     return
             raise KeyError(task_id)
 
+    def update_task_value(self, task_id, key, value):
+        with Lock(self.my_lock):
+            resources = get_constellation_data(self.constellation_name)
+            tasks = resources['tasks']
+            for task in tasks:
+                if task['task_id'] == task_id:
+                    task[key] = value
+                    self._set_value('tasks', tasks)
+                    return
+            raise KeyError(task_id)    
+
     def delete_task(self, task_id):
         with Lock(self.my_lock):
             resources = get_constellation_data(self.constellation_name)
