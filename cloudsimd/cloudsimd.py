@@ -393,16 +393,14 @@ def start_task(constellation_name, task_id):
             if task_state == 'ready':
                 cs.set_value('current_task', task_id)
                 log('task_state starting')
-                task['task_state'] = 'starting'
-                task['start_time'] = datetime.datetime.utcnow().isoformat()
-                cs.update_task(task_id, task)
+                cs.update_task_value(task_id, 'task_state', 'starting')
+                cs.update_task_value(task_id, 'start_time', datetime.datetime.utcnow().isoformat())
                 # no other task running, and task is ready
                 try:
                     constellation_plugin.start_task(constellation_name, task)
                 except Exception, e:
                     log("Start task error %s" % e)
-                task['task_state'] = 'running'
-                cs.update_task(task_id, task)
+                cs.update_task_value(task_id, 'task_state', 'running')
                 log('task_state running')
             else:
                 log("Task is not ready (%s)" % task_state)
@@ -428,10 +426,9 @@ def stop_task(constellation_name):
             # you can only stop a running task
             if task['task_state'] == 'running':
 
-                task['task_state'] = 'stopping'
                 log('task_state stopping')
-                task['stop_time'] = datetime.datetime.utcnow().isoformat()
-                cs.update_task(task_id, task)
+                cs.update_task_value(task_id, 'task_state', 'stopping')
+                cs.update_task_value(task_id, 'stop_time', datetime.datetime.utcnow().isoformat())
                 try:
                     log('calling stop task')
                     constellation_plugin.stop_task(constellation_name, task)
@@ -442,10 +439,8 @@ def stop_task(constellation_name):
                 else:
                     log('task stopped successfully')
                 finally:
-                    task['task_state'] = 'stopped'
-                    cs.update_task(task_id, task)
+                    cs.update_task_value(task_id, 'task_state', 'stopped')
                     cs.set_value('current_task', '')
-
         else:
             log('stop_task error: no current task')
     except Exception, e:

@@ -310,8 +310,8 @@ def monitor_task(constellation_name, ssh_router):
 
         log("network %s" % net_str)
         final_score = "%s %s" % (score_str, net_str)
-        task['task_message'] = final_score
-        constellation.update_task(task_id, task)
+
+        constellation.update_task_value(task['task_id'], 'task_message', final_score)
     log("monitor_task END")
 
 
