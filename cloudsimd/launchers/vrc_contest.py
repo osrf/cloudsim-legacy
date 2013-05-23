@@ -10,6 +10,7 @@ import logging
 import json
 import glob
 import subprocess
+import dateutil.parser
 
 from shutil import copyfile
 
@@ -106,7 +107,10 @@ def notify_portal(constellation, task):
         run = task['vrc_id']
         if run < '1' or run > '5':
             run = '1'
-        start_task = task['start_task']
+
+        start_time = task['start_time']
+        start_task = dateutil.parser.parse(start_time)
+        start_task = start_task.strftime("%d/%m/%y %H:%M:%S")
         #start_task = '12:15:03'
 
         const = ConstellationState(constellation)
@@ -128,23 +132,28 @@ def notify_portal(constellation, task):
         # Get the elapsed task time
 
         # Get the score and falls
-        score = 'N/A'
+        score = '0'
         #falls = 'N/A'
         runtime = 'N/A'
         if os.path.exists(os.path.join('/home/ubuntu/cloudsim/logs',
                                        task_dirname, task_dirname + '.zip')):
+            log("** Simulator zip file found **")
             sim_zip_file = zipfile.ZipFile(os.path.join('/home/ubuntu/cloudsim/logs',
                                                         task_dirname,
                                                         task_dirname + '.zip'))
             if 'score.log' in sim_zip_file.namelist():
+                log("** score.log found **")
                 data = sim_zip_file.read('score.log')
+                log("** Reading score.log file **")
                 lines = data.split('\n')
                 last_line = lines[-2]
-                score = last_line.split()[2]
-                #falls = last_line.split()[3]
+                log("** Last line: %s **" % last_line)
+                score = last_line.split(',')[4]
+                #falls = last_line.split(',')[5]
 
                 # Time when the task stopped
-                runtime = last_line.split()[1]
+                runtime = last_line.split(',')[1]
+                log("** All sim score fields parsed **")
 
         # Create JSON file with the task metadata
         data = json.dumps({'team': team, 'event': comp, 'task': task_num,
@@ -152,6 +161,7 @@ def notify_portal(constellation, task):
                            'runtime': runtime, 'score': score},
                           sort_keys=True, indent=4, separators=(',', ': '))
 
+        log("** JSON data created **")
         with open(os.path.join('/home/ubuntu/cloudsim/logs', task_dirname,
                                'end_task.json'), 'w') as f:
             f.write(str(data))
