@@ -168,7 +168,7 @@ def get_plugin(configuration):
     This is the switch.
     """
     plugin = None
-    log("get_plugin '%s'" % configuration)
+    #log("get_plugin '%s'" % configuration)
 
     if configuration == 'AWS CloudSim':
         from launchers import amazon_cloudsim as c
@@ -195,7 +195,7 @@ def get_plugin(configuration):
         plugin = ConstellationPlugin(c.launch, c.terminate, c.monitor, None, None)
     else:
         raise UnknownConfig('Invalid configuration "%s"' % (configuration,))
-    log("get_plugin: %s %s" % (configuration, plugin))
+    #log("get_plugin: %s %s" % (configuration, plugin))
     return plugin
 
 
@@ -281,17 +281,17 @@ def launch(username,
         try:
             constellation_plugin.launch(username, config, constellation_name, tags, constellation_directory)
         except Exception, e:
-            error_msg = constellation.get_value('error')
-
+            #error_msg = constellation.get_value('error')
+            constellation.set_value('error', '%s' % e)
             tb = traceback.format_exc()
-            log("traceback:  %s" % tb)
+            log("LAUNCH ERROR traceback:  %s" % tb)
             
             # terminate(constellation_name, constellation_directory)
-            constellation.set_value('error', '%s' % error_msg)
+            
             # constellation.expire(10)
-            raise
-
-        log("Launch of constellation %s done" % constellation_name)
+            
+        else:
+            log("Launch of constellation %s done" % constellation_name)
 
     except Exception, e:
 

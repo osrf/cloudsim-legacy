@@ -439,7 +439,7 @@ class TestSofty(unittest.TestCase):
         count = 1
         for i in range(count):
             print ("\n\n%s" % i)
-            client = SoftLayer.API.Client('SoftLayer_Account', None, "hugo", 'b990c28ad6b37fc5d142ddabe44790b62aed80e84d9dc5df6d1d81e1083c991e')
+            client = SoftLayer.API.Client('SoftLayer_Account', None, "hugo", '')
             client.set_object_mask(object_mask)
             hardware = client.getHardware()
             
@@ -447,7 +447,7 @@ class TestSofty(unittest.TestCase):
             print([x['hostname'] for x in hardware] )
             print("")
     
-            client = SoftLayer.API.Client('SoftLayer_Account', None, 'osrf', 'a3d642ae81e46b8bb1ef9fbcef6804660ab6e5fd5d5b21a27973ba299973ba4f')
+            client = SoftLayer.API.Client('SoftLayer_Account', None, 'osrf', '')
             client.set_object_mask(object_mask)
             hardware = client.getHardware()
             
@@ -471,10 +471,19 @@ class TestSofty(unittest.TestCase):
 #        setup_ssh_key_access(ip, password, 'sim_key')
 
 
-def softlayer_dash_board(osrf_creds):
+def softlayer_dash_board(osrf_creds, show_transactions = True):
 
     def pr(server):
-        print ("   %10s %s ssh root@%s" % (server[1], server[3], server[5] ))
+        print ("  %10s %s ssh root@%s" % (server[1], server[3], server[5] ))
+        if show_transactions:
+            server_id = server[0]
+            server_name = server[1]
+            client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, osrf_creds['user'], osrf_creds['api_key'])
+            t = client.getActiveTransaction()
+            if t:
+                for k, v in t.iteritems():
+                    print("              * %s: %s" % (k,v))
+
 
     def get_server(name):
         server = [s for s in servers if s[1] == name][0]
@@ -510,9 +519,9 @@ if __name__ == "__main__":
     p = get_softlayer_path()
     osrf_creds = load_osrf_creds(p)
     softlayer_dash_board(osrf_creds)
-    softlayer_server_scan(osrf_creds)
+#    softlayer_server_scan(osrf_creds)
 
-    unittest.main()
+    #unittest.main()
 
     #hardware_helpers(osrf_creds)
     #hardware_info(osrf_creds)
