@@ -377,9 +377,11 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     print ("Stop your CloudSim using the AWS console")
     print ("     http://aws.amazon.com/console/\n")
 
-    constellation.set_value('simulation_launch_msg', "Complete")     
+    
     constellation.set_value('simulation_state', 'running')
     constellation.set_value('constellation_state', 'running')
+    time.sleep(10)
+    constellation.set_value('simulation_launch_msg', "Complete")
     log("provisioning done")
 
 

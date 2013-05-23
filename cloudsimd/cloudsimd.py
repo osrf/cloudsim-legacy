@@ -671,8 +671,13 @@ def run(root_dir, tick_interval):
     resume_monitoring(root_dir)
 
     log("CLOUDSIMD STARTED root_dir=%s" % (root_dir))
+    log("Ready to get commands 1 ")
+    red.set('cloudsim_ready', True)
     for msg in ps.listen():
-        red.set('cloudsim_ready', True)
+        log("Ready to get commands 2 ")
+        #red.set('cloudsim_ready', True)
+        log("Ready to get commands 3")
+        
         log("=== CLOUDSIMD EVENT ===") 
         try:
             try:
@@ -740,7 +745,8 @@ if __name__ == "__main__":
         log("args: %s" % sys.argv)
 
         tick_interval = 5
-
+    
+    
         boto_path = '/var/www-cloudsim-auth/boto-useast'
         softlayer_path = '/var/www-cloudsim-auth/softlayer.json'
         root_dir = '/var/www-cloudsim-auth/machines'
