@@ -131,8 +131,8 @@ function _create_task_form(form_id)
 
     var local_start = _add_form_textinput(form_div, "Valid from (UTC)");
     var local_stop = _add_form_textinput(form_div, "Valid until (UTC)");
-    var vrc_id = _add_form_textinput(form_div, "VRC task ID");
-    var vrc_num = _add_form_textinput(form_div, "VRC task num");
+    var vrc_id = _add_form_textinput(form_div, "Run (1, 2, 3, 4 or 5)");
+    var vrc_num = _add_form_textinput(form_div, "Task (1, 2 or 3)");
 
     // default values
     ros_package.value = "atlas_utils";
