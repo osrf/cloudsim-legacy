@@ -3,15 +3,15 @@ import commands
 import os
 import subprocess
 
-def log(msg):
+def log(msg, channel="ssh"):
     try:
         import redis
         redis_client = redis.Redis()
-        redis_client.publish("ssh", msg)
+        redis_client.publish(channel, msg)
         logging.info(msg)
     except:
         print("Warning: redis not installed.")
-    # print("cloudsim log> %s" % msg)
+    print("ssh> %s" % msg)
 
 """
 Removes the key for this ip, in case we connect to a different machine with the

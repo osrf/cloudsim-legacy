@@ -1097,17 +1097,19 @@ def startup_scripts(constellation_name):
     if launch_sequence.index(launch_stage) >= launch_sequence.index('startup'):
         return
 
-    m = "Executing startup script"
-    constellation.set_value('fc1_launch_msg', m)
-    constellation.set_value('fc2_launch_msg', m)
-    constellation.set_value('sim_launch_msg', m)
-    constellation.set_value('router_launch_msg', m)
+
 
     constellation_directory = constellation.get_value('constellation_directory')
     # if the change of ip was successful, the script should be in the home directory
     # of each machine
     wait_for_find_file(constellation_name, constellation_directory, "change_ip.bash")
 
+    m = "Executing startup script"
+    constellation.set_value('fc1_launch_msg', m)
+    constellation.set_value('fc2_launch_msg', m)
+    constellation.set_value('sim_launch_msg', m)
+    constellation.set_value('router_launch_msg', m)
+    
     router_ip = constellation.get_value("router_public_ip")
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
     # load packages onto router
