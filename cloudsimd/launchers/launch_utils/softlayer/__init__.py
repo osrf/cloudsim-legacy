@@ -55,10 +55,10 @@ def _get_hardware(api_username, api_key, server_name = None):
             hardware = client.getHardware()
             done = True
         except:
-            time.sleep(1)
+            time.sleep(10)
             count += 1
-            if count > 100:
-                raise SoftLayerException("Can't enumerate hardware")
+            if count > 20:
+                raise SoftLayerException("Can't enumerate SoftLayer hardware after %s retries" % (count+1) )
     return hardware
 
 
