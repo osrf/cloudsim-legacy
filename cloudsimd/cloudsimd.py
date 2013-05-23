@@ -403,6 +403,7 @@ def start_task(constellation_name, task_id):
                     log("Start task error %s" % e)
                 task['task_state'] = 'running'
                 cs.update_task(task_id, task)
+                log('task_state running')
             else:
                 log("Task is not ready (%s)" % task_state)
         else:
@@ -432,6 +433,7 @@ def stop_task(constellation_name):
                 task['stop_time'] = datetime.datetime.utcnow().isoformat()
                 cs.update_task(task_id, task)
                 try:
+                    log('calling stop task')
                     constellation_plugin.stop_task(constellation_name, task)
                 except Exception, e:
                     tb = traceback.format_exc()
