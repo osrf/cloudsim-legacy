@@ -113,7 +113,7 @@ class Launcher:
         args['cloudsim_portal_key_path'] = self.data['portal_key_path']
         args['cloudsim_bitbucket_key_path'] = self.data['bitbucket_key_path']
         print('Launching (%s,%s,%s)'%(username, configuration, args))
-        #launch_constellation(username, configuration, args)
+        launch_constellation(username, configuration, args)
 
     def go(self):
         self.load()
