@@ -636,6 +636,7 @@ DELIM
 
 
 cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
+#!/bin/bash
 
 MAX_TIME=30
 
@@ -667,13 +668,15 @@ while [ "\`ps aux | grep ros | wc -l\`" != "1" ]; do
 done
 
 # Kill all remaining ros processes
-kill \$(ps aux | grep ros | awk '{print \$2}') || true
+kill -9 \$(ps aux | grep ros | awk '{print \$2}') || true
+killall -9 gzserver || true
 
 roslaunch \$1 \$2 \$3 gzname:=gzserver  &
 
 DELIM
 
 cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
+#!/bin/bash
 
 MAX_TIME=30
 
@@ -702,7 +705,8 @@ while [ "\`ps aux | grep ros | wc -l\`" != "1" ]; do
 done
 
 # Kill all remaining ros processes
-kill \$(ps aux | grep ros | awk '{print \$2}') || true
+kill -9 \$(ps aux | grep ros | awk '{print \$2}') || true
+killall -9 gzserver || true
 
 DELIM
 
