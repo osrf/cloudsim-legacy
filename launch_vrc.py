@@ -3,6 +3,8 @@ from __future__ import print_function
 import sys
 import os
 import yaml
+import tempfile
+import json
 
 # This script is meant to be run on the same machine that's running the "papa
 # cloudsim."  It'll talk through redis to the local cloudsim to make it launch
@@ -21,8 +23,11 @@ class Launcher:
 
     def __init__(self, argv):
         self.teams_yaml = None
+        self.data = None
         self.teams = {}
         self.parse_args(argv)
+        self.tmpdir = tempfile.mkdtemp()
+        print('Storing temporary files, including private credentials, in %s.  Be sure to delete this directory after the launch.'%(self.tmpdir))
 
     def parse_args(self, argv):
         if len(argv) != 2:
@@ -30,32 +35,74 @@ class Launcher:
         self.teams_yaml = sys.argv[1]
 
     def load(self):
+        # Parse everything out of the yaml file
         with open(self.teams_yaml) as f:
-            teams = yaml.load_all(f)
-            # Build up a dictionary keyed on team ID.
-            for t in teams:
-                if t is None:
-                    continue
-                # A bit of sanity checking
-                required_keys = ['username', 'team', 'cloudsim', 'quad']
-                if not set(required_keys) <= set(t.keys()):
-                    raise Exception("Missing one or more required keys")
-                if type(t['username']) != type(list()):
-                    raise Exception("username field must be a list")
-                # Transform the constellation instance names, which use
-                # underscores, to configuration types, which use spaces.
-                t['cloudsim'] = t['cloudsim'].replace('_', ' ')
-                t['quad'] = t['quad'].replace('_', ' ')
-                self.teams[t['team']] = t
-        print(self.teams)
+            self.data = yaml.load(f)
+        # A bit of sanity checking
+        required_keys = ['portal_hostname', 'portal_user',
+                         'upload_dir', 'final_destination_dir',
+                         'live_destination', 'event', 'portal_key_path',
+                         'bitbucket_key_path', 'tasks', 'teams']
+        if not set(required_keys) <= set(self.data.keys()):
+            raise Exception("Missing one or more required keys")
+        if self.data['bitbucket_key_path'] is not None and not os.path.exists(self.data['bitbucket_key_path']):
+            raise Exception("Invalid bitbucket key path: %s"%(self.data['bitbucket_key_path']))
+        if self.data['portal_key_path'] is not None and not os.path.exists(self.data['portal_key_path']):
+            raise Exception("Invalid portal key path: %s"%(self.data['portal_key_path']))
+        for t in self.data['teams']:
+            # A bit of sanity checking
+            required_keys = ['username', 'team', 'cloudsim', 'quad',
+                             'softlayer_user', 'softlayer_api_key']
+            if not set(required_keys) <= set(t.keys()):
+                raise Exception("Missing one or more required keys")
+            if type(t['username']) != type(list()):
+                raise Exception("username field must be a list")
+            # Transform the constellation instance names, which use
+            # underscores, to configuration types, which use spaces.
+            t['cloudsim'] = t['cloudsim'].replace('_', ' ')
+            t['quad'] = t['quad'].replace('_', ' ')
+            self.teams[t['team']] = t
+        #print(self.teams)
+
+    def generate_files(self, team_id):
+        # Generate the following files:
+        #   softlayer.json
+        #   cloudsim_portal.json
+        softlayer = dict() 
+        softlayer['api_key'] = self.teams[team_id]['softlayer_api_key']
+        softlayer['user'] = self.teams[team_id]['softlayer_user']
+        self.teams[team_id]['softlayer_fname'] = os.path.join(self.tmpdir, '%s_softlayer.json'%(team_id))
+        with open(self.teams[team_id]['softlayer_fname'], 'w') as f:
+            f.write(json.dumps(softlayer))
+            f.write('\n')
+
+        portal = dict() 
+        portal['hostname'] = self.data['portal_hostname']
+        portal['user'] = self.data['portal_user']
+        portal['team'] = team_id
+        portal['upload_dir'] = self.data['upload_dir']
+        portal['final_destination_dir'] = self.data['final_destination_dir']
+        portal['live_destination'] = self.data['live_destination']
+        portal['event'] = self.data['event']
+        self.teams[team_id]['portal_fname'] = os.path.join(self.tmpdir, '%s_cloudsim_portal.json'%(team_id))
+        with open(self.teams[team_id]['portal_fname'], 'w') as f:
+            f.write(json.dumps(portal))
+            f.write('\n')
 
     def launch(self, team_id):
+        self.generate_files(team_id)
         team = self.teams[team_id]
         # TODO: handle multiple users in the input file
         username = team['username'][0]
         configuration = team['cloudsim']   
-        # We pass the final constellation type as optional args
-        args = team['quad']
+        # Build a dictionary of configuration for this team
+        args = dict()
+        args['auto_launch_configuration'] = team['quad']
+        #args['auto_launch_configuration'] = None
+        args['softlayer_path'] = team['softlayer_fname']
+        args['cloudsim_portal_json_path'] = team['portal_fname']
+        args['cloudsim_portal_key_path'] = self.data['portal_key_path']
+        args['cloudsim_bitbucket_key_path'] = self.data['bitbucket_key_path']
         print('Launching (%s,%s,%s)'%(username, configuration, args))
         launch_constellation(username, configuration, args)
 
@@ -63,6 +110,7 @@ class Launcher:
         self.load()
         for t in self.teams:
             self.launch(t)
+        print("\n ** Remember to delete %s after the launch has completed **"%(self.tmpdir))
 
 if __name__ == '__main__':
     l = Launcher(sys.argv)
