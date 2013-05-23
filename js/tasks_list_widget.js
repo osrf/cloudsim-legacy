@@ -511,9 +511,15 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     task_status_div.style.cssFloat = "left";
     //task_status_div.style.width = "3%";
     
+
+    	
     task_div.appendChild(task_status_div);
     task_div.appendChild(task_buttons_div);
     task_div.appendChild(task_title_div);
+
+    var clear_div = document.createElement("div");
+    clear_div.style.clear="both"
+    task_div.appendChild(clear_div);
     
     var count = 0;
     var cb = function(event, data)

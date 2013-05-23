@@ -76,16 +76,14 @@ def monitor(username, constellation_name, counter):
         return True
 
     constellation = ConstellationState(constellation_name)
-
-    simulation_state = constellation.get_value('simulation_state')
-
-    constellation_directory= constellation.get_value("constellation_directory")
-    ip = constellation.get_value("simulation_ip" )
-    log("%s simulation machine ip %s" % (constellation_name, ip))
-    ssh_sim = SshClient(constellation_directory, "key-cs", 'ubuntu', ip)
-
-    monitor_cloudsim_ping(constellation_name, 'simulation_ip', 'simulation_latency')
-    monitor_launch_state(constellation_name, ssh_sim, simulation_state, "bash cloudsim/dpkg_log_sim.bash", 'simulation_launch_msg')
+    
+    if constellation.has_value("simulation_ip" ):
+        ip = constellation.get_value("simulation_ip")
+        simulation_state = constellation.get_value('simulation_state')
+        constellation_directory= constellation.get_value("constellation_directory")
+        ssh_sim = SshClient(constellation_directory, "key-cs", 'ubuntu', ip)
+        monitor_cloudsim_ping(constellation_name, 'simulation_ip', 'simulation_latency')
+        monitor_launch_state(constellation_name, ssh_sim, simulation_state, "bash cloudsim/dpkg_log_sim.bash", 'simulation_launch_msg')
     return False
 
 launch_sequence = ["nothing", "os_reload", "init", "zip",  "change_ip", "startup", "reboot", "running"]
@@ -386,7 +384,7 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
 
 
 
-def terminate(username,  constellation_name, constellation_directory):
+def terminate(username,  constellation_name):
 
     # osrf_creds_fname = get_softlayer_path()
     
@@ -398,8 +396,6 @@ def terminate(username,  constellation_name, constellation_directory):
     constellation.set_value('simulation_aws_state', 'terminated')  
     constellation.set_value('simulation_state', "terminated")
     constellation.set_value('simulation_launch_msg', "terminated")
-
-    time.sleep(5.0)
     constellation.set_value('constellation_state', 'terminated')
     
 
