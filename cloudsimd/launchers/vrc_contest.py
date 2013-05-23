@@ -387,7 +387,7 @@ cat <<DELIM > /home/ubuntu/cloudsim/get_score.bash
 
 . /usr/share/drcsim/setup.sh
 # rostopic echo the last message of the score
-timeout 2 rostopic echo -p /vrc_score -n 1
+timeout -k 1 2 rostopic echo -p /vrc_score -n 1
 
 
 DELIM
@@ -652,26 +652,24 @@ export DISPLAY=:0
 ulimit -c unlimited
 export GAZEBO_IP_WHITE_LIST=127.0.0.1,11.8.0.2
 
-# Kill all previous roslaunch processes
-killall -INT roslaunch || true
+# Kill a pending simulation
+bash /home/ubuntu/cloudsim/stop_sim.bash
+
+roslaunch \$1 \$2 \$3 gzname:=gzserver  &
 
 tstart=\$(date +%s)
-# Block until all ros process are killed
-while [ "\`ps aux | grep ros | wc -l\`" != "1" ]; do
-
+timeout -k 1 5 gztopic list
+while [[ \$? -ne 0 ]]; do
     tnow=\$(date +%s)
     if ((tnow-tstart>MAX_TIME)) ;then
         break
     fi
 
     sleep 1
+    timeout -k 1 5 gztopic list
 done
 
-# Kill all remaining ros processes
-kill -9 \$(ps aux | grep ros | awk '{print \$2}') || true
-killall -9 gzserver || true
-
-roslaunch \$1 \$2 \$3 gzname:=gzserver  &
+echo \`date\` "$1 $2 $3 - End" >> /home/ubuntu/cloudsim/start_sim.log
 
 DELIM
 
@@ -679,14 +677,14 @@ cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
 #!/bin/bash
 
 MAX_TIME=30
-
+echo \`date\` "Stop sim - Begin" >> /home/ubuntu/cloudsim/stop_sim.log
 . /usr/share/drcsim/setup.sh
 
 if gztopic list; then
   gzlog stop
   # Let cleanup start, which pauses the world
   sleep 5
-  while [ "\`timeout 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1\`" != " F" ]; do
+  while [ "\`timeout -k 1 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1\`" != " F" ]; do
     sleep 1
   done
 fi

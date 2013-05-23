@@ -253,14 +253,14 @@ chmod +x $DIR/reboot_sim.bash
 
 cat <<DELIM > $DIR/ping_gazebo.bash
 #!/bin/bash
-ssh -t -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP ". /usr/share/drcsim/setup.sh; timeout 5 gztopic list"
+ssh -t -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP ". /usr/share/drcsim/setup.sh; timeout -k 1 5 gztopic list"
 DELIM
 chmod +x $DIR/ping_gazebo.bash
 
 # --------------------------------------------
 cat <<DELIM > $DIR/ping_gl.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "DISPLAY=localhost:0 timeout 5 glxinfo"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "DISPLAY=localhost:0 timeout -k 1 5 glxinfo"
 DELIM
 chmod +x $DIR/ping_gl.bash
 
@@ -280,11 +280,28 @@ chmod +x $DIR/stop_sim.bash
 
 cat <<DELIM > $DIR/start_sim.bash
 #!/bin/bash
+
+MAX_TIME=30
+
 sudo iptables -F FORWARD
 sudo stop vrc_netwatcher
 sudo stop vrc_bytecounter
 sudo start vrc_netwatcher
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "bash cloudsim/start_sim.bash \$1 \$2 \$3"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "nohup bash cloudsim/start_sim.bash \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"
+
+tstart=\$(date +%s)
+bash /home/ubuntu/cloudsim/ping_gazebo.bash
+# Block until Gazebo is running
+while [[ \$? -ne 0 ]]; do
+    tnow=\$(date +%s)
+    if ((tnow-tstart>MAX_TIME)) ;then
+        break
+    fi
+
+    sleep 2 
+    bash /home/ubuntu/cloudsim/ping_gazebo.bash 
+done
+
 DELIM
 chmod +x $DIR/start_sim.bash
 
