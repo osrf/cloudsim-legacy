@@ -76,9 +76,9 @@ def go(teams_file, portal_key, one_team_only, user, portal_url):
 
             # Read YAML teams file
             with open(teams_file) as teamsf:
-                teams_info = yaml.load_all(teamsf)
+                info = yaml.load(teamsf)
 
-                for team in teams_info:
+                for team in info['teams']:
                     if ((one_team_only and team['team'] == one_team_only) or
                        not one_team_only):
 
