@@ -7,7 +7,18 @@ import subprocess
 import shutil
 import datetime
 import commands
+import redis
+import logging
 
+def log(msg, channel = "softlayer"):
+    try:
+        redis_client = redis.Redis()
+        redis_client.publish(channel, msg)
+        logging.info(msg)
+        print("launch_db>",msg)
+    except:
+        print("Warning: redis not installed.")
+    #print("cloudsim log> %s" % msg)
 
 class SoftLayerException(Exception):
     pass
@@ -21,8 +32,6 @@ def get_softlayer_path():
 
 def _get_hardware(api_username, api_key, server_name = None):
     domain_id = None   
-    client = SoftLayer.API.Client('SoftLayer_Account', domain_id, api_username, api_key)
-    
     object_mask = {
         'hardware' : {
             'operatingSystem' : {
@@ -35,8 +44,21 @@ def _get_hardware(api_username, api_key, server_name = None):
             #'processorCount' : {},
         }
     }
-    client.set_object_mask(object_mask)
-    hardware = client.getHardware()
+    
+    count = 0
+    done = False
+    hardware = None
+    while not done:
+        try:
+            client = SoftLayer.API.Client('SoftLayer_Account', domain_id, api_username, api_key)
+            client.set_object_mask(object_mask)
+            hardware = client.getHardware()
+            done = True
+        except:
+            time.sleep(1)
+            count += 1
+            if count > 100:
+                raise SoftLayerException("Can't enumerate hardware")
     return hardware
 
 
@@ -408,22 +430,24 @@ class TestSofty(unittest.TestCase):
                 # 'processorCount' : {},
             }
         }
-
-
-        client = SoftLayer.API.Client('SoftLayer_Account', None, "hugo", 'b990c28ad6b37fc5d142ddabe44790b62aed80e84d9dc5df6d1d81e1083c991e')
-        client.set_object_mask(object_mask)
-        hardware = client.getHardware()
         
-        print('ACCOUNT 1')
-        print([x['hostname'] for x in hardware] )
-        print()
-
-        client = SoftLayer.API.Client('SoftLayer_Account', None, 'osrf', 'a3d642ae81e46b8bb1ef9fbcef6804660ab6e5fd5d5b21a27973ba299973ba4f')
-        client.set_object_mask(object_mask)
-        hardware = client.getHardware()
-        
-        print('ACCOUNT 2')
-        print([x['hostname'] for x in hardware] )
+        count = 1
+        for i in range(count):
+            print ("\n\n%s" % i)
+            client = SoftLayer.API.Client('SoftLayer_Account', None, "hugo", 'b990c28ad6b37fc5d142ddabe44790b62aed80e84d9dc5df6d1d81e1083c991e')
+            client.set_object_mask(object_mask)
+            hardware = client.getHardware()
+            
+            print('ACCOUNT 1')
+            print([x['hostname'] for x in hardware] )
+            print("")
+    
+            client = SoftLayer.API.Client('SoftLayer_Account', None, 'osrf', 'a3d642ae81e46b8bb1ef9fbcef6804660ab6e5fd5d5b21a27973ba299973ba4f')
+            client.set_object_mask(object_mask)
+            hardware = client.getHardware()
+            
+            print('ACCOUNT 2')
+            print([x['hostname'] for x in hardware] )
 
         
 
