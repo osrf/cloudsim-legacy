@@ -33,7 +33,7 @@ from launchers.launch_utils.softlayer import get_constellation_prefixes
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch import LaunchException
 
-
+# for interactive use
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.softlayer import softlayer_dash_board
 from launchers.launch_utils.softlayer import softlayer_server_scan
