@@ -13,7 +13,6 @@ def log(msg, channel = "launch_db"):
         redis_client = redis.Redis()
         redis_client.publish(channel, msg)
         logging.info(msg)
-        print("launch_db>",msg)
     except:
         print("Warning: redis not installed.")
     #print("cloudsim log> %s" % msg)

@@ -14,6 +14,7 @@ from launch_utils import get_unique_short_name
 #from launch_utils import wait_for_multiple_machines_to_run 
 from launch_utils import wait_for_multiple_machines_to_terminate
 from launch_utils import get_ec2_instance 
+from launch_utils import log
 from launch_utils import set_constellation_data
 from launch_utils import get_constellation_data
 from launch_utils import SshClient
@@ -52,7 +53,6 @@ def log(msg, channel = "cloudsim"):
         redis_client = redis.Redis()
         redis_client.publish(channel, msg)
         logging.info(msg)
-        print("cloudsim> %s" % msg)
     except:
         print("Warning: redis not installed.")
     #print("cloudsim log> %s" % msg)
@@ -121,17 +121,13 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
 
     constellation.set_value('simulation_launch_msg',  "setting up security groups")
     sim_sg_name = 'sim-sg-%s'%(constellation_name) 
-    
-    log("Creating a security group")
     sim_security_group= ec2conn.create_security_group(sim_sg_name, "simulator security group for constellation %s" % constellation_name)
     sim_security_group.authorize('tcp', 80, 80, '0.0.0.0/0')   # web
     sim_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
     sim_security_group.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping       
     sim_security_group_id = sim_security_group.id
-    log("Security group created")
-    
     constellation.set_value('sim_security_group_id', sim_security_group_id)
-    
+
     constellation.set_value('simulation_launch_msg', "creating ssh keys")
     sim_key_pair_name = 'key-sim-%s'%(constellation_name)
     constellation.set_value('sim_key_pair_name', sim_key_pair_name)
@@ -173,10 +169,9 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
     done = False
     color = "yellow"
     while not done:
-        log("attempt %s" % count)
         time.sleep(2)
-        count -=1
         for r in ec2conn.get_all_instances():
+            count -=1
             if count < 0:
                 msg = "timeout while waiting for EC2 machine(s) %s" % sim_machine_name
                 raise LaunchException(msg) 

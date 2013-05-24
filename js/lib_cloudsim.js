@@ -1,13 +1,4 @@
 
-function get_configurations()
-{
-	var url = "/cloudsim/inside/cgi-bin/machine_configs";
-	console.log("[GET]" + url);
-	var x = httpGet(url);
-    var machine_configurations = eval( '(' + x + ')' );
-    return machine_configurations;
-}
-
 function launch_constellation(configuration)
 {
     var url = '/cloudsim/inside/cgi-bin/constellations?configuration=' + configuration;

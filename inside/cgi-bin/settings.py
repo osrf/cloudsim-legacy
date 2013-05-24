@@ -11,20 +11,28 @@ from common.web import get_javascripts, authorize, UserDatabase,\
 cgitb.enable()
 
 
-email = authorize("admin")
+email = authorize()
 method = os.environ['REQUEST_METHOD']
 
 
 if method != 'GET':
     exit(0)
 
+email = authorize()
+udb = UserDatabase()
+role = udb.get_role(email)
 
+if role != 'admin':
+    print_http_header()
+    print("<title>Access Denied</title>")
+    print("<h1>Access Denied</h1>")
+    print("<h2>Sorry, but you're not an administrator</h2>")
+    print("Try <a href=\"/cloudsim/inside/cgi-bin/logout\">logging out</a>.  For assistance, contact <a href=mailto:%s>cloudsim-info@osrfoundation.org</a>")
+    exit(0)
 
 version = get_cloudsim_version_txt()
 
-user = {'user':email, 'role':'admin'}
-
-user_info = json.dumps(user)
+user_info = json.dumps({'user':email, 'role':role})
 scripts = get_javascripts(['jquery-1.8.3.min.js'])
 
 print_http_header()

@@ -2,20 +2,18 @@
 
 from __future__ import with_statement
 from __future__ import print_function
-
+import cgi
 import cgitb
 import json
 import os
 import urlparse
 from common import  authorize
 import redis
-import traceback
 
 
 cgitb.enable()
-
-
 r = redis.Redis()
+
 
 
 def log(msg):
@@ -48,24 +46,18 @@ def get_constellation(email, constellation_name):
 
     try:
         key = 'cloudsim/' + constellation_name
-        log("get_constellation %s" % key)
+       
         s = r.get(key)
-        # get the redis data
         c = json.loads(s)
-        authorized = True
         
-        #domain = _domain(c['username'])
-        #authorised_domain = _domain(email)
-        #if domain not authorised_domain:
-        #    authorized = False 
-        
-        if authorized:
-            # remove task information
+        domain = _domain(c['username'])
+        authorised_domain = _domain(email)
+                
+        if domain == authorised_domain:
             constellation = clean_constellation_data(c)
             return constellation
     except Exception, e:
-        tb = traceback.format_exc()
-        log("get_constellation traceback:  %s" % tb)
+        log("Get const error: %s" % e)
         return None
     return None
 
@@ -96,7 +88,7 @@ def get_query_param(param):
     p = params[param][0]
     return p
 
-email = authorize("officer")
+email = authorize()
 method = os.environ['REQUEST_METHOD']
 
 
@@ -105,13 +97,15 @@ print("\n")
 
 if method == 'GET':
     s = None
-    #log("[GET] Constellations")
+    # log("[GET] Constellations")
     try:    
         
         constellation = get_constellation_from_path()
-        # log("%s" % constellation)
+
         if len(constellation) > 0:
-            s = get_constellation(email, constellation)
+            domain = _domain(email)
+            key = "cloudsim/"+ constellation
+            s = r.get(key)
         else:
             # log("listing all constellations")
             l = list_constellations(email)

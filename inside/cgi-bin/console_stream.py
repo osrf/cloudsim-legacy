@@ -65,6 +65,9 @@ else:
 
 
 channels = [domain, "cloudsim_tick"]
+if udb.is_admin(email):
+    channels.append('cloudsim_admin')
+    
 message_loop(channels)
 
 

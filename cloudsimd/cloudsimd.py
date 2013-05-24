@@ -41,20 +41,21 @@ def launch_constellation(username, configuration, args = None, count =1):
     Launches one (or count) constellation of a given configuration
     """
     r = redis.Redis()
-    
-    d = {}
-    d['username'] = username
-    d['command'] = 'launch'
-    d['configuration'] = configuration
-    if count >1:
-        d['count'] = count
-    if args:
-        d['args'] = args
-    
-    
-    s = json.dumps(d)
-    print("LAUNCH constellation... command: %s " % s)
-    r.publish('cloudsim_cmds', s)
+    for i in range(count):
+        time.sleep(0.1)
+        d = {}
+        d['username'] = username
+        d['command'] = 'launch'
+        d['configuration'] = configuration
+        if count >1:
+            d['count'] = count
+        if args:
+            d['args'] = args
+        
+        
+        s = json.dumps(d)
+        print("LAUNCH constellation... command: %s " % s)
+        r.publish('cloudsim_cmds', s)
         
 def terminate_all_constellations():
     for x in get_constellation_names():

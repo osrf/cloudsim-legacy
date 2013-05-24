@@ -17,10 +17,10 @@ def log(msg):
 
 from common import  authorize, ConfigsDb
 
-email = authorize("officer")
+email = authorize()
 
-
-
+udb = UserDatabase()
+is_admin = udb.is_admin(email)
 
 print('Content-type: application/json')
 print('\n')
@@ -32,8 +32,7 @@ admin_configs = ['vpc_micro_trio',] # 'cloudsim', ]
         
 configs = cdb.get_configs()
 
-udb = UserDatabase()
-if not udb.has_role(email, "admin"):
+if not is_admin:
     for bad_config in admin_configs:
         if bad_config in configs:
             del(configs[bad_config]) # remove it
