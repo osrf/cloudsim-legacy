@@ -52,12 +52,13 @@ def log(msg, chan="cloudsimd"):
     except Exception, e:
         print("Warning: redis not installed.")
     print("cloudsimd> %s" % msg)
- 
+
 
 class UnknownConfig(LaunchException):
     pass
 
-def launch_constellation(username, configuration, args = None):
+
+def launch_constellation(username, configuration, args=None):
     """
     Launches one (or count) constellation of a given configuration
     """
@@ -285,11 +286,11 @@ def launch(username,
             constellation.set_value('error', '%s' % e)
             tb = traceback.format_exc()
             log("LAUNCH ERROR traceback:  %s" % tb)
-            
+
             # terminate(constellation_name, constellation_directory)
-            
+
             # constellation.expire(10)
-            
+
         else:
             log("Launch of constellation %s done" % constellation_name)
 
