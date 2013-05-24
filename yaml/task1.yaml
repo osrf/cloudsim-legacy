@@ -1,0 +1,14 @@
+# Task 1
+task_title: Task 1
+task_id: 1
+uplink_data_cap: 29491200
+downlink_data_cap: 943718400
+latency: 500
+local_start: 2013-06-14 8:00:00.0
+local_stop: 2013-06-14 18:00:00.0
+timeout: 1800
+task_num: 1
+task_tag: Drive
+ros_package: atlas_utils
+ros_launch: vrc_task_1.launch
+ros_args:
