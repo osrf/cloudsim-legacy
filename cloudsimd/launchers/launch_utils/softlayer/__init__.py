@@ -10,6 +10,7 @@ import commands
 import redis
 import logging
 from pprint import pprint
+from SoftLayer.exceptions import SoftLayerAPIError
 
 
 def log(msg, channel="softlayer"):
@@ -517,8 +518,13 @@ def reload_servers(osrf_creds, server_names):
         hardware = client['Account'].getHardware( filter={'hardware': {'hostname': {'operation': server_name}}})
         server_id = hardware[0]['id']
         print("reloading server %s id %s" % (server_name, server_id))
-        _send_reload_server_cmd(osrf_creds['user'], osrf_creds['api_key'], server_id)
-        
+        try:
+            _send_reload_server_cmd(osrf_creds['user'], osrf_creds['api_key'], server_id)
+        except SoftLayerAPIError, e:
+           if str(e).find("outstanding transaction") <0:
+               raise
+           print("Continuing despite exception: %s" % e)
+           
 
 def get_constellation_prefixes(osrf_creds):
     """
@@ -594,7 +600,7 @@ def get_machine_login_info(osrf_creds, server_name):
 
 class TestSoftLayer(unittest.TestCase):
     
-    def test_list_loop(self):
+    def xtest_list_loop(self):
         while True:
             p = get_softlayer_path()
             osrf_creds = load_osrf_creds(p)
@@ -616,11 +622,16 @@ class TestSoftLayer(unittest.TestCase):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         servers=['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
         wait_for_server_reloads(osrf_creds, servers)
-    def xtest_reload_Server(self):
+    
+    def test_reload_Server(self):
         p = get_softlayer_path()
         osrf_creds = load_osrf_creds(p)
         servers=['cs-13', 'sim-13', 'router-13', 'fc1-13', 'fc2-13']
-        reload_servers(osrf_creds, servers)
+        try:
+            reload_servers(osrf_creds, servers)
+        except Exception,e:
+            print e
+            
     
     def atest_shutdown_public_ip(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
