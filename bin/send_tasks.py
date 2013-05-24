@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 """
-This program requires two YAML files. The first file contains a list of teams,
-with the team information (name, timezone, cloudsim constellation, ...). The
-second file contains a list of tasks with its information (title, latency,
+This program requires a YAML file. The file contains a list of teams,
+with the team information (name, timezone, cloudsim constellation, ...) and the
+list of tasks with its information (title, latency,
 uplink, local times to start/stop the task, ...). For each team, this program
 performs the next operations:
   1. Create a set of tasks according to the YAML tasks file.
@@ -48,33 +48,26 @@ UPDATE_PROGRAM = 'update_tasks.py'
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 # Add to the pythonpath the cloudsimd.launchers package
+new_path = os.path.join(basepath, "cloudsimd", "launchers")
+sys.path.insert(0, new_path)
 sys.path.insert(0, basepath)
 
+from launch_utils import sshclient
 from cloudsimd import cloudsimd
 
 
-def create_task(team, tasks_file):
+def create_task(team, tasks):
     '''
     Generate a python list containing the set of tasks for a given team
     @param team Dictionary containing team information (accounts, timezone, ...)
-    @param tasks_file JSON file containing the task definitions
+    @param tasks Python dictionary containing the list of tasks
     '''
-    # Read YAML tasks file
-    try:
-        with open(tasks_file) as tasksf:
-            tasks_info = yaml.load_all(tasksf)
+    # Create a dictionaty with the tasks (key = task_id)
+    all_tasks = {}
 
-            # Create a dictionaty with the tasks (key = task_id)
-            all_tasks = {}
-
-            for task in tasks_info:
-                key = task['task_id']
-                all_tasks[key] = task
-
-    except Exception, excep:
-        print ('%sError reading tasks file (%s): %s%s'
-               % (RED, tasks_file, repr(excep), NORMAL))
-        return
+    for task in tasks:
+        key = task['task_id']
+        all_tasks[key] = task
 
     my_tasks = []
     counter = 0
@@ -136,17 +129,17 @@ def get_constellation_info(my_constellation):
     return None
 
 
-def feed_cloudsim(team, tasks_file, user, is_verbose):
+def feed_cloudsim(team, tasks, user, is_verbose):
     '''
     For a given team, create a list of tasks, upload them to its cloudsim,
     and update Redis with the new task information.
     @param team Dictionary containing team information (accounts, timezone, ...)
-    @param tasks_file JSON file containing the task definitions
+    @param tasks Python dictionary containing the list of tasks
     @param user CloudSim user (default: ubuntu)
     @param is_verbose If True, show some stats
     '''
     # Create the new list of tasks
-    cs_tasks, num_tasks = create_task(team, tasks_file)
+    cs_tasks, num_tasks = create_task(team, tasks)
 
     # Get the cloudsim constellation associated to this team
     constellation = team['cloudsim']
@@ -185,30 +178,29 @@ def feed_cloudsim(team, tasks_file, user, is_verbose):
                         (team['team'], num_tasks))
 
 
-def go(teams_file, tasks_file, one_team_only, user, is_verbose):
+def go(yaml_file, one_team_only, user, is_verbose):
     '''
     Feed a set of CloudSim instances with each set of tasks.
-    @param teams_file YAML file with the team information
-    @param tasks_file YAML file with the task definition
+    @param yaml_file YAML file with the team and tasks information
     @param one_team_only Create tasks only for one team (if the arg is not None)
     @param user CloudSim user (default: ubuntu)
     @param is_verbose If True, show some stats
     '''
     try:
         # Read YAML teams file
-        with open(teams_file) as teamsf:
-            teams_info = yaml.load_all(teamsf)
+        with open(yaml_file) as infof:
+            info = yaml.load(infof)
 
             # Start a thread for each team and load the tasks
-            for team in teams_info:
+            for team in info['teams']:
                 if ((one_team_only and team['team'] == one_team_only) or
                    not one_team_only):
                     Thread(target=feed_cloudsim,
-                           args=[team, tasks_file, user, is_verbose]).start()
+                           args=[team, info['tasks'], user, is_verbose]).start()
 
     except Exception, excep:
-        print ('%sError reading teams file (%s): %s%s'
-               % (RED, teams_file, repr(excep), NORMAL))
+        print (RED + 'Error reading yaml file (%s): %s + NORMAL'
+               % (yaml_file, repr(excep)))
 
 
 if __name__ == '__main__':
@@ -217,8 +209,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=('Send a task list to a remote cloudsim'))
 
-    parser.add_argument('teams_file', help='YAML file with the team info')
-    parser.add_argument('tasks_file', help='YAML file with the tasks info')
+    parser.add_argument('yaml_file', help='YAML file with the team and tasks info')
     parser.add_argument('-t', '--team', help='Feed tasks only for this team')
     parser.add_argument('-u', '--user', default='ubuntu', help='Cloudsim user')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -226,11 +217,15 @@ if __name__ == '__main__':
 
     # Parse command line arguments
     args = parser.parse_args()
-    arg_teams_file = args.teams_file
-    arg_tasks_file = args.tasks_file
+    arg_yaml_file = args.yaml_file
     arg_team = args.team
     arg_user = args.user
     arg_verbose = args.verbose
 
+    user = os.system('whoami')
+    if user is not "root":
+        print "You should be running this command as root."
+        sys.exit(1)
+
     # Feed the tasks!
-    go(arg_teams_file, arg_tasks_file, arg_team, arg_user, arg_verbose)
+    go(arg_yaml_file, arg_team, arg_user, arg_verbose)
