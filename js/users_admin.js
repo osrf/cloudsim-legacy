@@ -20,6 +20,8 @@ function add_users_admin_widget(users_div_name)
 
 function _get_user_list_str(users)
 {
+	
+	
 	var str  = '';
     str += "<ul>";
     for(var user in users)
@@ -28,8 +30,17 @@ function _get_user_list_str(users)
     	str += '<li>';
         str += user;
         str += " <b>" + role + "</b>"; 
-        str += '<button type="button" onclick="remove_user(\'' + user + '\');">X</button>';
-        str += '</li>';
+        
+        var button_state = "";
+        if (role == "admin")
+    	if (get_user_info()['role'] == 'officer')
+    	{
+    		button_state = "disabled";
+    	}
+        
+    	str += '<button type="button" onclick="remove_user(\'' + user + '\');" ' +button_state + '>X</button>';
+    	str += '</li>';
+    		
     }
     str +="</ul>";
     return str;

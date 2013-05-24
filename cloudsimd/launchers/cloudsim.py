@@ -190,24 +190,55 @@ def startup_script(constellation_name):
     constellation.set_value("launch_stage", "startup")
 
 
+
+def upload_and_deploy_cloudsim(constellation_name, website_distribution):
+    constellation_state = ConstellationState(constellation_name)
+    constellation_dir = constellation_state.get_value('constellation_directory')
+    ip_address = constellation_state.get_value("simulation_ip")
+    ssh_cli = SshClient(constellation_dir, "key-cs", 'ubuntu', ip_address)
+    short_file_name = os.path.split(website_distribution)[1]
+    remote_filename = "/home/ubuntu/%s" % (short_file_name)
+    log("uploading '%s' to the server to '%s'" % (website_distribution, remote_filename))
+    constellation_state.set_value('simulation_launch_msg', "uploading CloudSim distribution")
+    out_s = ssh_cli.upload_file(website_distribution, remote_filename)
+    log(" upload: %s" % out_s)
+    constellation_state.set_value('simulation_launch_msg', "uploading web app")
+#upload_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 100)
+#empty_ssh_queue([upload_done], sleep=2)
+    constellation_state.set_value('simulation_launch_msg', "unzip web app")
+    log("unzip web app")
+    out_s = ssh_cli.cmd("unzip -o " + remote_filename)
+    log("\t%s" % out_s)
+    constellation_state.set_value('simulation_launch_msg', "deploying web app")
+
+    log("Deploying the cloudsim web app") # Pass -f to force deploy.sh to overwrite any existing users file
+    deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh -f"
+    log("running deploy script '%s' remotely" % deploy_script_fname)
+    out_s = ssh_cli.cmd("bash " + deploy_script_fname)
+    log("\t%s" % out_s)
+
 def launch(username, configuration, constellation_name, tags, constellation_directory, website_distribution = CLOUDSIM_ZIP_PATH ):
 
     cfg = get_cloudsim_config()
     osrf_creds_fname = cfg['softlayer_path']
 
-    constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
-
     log('launch!!! tags = %s' % tags)
     constellation = ConstellationState(constellation_name)
 
+    if configuration.find("update") >= 0:
+        upload_and_deploy_cloudsim(constellation_name, website_distribution)
+        return
+    else:
+        constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
+
     constellation.set_value("simulation_launch_msg", "launching")
     constellation.set_value('simulation_state', 'starting')
-    if not constellation.has_value("launch_stage"):
-        constellation.set_value("launch_stage", "nothing") # "os_reload"
-        #constellation.set_value("launch_stage", "os_reload")
 
-    osrf_creds = load_osrf_creds(osrf_creds_fname)    
-    pub_ip, priv_ip, password = get_machine_login_info(osrf_creds, "cs-%s" % constellation_prefix) 
+    constellation.set_value("launch_stage", "nothing") # "os_reload"
+    
+
+    osrf_creds = load_osrf_creds(osrf_creds_fname)
+    pub_ip, priv_ip, password = get_machine_login_info(osrf_creds, "cs-%s" % constellation_prefix)
     log("reload os for machine [%s / %s] password %s " % (pub_ip, priv_ip, password))
     constellation.set_value("simulation_ip", pub_ip )
 
@@ -271,6 +302,9 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     log("%s simulation machine ip %s" % (constellation_name, ip))
     ssh_sim = SshClient(constellation_directory, "key-cs", 'ubuntu', ip)
     
+    ssh_sim.cmd("mkdir -p cloudsim")
+    
+    
     constellation.set_value('simulation_launch_msg', "waiting for network")
     networking_done = get_ssh_cmd_generator(ssh_sim,"ls launch_stdout_stderr.log", "launch_stdout_stderr.log", constellation, "simulation_state", 'packages_setup' ,max_retries = 100)
     empty_ssh_queue([networking_done], sleep=2)
@@ -297,30 +331,16 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'packages_setup' ,max_retries = 100)
     empty_ssh_queue([sim_setup_done], sleep=2)
 
-    short_file_name = os.path.split(website_distribution)[1] 
-    remote_fname = "/home/ubuntu/%s" % ( short_file_name)
-    log("uploading '%s' to the server to '%s'" % (website_distribution, remote_fname) )
-
-    constellation.set_value('simulation_launch_msg', "uploading CloudSim distribution")
-    out = ssh_sim.upload_file(website_distribution, remote_fname)
-    log(" upload: %s" % out)
-    constellation.set_value('simulation_launch_msg', "uploading web app")
-    #upload_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done", "cloudsim/setup/done", constellation, "simulation_state", 'running' ,max_retries = 100)
-    #empty_ssh_queue([upload_done], sleep=2)
-
-    constellation.set_value('simulation_launch_msg', "unzip web app")
-    log("unzip web app")
-    out = ssh_sim.cmd("unzip -o " + remote_fname )
-    log ("\t%s"% out)
 
     log("Setup admin user %s" % username)
-    add_user_cmd = 'echo \'{"%s":"admin"}\' > cloudsim/distfiles/users' % username 
+    add_user_cmd = 'mkdir -p cloudsim/distfiles; echo \'{"%s":"admin"}\' > cloudsim/distfiles/users' % username 
     log("add user to cloudsim: %s" % add_user_cmd)
     out = ssh_sim.cmd(add_user_cmd)
     log ("\t%s"% out)
 
     # fname_zip = os.path.join(constellation_directory, "cs","cs.zip")
     log("Uploading the key file to the server")
+    constellation.set_value('simulation_launch_msg', "Uploading the key file to the server")
     remote_fname = "/home/ubuntu/cloudsim/cloudsim_ssh.zip"
     log("uploading '%s' to the server to '%s'" % (fname_zip, remote_fname) )
     out = ssh_sim.upload_file(fname_zip , remote_fname)
@@ -335,7 +355,7 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     else:
         constellation.set_value('simulation_launch_msg',"No SoftLayer credentials loaded")
 
-    ec2_creds_fname = cfg['boto_path']    
+    ec2_creds_fname = cfg['boto_path']
     if ec2_creds_fname is not None and os.path.exists(ec2_creds_fname):
         # todo ... set the name, upload both files
         constellation.set_value('simulation_launch_msg',"Uploading the ec2 credentials to the server")
@@ -369,15 +389,11 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
         log ("\t%s"% out)
     else:
         constellation.set_value('simulation_launch_msg',"No bitbucket key uploaded")
-
-    constellation.set_value('simulation_launch_msg', "deploying web app")
-    # out =machine.ssh_send_command('echo %s > cloudsim/distfiles/users' % username)
-    log("Deploying the cloudsim web app")
-    # Pass -f to force deploy.sh to overwrite any existing users file
-    deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh -f" 
-    log("running deploy script '%s' remotely" % deploy_script_fname)
-    out = ssh_sim.cmd("bash " + deploy_script_fname  )
-    log ("\t%s"% out)
+    
+    #
+    #  Upload cloudsim.zip and Deploy
+    #
+    upload_and_deploy_cloudsim(constellation_name, website_distribution)
 
 
     #
@@ -388,8 +404,9 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
         msg = "Launching a constellation of type \"%s\"" % auto_launch_configuration
         log(msg)
         constellation.set_value('simulation_launch_msg', msg)
+        time.sleep(20)
         ssh_sim.cmd("/home/ubuntu/cloudsim/launch.py \"%s\" \"%s\"" % (username, auto_launch_configuration) )
-        time.sleep(5)
+        
     
     print ("\033[1;32mCloudSim ready. Visit http://%s \033[0m\n"% ip)
     print ("Stop your CloudSim using the AWS console")

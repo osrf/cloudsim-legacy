@@ -16,10 +16,6 @@ d ={}
 d['command'] = form.getfirst('command')
 d['username'] = email
 
-if['command'] == "cloudseed":
-    d['email'] = form.getfirst('email')
-    d['key'] = form.getfirst('key')
-    d['secret'] = form.getfirst('secret')
 
 if d['command'] == 'start_task':
     d['constellation'] = form.getfirst('constellation')

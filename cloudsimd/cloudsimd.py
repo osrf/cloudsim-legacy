@@ -202,31 +202,38 @@ def get_plugin(configuration):
 def update_cloudsim_configuration_list():
 
     configs = {}
-    configs['AWS trio'] = {'description': "3 machines for the VRC competition: a GPU field computer, a router and a GPU simulator, using gazebo and drcsim packages"}
-    configs['AWS simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
-    configs['AWS CloudSim'] = {'description': "1 machine for starting a CloudSim on the cloud: A micro instance web app clone"}
-    #configs['trio AWS (prerelease)'] = {'description': "3 machines for the VRC competition: a GPU field computer, a router and a GPU simulator, using gazebo and drcsim pre-release packages"}
-    #configs['vpc_micro_trio'] = {'description': "3 micro instances for testing constellations: field computer, router and simulator"}
-    #configs['simulator AWS (prerelease)'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim pre-release packages installed"}
-
-    const_prefixes = []
+    
+    
     config = get_cloudsim_config()
+    
+    boto_path = config['boto_path']
+    if os.path.exists(boto_path):
+        configs['AWS trio'] = {'description': "3 machines for the VRC competition: a GPU field computer, a router and a GPU simulator, using gazebo and drcsim packages"}
+        configs['AWS simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
+        configs['AWS CloudSim'] = {'description': "1 machine for starting a CloudSim on the cloud: A micro instance web app clone"}
+
+    cloudsim_prefixes = []
+    const_prefixes = []
+    
     osrf_creds_path = config['softlayer_path']
     try:
-
         try:
             osrf_creds = load_osrf_creds(osrf_creds_path)
         except Exception, e:
             log("SoftLayer credentials loading error: %s" % e)
 
-        const_prefixes = get_constellation_prefixes(osrf_creds)
+        cloudsim_prefixes, const_prefixes = get_constellation_prefixes(osrf_creds)
         log("softlayer constellations: %s" % const_prefixes)
+        log("softlayer cloudsims: %s" % cs_prefixes)
     except:
         log("No SoftLayer constellations (credentials: %s)" % osrf_creds_path)
         pass
-
+    
+    for prefix in cloudsim_prefixes:
+        configs['OSRF CloudSim %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim server complete install"}
+        configs['OSRF CloudSim update %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim update only"}
+        
     for prefix in const_prefixes:
-        configs['OSRF CloudSim %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim server"}
         configs['OSRF VRC Constellation %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
         configs['OSRF VRC Constellation nightly build %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
     set_cloudsim_configuration_list(configs)
@@ -644,8 +651,10 @@ def launch_cmd(root_dir, data):
             async_monitor(username, config, constellation_name)
 
     elif config.startswith("OSRF"):
-
+        
         constellation_name = config.replace(" ", "_")
+        constellation_name = constellation_name.replace("_update", "")
+        constellation_name = constellation_name.replace("_nightly_build", "")
         constellation_path = os.path.join(root_dir, constellation_name)
 
         if os.path.exists(constellation_path):
@@ -668,12 +677,10 @@ def run(root_dir, tick_interval):
     resume_monitoring(root_dir)
 
     log("CLOUDSIMD STARTED root_dir=%s" % (root_dir))
-    log("Ready to get commands 1 ")
+    log("Ready to get commands")
     red.set('cloudsim_ready', True)
     for msg in ps.listen():
-        log("Ready to get commands 2 ")
-        #red.set('cloudsim_ready', True)
-        log("Ready to get commands 3")
+
         
         log("=== CLOUDSIMD EVENT ===") 
         try:

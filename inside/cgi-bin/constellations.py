@@ -13,7 +13,8 @@ import traceback
 from common.web import UserDatabase
 
 import datetime
-#import dateutil
+
+from dateutil import parser
 
 cgitb.enable()
 
@@ -41,12 +42,18 @@ def get_user_tasks(tasks):
             latest_tasks.append(task)
             return latest_tasks
 
+    now = datetime.datetime.now()
     for task in tasks:
-        #task_start = dateutil.parser.parse(task['local_start'])
-        #task_stop  = dateutil.parser.parse(task['local_stop']) 
+        task_start = parser.parse(task['local_start'])
+        task_stop  = parser.parse(task['local_stop'])
+
+        start_age = (datetime.datetime.now() - task_start).total_seconds()
+        end_age = (datetime.datetime.now() - task_stop).total_seconds()
+
         if task['task_state'] in ['ready']:
-            latest_tasks.append(task)
-            return latest_tasks
+            if start_age >0 and end_age <0:
+                latest_tasks.append(task)
+                return latest_tasks
 
     return latest_tasks
 
