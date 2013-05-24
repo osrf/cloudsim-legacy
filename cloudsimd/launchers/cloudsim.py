@@ -212,8 +212,32 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     constellation.set_value("simulation_ip", pub_ip )
 
     auto_launch_configuration = None
+    jr_softlayer_path = ''
+    jr_cloudsim_portal_key_path = ''
+    jr_cloudsim_portal_json_path = ''
+    jr_bitbucket_key_path = ''
     if tags.has_key('args'):
-        auto_launch_configuration = tags['args']
+        if type(tags['args']) == type(str()):
+            # Backward compatibility: if args is a string, it's the configuration to
+            # launch
+            auto_launch_configuration = tags['args']
+            # And we pull junior's credential file paths from our own configuration
+            jr_softlayer_path = cfg['softlayer_path']
+            jr_cloudsim_portal_key_path = cfg['cloudsim_portal_key_path']
+            jr_cloudsim_portal_json_path = cfg['cloudsim_portal_json_path']
+            jr_bitbucket_key_path = cfg['cloudsim_bitbucket_key_path']
+        elif type(tags['args']) == type(dict()):
+            # Otherwise, it should be a dictionary
+            d = tags['args']
+            auto_launch_configuration = d['auto_launch_configuration']
+            # And we pull junior's credential file paths from the provided
+            # dictionary
+            jr_softlayer_path = d['softlayer_path']
+            jr_cloudsim_portal_key_path = d['cloudsim_portal_key_path']
+            jr_cloudsim_portal_json_path = d['cloudsim_portal_json_path']
+            jr_bitbucket_key_path = d['cloudsim_bitbucket_key_path']
+        else:
+            log('Error: tags[\'args\'] is neither a string nor a dictionary: %s'%(str(tags['args'])))
 
     log('auto_launch_configuration %s' % auto_launch_configuration)
     constellation.set_value("simulation_launch_msg", "waiting for Operating System reload")
@@ -302,17 +326,17 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     out = ssh_sim.upload_file(fname_zip , remote_fname)
     log ("\t%s"% out)
 
-    if os.path.exists(osrf_creds_fname):
+    if jr_softlayer_path is not None and os.path.exists(jr_softlayer_path):
         constellation.set_value('simulation_launch_msg', "Uploading the SoftLayer credentials to the server")
         remote_fname = "/home/ubuntu/softlayer.json" 
-        log("uploading '%s' to the server to '%s'" % (osrf_creds_fname, remote_fname) )
-        out = ssh_sim.upload_file(osrf_creds_fname , remote_fname)
+        log("uploading '%s' to the server to '%s'" % (jr_softlayer_path, remote_fname) )
+        out = ssh_sim.upload_file(jr_softlayer_path , remote_fname)
         log ("\t%s"% out)
     else:
         constellation.set_value('simulation_launch_msg',"No SoftLayer credentials loaded")
 
     ec2_creds_fname = cfg['boto_path']    
-    if os.path.exists(ec2_creds_fname):
+    if ec2_creds_fname is not None and os.path.exists(ec2_creds_fname):
         # todo ... set the name, upload both files
         constellation.set_value('simulation_launch_msg',"Uploading the ec2 credentials to the server")
         remote_fname = "/home/ubuntu/boto.ini" 
@@ -322,30 +346,26 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     else:
         constellation.set_value('simulation_launch_msg',"No Amazon Web Services credentials loaded")
 
-    cloudsim_portal_key_fname = cfg['cloudsim_portal_key_path']
-    cloudsim_portal_json_fname = cfg['cloudsim_portal_json_path']
-    if os.path.exists(cloudsim_portal_key_fname) and os.path.exists(cloudsim_portal_json_fname):
+    if jr_cloudsim_portal_key_path is not None and os.path.exists(jr_cloudsim_portal_key_path) and jr_cloudsim_portal_json_path is not None and os.path.exists(jr_cloudsim_portal_json_path):
         constellation.set_value('simulation_launch_msg',"Uploading the Portal key to the server")
         remote_fname = "/home/ubuntu/cloudsim_portal.key" 
-        log("uploading '%s' to the server to '%s'" % (cloudsim_portal_key_fname, remote_fname) )
-        out = ssh_sim.upload_file(cloudsim_portal_key_fname, remote_fname)
+        log("uploading '%s' to the server to '%s'" % (jr_cloudsim_portal_key_path, remote_fname) )
+        out = ssh_sim.upload_file(jr_cloudsim_portal_key_path, remote_fname)
         log ("\t%s"% out)
 
         constellation.set_value('simulation_launch_msg',"Uploading the Portal JSON file to the server")
         remote_fname = "/home/ubuntu/cloudsim_portal.json" 
-        log("uploading '%s' to the server to '%s'" % (cloudsim_portal_json_fname, remote_fname) )
-        out = ssh_sim.upload_file(cloudsim_portal_json_fname, remote_fname)
+        log("uploading '%s' to the server to '%s'" % (jr_cloudsim_portal_json_path, remote_fname) )
+        out = ssh_sim.upload_file(jr_cloudsim_portal_json_path, remote_fname)
         log ("\t%s"% out)
     else:
         constellation.set_value('simulation_launch_msg',"No portal key or json file found")
 
-    bitbucket_key_fname = cfg['cloudsim_bitbucket_key_path']
-    if os.path.exists(bitbucket_key_fname):
-        # todo ... set the name, upload both files
+    if jr_bitbucket_key_path is not None and os.path.exists(jr_bitbucket_key_path):
         constellation.set_value('simulation_launch_msg',"Uploading the bitbucket key to the server")
         remote_fname = "/home/ubuntu/cloudsim_bitbucket.key"
-        log("uploading '%s' to the server to '%s'" % (bitbucket_key_fname, remote_fname) )
-        out = ssh_sim.upload_file(ec2_creds_fname , remote_fname)
+        log("uploading '%s' to the server to '%s'" % (jr_bitbucket_key_path, remote_fname) )
+        out = ssh_sim.upload_file(jr_bitbucket_key_path, remote_fname)
         log ("\t%s"% out)
     else:
         constellation.set_value('simulation_launch_msg',"No bitbucket key uploaded")
