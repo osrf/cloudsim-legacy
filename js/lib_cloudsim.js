@@ -1,3 +1,7 @@
+function update_constellation(config)
+{
+	alert('not implemented yet ' + config);
+}
 
 function get_configurations()
 {
