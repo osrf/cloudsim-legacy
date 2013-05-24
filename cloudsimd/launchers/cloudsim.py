@@ -157,7 +157,7 @@ def create_zip(constellation_name):
     
     log("constellation name %s" % constellation_name)
     constellation = ConstellationState(constellation_name)
-    ip = constellation.get_value("simulation_ip" )
+    ip = constellation.get_value("simulation_ip")
 
     constellation_directory = constellation.get_value("constellation_directory")
     create_private_machine_zip("cs", ip, constellation_name, constellation_directory)
@@ -165,17 +165,18 @@ def create_zip(constellation_name):
     constellation.set_value("launch_stage", "zip")
     return fname_zip
 
+
 def startup_script(constellation_name):
-    constellation = ConstellationState( constellation_name)
+    constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('startup'):
         return
 
     constellation_directory = constellation.get_value('constellation_directory')
 
-    ip = constellation.get_value("simulation_ip" )
-    ssh_client = SshClient(constellation_directory, "key-cs", 'ubuntu', ip)   
-    
+    ip = constellation.get_value("simulation_ip")
+    ssh_client = SshClient(constellation_directory, "key-cs", 'ubuntu', ip)
+
     local_fname = os.path.join(constellation_directory, 'cs_startup.bash')
     script = get_cloudsim_startup_script()
     with open(local_fname, 'w') as f:
@@ -190,7 +191,7 @@ def startup_script(constellation_name):
     constellation.set_value("launch_stage", "startup")
 
 
-def launch(username, configuration, constellation_name, tags, constellation_directory, website_distribution = CLOUDSIM_ZIP_PATH ):
+def launch(username, configuration, constellation_name, tags, constellation_directory, website_distribution=CLOUDSIM_ZIP_PATH):
 
     cfg = get_cloudsim_config()
     osrf_creds_fname = cfg['softlayer_path']
@@ -203,19 +204,22 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     constellation.set_value("simulation_launch_msg", "launching")
     constellation.set_value('simulation_state', 'starting')
     if not constellation.has_value("launch_stage"):
-        constellation.set_value("launch_stage", "nothing") # "os_reload"
-        #constellation.set_value("launch_stage", "os_reload")
+        #constellation.set_value("launch_stage", "nothing")  # "os_reload"
+        constellation.set_value("launch_stage", "os_reload")
 
-    osrf_creds = load_osrf_creds(osrf_creds_fname)    
-    pub_ip, priv_ip, password = get_machine_login_info(osrf_creds, "cs-%s" % constellation_prefix) 
+    osrf_creds = load_osrf_creds(osrf_creds_fname)
+    pub_ip, priv_ip, password = get_machine_login_info(osrf_creds, "cs-%s" % constellation_prefix)
     log("reload os for machine [%s / %s] password %s " % (pub_ip, priv_ip, password))
-    constellation.set_value("simulation_ip", pub_ip )
+    constellation.set_value("simulation_ip", pub_ip)
 
     auto_launch_configuration = None
     jr_softlayer_path = ''
     jr_cloudsim_portal_key_path = ''
     jr_cloudsim_portal_json_path = ''
     jr_bitbucket_key_path = ''
+    jr_other_users = []
+    jr_cs_role = ''
+    jr_cs_admin_users = []
     if tags.has_key('args'):
         if type(tags['args']) == type(str()):
             # Backward compatibility: if args is a string, it's the configuration to
@@ -226,6 +230,9 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
             jr_cloudsim_portal_key_path = cfg['cloudsim_portal_key_path']
             jr_cloudsim_portal_json_path = cfg['cloudsim_portal_json_path']
             jr_bitbucket_key_path = cfg['cloudsim_bitbucket_key_path']
+            jr_other_users = cfg['other_users']
+            jr_cs_role = cfg['cs_role']
+            jr_cs_admin_users = cfg['cs_admin_users']
         elif type(tags['args']) == type(dict()):
             # Otherwise, it should be a dictionary
             d = tags['args']
@@ -236,6 +243,9 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
             jr_cloudsim_portal_key_path = d['cloudsim_portal_key_path']
             jr_cloudsim_portal_json_path = d['cloudsim_portal_json_path']
             jr_bitbucket_key_path = d['cloudsim_bitbucket_key_path']
+            jr_other_users = d['other_users']
+            jr_cs_role = d['cs_role']
+            jr_cs_admin_users = d['cs_admin_users']
         else:
             log('Error: tags[\'args\'] is neither a string nor a dictionary: %s'%(str(tags['args'])))
 
@@ -314,7 +324,22 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     log ("\t%s"% out)
 
     log("Setup admin user %s" % username)
-    add_user_cmd = 'echo \'{"%s":"admin"}\' > cloudsim/distfiles/users' % username 
+
+    add_user_cmd = 'echo \'{'
+    # Add the list of additional admins
+
+    if jr_cs_admin_users:
+        add_user_cmd += ':"admin",'.join(jr_cs_admin_users)
+        add_user_cmd += ':"admin"'
+
+    # Add the list of users
+    users = [username] + jr_other_users
+    add_user_cmd += ':' + jr_cs_role + ','.join(users)
+    add_user_cmd += ':' + jr_cs_role
+
+    add_user_cmd += '}\''
+
+    add_user_cmd = 'echo \'{"%s":"admin"}\' > cloudsim/distfiles/users' % username
     log("add user to cloudsim: %s" % add_user_cmd)
     out = ssh_sim.cmd(add_user_cmd)
     log ("\t%s"% out)
