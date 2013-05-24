@@ -68,7 +68,7 @@ class Launcher:
                 raise Exception("username field must be a list")
             if t['team'] not in self.softlayer_credentials:
                 raise Exception("no softlayer credentials for team %s" % (t['team']))
-            if t['cs_role'] not in ['user', 'admin']:
+            if t['cs_role'] not in ['user', 'officer', 'admin']:
                 raise Exception("wrong cloudsim role for team %s" % (t['team']))
 
             # Transform the constellation instance names, which use
