@@ -119,8 +119,8 @@ class Launcher:
         configuration = team['cloudsim']
         # Build a dictionary of configuration for this team
         args = dict()
-        args['auto_launch_configuration'] = team['quad']
-        #args['auto_launch_configuration'] = None
+        #args['auto_launch_configuration'] = team['quad']
+        args['auto_launch_configuration'] = None
         args['softlayer_path'] = team['softlayer_fname']
         args['cloudsim_portal_json_path'] = team['portal_fname']
         args['cloudsim_portal_key_path'] = self.data['portal_key_path']
