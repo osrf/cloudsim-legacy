@@ -225,9 +225,9 @@ def update_cloudsim_configuration_list():
 
         cloudsim_prefixes, const_prefixes = get_constellation_prefixes(osrf_creds)
         log("softlayer constellations: %s" % const_prefixes)
-        log("softlayer cloudsims: %s" % cs_prefixes)
-    except:
-        log("No SoftLayer constellations (credentials: %s)" % osrf_creds_path)
+        log("softlayer cloudsims: %s" % cloudsim_prefixes)
+    except Exception, e:
+        log("Error enumerating machines %s" % e)
         pass
     
     for prefix in cloudsim_prefixes:
@@ -782,7 +782,10 @@ if __name__ == "__main__":
         config['cloudsim_portal_key_path'] = cloudsim_portal_key_path
         config['cloudsim_portal_json_path'] = cloudsim_portal_json_path
         config['cloudsim_bitbucket_key_path'] = cloudsim_bitbucket_key_path
-
+        config ['other_users'] = []
+        config ['cs_role'] = "admin"
+        config ['cs_admin_users'] = []
+        
         set_cloudsim_config(config)
         update_cloudsim_configuration_list()
 
