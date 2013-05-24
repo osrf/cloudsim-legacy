@@ -292,7 +292,7 @@ def launch(username,
             constellation.set_value('error', '%s' % e)
             tb = traceback.format_exc()
             log("LAUNCH ERROR traceback:  %s" % tb)
-            
+            log("LAUNCH ERROR %s traceback:  %s" % (constellation_name, tb), "launch_error")
             # terminate(constellation_name, constellation_directory)
             
             # constellation.expire(10)

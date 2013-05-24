@@ -517,7 +517,6 @@ def get_constellation_prefixes(osrf_creds):
         client = SoftLayer.API.Client('SoftLayer_Account', None, osrf_creds['user'], osrf_creds['api_key'])
         client.set_object_mask(object_mask)
         servers = client.getHardware()
-        print(servers)
         routers = [s['hostname'] for s in servers if s['hostname'].startswith('router-') ]
         cloudsims = [s['hostname'] for s in servers if s['hostname'].startswith('cs-') ]
 
@@ -589,13 +588,13 @@ def get_machine_login_info(osrf_creds, server_name):
 class sTestSoftLayer(object): #(unittest.TestCase):
 
     def test_list_loop(self):
-        while True:
-            p = get_softlayer_path()
-            osrf_creds = load_osrf_creds(p)
-            prefixes = get_constellation_prefixes(osrf_creds)
-            print("prefixes")
-            pprint(prefixes)
-            self.assertTrue(len(prefixes) > 0, "no constellations")
+        
+        p = get_softlayer_path()
+        osrf_creds = load_osrf_creds(p)
+        prefixes = get_constellation_prefixes(osrf_creds)
+        print("prefixes")
+        pprint(prefixes)
+        self.assertTrue(len(prefixes) > 0, "no constellations")
 
     def test_get_machine_login_info(self):
         server = "fc1-14"

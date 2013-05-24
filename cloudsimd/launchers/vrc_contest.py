@@ -288,8 +288,7 @@ def monitor(username, constellation_name, counter):
             # stop current task
             task = e.task
             log("TASKTIMEOUT %s" % e)
-            task['task_message'] = "Timeout"
-            constellation.update_task(task['task_id'], task)
+            
             d = {}
             d['command'] = 'stop_task'
             d['constellation'] = constellation_name
@@ -1110,7 +1109,7 @@ def startup_scripts(constellation_name):
     constellation_directory = constellation.get_value('constellation_directory')
     # if the change of ip was successful, the script should be in the home directory
     # of each machine
-    wait_for_find_file(constellation_name, constellation_directory, "change_ip.bash")
+    wait_for_find_file(constellation_name, constellation_directory, "change_ip.bash", "packages_setup")
 
     m = "Executing startup script"
     constellation.set_value('fc1_launch_msg', m)
@@ -1278,10 +1277,10 @@ def create_zip_files(constellation_name, constellation_directory):
 
 
 def wait_for_setup_done(constellation_name, constellation_directory):
-    wait_for_find_file(constellation_name, constellation_directory, "cloudsim/setup/done")
+    wait_for_find_file(constellation_name, constellation_directory, "cloudsim/setup/done", "running")
 
 
-def wait_for_find_file(constellation_name, constellation_directory, ls_cmd):
+def wait_for_find_file(constellation_name, constellation_directory, ls_cmd, end_state ):
     constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= 'running':
@@ -1294,9 +1293,9 @@ def wait_for_find_file(constellation_name, constellation_directory, ls_cmd):
     # Wait until machines are online (rebooted?)
     #
     router_done = get_ssh_cmd_generator(ssh_router, "ls %s" % ls_cmd, ls_cmd, constellation, "router_state", "running", max_retries=500)
-    sim_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_sim.bash %s" % ls_cmd, ls_cmd, constellation, "sim_state", "running", max_retries=500)
-    fc1_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_fc1.bash %s" % ls_cmd, ls_cmd, constellation, "fc1_state", "running", max_retries=500)
-    fc2_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_fc2.bash %s" % ls_cmd, ls_cmd, constellation, "fc2_state", "running", max_retries=500)
+    sim_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_sim.bash %s" % ls_cmd, ls_cmd, constellation, "sim_state", end_state, max_retries=500)
+    fc1_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_fc1.bash %s" % ls_cmd, ls_cmd, constellation, "fc1_state", end_state, max_retries=500)
+    fc2_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_fc2.bash %s" % ls_cmd, ls_cmd, constellation, "fc2_state", end_state, max_retries=500)
     empty_ssh_queue([router_done, sim_done, fc1_done, fc2_done], sleep=2)
 
 
