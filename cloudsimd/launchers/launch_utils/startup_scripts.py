@@ -135,7 +135,7 @@ esac
 DELIM
 
 chmod +x  /etc/init.d/vpcroute 
-ln -s /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
+ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
 
 # invoke it now to add route to the router
 /etc/init.d/vpcroute start
@@ -335,7 +335,7 @@ yes | ufw enable
 
 
 apt-get install -y libapache2-mod-auth-openid
-ln -s /etc/apache2/mods-available/authopenid.load /etc/apache2/mods-enabled
+ln -sf /etc/apache2/mods-available/authopenid.load /etc/apache2/mods-enabled
 echo "libapache2-mod-auth-openid 0.6 installed from ppa:rye/ppa" >> /home/ubuntu/setup.log
 
 /etc/init.d/apache2 restart
