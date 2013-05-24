@@ -232,7 +232,7 @@ def update_cloudsim_configuration_list():
     
     for prefix in cloudsim_prefixes:
         configs['OSRF CloudSim %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim server complete install"}
-        configs['OSRF CloudSim update %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim update only"}
+        #configs['OSRF CloudSim update %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim update only"}
         
     for prefix in const_prefixes:
         configs['OSRF VRC Constellation %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}

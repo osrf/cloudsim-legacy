@@ -227,8 +227,9 @@ function create_task_list_widget(const_div, constellation_name)
     stop_current_task_button.setAttribute('value','Stop current task...');
     stop_current_task_button.onclick =  function()
     {
-        console.log("STOP!")
+        console.log("onclick stop_current_task_button!")
         stop_task(constellation_name);
+        page_refresh();
     }
 
     var widgets_div = tasks_div.querySelector("#widgets");
@@ -472,7 +473,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         if(state == 'ready')
         {
             start_task(constellation_name, task_id);
-            location.reload(true);
+            page_refresh();
         }
     };
     
@@ -499,6 +500,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
             return;
         }
         delete_task(constellation_name, task_id);
+        
     };
 
     task_title_div.id = "task_title";

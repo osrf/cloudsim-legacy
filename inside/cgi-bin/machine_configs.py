@@ -34,13 +34,17 @@ admin_configs = ['vpc_micro_trio',] # 'cloudsim', ]
 
 
 configs = cdb.get_configs()
-
 udb = UserDatabase()
+
 if not udb.has_role(email, "admin"):
-    for bad_config in admin_configs:
-        if bad_config in configs:
-            del(configs[bad_config]) # remove it
-            log("configs removing %s =  %s" % (bad_config, len(configs) ) )
+    for name in configs.keys():
+        if name.find("nightly") > 0:
+            del(configs[name])
+            
+#     for bad_config in admin_configs:
+#         if bad_config in configs:
+#             del(configs[bad_config]) # remove it
+#             log("configs removing %s =  %s" % (bad_config, len(configs) ) )
 
 #s = json.dumps(configs)
 
