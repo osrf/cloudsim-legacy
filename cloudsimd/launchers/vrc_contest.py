@@ -442,7 +442,7 @@ esac
 DELIM
 
 chmod +x  /etc/init.d/iptables_cloudsim
-ln -s /etc/init.d/iptables_cloudsim /etc/rc2.d/S99iptables_cloudsim
+ln -sf /etc/init.d/iptables_cloudsim /etc/rc2.d/S99iptables_cloudsim
 
 #invoke it
 /etc/init.d/iptables_cloudsim start

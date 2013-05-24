@@ -119,6 +119,8 @@ class Launcher:
         configuration = team['cloudsim']
         # Build a dictionary of configuration for this team
         args = dict()
+        # Set auto_launch_configuration to None to not launch a follow-on
+        # constellation from the newly created CloudSim Jr.
         #args['auto_launch_configuration'] = team['quad']
         args['auto_launch_configuration'] = None
         args['softlayer_path'] = team['softlayer_fname']

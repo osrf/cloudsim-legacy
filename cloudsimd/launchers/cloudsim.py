@@ -201,7 +201,7 @@ def startup_script(constellation_name):
     constellation.set_value("launch_stage", "startup")
 
 
-def upload_and_deploy_cloudsim(constellation_name, website_distribution):
+def upload_and_deploy_cloudsim(constellation_name, website_distribution, force=False):
     constellation_state = ConstellationState(constellation_name)
     constellation_dir = constellation_state.get_value('constellation_directory')
     ip_address = constellation_state.get_value("simulation_ip")
@@ -222,9 +222,14 @@ def upload_and_deploy_cloudsim(constellation_name, website_distribution):
     log("\t%s" % out_s)
     constellation_state.set_value('simulation_launch_msg', "deploying web app")
 
+    if force:
+        ssh_cli.cmd('cp cloudsim_users cloudsim/distfiles/users')
+
     log("Deploying the cloudsim web app") 
-    # Pass -f to force deploy.sh to overwrite any existing users file
-    deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh -f"
+    deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh"
+    # If asked, pass -f to force deploy.sh to overwrite any existing users file
+    if force:
+        deploy_script_fname += " -f"
     log("running deploy script '%s' remotely" % deploy_script_fname)
     out_s = ssh_cli.cmd("bash " + deploy_script_fname)
     log("\t%s" % out_s)
@@ -244,7 +249,7 @@ def launch(username, configuration, constellation_name, tags,
     constellation.set_value('simulation_latency','[]')
     
     if configuration.find("update") >= 0:
-        upload_and_deploy_cloudsim(constellation_name, website_distribution)
+        upload_and_deploy_cloudsim(constellation_name, website_distribution, force=False)
         return
 
     constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
@@ -368,7 +373,7 @@ def launch(username, configuration, constellation_name, tags,
     jr_cs_admin_users = ['"' + user + '"' for user in jr_cs_admin_users]
     users = ['"' + username + '"'] + ['"' + user + '"' for user in jr_other_users]
 
-    add_user_cmd = 'mkdir -p cloudsim/distfiles; echo \'{'
+    add_user_cmd = 'echo \'{'
 
     # Team user list
     add_user_cmd += (':"' + jr_cs_role + '",').join(users)
@@ -380,7 +385,7 @@ def launch(username, configuration, constellation_name, tags,
         add_user_cmd += ':"admin",'.join(jr_cs_admin_users)
         add_user_cmd += ':"admin"'
 
-    add_user_cmd += '}\' > cloudsim/distfiles/users'
+    add_user_cmd += '}\' > cloudsim_users'
 
     log("add users to cloudsim: %s" % add_user_cmd)
     out = ssh_sim.cmd(add_user_cmd)
@@ -445,7 +450,7 @@ def launch(username, configuration, constellation_name, tags,
     #
     #  Upload cloudsim.zip and Deploy
     #
-    upload_and_deploy_cloudsim(constellation_name, website_distribution)
+    upload_and_deploy_cloudsim(constellation_name, website_distribution, force=True)
 
 
     #
