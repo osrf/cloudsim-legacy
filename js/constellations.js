@@ -133,7 +133,12 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
 
 function _constellation_terminate(div_name, constellation_name)
 {
-    var r = confirm("terminate " + constellation_name + "?");
+    var msg = 'Terminate "' + constellation_name + '" constellation?';
+    msg += '\n\n';
+    msg += 'This operation erases all the data on all the disks on ';
+    msg += 'every machine in your constellation... and may take up to an hour';
+
+	var r = confirm(msg);
     if (r==false)
     {
         return;
