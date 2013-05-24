@@ -16,6 +16,11 @@ cgitb.enable()
 from common import  authorize
 
 red = redis.Redis()
+def log(msg):
+    red.publish("machine_zip_download", "[machine_zip_download.py] " + msg)
+    #print("machine_zip_download", "[machine_zip_download.py] " + msg)
+
+
 
 def get_machine_zip_key(email, constellation_name, machine_name):
     """
@@ -34,53 +39,54 @@ def get_machine_zip_key(email, constellation_name, machine_name):
     log("path is %s" % path)
     return path
 
-def log(msg):
-    red.publish("machine_zip_download", "[machine_zip_download.py] " + msg)
 
 def download(filename):
+    
     short_name = os.path.split(filename)[1]
     
     # print ("\nStatus:200\n)
     if short_name.startswith("user_"):
         short_name = short_name.split("user_")[1]
     
+    log("download AS %s" % short_name)
+    
     print ("Content-Type: application/octet-stream")
     print ("Content-Disposition: attachment; filename=%s" % short_name)
     print ("")
 
-    f = open(filename, 'rb')
-    while True:
-        data = f.read(4096)
-        sys.stdout.write(data)
-        if not data:
-            break
+    with open(filename, 'rb') as f:
+        while True:
+            data = f.read(4096)
+            sys.stdout.write(data)
+            if not data:
+                break
 
 email = authorize()
-
 
 
 form = cgi.FieldStorage()
 constellation_name = form.getfirst('constellation')
 machine_name = form.getfirst('machine')
 
-try:
-    filename = get_machine_zip_key(email, constellation_name, machine_name)
+#try:
+filename = get_machine_zip_key(email, constellation_name, machine_name)
 
-    log("constellation_name: %s" % constellation_name)
-    log("machine_name: %s" % machine_name)
-    log(filename)
+log("constellation_name: %s" % constellation_name)
+log("machine_name: %s" % machine_name)
+log("filename %s" % filename)
+
+if os.path.exists(filename):
+    log("EXISITS")
+    download(filename)
+else:
+  
+    print ("Status: 404 Not Found")
+    print ("Content-Type: text/html\n\n")
+    print ("<h1>404 File not found!</h1>" )
+    print("<br>" + filename + "")
     
-    if os.path.exists(filename):
-        download(filename)
-    else:
-      
-        print ("Status: 404 Not Found")
-        print ("Content-Type: text/html\n\n")
-        print ("<h1>404 File not found!</h1>" )
-        print("<br>" + filename + "")
-        
-except Exception, e:   
-    print_http_header()
-    print ("<title>Access Denied</title>")
-    print ("<h1>Access Denied: " + str(e) +"</h1>")
-    
+# except Exception, e:   
+#     print_http_header()
+#     print ("<title>Access Denied</title>")
+#     print ("<h1>Access Denied: " + str(e) +"</h1>")
+#     raise

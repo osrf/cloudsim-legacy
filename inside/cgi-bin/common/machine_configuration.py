@@ -36,25 +36,24 @@ class ConfigsDb(object):
         return s
 
 def get_constellation_data(user_or_domain, constellation):
-    def _domain(user_or_domain):
-        domain = user_or_domain
-        if user_or_domain.find('@') > 0:
-            domain = user_or_domain.split('@')[1]
-        return domain
+#     def _domain(user_or_domain):
+#         domain = user_or_domain
+#         if user_or_domain.find('@') > 0:
+#             domain = user_or_domain.split('@')[1]
+#         return domain
 
-    try:
+
         
         red = redis.Redis()
-        domain = _domain(user_or_domain)
+        #domain = _domain(user_or_domain)
         redis_key = "cloudsim/"+constellation
         s = red.get(redis_key)
         
         data = json.loads(s)
-        domain_data = _domain(data['username'])
+        #domain_data = _domain(data['username'])
         
-        if domain != domain_data:
-            return None
+        #if domain != domain_data:
+        #    return None
         
         return data
-    except:
-        return None    
+

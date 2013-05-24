@@ -267,7 +267,7 @@ def monitor_task(constellation_name, ssh_router):
 
         task = constellation.get_task(task_id)
         timeout = int(task['timeout'])
-        score_str = ""
+        score_str = None
         try:
             s = ssh_router.cmd("cloudsim/get_score.bash")
             log(s)
@@ -282,13 +282,15 @@ def monitor_task(constellation_name, ssh_router):
             #
 
         except Exception, e:
-            score_str = "No score available."
+            #score_str = "No score available."
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
         log("score %s" % score_str)
-        net_str = ""
+        net_str = None
 
         if sim_time > timeout:
+            msg = task['task_message'] + " [Timeout]"
+            constellation.update_task_value(task['task_id'], 'task_message', msg)
             raise TaskTimeOut("Task timeout %s > %s" % (sim_time, timeout), task)
         try:
             n = ssh_router.cmd("cloudsim/get_network_usage.bash")
@@ -303,15 +305,15 @@ def monitor_task(constellation_name, ssh_router):
             down = 100.0 * down_bits / down_cap
             net_str = "<b>up/down link (%%)</b>: %0.2f / %0.2f" % (up, down)
         except Exception, e:
-            net_str = "no network usage available"
+            # net_str = "no network usage available"
             log("score monitoring error %s" % e)
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
 
-        log("network %s" % net_str)
-        final_score = "%s %s" % (score_str, net_str)
-
-        constellation.update_task_value(task['task_id'], 'task_message', final_score)
+        if net_str and score_str:
+            final_score = "%s %s" % (score_str, net_str)
+            constellation.update_task_value(task['task_id'], 'task_message', final_score)
+            
     log("monitor_task END")
 
 

@@ -9,7 +9,7 @@ cgitb.enable()
 
 from common import  authorize, UserDatabase
 
-email = authorize("admin")
+email = authorize("officer")
 
 
 print('Content-type: application/json')

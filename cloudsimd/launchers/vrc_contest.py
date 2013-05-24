@@ -288,8 +288,7 @@ def monitor(username, constellation_name, counter):
             # stop current task
             task = e.task
             log("TASKTIMEOUT %s" % e)
-            task['task_message'] = "Timeout"
-            constellation.update_task(task['task_id'], task)
+            
             d = {}
             d['command'] = 'stop_task'
             d['constellation'] = constellation_name
@@ -1110,7 +1109,7 @@ def startup_scripts(constellation_name):
     constellation_directory = constellation.get_value('constellation_directory')
     # if the change of ip was successful, the script should be in the home directory
     # of each machine
-    wait_for_find_file(constellation_name, constellation_directory, "change_ip.bash")
+    wait_for_find_file(constellation_name, constellation_directory, "change_ip.bash", "packages_setup")
 
     m = "Executing startup script"
     constellation.set_value('fc1_launch_msg', m)
@@ -1278,10 +1277,10 @@ def create_zip_files(constellation_name, constellation_directory):
 
 
 def wait_for_setup_done(constellation_name, constellation_directory):
-    wait_for_find_file(constellation_name, constellation_directory, "cloudsim/setup/done")
+    wait_for_find_file(constellation_name, constellation_directory, "cloudsim/setup/done", "running")
 
 
-def wait_for_find_file(constellation_name, constellation_directory, ls_cmd):
+def wait_for_find_file(constellation_name, constellation_directory, ls_cmd, end_state ):
     constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= 'running':
@@ -1294,9 +1293,9 @@ def wait_for_find_file(constellation_name, constellation_directory, ls_cmd):
     # Wait until machines are online (rebooted?)
     #
     router_done = get_ssh_cmd_generator(ssh_router, "ls %s" % ls_cmd, ls_cmd, constellation, "router_state", "running", max_retries=500)
-    sim_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_sim.bash %s" % ls_cmd, ls_cmd, constellation, "sim_state", "running", max_retries=500)
-    fc1_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_fc1.bash %s" % ls_cmd, ls_cmd, constellation, "fc1_state", "running", max_retries=500)
-    fc2_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_fc2.bash %s" % ls_cmd, ls_cmd, constellation, "fc2_state", "running", max_retries=500)
+    sim_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_sim.bash %s" % ls_cmd, ls_cmd, constellation, "sim_state", end_state, max_retries=500)
+    fc1_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_fc1.bash %s" % ls_cmd, ls_cmd, constellation, "fc1_state", end_state, max_retries=500)
+    fc2_done = get_ssh_cmd_generator(ssh_router, "cloudsim/find_file_fc2.bash %s" % ls_cmd, ls_cmd, constellation, "fc2_state", end_state, max_retries=500)
     empty_ssh_queue([router_done, sim_done, fc1_done, fc2_done], sleep=2)
 
 
@@ -1435,10 +1434,8 @@ def launch(username, config, constellation_name, tags, constellation_directory):
     log("softlayer %s" % credentials_softlayer)
     constellation = ConstellationState(constellation_name)
 
-    if cs_cfg.has_key('launch_stage'):
-        constellation.set_value("launch_stage", cs_cfg["launch_stage"])
-    else:
-        constellation.set_value("launch_stage", "nothing")
+    constellation.set_value("launch_stage", "os_reload")
+
     # init the redis db info
     constellation.set_value("gazebo", "not running")
     constellation.set_value("simulation_glx_state", "not running")
@@ -1466,8 +1463,8 @@ def launch(username, config, constellation_name, tags, constellation_directory):
     #
     #constellation.set_value("launch_stage", "os_reload")
 
-    log("Reload OS machines: %s" % constellation_name)
-    reload_os_machines(constellation_name, constellation_prefix, credentials_softlayer)
+    #log("Reload OS machines: %s" % constellation_name)
+    #reload_os_machines(constellation_name, constellation_prefix, credentials_softlayer)
 
     log("Initialize router: %s" % constellation_name)
     # set ubuntu user and basic scripts on router
@@ -1493,6 +1490,12 @@ def terminate(constellation_name, osrf_creds_fname=None):
     # osrf_creds = load_osrf_creds(osrf_creds_fname)
     constellation = ConstellationState(constellation_name)
 
+    constellation_prefix = None
+    if constellation_name.find("nightly") >= 0:
+         constellation_prefix = constellation_name.split("OSRF_VRC_Constellation_nightly_build_")[1]
+    else:
+        constellation_prefix = constellation_name.split("OSRF_VRC_Constellation_")[1]
+
     constellation.set_value('constellation_state', 'terminating')
     constellation.set_value('router_state', 'terminating')
     constellation.set_value('sim_state', 'terminating')
@@ -1504,9 +1507,25 @@ def terminate(constellation_name, osrf_creds_fname=None):
     constellation.set_value('router_launch_msg', "terminating")
     constellation.set_value('field1_launch_msg', "terminating")
     constellation.set_value('field2_launch_msg', "terminating")
-
-#  wait_for_multiple_machines_to_terminate(ec2conn,
-
+    
+    cs_cfg = get_cloudsim_config()
+    credentials_softlayer = cs_cfg['softlayer_path']
+    log("softlayer %s" % credentials_softlayer)
+    constellation.set_value("launch_stage", "nothing")
+    reload_os_machines(constellation_name, constellation_prefix, credentials_softlayer)
+    
+#     for prefix in ['router','sim','fc1','fc2']:
+#         constellation.set_value('%s_aws_state' % prefix, 'pending')
+#     
+#     machines_dict = {'sim-%s' % constellation_prefix: 'simulation_launch_msg',
+#                      'router-%s' % constellation_prefix: 'router_launch_msg',
+#                      'fc2-%s' % constellation_prefix: 'fc2_launch_msg',
+#                      'fc1-%s' % constellation_prefix: 'fc1_launch_msg',
+#                     }
+#     reload_monitor = ReloadOsCallBack(constellation_name, machines_dict)
+#     osrf_creds = load_osrf_creds(credentials_softlayer)
+#     wait_for_server_reloads(osrf_creds, machines_dict.keys(), reload_monitor.callback)
+    
     constellation.set_value('sim_state', 'terminated')
     constellation.set_value('sim_launch_msg', "terminated")
     constellation.set_value('router_state', 'terminated')

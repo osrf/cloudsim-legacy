@@ -5,8 +5,16 @@ var machine_configurations = null;
 function create_constellation_launcher_widget(div_name)
 {   
     console.log('machine_launch_on_load_page div=' + div_name);
-    var machine_configurations = get_configurations();
-
+    try
+    {
+    	var machine_configurations = get_configurations();
+    }
+    catch(err)
+    {
+        // the user is probably logged out.
+        location.reload(true);
+    }
+    
     var div = document.getElementById(div_name);
     
     var desc = document.createElement("div");

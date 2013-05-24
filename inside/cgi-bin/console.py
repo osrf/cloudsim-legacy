@@ -65,11 +65,9 @@ page =  """<!DOCTYPE html>
         if(user_info.role != "user")
         {
             $('#officer_only').show();
+            $('#officer_only2').show();
             create_constellation_launcher_widget("launcher_div");
-        }
-        if(user_info.role == "admin")
-        {
-            $('.admin_only').show();
+            
         }
         
         create_constellations_widget("constellations_div");
@@ -130,8 +128,8 @@ page =  """<!DOCTYPE html>
 
 <div style="float:right;">
 
-Welcome, """ + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-<div class="admin_only" style="display:none; padding: 20px 0px 0px 0px;" align="right">
+Welcome, """ + role + " " + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a>
+<div id="officer_only" style="display:none; padding:  20px 0px 0px 0px;" align="right">
     <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
 </div>
 </div>    
@@ -139,7 +137,7 @@ Welcome, """ + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a
 
 <div style="width:100%; float:left;"><br><hr><br></div>
 
-    <div id='officer_only' style="display: none;">
+    <div id='officer_only2' style="display: none;">
     <div id="launcher_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px;  background-color:#f1f1f2;">
     </div>
     </div>

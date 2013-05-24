@@ -11,10 +11,11 @@ from common.web import get_javascripts, authorize, UserDatabase,\
 cgitb.enable()
 
 
-email = authorize("admin")
+email = authorize("officer")
+udb = UserDatabase()
+role = udb.get_role(email)
+
 method = os.environ['REQUEST_METHOD']
-
-
 if method != 'GET':
     exit(0)
 
@@ -22,7 +23,7 @@ if method != 'GET':
 
 version = get_cloudsim_version_txt()
 
-user = {'user':email, 'role':'admin'}
+user = {'user':email, 'role': role}
 
 user_info = json.dumps(user)
 scripts = get_javascripts(['jquery-1.8.3.min.js'])
@@ -42,16 +43,31 @@ page =  """<!DOCTYPE html>
 
    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 
+
+
 """ + scripts +"""
     
 <script language="javascript">
 
+
+    function get_user_info()
+    {
+       var user_info = """ + user_info + """;
+       return user_info; 
+    }
+    
     function on_load_page()
     {        
-        $('.admin_only').show();
+       
         
-        add_osrf_cloud_credentials_widget("osrf_credentials_div");
-        add_cloud_credentials_widget("amazon_credentials_div");
+        var user_info = get_user_info();
+        console.log("User role: " +  user_info.role);
+        if(user_info.role == "admin")
+        {
+            $('.admin_only').show();
+            add_osrf_cloud_credentials_widget("osrf_credentials_div");
+            add_cloud_credentials_widget("amazon_credentials_div");
+        }
         add_users_admin_widget("users_div");
         
         setTimeout(users_update , 500);        
@@ -90,8 +106,9 @@ page =  """<!DOCTYPE html>
 Welcome, """ + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
 <div class="admin_only" style="display:none; padding: 20px 0px 0px 0px;" align="right">
     <a href="/cloudsim/inside/cgi-bin/admin_download">SSH key download</a><br>
-    <a href="/cloudsim/inside/cgi-bin/console">Back to the console</a><br>
+
 </div>
+    <a href="/cloudsim/inside/cgi-bin/console">Back to the console</a><br>
 </div>    
 
 
@@ -104,11 +121,13 @@ Welcome, """ + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a
         
         <div id="amazon_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
         </div>
+    
+    </div>
         
         <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
         </div>
 
-    </div>
+    
 
 <div id="footer" style="width:100%; float:left; ">
  
