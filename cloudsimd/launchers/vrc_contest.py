@@ -230,7 +230,7 @@ def stop_task(constellation, task):
     stop_simulator(constellation)
 
     log("** Notify portal ***")
-    #notify_portal(constellation, task)
+    notify_portal(constellation, task)
 
 
 def check_for_end_of_task(constellation_name, ssh_router):
