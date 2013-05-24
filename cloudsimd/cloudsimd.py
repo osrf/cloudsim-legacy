@@ -52,12 +52,13 @@ def log(msg, chan="cloudsimd"):
     except Exception, e:
         print("Warning: redis not installed.")
     print("cloudsimd> %s" % msg)
- 
+
 
 class UnknownConfig(LaunchException):
     pass
 
-def launch_constellation(username, configuration, args = None):
+
+def launch_constellation(username, configuration, args=None):
     """
     Launches one (or count) constellation of a given configuration
     """
@@ -651,7 +652,7 @@ def launch_cmd(root_dir, data):
             async_monitor(username, config, constellation_name)
 
     elif config.startswith("OSRF"):
-        
+
         constellation_name = config.replace(" ", "_")
         constellation_name = constellation_name.replace("_update", "")
         constellation_name = constellation_name.replace("_nightly_build", "")

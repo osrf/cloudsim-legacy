@@ -12,12 +12,13 @@ import json
 # constellation.
 
 # We need to import from part of ourself
-daemon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 
+daemon_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
   'cloudsimd'))
 sys.path.insert(0, daemon_path)
 from cloudsimd import launch_constellation
 
 USAGE = 'Usage: launch_vrc.py <teams.yaml>'
+
 
 class Launcher:
 
@@ -26,9 +27,10 @@ class Launcher:
         self.data = None
         self.teams = {}
         self.softlayer_credentials = {}
+        self.additional_cs_admins = []
         self.parse_args(argv)
         self.tmpdir = tempfile.mkdtemp()
-        print('Storing temporary files, including private credentials, in %s.  Be sure to delete this directory after the launch.'%(self.tmpdir))
+        print('Storing temporary files, including private credentials, in %s.  Be sure to delete this directory after the launch.' % (self.tmpdir))
 
     def parse_args(self, argv):
         if len(argv) != 2:
@@ -48,44 +50,55 @@ class Launcher:
         if not set(required_keys) <= set(self.data.keys()):
             raise Exception("Missing one or more required keys")
         if self.data['bitbucket_key_path'] is not None and not os.path.exists(self.data['bitbucket_key_path']):
-            raise Exception("Invalid bitbucket key path: %s"%(self.data['bitbucket_key_path']))
+            raise Exception("Invalid bitbucket key path: %s" % (self.data['bitbucket_key_path']))
         if self.data['portal_key_path'] is not None and not os.path.exists(self.data['portal_key_path']):
-            raise Exception("Invalid portal key path: %s"%(self.data['portal_key_path']))
+            raise Exception("Invalid portal key path: %s" % (self.data['portal_key_path']))
         for s in self.data['softlayer_credentials']:
             required_keys = ['team', 'user', 'api_key']
             if not set(required_keys) <= set(s.keys()):
                 raise Exception("Missing one or more required keys")
             self.softlayer_credentials[s['team']] = s
-            
+
         for t in self.data['teams']:
             # A bit of sanity checking
-            required_keys = ['username', 'team', 'cloudsim', 'quad']
+            required_keys = ['username', 'team', 'cloudsim', 'quad', 'cs_role']
             if not set(required_keys) <= set(t.keys()):
                 raise Exception("Missing one or more required keys")
             if type(t['username']) != type(list()):
                 raise Exception("username field must be a list")
             if t['team'] not in self.softlayer_credentials:
-                raise Exception("no softlayer credentials for team %s"%(t['team']))
+                raise Exception("no softlayer credentials for team %s" % (t['team']))
+            if t['cs_role'] not in ['user', 'officer', 'admin']:
+                raise Exception("wrong cloudsim role for team %s" % (t['team']))
+
             # Transform the constellation instance names, which use
             # underscores, to configuration types, which use spaces.
             t['cloudsim'] = t['cloudsim'].replace('_', ' ')
             t['quad'] = t['quad'].replace('_', ' ')
             self.teams[t['team']] = t
+
+            # Additional cloudsim admin users
+            if 'cs_admin_users' in self.data:
+                if type(self.data['cs_admin_users']) == type(list()):
+                    self.additional_cs_admins = self.data['cs_admin_users']
+                else:
+                    raise Exception("cloudsim admin users must be a list")
+
         #print(self.teams)
 
     def generate_files(self, team_id):
         # Generate the following files:
         #   softlayer.json
         #   cloudsim_portal.json
-        softlayer = dict() 
+        softlayer = dict()
         softlayer['api_key'] = self.softlayer_credentials[team_id]['api_key']
         softlayer['user'] = self.softlayer_credentials[team_id]['user']
-        self.teams[team_id]['softlayer_fname'] = os.path.join(self.tmpdir, '%s_softlayer.json'%(team_id))
+        self.teams[team_id]['softlayer_fname'] = os.path.join(self.tmpdir, '%s_softlayer.json' % (team_id))
         with open(self.teams[team_id]['softlayer_fname'], 'w') as f:
             f.write(json.dumps(softlayer))
             f.write('\n')
 
-        portal = dict() 
+        portal = dict()
         portal['hostname'] = self.data['portal_hostname']
         portal['user'] = self.data['portal_user']
         portal['team'] = team_id
@@ -93,7 +106,7 @@ class Launcher:
         portal['final_destination_dir'] = self.data['final_destination_dir']
         portal['live_destination'] = self.data['live_destination']
         portal['event'] = self.data['event']
-        self.teams[team_id]['portal_fname'] = os.path.join(self.tmpdir, '%s_cloudsim_portal.json'%(team_id))
+        self.teams[team_id]['portal_fname'] = os.path.join(self.tmpdir, '%s_cloudsim_portal.json' % (team_id))
         with open(self.teams[team_id]['portal_fname'], 'w') as f:
             f.write(json.dumps(portal))
             f.write('\n')
@@ -103,23 +116,26 @@ class Launcher:
         team = self.teams[team_id]
         # TODO: handle multiple users in the input file
         username = team['username'][0]
-        configuration = team['cloudsim']   
+        configuration = team['cloudsim']
         # Build a dictionary of configuration for this team
         args = dict()
-        args['auto_launch_configuration'] = team['quad']
-        #args['auto_launch_configuration'] = None
+        #args['auto_launch_configuration'] = team['quad']
+        args['auto_launch_configuration'] = None
         args['softlayer_path'] = team['softlayer_fname']
         args['cloudsim_portal_json_path'] = team['portal_fname']
         args['cloudsim_portal_key_path'] = self.data['portal_key_path']
         args['cloudsim_bitbucket_key_path'] = self.data['bitbucket_key_path']
-        print('Launching (%s,%s,%s)'%(username, configuration, args))
+        args['other_users'] = team['username'][1:]
+        args['cs_role'] = team['cs_role']
+        args['cs_admin_users'] = self.additional_cs_admins
+        print('Launching (%s,%s,%s)' % (username, configuration, args))
         launch_constellation(username, configuration, args)
 
     def go(self):
         self.load()
         for t in self.teams:
             self.launch(t)
-        print("\n ** Remember to delete %s after the launch has completed **"%(self.tmpdir))
+        print("\n ** Remember to delete %s after the launch has completed **" % (self.tmpdir))
 
 if __name__ == '__main__':
     l = Launcher(sys.argv)
