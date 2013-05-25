@@ -124,6 +124,9 @@ def notify_portal(constellation, task):
         # Store in this cloudsim the network and sim logs
         router_key = os.path.join(constellation_directory, 'key-router.pem')
 
+        new_msg = task['task_message'] + '[Getting logs]'
+        constellation.update_task_value(task['task_id'], 'task_message', new_msg)
+
         cmd = ('bash /home/ubuntu/cloudsim/get_logs.bash %s %s %s'
                % (task_dirname, router_ip, router_key))
         subprocess.check_call(cmd.split())
@@ -168,6 +171,9 @@ def notify_portal(constellation, task):
 
         log("** JSON Task Created ***")
 
+        new_msg = task['task_message'].replace('[Getting logs]', '[Compressing logs]')
+        constellation.update_task_value(task['task_id'], 'task_message', new_msg)
+
         # Zip all the log content
         zip_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(run) +
                     '.zip')
@@ -177,6 +183,9 @@ def notify_portal(constellation, task):
             f.write(file, os.path.basename(file))
         f.close()
         log("** Log directory zipped***")
+
+        new_msg = task['task_message'].replace('[Compressing logs]', '[Uploading logs to the portal]')
+        constellation.update_task_value(task['task_id'], 'task_message', new_msg)
 
         # Send the log to the portal
         config = get_cloudsim_config()
@@ -204,6 +213,10 @@ def notify_portal(constellation, task):
                                   zip_name)
         cmd = 'sudo mv %s %s' % (dest, final_dest)
         ssh_portal.cmd(cmd)
+
+        new_msg = task['task_message'].replace('[Uploading logs to the portal]', '[Task completed]')
+        constellation.update_task_value(task['task_id'], 'task_message', new_msg)
+
 
     except Exception, excep:
         print ('Notify_portal() Exception: %s' % (repr(excep)))
