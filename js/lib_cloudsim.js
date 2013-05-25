@@ -21,7 +21,7 @@ function terminate_constellation(constellation_name)
 {
     var url = '/cloudsim/inside/cgi-bin/constellations';
     url += '/' + constellation_name;
-        
+
     console.log("[DELETE] " + url);
     msg = httpDelete(url);
     console.log( msg);
