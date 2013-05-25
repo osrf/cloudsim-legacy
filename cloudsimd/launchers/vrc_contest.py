@@ -95,11 +95,15 @@ def notify_portal(constellation, task):
         config = get_cloudsim_config()
         portal_info_fname = config['cloudsim_portal_json_path']
         portal_info = None
+        log("** Portal JSON path: %s ***" % portal_info_fname)
         with open(portal_info_fname, 'r') as f:
             portal_info = json.loads(f.read())
 
+        log("** Portal JSON file opened ***")
         team = portal_info['team']
         comp = portal_info['event']
+
+        log("** Team: %s, Event: %s ***" % (team, comp))
 
         task_num = task['vrc_num']
         if task_num < '1' or task_num > '3':
@@ -124,8 +128,8 @@ def notify_portal(constellation, task):
         # Store in this cloudsim the network and sim logs
         router_key = os.path.join(constellation_directory, 'key-router.pem')
 
-        new_msg = task['task_message'] + '[Getting logs]'
-        constellation.update_task_value(task['task_id'], 'task_message', new_msg)
+        new_msg = task['task_message'] + '<B> Getting logs</B>'
+        const.update_task_value(task['task_id'], 'task_message', new_msg)
 
         cmd = ('bash /home/ubuntu/cloudsim/get_logs.bash %s %s %s'
                % (task_dirname, router_ip, router_key))
@@ -171,8 +175,8 @@ def notify_portal(constellation, task):
 
         log("** JSON Task Created ***")
 
-        new_msg = task['task_message'].replace('[Getting logs]', '[Compressing logs]')
-        constellation.update_task_value(task['task_id'], 'task_message', new_msg)
+        new_msg = new_msg.replace('Getting logs', 'Compressing logs')
+        const.update_task_value(task['task_id'], 'task_message', new_msg)
 
         # Zip all the log content
         zip_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(run) +
@@ -184,8 +188,8 @@ def notify_portal(constellation, task):
         f.close()
         log("** Log directory zipped***")
 
-        new_msg = task['task_message'].replace('[Compressing logs]', '[Uploading logs to the portal]')
-        constellation.update_task_value(task['task_id'], 'task_message', new_msg)
+        new_msg = new_msg.replace('Compressing logs', 'Uploading logs to the portal')
+        const.update_task_value(task['task_id'], 'task_message', new_msg)
 
         # Send the log to the portal
         config = get_cloudsim_config()
@@ -214,9 +218,9 @@ def notify_portal(constellation, task):
         cmd = 'sudo mv %s %s' % (dest, final_dest)
         ssh_portal.cmd(cmd)
 
-        new_msg = task['task_message'].replace('[Uploading logs to the portal]', '[Task completed]')
-        constellation.update_task_value(task['task_id'], 'task_message', new_msg)
-
+        new_msg = new_msg.replace('Uploading logs to the portal', 'Task completed')
+        const.update_task_value(task['task_id'], 'task_message', new_msg)
+        log("** Log uploaded succesfully ***")
 
     except Exception, excep:
         print ('Notify_portal() Exception: %s' % (repr(excep)))
