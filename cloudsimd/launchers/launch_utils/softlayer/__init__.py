@@ -66,18 +66,42 @@ def _get_hardware(api_username, api_key, server_name = None):
 
 
 def _send_reload_server_cmd(api_username, api_key, server_id):
-    client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, api_username, api_key)
-    # server_id = client.findByIpAddress(server_ip)['id']
+    client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id,
+                                  api_username,
+                                  api_key)
+
     result = client.reloadCurrentOperatingSystemConfiguration('FORCE')
     print (result)
 
 
-def _send_shutdown_public_port(api_username, api_key, server_id):
-    client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, api_username, api_key)
-    # server_id = client.findByIpAddress(server_ip)['id']
-    #result = client.shutdownPublicPort()
-    result = client.setPublicNetworkInterfaceSpeed(0)
-    print (result)
+def _send_shutdown_public_port(api_username, api_key, server_name, server_id):
+    for i in range(100):
+        client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id,
+                                      api_username, api_key)
+        result = False
+        try:
+            result = client.setPublicNetworkInterfaceSpeed(0)
+            print (result)
+            return result
+        except Exception, e:
+            log("%s" % e)
+            time.sleep(10)
+    raise SoftLayerException("Can't enable public ip on server %s", server_name)
+
+
+def _send_enable_public_port(api_username, api_key, server_name, server_id):
+    for i in range(100):
+        client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id,
+                                      api_username, api_key)
+        result = False
+        try:
+            result = client.setPublicNetworkInterfaceSpeed(10000)
+            print (result)
+            return result
+        except Exception, e:
+            log("%s" % e)
+            time.sleep(10)
+    raise SoftLayerException("Can't enable public ip on server %s", server_name )
 
 
 def _wait_for_server_reload(api_username, api_key, server_id, callback):
@@ -268,9 +292,6 @@ def load_osrf_creds(fname):
         s = f.read()
         j = json.loads(s)
         return j
-
-
-
 
 
 class aTestSofty(unittest.TestCase):
@@ -494,17 +515,23 @@ def softlayer_dash_board(osrf_creds, show_transactions = True):
 
 def reload_servers(osrf_creds, server_names):
 
-    client = SoftLayer.Client(username=osrf_creds['user'], api_key=osrf_creds['api_key'],)
+    client = SoftLayer.Client(username=osrf_creds['user'],
+                              api_key=osrf_creds['api_key'],)
+    
+    #enable_public_ips(osrf_creds, server_names)
+    
     for server_name in server_names:
-        hardware = client['Account'].getHardware( filter={'hardware': {'hostname': {'operation': server_name}}})
+        hardware = client['Account'].getHardware(filter={'hardware':
+                                    {'hostname': {'operation': server_name}}})
         server_id = hardware[0]['id']
         print("reloading server %s id %s" % (server_name, server_id))
         try:
-            _send_reload_server_cmd(osrf_creds['user'], osrf_creds['api_key'], server_id)
+            _send_reload_server_cmd(osrf_creds['user'], osrf_creds['api_key'],
+                                    server_id)
         except SoftLayerAPIError, e:
-           if str(e).find("outstanding transaction") <0:
-               raise
-           print("Continuing despite exception: %s" % e)
+            if str(e).find("outstanding transaction") < 0:
+                raise
+        print("Continuing despite exception: %s" % e)
 
 
 def get_constellation_prefixes(osrf_creds):
@@ -514,7 +541,8 @@ def get_constellation_prefixes(osrf_creds):
     """
     for i in range(100):
         object_mask = {}
-        client = SoftLayer.API.Client('SoftLayer_Account', None, osrf_creds['user'], osrf_creds['api_key'])
+        client = SoftLayer.API.Client('SoftLayer_Account', 
+                        None, osrf_creds['user'], osrf_creds['api_key'])
         client.set_object_mask(object_mask)
         servers = client.getHardware()
         routers = [s['hostname'] for s in servers if s['hostname'].startswith('router-') ]
@@ -526,69 +554,101 @@ def get_constellation_prefixes(osrf_creds):
         time.sleep(5)
     raise SoftLayerException("Can't enumerate servers (100 retries)")
 
+
 def shutdown_public_ips(osrf_creds, server_names):
-    client = SoftLayer.Client(username=osrf_creds['user'], api_key=osrf_creds['api_key'],)
+
     for server_name in server_names:
-        hardware = client['Account'].getHardware( filter={'hardware': {'hostname': {'operation': server_name}}})
-
+        hardware = _get_server_hardware(osrf_creds, server_name)
         server_id = hardware[0]['id']
-        _send_shutdown_public_port(osrf_creds['user'], osrf_creds['api_key'], server_id)
+        _send_shutdown_public_port(osrf_creds['user'],
+                                   osrf_creds['api_key'],
+                                   server_name,
+                                   server_id)
 
 
+def enable_public_ips(osrf_creds, server_names):
 
-def wait_for_server_reloads(osrf_creds, server_names, callback = print_cb):
+    for server_name in server_names:
+        hardware = _get_server_hardware(osrf_creds, server_name)
+        server_id = hardware[0]['id']
+        _send_enable_public_port(osrf_creds['user'],
+                                   osrf_creds['api_key'],
+                                   server_name,
+                                   server_id)
+
+
+def wait_for_server_reloads(osrf_creds, server_names, callback=print_cb):
     api_username = osrf_creds['user'] 
     api_key = osrf_creds['api_key']
 
-    server_ids_to_hostname = {} #{server['id']:server['hostname'] for server in hardware if server['hostname'] in machine_names}
+    server_ids_to_hostname = {} 
 
-    client = SoftLayer.Client(username=osrf_creds['user'], api_key=osrf_creds['api_key'],)
     for server_name in server_names:
-        hardware = client['Account'].getHardware( filter={'hardware': {'hostname': {'operation': server_name}}})
+        hardware = _get_server_hardware(osrf_creds, server_name)
         pprint(hardware)
         server_id = hardware[0]['id']
         hostname = hardware[0]['hostname']
         server_ids_to_hostname[server_id] = hostname
 
-    _wait_for_multiple_server_reloads(api_username, api_key, server_ids_to_hostname, callback)
+    _wait_for_multiple_server_reloads(api_username, api_key,
+                                      server_ids_to_hostname,
+                                      callback)
 
+
+def _get_server_hardware(osrf_creds, server_name):
+    for i in range(100):
+        try:
+            client = SoftLayer.Client(username=osrf_creds['user'],
+                                      api_key=osrf_creds['api_key'],)
+            hardware = client['Account'].getHardware(filter={
+                    'hardware': {'hostname': {'operation': server_name}}})
+            return hardware
+        except Exception, e:
+            time.sleep(10)
+            log("Retry %s/100 %s" % (i, e))
+    raise SoftLayerException("Can't get server info for %s" % server_name)
+
+
+def _get_server_user_object(osrf_creds,  server_name, sid):
+    for i in range(100):
+        try:
+            client = SoftLayer.Client(username=osrf_creds['user'], 
+                            api_key=osrf_creds['api_key'],)
+            server = client['Hardware'].getObject(id=sid, 
+                mask="operatingSystem.passwords.password, primaryIpAddress")
+            return server
+        except Exception, e:
+            time.sleep(10)
+            log("Retry %s/100 %s" % (i, e))
+    raise SoftLayerException(
+                         "Can't get server object for %s" % server_name)
 
 
 def get_machine_login_info(osrf_creds, server_name):
-    
-    for i in range(100):
-        if i > 0:
-            time.sleep(1)
-        api_username = osrf_creds['user'] 
-        api_key = osrf_creds['api_key']
-    
-        client = SoftLayer.Client(username=osrf_creds['user'], api_key=osrf_creds['api_key'],)
-        hardware = client['Account'].getHardware( filter={'hardware': {'hostname': {'operation': server_name}}})
-    
-        server = client['Hardware'].getObject(id=hardware[0]['id'],
-                                                   mask="operatingSystem.passwords.password, primaryIpAddress")
-        id = server['id']
-        public_ip = server['primaryIpAddress']
-    
-        priv_ip = server['privateIpAddress']
-        password = None
-        try:
-            password = server['operatingSystem']['passwords'][0]['password']
-        except:
-            pass
-    
-        print ("")
-        print(id)
-        print(public_ip)
-        print(password)
-    
-        return public_ip, priv_ip, password
+
+    hardware = _get_server_hardware(osrf_creds, server_name)
+    sid = hardware[0]['id']
+    server = _get_server_user_object(osrf_creds, server_name, sid)
+
+    public_ip = server['primaryIpAddress']
+
+    priv_ip = server['privateIpAddress']
+    password = None
+    try:
+        password = server['operatingSystem']['passwords'][0]['password']
+    except:
+        pass
+
+    print(public_ip)
+    print(password)
+
+    return public_ip, priv_ip, password
 
 
-class sTestSoftLayer(object): #(unittest.TestCase):
+class sTestSoftLayer(unittest.TestCase):
 
-    def test_list_loop(self):
-        
+    def atest_list_loop(self):
+
         p = get_softlayer_path()
         osrf_creds = load_osrf_creds(p)
         prefixes = get_constellation_prefixes(osrf_creds)
@@ -596,45 +656,49 @@ class sTestSoftLayer(object): #(unittest.TestCase):
         pprint(prefixes)
         self.assertTrue(len(prefixes) > 0, "no constellations")
 
-    def test_get_machine_login_info(self):
+    def atest_get_machine_login_info(self):
         server = "fc1-14"
         osrf_creds = load_osrf_creds(get_softlayer_path())
         x = get_machine_login_info(osrf_creds, server)
-        
-        self.assertTrue(len(x)==3, 'did not get creds')
 
-    def test_wait_for_server_reloads(self):
+        self.assertTrue(len(x) == 3, 'did not get creds')
+
+    def atest_wait_for_server_reloads(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
-        servers=['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
+        servers = ['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
         wait_for_server_reloads(osrf_creds, servers)
 
-    def test_reload_Server(self):
+    def atest_reload_Server(self):
         p = get_softlayer_path()
         osrf_creds = load_osrf_creds(p)
-        servers=['cs-13', 'sim-13', 'router-13', 'fc1-13', 'fc2-13']
+        servers = ['cs-13', 'sim-13', 'router-13', 'fc1-13', 'fc2-13']
         try:
             reload_servers(osrf_creds, servers)
-        except Exception,e:
+        except Exception, e:
             print e
 
-    def test_shutdown_public_ip(self):
+    def stest_shutdown_public_ip(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
-        servers=['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
+        servers = ['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
         shutdown_public_ips(osrf_creds, servers)
 
-    def test_get_constellation_prefixes(self):
+    def test_enable_public_ip(self):
+        osrf_creds = load_osrf_creds(get_softlayer_path())
+        servers = ['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
+        enable_public_ips(osrf_creds, servers)
+
+    def atest_get_constellation_prefixes(self):
         p = get_softlayer_path()
         osrf_creds = load_osrf_creds(p)
         prefixes = get_constellation_prefixes(osrf_creds)
 
-        
         self.assertTrue(len(prefixes) > 0, "no constellations")
 
 if __name__ == "__main__":
 
     p = get_softlayer_path()
     osrf_creds = load_osrf_creds(p)
-    softlayer_dash_board(osrf_creds)
+    #softlayer_dash_board(osrf_creds)
     unittest.main()
 #    softlayer_server_scan(osrf_creds)
     #hardware_helpers(osrf_creds)
