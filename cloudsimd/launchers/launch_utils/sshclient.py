@@ -3,15 +3,15 @@ import commands
 import os
 import subprocess
 
-def log(msg):
+def log(msg, channel="ssh"):
     try:
         import redis
         redis_client = redis.Redis()
-        redis_client.publish("ssh", msg)
+        redis_client.publish(channel, msg)
         logging.info(msg)
     except:
         print("Warning: redis not installed.")
-    # print("cloudsim log> %s" % msg)
+    print("ssh> %s" % msg)
 
 """
 Removes the key for this ip, in case we connect to a different machine with the
@@ -41,11 +41,11 @@ class SshClient(object):
         
         self.key_fname = os.path.join(constellation_directory, "%s.pem" % key_name) 
         self.user = '%s@%s' % (username, ip)
-        self.ssh_connect_timeout = 5
+        self.ssh_connect_timeout = 10
         
         
     def cmd(self, cmd, extra_ssh_args=[] ): 
-        ssh_cmd = ['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', self.key_fname] + extra_ssh_args + [self.user]
+        ssh_cmd = ['ssh', '-o','UserKnownHostsFile=/dev/null' ,'-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', self.key_fname] + extra_ssh_args + [self.user]
         ssh_cmd.append(cmd)
         log(" ".join(ssh_cmd) )
         po = subprocess.Popen(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -56,7 +56,7 @@ class SshClient(object):
             return out
     
     def upload_file(self, local_fname, remote_fname, extra_scp_args=[]):
-        scp_cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-o', 
+        scp_cmd = ['scp','-o','UserKnownHostsFile=/dev/null' , '-o', 'StrictHostKeyChecking=no', '-o', 
                    'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', 
                    self.key_fname] + extra_scp_args + [local_fname,'%s:%s'%(self.user, remote_fname)]
         scp_cmd_string = ' '.join(scp_cmd)
@@ -73,7 +73,7 @@ class SshClient(object):
     
     def download_file(self, local_fname, remote_fname, extra_scp_args=[]):
         
-        scp_cmd = ['scp', '-o', 'StrictHostKeyChecking=no', '-o', 
+        scp_cmd = ['scp','-o','UserKnownHostsFile=/dev/null' , '-o', 'StrictHostKeyChecking=no', '-o', 
                    'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', 
                    self.key_fname] + extra_scp_args + ['%s:%s'%(self.user, remote_fname), local_fname ]
         scp_cmd_string = ' '.join(scp_cmd)

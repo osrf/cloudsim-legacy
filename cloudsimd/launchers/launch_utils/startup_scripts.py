@@ -1,6 +1,8 @@
 from __future__ import print_function
 
 
+
+
 def get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP, machine_ip, ros_master_ip):
     
     return """#!/bin/bash
@@ -27,9 +29,13 @@ dev tun
 ifconfig """ + OPENVPN_SERVER_IP + " " + OPENVPN_CLIENT_IP + """
 secret static.key
 DELIM
+
+
 openvpn --genkey --secret /etc/openvpn/static.key
 service openvpn restart
 chmod 644 /etc/openvpn/static.key
+
+
 sysctl -w net.ipv4.ip_forward=1
 iptables -A FORWARD -i tun0 -o eth0 -j ACCEPT
 iptables -A FORWARD -o tun0 -i eth0 -j ACCEPT
@@ -93,11 +99,10 @@ DELIM
 
 # start vrc_sniffer and vrc_controllers
 start vrc_sniffer
-start vrc_controller
-start vrc_bandwidth
+start vrc_controller_private
+start vrc_controller_public
 
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
+mkdir -p /home/ubuntu/cloudsim/setup
 touch /home/ubuntu/cloudsim/setup/done
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
@@ -130,7 +135,7 @@ esac
 DELIM
 
 chmod +x  /etc/init.d/vpcroute 
-ln -s /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
+ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
 
 # invoke it now to add route to the router
 /etc/init.d/vpcroute start
@@ -173,6 +178,8 @@ def get_cloudsim_startup_script():
     s = """#!/bin/bash
 # Exit on error
 set -ex
+mkdir -p /home/ubuntu/cloudsim/setup
+chown -R ubuntu:ubuntu /home/ubuntu/
 # Redirect everybody's output to a file
 logfile=/home/ubuntu/launch_stdout_stderr.log
 exec > $logfile 2>&1
@@ -246,15 +253,17 @@ deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
 
 DELIM
 
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
-chown -R ubuntu:ubuntu /home/ubuntu/
-
 apt-get update
+apt-get install -y python-software-properties
+
+apt-add-repository -y ppa:rye/ppa
+apt-get update
+
+echo "ppa:rye/ppa repository added" >> /home/ubuntu/setup.log
 
 echo "Installing packages" >> /home/ubuntu/setup.log
 
-apt-get install -y unzip zip
+apt-get install -y unzip zip expect vim ipython
 echo "unzip installed" >> /home/ubuntu/setup.log
 
 # install mercurial and fetch latest version of the Team Login website
@@ -267,6 +276,9 @@ echo "mercurial installed" >> /home/ubuntu/setup.log
 apt-get install -y ntp
 echo "ntp installed" >> /home/ubuntu/setup.log
 
+apt-get install -y openvpn
+echo "ntp installed" >> /home/ubuntu/setup.log
+
 apt-get install -y apache2
 echo "apache2 installed" >> /home/ubuntu/setup.log
 
@@ -277,20 +289,53 @@ apt-get install -y redis-server python-pip
 pip install redis
 echo "redis installed" >> /home/ubuntu/setup.log
 
+apt-get install -y python-dateutil
+echo "python-dateutil installed" >> /home/ubuntu/setup.log
+
 sudo pip install --upgrade boto
 echo "boto installed" >> /home/ubuntu/setup.log
 
+sudo pip install SoftLayer
+echo "SoftLayer installed" >> /home/ubuntu/setup.log
 
 sudo pip install unittest-xml-reporting
 echo "XmlTestRunner installed" >> /home/ubuntu/setup.log
 
- 
-apt-add-repository -y ppa:rye/ppa
-apt-get update
-echo "ppa:rye/ppa repository added" >> /home/ubuntu/setup.log
+cat <<DELIM > /home/ubuntu/cloudsim/get_logs.bash
+#!/bin/bash
+
+# Get simulator and network logs from the router
+
+USAGE="Usage: get_logs.bash <task_dirname> <public_router_IP> <router_key>"
+
+if [ \$# -ne 3 ]; then
+  echo \$USAGE
+  exit 1
+fi
+
+TASK_DIRNAME=\$1
+ROUTER_IP=\$2
+ROUTER_KEY=\$3
+
+mkdir -p /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
+sudo ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$ROUTER_KEY ubuntu@\$ROUTER_IP bash /home/ubuntu/cloudsim/get_sim_logs.bash \$TASK_DIRNAME
+
+sudo scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$ROUTER_KEY ubuntu@\$ROUTER_IP:/home/ubuntu/cloudsim/logs/\$TASK_DIRNAME/* /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME || true
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/get_logs.bash
+
+#
+# FIREWALL
+#
+ufw default deny
+ufw allow ssh
+ufw allow http
+yes | ufw enable
+
 
 apt-get install -y libapache2-mod-auth-openid
-ln -s /etc/apache2/mods-available/authopenid.load /etc/apache2/mods-enabled
+ln -sf /etc/apache2/mods-available/authopenid.load /etc/apache2/mods-enabled
 echo "libapache2-mod-auth-openid 0.6 installed from ppa:rye/ppa" >> /home/ubuntu/setup.log
 
 /etc/init.d/apache2 restart
@@ -301,7 +346,7 @@ echo "apache2 restarted" >> /home/ubuntu/setup.log
 
 # Make sure that www-data can run programs in the background (used inside CGI scripts)
 echo www-data > /etc/at.allow
- 
+
 touch /home/ubuntu/cloudsim/setup/done
 echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
 """
@@ -309,7 +354,10 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
     
 
-def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3"):
+
+    
+
+def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3", prefix = "", extra = ""):
     
     s = """#!/bin/bash
 # Exit on error
@@ -390,14 +438,17 @@ DELIM
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
 
+""" + prefix + """
+
 cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
 
 echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
 
-. /usr/share/drcsim/setup.sh 
-export ROS_IP=""" + machine_ip +""" 
-export GAZEBO_IP=""" + machine_ip +"""
-export DISPLAY=:0 
+. /usr/share/drcsim/setup.sh
+export ROS_IP=""" + machine_ip + """
+export GAZEBO_IP=""" + machine_ip + """
+export DISPLAY=:0
+ulimit -c unlimited
 roslaunch \$1 \$2 \$3 gzname:=gzserver  &
 
 DELIM
@@ -417,11 +468,11 @@ oldrpp=$ROS_PACKAGE_PATH
 
 . /usr/share/drcsim/setup.sh
 eval export ROS_PACKAGE_PATH=\$oldrpp:\\$ROS_PACKAGE_PATH
-export ROS_IP=""" + machine_ip +"""
-export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311 
+export ROS_IP=""" + machine_ip + """
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
 
-export GAZEBO_IP=""" + machine_ip +"""
-export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
+export GAZEBO_IP=""" + machine_ip + """
+export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:113451
 
 DELIM
 
@@ -432,7 +483,7 @@ DISPLAY=localhost:0 timeout 10 glxinfo
 DELIM
 
 
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim  
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
 # Add ROS and OSRF repositories
 echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
@@ -442,15 +493,15 @@ date >> /home/ubuntu/setup.log
 echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
 wget http://packages.ros.org/ros.key -O - | apt-key add -
 wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
-    
+
 echo "update packages" >> /home/ubuntu/setup.log
 apt-get update
 
 """ + open_vpn_script + """
-    
+
 echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
 apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
-    
+
 #
 # The BusID is given by lspci (but lspci gives it in hex, and BusID needs dec)
 # This value is required for Tesla cards
@@ -556,10 +607,13 @@ respawn
 DELIM
 
 # start vrc_sniffer and vrc_controllers
-start vrc_sniffer
-start vrc_controller
+#start vrc_sniffer
+#start vrc_controller_private
+#start vrc_controller_public
 
-rm `which vrc_bandwidth.py`
+#rm `which vrc_bandwidth.py`
+
+""" + extra + """
  
 touch /home/ubuntu/cloudsim/setup/done
 

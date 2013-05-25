@@ -5,7 +5,10 @@ from __future__ import print_function
 import cgitb
 import json
 import redis
+import collections
+
 from common import UserDatabase
+
 
 cgitb.enable()
 
@@ -17,10 +20,10 @@ def log(msg):
 
 from common import  authorize, ConfigsDb
 
-email = authorize()
+email = authorize("officer")
 
-udb = UserDatabase()
-is_admin = udb.is_admin(email)
+
+
 
 print('Content-type: application/json')
 print('\n')
@@ -29,15 +32,18 @@ cdb = ConfigsDb(email)
 
 admin_configs = ['vpc_micro_trio',] # 'cloudsim', ]
 
-        
+
 configs = cdb.get_configs()
 
-if not is_admin:
+udb = UserDatabase()
+if not udb.has_role(email, "admin"):
     for bad_config in admin_configs:
         if bad_config in configs:
             del(configs[bad_config]) # remove it
             log("configs removing %s =  %s" % (bad_config, len(configs) ) )
-            
 
-s = json.dumps(configs)
+#s = json.dumps(configs)
+
+od = collections.OrderedDict(sorted(configs.items()))
+s = json.dumps(od)
 print(s)

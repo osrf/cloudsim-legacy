@@ -30,9 +30,8 @@ from launch_utils.startup_scripts import get_drc_startup_script,\
 from launch_utils.launch import LaunchException, aws_connect, get_amazon_amis
 
 from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
-from vpc_trio import OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP
-from launch_utils.monitoring import LATENCY_TIME_BUFFER, record_ping_result,\
-    machine_states, update_machine_aws_states, constellation_is_terminated,\
+
+from launch_utils.monitoring import update_machine_aws_states, constellation_is_terminated,\
     monitor_launch_state, monitor_simulator, monitor_cloudsim_ping,\
     get_ssh_client
 
@@ -159,7 +158,9 @@ def launch_prerelease(username, constellation_name, tags, credentials_ec2, const
     _launch(username, constellation_name, tags, credentials_ec2, constellation_directory,  "simulator_prerelease", drc_package_name = "drcsim-prerelease" )
 
 def _launch(username, constellation_name, tags, credentials_ec2, constellation_directory, CONFIGURATION, drc_package_name):
-
+    OPENVPN_SERVER_IP='11.8.0.1'
+    OPENVPN_CLIENT_IP='11.8.0.2'
+    
     ec2conn = aws_connect(credentials_ec2)[0]
     constellation = ConstellationState( constellation_name)
 

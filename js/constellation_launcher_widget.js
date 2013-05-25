@@ -5,9 +5,16 @@ var machine_configurations = null;
 function create_constellation_launcher_widget(div_name)
 {   
     console.log('machine_launch_on_load_page div=' + div_name);
-    var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs.py");
-    machine_configurations = eval( '(' + x + ')' );
-
+    try
+    {
+    	var machine_configurations = get_configurations();
+    }
+    catch(err)
+    {
+        // the user is probably logged out.
+        location.reload(true);
+    }
+    
     var div = document.getElementById(div_name);
     
     var desc = document.createElement("div");
@@ -31,14 +38,19 @@ function create_constellation_launcher_widget(div_name)
     
     var launch_button= document.createElement('input');
     launch_button.setAttribute('type','button');
-    launch_button.setAttribute('value','Launch');
-    
-    
+    launch_button.setAttribute('value','Deploy');
+
+
 	launch_button.onclick =  function()
     {   
         var i = configs_select.selectedIndex;
         var config = configs_select.options[i].text;
-        var r=confirm('Launch a new "' + config + '" constellation?' );
+        
+        var msg = 'Deploy a new "' + config + '" constellation?';
+        msg += "\n\n";
+        msg += "Each machine should be in their initial condition.";
+        msg += "You should use the terminate operation to trigger a reload, first.";
+        var r=confirm(msg);
         if (r==false)
         {
             return;
@@ -49,15 +61,17 @@ function create_constellation_launcher_widget(div_name)
        launch_constellation(config);
        
     };
+
     
     var title = document.createElement('h2');
-    title.innerHTML = 'Launch a machine constellation';
+    title.innerHTML = 'Constellation provisioning';
     
     configs_select.onchange();
     
     div.appendChild(title);
     div.appendChild(configs_select);
     div.appendChild(launch_button);
+    
     div.appendChild(desc);
     
 }

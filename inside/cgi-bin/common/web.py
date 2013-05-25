@@ -37,13 +37,20 @@ class UserDatabase (object):
                 users = json.load(f)
         return users    
     
+    def has_role(self, email, minimum_role):
+        role = self.get_role(email)
+        roles = ["user", "officer", "admin"]
+        if roles.index(role) >= roles.index( minimum_role):
+            return True
+        return False
+        
     def get_role(self, email):
         role = self.get_users()[email]
         return role
     
-    def is_admin(self, email):
-        admin = self.get_role(email) == "admin"
-        return admin
+#    def is_admin(self, email):
+#        admin = self.get_role(email) == "admin"
+#        return admin
     
     def get_domain(self, email):
         d = user_to_domain(email)
@@ -107,10 +114,11 @@ def print_http_filedownload_header(fname, newline=True):
         print("\n")
 
 
+class AuthException(Exception):
+    pass
 
-class AuthException(Exception): pass
 
-def _check_auth():
+def _check_auth(minimum_role):
     # Get session ID from cookie
     in_cookies = Cookie.Cookie()
     in_cookies.load(os.environ[HTTP_COOKIE])
@@ -119,46 +127,44 @@ def _check_auth():
     else:
         raise  AuthException("Access denied (no session ID found in cookies)")
         sys.exit(0)
-    
+
     # Convert session ID to email
     sdb = SessionDatabase()
     if openid_session in sdb.db:
         email = sdb.db[openid_session]
     else:
         raise AuthException("Access denied (session ID %s not found in db)"%(openid_session))
-    
+
     # Compare email to user db
     udb = UserDatabase()
     users = udb.get_users()
-    
+
     lower_case_email = email.lower()
     lower_case_users =  [x.lower().strip() for x in users] 
-    
+
     if lower_case_email not in lower_case_users:
         raise AuthException("Access denied (email address %s not found in db)"%(email) )
-    
+    if not udb.has_role(email, minimum_role):
+        raise AuthException("Access denied (%s has insufficient privileges)" %(email) )
     return email
-   
 
 
+def authorize(minimum_role = "user"):
 
-        
-def authorize(role = "user"):
+
     email = None
-    try:        
-        email = _check_auth()
-        return email
-    
+    try:
+        email = _check_auth(minimum_role)
+
     except AuthException as e:
         print_http_header()
         print("<title>Access Denied</title>")
         print("<h1>Access Denied</h1>")
-        
         print("<h2>%s</h2>" % e)
-           
+
         print("Try <a href=\"/cloudsim/inside/cgi-bin/logout\">logging out</a>.  For assistance, contact <a href=mailto:%s>%s</a>"%(ADMIN_EMAIL, ADMIN_EMAIL))
-        exit(0)     
-        
+        exit(0)
+    return email
 
 def get_cloudsim_version_txt():
     d = os.path.split(__file__)[0]

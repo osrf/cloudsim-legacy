@@ -4,8 +4,6 @@ var machine_configurations = null;
 function add_cloud_credentials_widget(place_holder_div_name)
 {
 
-    //var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs");
-    //machine_configurations = eval( '(' + x + ')' );
     var launch_div = document.getElementById(place_holder_div_name);
     var str  = '<h2>Amazon Web Services credentials</h2>'; 
     str += '';
@@ -39,7 +37,7 @@ function _cred_click(div_name)
     var access = div.querySelectorAll("input")[0].value;
     var secret_access = div.querySelectorAll("input")[1].value;
     var availability_zone = div.querySelectorAll("select")[0].value;
-    var r = change_credentials(access, secret_access, availability_zone);
+    var r = change_aws_credentials(access, secret_access, availability_zone);
     
     alert(r['msg']);
 }

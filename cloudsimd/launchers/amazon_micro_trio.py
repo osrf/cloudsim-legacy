@@ -4,7 +4,7 @@ import unittest
 import os
 import time
 
-import vpc_trio 
+import amazon_trio 
 import redis
 import logging
 import cloudsim
@@ -70,12 +70,11 @@ def stop_task(constellation):
     for i in range(10):
         log("** STOP TASK %s ***" % constellation)
 
-def launch(username, constellation_name, tags, credentials_ec2, 
-           constellation_directory ):
+def launch(username, configuration, constellation_name, tags, constellation_directory ):
 
 
-    routing_script = get_vpc_open_vpn(vpc_trio.OPENVPN_CLIENT_IP, 
-                                      vpc_trio.TS_IP)
+    routing_script = get_vpc_open_vpn(amazon_trio.OPENVPN_CLIENT_IP, 
+                                      amazon_trio.TS_IP)
     
     ROBOT_AWS_TYPE  = 't1.micro'
     ROBOT_AWS_IMAGE = "ami-137bcf7a"
@@ -88,13 +87,13 @@ def launch(username, constellation_name, tags, credentials_ec2,
     
     ROUTER_AWS_TYPE='t1.micro'
     ROUTER_AWS_IMAGE="ami-137bcf7a"
-    ROUTER_SCRIPT = get_vpc_router_script(vpc_trio.OPENVPN_SERVER_IP, 
-                                          vpc_trio.OPENVPN_CLIENT_IP,
-                                          vpc_trio.TS_IP,
-                                          vpc_trio.SIM_IP) 
+    ROUTER_SCRIPT = get_vpc_router_script(amazon_trio.OPENVPN_SERVER_IP, 
+                                          amazon_trio.OPENVPN_CLIENT_IP,
+                                          amazon_trio.TS_IP,
+                                          amazon_trio.SIM_IP) 
 
 
-    vpc_trio._launch(username, constellation_name, tags, credentials_ec2, 
+    amazon_trio._launch(username, constellation_name, tags, 
                      constellation_directory,
                         ROUTER_AWS_TYPE,
                         ROUTER_SCRIPT,
@@ -107,25 +106,24 @@ def launch(username, constellation_name, tags, credentials_ec2,
                         CONFIGURATION)
 
 def monitor(username, constellation_name, credentials_ec2, counter):
-    return vpc_trio._monitor(username, constellation_name, credentials_ec2, 
+    return amazon_trio._monitor(username, constellation_name, credentials_ec2, 
                              counter, CONFIGURATION)
 
 
-def terminate(username, constellation_name, credentials_ec2, 
+def terminate( constellation_name,  
               constellation_directory):
-    vpc_trio._terminate(username, constellation_name, credentials_ec2, 
-                        constellation_directory, CONFIGURATION)
+    amazon_trio._terminate( constellation_name, constellation_directory, CONFIGURATION)
                            
     
 def start_simulator(username, constellation_name, machine_name, package_name, 
                     launch_file_name, launch_args, ):
-    vpc_trio.start_simulator(username, constellation_name, machine_name, 
+    amazon_trio.start_simulator(username, constellation_name, machine_name, 
                              package_name, launch_file_name, launch_args)
     
     
 
 def stop_simulator(username, constellation_name, machine):
-    vpc_trio.stop_simulator(username, constellation_name, machine)
+    amazon_trio.stop_simulator(username, constellation_name, machine)
 
 class MicroTrioCase(unittest.TestCase):
     

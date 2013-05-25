@@ -3,7 +3,7 @@ from __future__ import print_function
 import unittest
 import os
 import time
-import commands
+
 
 import logging
 import redis
@@ -30,8 +30,7 @@ from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 import zipfile
 from shutil import copyfile
 
-from launch_utils.monitoring import  record_ping_result,\
-    LATENCY_TIME_BUFFER, machine_states, update_machine_aws_states,\
+from launch_utils.monitoring import  update_machine_aws_states,\
     constellation_is_terminated, get_ssh_client, monitor_launch_state,\
     monitor_simulator, monitor_ssh_ping, monitor_cloudsim_ping
 from launch_utils.launch import aws_connect, get_amazon_amis
@@ -47,7 +46,6 @@ OPENVPN_CLIENT_IP='11.8.0.2'
     
 def log(msg, channel = "trio"):
     try:
-        
         redis_client = redis.Redis()
         redis_client.publish(channel, msg)
         logging.info(msg)
@@ -167,20 +165,20 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
                         SIM_SCRIPT, 
                         CONFIGURATION)
     
-def terminate_prerelease(username, constellation_name, credentials_ec2, constellation_directory):
-    _terminate(username, constellation_name, credentials_ec2, constellation_directory, "vpc_trio_prerelease")
+def terminate_prerelease(username, constellation_name, constellation_directory):
+    _terminate(username, constellation_name,  constellation_directory, "vpc_trio_prerelease")
         
-def terminate(username, constellation_name, credentials_ec2, constellation_directory):
+def terminate(username, constellation_name, constellation_directory):
     # call terminate with the appropriate configuration name
-    _terminate(username, constellation_name, credentials_ec2, constellation_directory, "vpc_trio")
+    _terminate(username, constellation_name, constellation_directory, "vpc_trio")
     
-def monitor_prerelease(username, constellation_name, credentials_ec2, counter):
-    m = _monitor(username, constellation_name, credentials_ec2, counter, "vpc_trio_prerelease")
+def monitor_prerelease(username, constellation_name,  counter):
+    m = _monitor(username, constellation_name,  counter, "vpc_trio_prerelease")
     return m
 
     
-def monitor(username, constellation_name, credentials_ec2, counter):
-    m =_monitor(username, constellation_name, credentials_ec2, counter, "vpc_trio")
+def monitor(username, constellation_name,  counter):
+    m =_monitor(username, constellation_name,  counter, "vpc_trio")
     return m
 
 def start_simulator(constellation_name, package_name, launch_file_name, launch_args, timeout):
@@ -218,7 +216,7 @@ def stop_simulator( constellation_name):
     
 
  
-def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATION):
+def _monitor(username, constellation_name,  counter, CONFIGURATION):
     
     time.sleep(1)
     if constellation_is_terminated(constellation_name):
@@ -230,7 +228,7 @@ def _monitor(username, constellation_name, credentials_ec2, counter, CONFIGURATI
     robot_state = constellation.get_value('robot_state')
     simulation_state = constellation.get_value('simulation_state')
  
-    update_machine_aws_states(credentials_ec2, constellation_name, {'router_aws_id':'router_aws_state' ,'robot_aws_id': "robot_aws_state", 'simulation_aws_id':"simulation_aws_state"}) 
+    update_machine_aws_states( constellation_name, {'router_aws_id':'router_aws_state' ,'robot_aws_id': "robot_aws_state", 'simulation_aws_id':"simulation_aws_state"}) 
 
     ssh_router = get_ssh_client(constellation_name, router_state,'router_public_ip', 'router_key_pair_name' )
 
@@ -262,7 +260,6 @@ def create_zip_file(zip_file_path, short_name, files_to_zip):
 def _launch(username, 
             constellation_name, 
             tags, 
-            credentials_ec2, 
             constellation_directory, 
             
             ROUTER_AWS_TYPE,
@@ -279,7 +276,7 @@ def _launch(username,
 
     log("new trio constellation: %s" % constellation_name) 
 
-    amis = get_amazon_amis(credentials_ec2)
+    amis = get_amazon_amis()
     print (amis)
 
     SIM_AWS_IMAGE    = amis['ubuntu_1204_x64_cluster']
@@ -292,7 +289,7 @@ def _launch(username,
   
     ROUTER_AWS_IMAGE = amis['ubuntu_1204_x64']
        
-    ec2conn, vpcconn = aws_connect(credentials_ec2)
+    ec2conn, vpcconn = aws_connect()
     constellation = ConstellationState( constellation_name)
     
     constellation.set_value('sim_ip', SIM_IP)
@@ -651,7 +648,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     ssh_router.create_file(stop_sim, "cloudsim/stop_sim.bash")
     
     start_sim = """#!/bin/bash
-    
+     
     
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/%s.pem ubuntu@%s "bash cloudsim/start_sim.bash \$1 \$2 \$3"
     
@@ -855,11 +852,10 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
     log("provisioning done")
     
     
-def _terminate(username, constellation_name, credentials_ec2, constellation_directory, CONFIGURATION):
+def _terminate( constellation_name, constellation_directory, CONFIGURATION):
 
     resources = get_constellation_data( constellation_name)
     constellation = ConstellationState( constellation_name)
-    
     
     constellation.set_value('router_launch_msg', "terminating")
     constellation.set_value('simulation_launch_msg', "terminating")
@@ -868,11 +864,10 @@ def _terminate(username, constellation_name, credentials_ec2, constellation_dire
     constellation.set_value('simulation_state', "terminating")
     constellation.set_value('robot_state', "terminating")
     constellation.set_value('simulation_glx_state', "not running")
-    ec2conn, vpcconn = aws_connect(credentials_ec2)
+    ec2conn, vpcconn = aws_connect()
 
-    log("terminate_vpc_trio [user=%s, constellation_name=%s" % (username, constellation_name) )
-    
-    
+    log("terminate_vpc_trio [constellation_name=%s" % ( constellation_name) )
+
     #log("resources: %s" %   pprint.pformat(resources) )
     error_msg = ""
     try:
@@ -1053,19 +1048,19 @@ class TrioCase(unittest.TestCase):
         print("creating: %s" % self.constellation_directory )
         os.makedirs(self.constellation_directory)
         
-        launch(self.username, self.constellation_name, self.tags, self.credentials_ec2, self.constellation_directory)
+        launch(self.username, self.constellation_name, self.tags, self.constellation_directory)
         
         sweep_count = 10
         for i in range(sweep_count):
             print("monitoring %s/%s" % (i,sweep_count) )
-            monitor(self.username, self.constellation_name, self.credentials_ec2, i)
+            monitor(self.username, self.constellation_name,  i)
             time.sleep(1)
     
     def tearDown(self):
         unittest.TestCase.tearDown(self)
         #self.machine.terminate() 
         # self.constellation_name = 
-        terminate(self.username, self.constellation_name, self.credentials_ec2, self.constellation_directory)
+        terminate(self.username, self.constellation_name, self.constellation_directory)
         
         
         
