@@ -13,6 +13,9 @@ from pprint import pprint
 from SoftLayer.exceptions import SoftLayerAPIError
 
 
+PUBLIC_NETWORK_SPEED_ENABLED = 1000
+
+
 def log(msg, channel="softlayer"):
     try:
         redis_client = redis.Redis()
@@ -95,7 +98,7 @@ def _send_enable_public_port(api_username, api_key, server_name, server_id):
                                       api_username, api_key)
         result = False
         try:
-            result = client.setPublicNetworkInterfaceSpeed(10000)
+            result = client.setPublicNetworkInterfaceSpeed(PUBLIC_NETWORK_SPEED_ENABLED)
             print (result)
             return result
         except Exception, e:
@@ -518,7 +521,7 @@ def reload_servers(osrf_creds, server_names):
     client = SoftLayer.Client(username=osrf_creds['user'],
                               api_key=osrf_creds['api_key'],)
     
-    #enable_public_ips(osrf_creds, server_names)
+    enable_public_ips(osrf_creds, server_names)
     
     for server_name in server_names:
         hardware = client['Account'].getHardware(filter={'hardware':
@@ -682,7 +685,7 @@ class sTestSoftLayer(unittest.TestCase):
         servers = ['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
         shutdown_public_ips(osrf_creds, servers)
 
-    def test_enable_public_ip(self):
+    def stest_enable_public_ip(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         servers = ['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
         enable_public_ips(osrf_creds, servers)
@@ -698,7 +701,7 @@ if __name__ == "__main__":
 
     p = get_softlayer_path()
     osrf_creds = load_osrf_creds(p)
-    #softlayer_dash_board(osrf_creds)
+    softlayer_dash_board(osrf_creds)
     unittest.main()
 #    softlayer_server_scan(osrf_creds)
     #hardware_helpers(osrf_creds)
