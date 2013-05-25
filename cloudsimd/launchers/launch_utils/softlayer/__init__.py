@@ -80,7 +80,7 @@ def _send_shutdown_public_port(api_username, api_key, server_name, server_id):
                                       api_username, api_key)
         result = False
         try:
-            result = client.setPublicNetworkInterfaceSpeed(10000)
+            result = client.setPublicNetworkInterfaceSpeed(0)
             print (result)
             return result
         except Exception, e:
