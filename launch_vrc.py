@@ -135,7 +135,7 @@ class Launcher:
         args['cs_role'] = team['cs_role']
         args['cs_admin_users'] = self.additional_cs_admins
         print('Launching (%s,%s,%s)' % (username, configuration, args))
-        #launch_constellation(username, configuration, args)
+        launch_constellation(username, configuration, args)
 
     def go(self):
         self.load()
