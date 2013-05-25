@@ -289,8 +289,12 @@ def monitor_task(constellation_name, ssh_router):
         net_str = None
 
         if sim_time > timeout:
-            msg = task['task_message'] + " [Timeout]"
-            constellation.update_task_value(task['task_id'], 'task_message', msg)
+            timeout_msg = ' [Timeout]'
+            msg = task['task_message']
+            if not msg.endswith(timeout_msg):
+                msg += " [Timeout]"
+                constellation.update_task_value(task['task_id'], 'task_message', msg)
+
             raise TaskTimeOut("Task timeout %s > %s" % (sim_time, timeout), task)
         try:
             n = ssh_router.cmd("cloudsim/get_network_usage.bash")
