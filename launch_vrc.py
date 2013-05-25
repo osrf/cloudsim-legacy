@@ -5,6 +5,7 @@ import os
 import yaml
 import tempfile
 import json
+import argparse
 
 # This script is meant to be run on the same machine that's running the "papa
 # cloudsim."  It'll talk through redis to the local cloudsim to make it launch
@@ -17,14 +18,12 @@ daemon_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
 sys.path.insert(0, daemon_path)
 from cloudsimd import launch_constellation
 
-USAGE = 'Usage: launch_vrc.py <teams.yaml>'
-
-
 class Launcher:
 
     def __init__(self, argv):
         self.teams_yaml = None
         self.data = None
+        self.team = None
         self.teams = {}
         self.softlayer_credentials = {}
         self.additional_cs_admins = []
@@ -33,9 +32,14 @@ class Launcher:
         print('Storing temporary files, including private credentials, in %s.  Be sure to delete this directory after the launch.' % (self.tmpdir))
 
     def parse_args(self, argv):
-        if len(argv) != 2:
-            raise Exception(USAGE)
-        self.teams_yaml = sys.argv[1]
+        parser = argparse.ArgumentParser(
+           description=('Launch VRC constellations'))
+        parser.add_argument('teams_file', help='YAML file with the team info')
+        parser.add_argument('-t', '--team',
+                            help='Attach CloudSim only for this team')
+        args = parser.parse_args()
+        self.teams_yaml = args.teams_file
+        self.team = args.team
 
     def load(self):
         # Parse everything out of the yaml file
@@ -135,8 +139,11 @@ class Launcher:
 
     def go(self):
         self.load()
-        for t in self.teams:
-            self.launch(t)
+        if self.team:
+            self.launch(self.team)
+        else:
+            for t in self.teams:
+                self.launch(t)
         print("\n ** Remember to delete %s after the launch has completed **" % (self.tmpdir))
 
 if __name__ == '__main__':
