@@ -292,7 +292,7 @@ def monitor_task(constellation_name, ssh_router):
             timeout_msg = ' [Timeout]'
             msg = task['task_message']
             if not msg.endswith(timeout_msg):
-                msg += " [Timeout]"
+                msg += timeout_msg
                 constellation.update_task_value(task['task_id'], 'task_message', msg)
 
             raise TaskTimeOut("Task timeout %s > %s" % (sim_time, timeout), task)
