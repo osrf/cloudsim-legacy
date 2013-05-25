@@ -52,6 +52,18 @@ page =  """<!DOCTYPE html>
     
 <script language="javascript">
 
+    var machine_configurations = null;
+
+    var add_annoying_reloads = true;
+    
+    function page_refresh()
+    {
+        if (add_annoying_reloads)
+        {
+            location.reload(true);
+        }
+    }
+
     function get_user_info()
     {
        var user_info = """ + user_info + """;
@@ -92,7 +104,7 @@ page =  """<!DOCTYPE html>
                 catch(err)
                 {
                     // the user is probably logged out.
-                    location.reload(true);
+                    page_refresh();
                 }
                for (var i=0; i< constellations.length; i++)
                {

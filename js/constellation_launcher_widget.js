@@ -1,5 +1,4 @@
 
-var machine_configurations = null;
 
 
 function create_constellation_launcher_widget(div_name)
@@ -12,7 +11,7 @@ function create_constellation_launcher_widget(div_name)
     catch(err)
     {
         // the user is probably logged out.
-        location.reload(true);
+        page_refresh();
     }
     
     var div = document.getElementById(div_name);
