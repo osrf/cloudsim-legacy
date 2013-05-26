@@ -65,13 +65,26 @@ def _get_hardware(api_username, api_key, server_name = None):
     return hardware
 
 
-def _send_reload_server_cmd(api_username, api_key, server_id):
-    client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id,
-                                  api_username,
-                                  api_key)
+def _send_reload_server_cmd(api_username, api_key, server_name, server_id):
+    for i in range(100):
+        try:
+            client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id,
+                                      api_username,
+                                      api_key)
+            try:
+                result = client.reloadCurrentOperatingSystemConfiguration('FORCE')
+                print (result)
+                return result
+            except SoftLayerAPIError, e:
+                if str(e).find("outstanding transaction") < 0:
+                    raise
+                else:
+                    return True
 
-    result = client.reloadCurrentOperatingSystemConfiguration('FORCE')
-    print (result)
+        except Exception, e:
+            log("%s" % e)
+            time.sleep(10)
+    raise SoftLayerException("Can't enable public ip on server %s", server_name)
 
 
 def _send_shutdown_public_port(api_username, api_key, server_name, server_id):
@@ -525,13 +538,10 @@ def reload_servers(osrf_creds, server_names):
                                     {'hostname': {'operation': server_name}}})
         server_id = hardware[0]['id']
         print("reloading server %s id %s" % (server_name, server_id))
-        try:
-            _send_reload_server_cmd(osrf_creds['user'], osrf_creds['api_key'],
-                                    server_id)
-        except SoftLayerAPIError, e:
-            if str(e).find("outstanding transaction") < 0:
-                raise
-        print("Continuing despite exception: %s" % e)
+        _send_reload_server_cmd(osrf_creds['user'], osrf_creds['api_key'],
+                                    server_name, server_id)
+
+
 
 
 def get_constellation_prefixes(osrf_creds):
@@ -668,10 +678,10 @@ class sTestSoftLayer(unittest.TestCase):
         servers = ['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
         wait_for_server_reloads(osrf_creds, servers)
 
-    def atest_reload_Server(self):
+    def etest_reload_Server(self):
         p = get_softlayer_path()
         osrf_creds = load_osrf_creds(p)
-        servers = ['cs-13', 'sim-13', 'router-13', 'fc1-13', 'fc2-13']
+        servers = ['cs-43', 'sim-43', 'router-43', 'fc1-43', 'fc2-43']
         try:
             reload_servers(osrf_creds, servers)
         except Exception, e:
@@ -679,12 +689,12 @@ class sTestSoftLayer(unittest.TestCase):
 
     def stest_shutdown_public_ip(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
-        servers = ['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
+        servers = ['cs-44', 'sim-44', 'fc1-44', 'fc2-44']
         shutdown_public_ips(osrf_creds, servers)
 
-    def test_enable_public_ip(self):
+    def stest_enable_public_ip(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
-        servers = ['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
+        servers = ['cs-44', 'sim-44', 'fc1-44', 'fc2-44']
         enable_public_ips(osrf_creds, servers)
 
     def atest_get_constellation_prefixes(self):
