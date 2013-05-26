@@ -6,6 +6,7 @@ import yaml
 import tempfile
 import json
 import argparse
+import time
 
 # This script is meant to be run on the same machine that's running the "papa
 # cloudsim."  It'll talk through redis to the local cloudsim to make it launch
@@ -144,6 +145,8 @@ class Launcher:
         else:
             for t in self.teams:
                 self.launch(t)
+                # make it easy in the network load
+                time.sleep(5) 
         print("\n ** Remember to delete %s after the launch has completed **" % (self.tmpdir))
 
 if __name__ == '__main__':
