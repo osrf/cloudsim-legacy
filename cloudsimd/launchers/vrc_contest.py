@@ -25,7 +25,7 @@ from launch_utils.monitoring import constellation_is_terminated,\
 from launch_utils.softlayer import load_osrf_creds, reload_servers,\
     get_softlayer_path, wait_for_server_reloads, get_machine_login_info,\
     setup_ssh_key_access, create_ssh_key, create_openvpn_key,\
-    shutdown_public_ips
+    shutdown_public_ips, enable_public_ips
 
 from launch_utils.launch_db import get_constellation_data, ConstellationState,\
     get_cloudsim_config
@@ -47,7 +47,8 @@ FC2_IP = '10.0.0.53'
 OPENVPN_SERVER_IP = '11.8.0.1'
 OPENVPN_CLIENT_IP = '11.8.0.2'
 
-launch_sequence = ["nothing", "os_reload", "init_router", "init_privates", "zip", "change_ip", "startup", "block_public_ips", "reboot", "running"]
+launch_sequence = ["nothing", "os_reload", "init_router", "init_privates",
+        "zip", "change_ip", "startup", "block_public_ips", "reboot", "running"]
 
 
 def log(msg, channel="vrc_contest"):
@@ -60,18 +61,29 @@ def log(msg, channel="vrc_contest"):
     print("vrc_contest log> %s" % msg)
 
 
-
 def update(constellation_name):
     """
-    Upadate the constellation software on the servers.
+    Update the constellation software on the servers.
     This function is a plugin function that should be implemented by 
     each constellation type
     """
-    constellation = ConstellationState( constellation_name)
-    constellation_directory = constellation.get_value('constellation_directory')
-    
-    # Do the software update here, via ssh
-    
+    constellation = ConstellationState(constellation_name)
+    constellation_directory = constellation.get_value(
+                                                    'constellation_directory')
+    router_ip = constellation.get_value("router_public_ip")
+    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu',
+                           router_ip)
+
+    for state in ["sim_state", "router_state", "fc1_state", "fc2_state",]:
+        constellation.set_value(state, "packages_setup")
+    try:
+        pass
+        o = ssh_router.cmd("cloudsim/update_constellation.bash")
+        log("UPDATE: %s" % o, "toto")
+    finally:
+        for state in ["sim_state", "router_state", "fc1_state", "fc2_state",]:
+            constellation.set_value("sim_state", "running")
+        log("UPDATE DONE", "toto")
 
 def get_ping_data(ping_str):
     mini, avg, maxi, mdev = [float(x) for x in ping_str.split()[-2].split('/')]
@@ -282,35 +294,33 @@ def monitor(username, constellation_name, counter):
             router_ip = constellation.get_value("router_public_ip")
 
             ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+
+            router_state = constellation.get_value('router_state')
+            fc1_state = constellation.get_value('fc1_state')
+            fc2_state = constellation.get_value('fc2_state')
+            sim_state = constellation.get_value('sim_state')
+
+            monitor_launch_state(constellation_name, ssh_router, router_state, "tail -1 /var/log/dpkg.log", 'router_launch_msg')
+            monitor_launch_state(constellation_name, ssh_router, fc1_state, "cloudsim/dpkg_log_fc1.bash", 'fc1_launch_msg')
+            monitor_launch_state(constellation_name, ssh_router, fc2_state, "cloudsim/dpkg_log_fc2.bash", 'fc2_launch_msg')
+            monitor_launch_state(constellation_name, ssh_router, sim_state, "cloudsim/dpkg_log_sim.bash", 'sim_launch_msg')
+
             monitor_simulator(constellation_name, ssh_router, "sim_state")
             monitor_task(constellation_name, ssh_router)
 
-            router_state = constellation.get_value('router_state')
-            monitor_cloudsim_ping(constellation_name, 'router_ip', 'router_latency')
-            monitor_task(constellation_name, ssh_router)
-
-            monitor_launch_state(constellation_name, ssh_router, router_state, "tail -1 /var/log/dpkg.log", 'router_launch_msg')
-            monitor_task(constellation_name, ssh_router)
-
-            fc1_state = constellation.get_value('fc1_state')
             monitor_ssh_ping(constellation_name, ssh_router, FC1_IP, 'fc1_latency')
             monitor_task(constellation_name, ssh_router)
 
-            monitor_launch_state(constellation_name, ssh_router, fc1_state, "cloudsim/find_file_fc1.bash", 'field1_launch_msg')
-            monitor_task(constellation_name, ssh_router)
-
-            fc2_state = constellation.get_value('fc2_state')
             monitor_ssh_ping(constellation_name, ssh_router, FC2_IP, 'fc2_latency')
             monitor_task(constellation_name, ssh_router)
 
-            monitor_launch_state(constellation_name, ssh_router, fc2_state, "cloudsim/find_file_fc2.bash", 'field2_launch_msg')
-            monitor_task(constellation_name, ssh_router)
+            monitor_simulator(constellation_name, ssh_router, "sim_state")
 
-            sim_state = constellation.get_value('sim_state')
             monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'sim_latency')
             monitor_task(constellation_name, ssh_router)
 
-            monitor_launch_state(constellation_name, ssh_router, sim_state, "cloudsim/find_file_sim.bash", 'sim_launch_msg')
+            #monitor_cloudsim_ping(constellation_name, 'router_ip', 'router_latency')
+            monitor_ssh_ping(constellation_name, ssh_router, OPENVPN_CLIENT_IP, 'router_latency')
             monitor_task(constellation_name, ssh_router)
 
         except TaskTimeOut, e:
@@ -940,7 +950,12 @@ def reload_os_machines(constellation_name, constellation_prefix, osrf_creds_fnam
         constellation.set_value('fc2_launch_msg', 'reload OS')
         constellation.set_value('sim_launch_msg', 'reload OS')
         machine_names = [x + "-" + constellation_prefix for x in ('router', 'sim', 'fc2', 'fc1')]
+        
+        # enable nics on machines with disconnected ones (not the router)
+        enable_public_ips(osrf_creds, machine_names[1:])
         reload_servers(osrf_creds, machine_names)
+
+
 
         constellation.set_value("launch_stage", "os_reload")
 
