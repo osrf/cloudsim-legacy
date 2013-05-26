@@ -77,9 +77,9 @@ page =  """<!DOCTYPE html>
     {
         try
         {
-            var callback = function(str_data)
+            var callback = function(data)
             {
-                var users = eval( '(' + str_data + ')' );
+                var users = data;
                 $.publish('/users',users);
                 setTimeout(users_update , 500);
             };

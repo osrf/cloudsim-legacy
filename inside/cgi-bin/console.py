@@ -93,25 +93,25 @@ page =  """<!DOCTYPE html>
         try
         {
             console.log("update");
-            
-            var callback = function(str_data)
+            var callback = function(data)
             {
                var constellations = null;
                try
-               {
-                   constellations = eval( '(' + str_data + ')' );
+                {
+                    constellations = data;
+                    for (var i=0; i< constellations.length; i++)
+                    {
+                       var constellation = constellations[i];
+                       $.publish("/constellation" , constellation);
+                    }
                 }
                 catch(err)
                 {
                     // the user is probably logged out.
                     page_refresh();
                 }
-               for (var i=0; i< constellations.length; i++)
-               {
-                   var constellation = constellations[i];
-                   $.publish("/constellation" , constellation);
-               } 
-               // that was fun, let's do it again in 500 ms
+                
+               // let's do it again in 500 ms
                setTimeout(constellation_update , 500);
             };
         }

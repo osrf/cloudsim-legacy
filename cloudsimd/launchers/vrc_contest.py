@@ -67,13 +67,13 @@ def update(constellation_name):
     This function is a plugin function that should be implemented by 
     each constellation type
     """
+
     constellation = ConstellationState(constellation_name)
     constellation_directory = constellation.get_value(
                                                     'constellation_directory')
     router_ip = constellation.get_value("router_public_ip")
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu',
                            router_ip)
-
     for state in ["sim_state", "router_state", "fc1_state", "fc2_state",]:
         constellation.set_value(state, "packages_setup")
     try:
