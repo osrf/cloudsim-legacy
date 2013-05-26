@@ -11,7 +11,8 @@ function create_latency_widget(machine_div,
                                constellation_name, 
                                machine_name,
                                data_key,
-                               title)
+                               title,
+                               max_value)
 {
     var unique_plot_id = "latency_"+ constellation_name + "_" + machine_name;
     var widget_div = _create_empty_widget(machine_div, unique_plot_id);
@@ -29,19 +30,26 @@ function create_latency_widget(machine_div,
                              { label:"max", color: max_color, data:[]}, 
                              { label:"average", color:avg_color, data:[]} 
                          ];
-
-
+    
+    // how to display the decimal values on
+    // the y axis
+    var decimal_places = 0;
+    if (max_value < 100)
+    {
+    	decimal_places = 2;
+    }
+    	
     var plot_options = {
 
     		yaxis: {
     		        min: 0,
-    		        max: 550,
+    		        max: max_value,
     		        tickFormatter : function (v, yaxis) 
         			{ 
         				//var v = (xaxis.max -v);   
-        				var str = v.toFixed(0) + " ms"; 
+        				var str = v.toFixed(decimal_places) + " ms"; 
         				return  str;
-        			},
+        			}
     		   },
 
     		xaxis: { 

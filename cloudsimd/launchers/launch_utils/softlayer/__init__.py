@@ -108,8 +108,8 @@ def _send_enable_public_port(api_username, api_key, server_name, server_id):
                                       api_username, api_key)
         result = False
         try:
-            result = client.setPublicNetworkInterfaceSpeed(1000)
-            print (result)
+            result = client.setPublicNetworkInterfaceSpeed(10000)
+            log("_send_enable_public_port %s" % result)
             return result
         except Exception, e:
             log("%s" % e)
@@ -531,7 +531,6 @@ def reload_servers(osrf_creds, server_names):
     client = SoftLayer.Client(username=osrf_creds['user'],
                               api_key=osrf_creds['api_key'],)
     
-    enable_public_ips(osrf_creds, server_names)
     
     for server_name in server_names:
         hardware = client['Account'].getHardware(filter={'hardware':
@@ -708,7 +707,7 @@ if __name__ == "__main__":
 
     p = get_softlayer_path()
     osrf_creds = load_osrf_creds(p)
-    #softlayer_dash_board(osrf_creds)
+    softlayer_dash_board(osrf_creds)
     unittest.main()
 #    softlayer_server_scan(osrf_creds)
     #hardware_helpers(osrf_creds)

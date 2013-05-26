@@ -147,29 +147,25 @@ def monitor_launch_state(constellation_name, ssh_client,
                          launch_msg_key):
 
     if ssh_client == None:  # too early to verify
-        return 
+        return
 
-    #log("monitor_launch_state %s/%s %s" % (constellation_name, launch_msg_key, machine_state))
     constellation = ConstellationState(constellation_name)
     constellation_state = constellation.get_value("constellation_state")
-    #log("const state %s" % constellation_state)
-
     if constellation_states.index(constellation_state) >= constellation_states.index("launching"):
         if machine_state == "running":
             constellation.set_value(launch_msg_key, "complete")
-            log("complete")
 
         if machine_state == 'packages_setup':
             try:
-                dpkg_line = ssh_client.cmd(dpkg_cmd)  # "bash cloudsim/dpkg_log_robot.bash"
-                robot_package = parse_dpkg_line(dpkg_line)
+                dpkg_line = ssh_client.cmd(dpkg_cmd)
+                package_msg = parse_dpkg_line(dpkg_line)
                 current_value = constellation.get_value(launch_msg_key)
-                log("xx %s" % robot_package)
-                if current_value != robot_package:
-                    constellation.set_value(launch_msg_key, robot_package)
-                    log('%s/%s = %s' % (constellation_name, dpkg_cmd, robot_package) )
+                if current_value != package_msg:
+                    constellation.set_value(launch_msg_key, package_msg)
             except Exception, e:
-                log("%s error: %s" % (dpkg_cmd, e))
+                tb = traceback.format_exc()
+                log("monitor_launch_state traceback:  %s" % tb)
+
 
 
 def monitor_simulator(constellation_name, ssh_client, sim_state_key='simulation_state'):
