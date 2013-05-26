@@ -154,9 +154,12 @@ class ConstellationPlugin(object):
     The plugins contains the function pointers for each type of constellation
     Don't forget to register new constellations
     """
-    def __init__(self, launch, terminate, monitor, start_task, stop_task):
+    def __init__(self, launch, terminate, update, monitor, 
+                 start_task,
+                 stop_task):
         self.launch = launch
         self.terminate = terminate
+        self.update = update
         self.monitor = monitor
         self.start_task = start_task
         self.stop_task = stop_task
@@ -168,39 +171,51 @@ def get_plugin(configuration):
     launch-terminate and start-stop simulation.
     This is the switch.
     """
+    def make_plugin(module):
+        ConstellationPlugin(module.launch, module.terminate, module.update,
+                            module.monitor,
+                            module.start_task,
+                            module.stop_task)
+        
     plugin = None
     #log("get_plugin '%s'" % configuration)
 
-    if configuration == 'AWS CloudSim':
-        from launchers import amazon_cloudsim as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.monitor, None, None)
 
-    elif configuration == 'AWS simulator':
-        from launchers import simulator as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.monitor, c.start_task, c.stop_task)
-
-    elif configuration == 'AWS trio':
-        from launchers import amazon_trio as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.monitor, c.start_task, c.stop_task)
-
-    elif configuration == 'AWS micro trio':
-        from launchers import amazon_micro_trio as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.monitor, c.start_task, c.stop_task)
+    if configuration.startswith("OSRF CloudSim "):
+        from launchers import cloudsim as c
+        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
+                              None, None)
 
     elif configuration.startswith("OSRF VRC Constellation "):
         from launchers import vrc_contest as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.monitor, c.start_task, c.stop_task)
+        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
+                                     c.start_task, c.stop_task)
+    elif configuration == 'AWS CloudSim':
+        return make_plugin(launchers.amazon_cloudsim)
+        
+    elif configuration == 'AWS simulator':
+        from launchers import simulator as c
+        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
+                                     c.start_task, c.stop_task)
 
-    elif configuration.startswith("OSRF CloudSim "):
-        from launchers import cloudsim as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.monitor, None, None)
+    elif configuration == 'AWS trio':
+        from launchers import amazon_trio as c
+        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
+                                     c.start_task, c.stop_task)
+
+    elif configuration == 'AWS micro trio':
+        from launchers import amazon_micro_trio as c
+        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
+                                     c.start_task, c.stop_task)
+
     else:
         raise UnknownConfig('Invalid configuration "%s"' % (configuration,))
-    #log("get_plugin: %s %s" % (configuration, plugin))
+    
+    log("get_plugin: %s %s" % (configuration, plugin))
     return plugin
 
 
-def update_cloudsim_configuration_list():
+def load_cloudsim_configurations_list():
 
     configs = {}
     
@@ -293,7 +308,7 @@ def launch(username,
             constellation.set_value('error', '%s' % e)
             tb = traceback.format_exc()
             log("LAUNCH ERROR traceback:  %s" % tb)
-            log("LAUNCH ERROR %s traceback:  %s" % (constellation_name, tb), "launch_error")
+            log("LAUNCH ERROR %s traceback:  %s" % (constellation_name, tb), "launch_errors")
 
             #time.sleep(10)
             #terminate(constellation_name, constellation_directory)
@@ -310,33 +325,64 @@ def launch(username,
         log("traceback:  %s" % tb)
 
 
-def terminate(constellation, constellation_directory):
+def update_constellation(constellation_name):
     """
-    Terminates the machine via the cloud interface. Files will be removed by the
-    monitoring process
+    Updates the constellation via the cloud interface. 
     """
-
+    log("sdlihkflafdhsl")
     proc = multiprocessing.current_process().name
-    log("terminate '%s' from proc '%s'" % (constellation,  proc))
+    log("update_constellation '%s' from proc '%s'" % (constellation_name,  proc))
 
     try:
 
-        data = get_constellation_data(constellation)
+        data = get_constellation_data(constellation_name)
         config = data['configuration']
         log("    configuration is '%s'" % (config))
 
         constellation_plugin = get_plugin(config)
-        constellation_plugin.terminate(constellation, constellation_directory)
+        constellation_plugin.update(constellation_name)
+
+    except Exception, e:
+        log("cloudsimd.py update error: %s" % e)
+        tb = traceback.format_exc()
+        log("traceback:  %s" % tb)
+        log("UPDATE ERROR %s traceback:  %s" % (constellation_name, tb), "launch_errors")
+            
+    #constellation = ConstellationState(constellation_name)
+    #constellation.set_value('constellation_state', 'running')
+    
+
+
+
+def terminate(constellation_name):
+    """
+    Terminates the constellation via the cloud interface.
+    """
+
+    proc = multiprocessing.current_process().name
+    log("terminate '%s' from proc '%s'" % (constellation_name,  proc))
+
+    try:
+
+        data = get_constellation_data(constellation_name)
+        config = data['configuration']
+        log("    configuration is '%s'" % (config))
+
+        constellation_plugin = get_plugin(config)
+        constellation_plugin.terminate(constellation_name)
 
     except Exception, e:
         log("cloudsimd.py terminate error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
-
-    constellation = ConstellationState(constellation)
+        log("LAUNCH ERROR %s traceback:  %s" % (constellation_name, tb), "launch_errors")
+            
+    constellation = ConstellationState(constellation_name)
     constellation.set_value('constellation_state', 'terminated')
-    log("Deleting %s from the database" % constellation)
+    log("Deleting %s from the database" % constellation_name)
     constellation.expire(1)
+
+
 
 task_states = ['ready',
                #'setup',
@@ -511,11 +557,22 @@ def async_launch(username, config, constellation_name, args,  constellation_dire
         log("cloudsimd async_launch Error %s" % e)
 
 
-def async_terminate(constellation, constellation_directory):
+def async_update(constellation_name):
+
+    log("async update '%s'" % (constellation_name))
+    try:
+        p = multiprocessing.Process(target=update_constellation, args=(constellation_name,))
+        p.start()
+
+    except Exception, e:
+        log("Cloudsim async_update Error for constellation %s :%s" % (constellation_name,e))
+
+
+def async_terminate(constellation):
 
     log("async terminate '%s'" % (constellation,))
     try:
-        p = multiprocessing.Process(target=terminate, args=(constellation,  constellation_directory))
+        p = multiprocessing.Process(target=terminate, args=(constellation,))
         p.start()
 
     except Exception, e:
@@ -627,7 +684,7 @@ def async_stop_task(constellation_name):
 
 
 def async_update_cloudsim_configuration_list():
-    p = multiprocessing.Process(target=update_cloudsim_configuration_list,
+    p = multiprocessing.Process(target=load_cloudsim_configurations_list,
                                 args=())
     p.start()
 
@@ -661,7 +718,7 @@ def launch_cmd(root_dir, data):
         constellation_path = os.path.join(root_dir, constellation_name)
 
         if os.path.exists(constellation_path):
-            constellation_backup = "%s c%s" % (constellation_name, get_unique_short_name())
+            constellation_backup = "bak%s-%s" % (constellation_name, get_unique_short_name())
             backup_path = os.path.join(root_dir, constellation_backup)
             log("move %s to %s" % (constellation_path, backup_path))
             shutil.move(constellation_path, backup_path)
@@ -697,7 +754,7 @@ def run(root_dir, tick_interval):
 
             log("CMD= \"%s\" DATA=\"%s\" " % (cmd, data))
 
-            if cmd == 'update_cloudsim_configuration_list':
+            if cmd == 'load_cloudsim_configurations_list':
                 async_update_cloudsim_configuration_list()
 
             elif cmd == 'launch':
@@ -705,8 +762,11 @@ def run(root_dir, tick_interval):
 
             elif cmd == 'terminate':
                 constellation = data['constellation']
-                constellation_path = os.path.join(root_dir, constellation)
-                async_terminate(constellation, constellation_path)
+                async_terminate(constellation)
+
+            elif cmd == 'update':
+                constellation = data['constellation']
+                async_update(constellation)
 
             #
             # tasks stuff
@@ -789,7 +849,7 @@ if __name__ == "__main__":
         config ['cs_admin_users'] = []
         
         set_cloudsim_config(config)
-        update_cloudsim_configuration_list()
+        load_cloudsim_configurations_list()
 
         run(root_dir, tick_interval)
 

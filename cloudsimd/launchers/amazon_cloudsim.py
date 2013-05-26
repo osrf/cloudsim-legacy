@@ -58,6 +58,19 @@ def log(msg, channel = "cloudsim"):
         print("Warning: redis not installed.")
     #print("cloudsim log> %s" % msg)
 
+
+def update(constellation_name):
+    """
+    Upadate the constellation software on the servers.
+    This function is a plugin function that should be implemented by 
+    each constellation type
+    """
+    constellation = ConstellationState( constellation_name)
+    constellation_directory = constellation.get_value('constellation_directory')
+    
+    # Do the software update here, via ssh
+    
+    
 def start_task(constellation, package_name, launch_file_name,
                timeout, launch_args, latency, data_cap):
     
@@ -91,7 +104,8 @@ def monitor(username, constellation_name, counter):
 
 
 
-def launch(username, configuration, constellation_name, tags, constellation_directory, website_distribution = CLOUDSIM_ZIP_PATH ):
+def launch(username, configuration, constellation_name, tags, 
+           constellation_directory, website_distribution=CLOUDSIM_ZIP_PATH ):
 
     log('launch!!! tags = %s' % tags)
 
@@ -340,12 +354,13 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
     return simulation_aws_id, sim_ip, key_filename
 
 
-def terminate( constellation_name, constellation_directory):
+def terminate( constellation_name):
 
     ec2conn = aws_connect()[0]
     constellation = ConstellationState( constellation_name)
     constellation.set_value('constellation_state', 'terminating')
-
+    constellation_directory = constellation.get_value('constellation_directory')
+    
     log("terminate %s [constellation_name=%s]" % (CONFIGURATION, constellation_name) )
 
     try:

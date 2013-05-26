@@ -53,6 +53,20 @@ def log(msg, channel = "trio"):
         print("Warning: redis not installed.")
     print("cloudsim log> %s" % msg)
 
+
+
+def update(constellation_name):
+    """
+    Upadate the constellation software on the servers.
+    This function is a plugin function that should be implemented by 
+    each constellation type
+    """
+    constellation = ConstellationState( constellation_name)
+    constellation_directory = constellation.get_value('constellation_directory')
+    
+    # Do the software update here, via ssh
+    
+
 def create_vcp_router_securtity_group(ec2conn, sg_name, constellation_name, vpc_id, vpn_subnet):
     sg = ec2conn.create_security_group(sg_name, 'Security group for constellation %s' % (constellation_name), vpc_id)
     sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
@@ -168,8 +182,11 @@ def launch(username, constellation_name, tags, credentials_ec2, constellation_di
 def terminate_prerelease(username, constellation_name, constellation_directory):
     _terminate(username, constellation_name,  constellation_directory, "vpc_trio_prerelease")
         
-def terminate(username, constellation_name, constellation_directory):
+def terminate(constellation_name):
     # call terminate with the appropriate configuration name
+    username =""
+    constellation_dict = get_constellation_data(  constellation_name)
+    constellation_directory = constellation_dict['constellation_directory']
     _terminate(username, constellation_name, constellation_directory, "vpc_trio")
     
 def monitor_prerelease(username, constellation_name,  counter):

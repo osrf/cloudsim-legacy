@@ -150,9 +150,6 @@ if method == 'GET':
     print("%s" % s)
     exit(0)
 
-if method == 'PUT':
-    # todo unsupported
-    exit(0)
 
 d = {}
 d['username'] = email
@@ -167,6 +164,16 @@ if method == 'DELETE':
         print("%s" % s)
         exit(0)
 
+
+if method == 'PUT':
+    d['command'] = 'update'
+    d['constellation'] = get_constellation_from_path()
+    if role != 'admin':
+        d['error'] = "Insufficient privileges"
+        s = json.dumps(d)
+        print("%s" % s)
+        exit(0)
+        
 if method == 'POST':
     d = {}
     d['username'] = email

@@ -84,8 +84,6 @@ function create_constellation(div_name, configuration, constellation, username, 
 
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file", false );
         create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to its parent CloudSim");
-
-
     }
 
     if(configuration.indexOf("AWS trio") ==0 || configuration.indexOf("AWS micro trio") ==0  )

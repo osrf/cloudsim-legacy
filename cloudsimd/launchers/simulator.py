@@ -54,36 +54,17 @@ def get_ping_data(ping_str):
 
 
 
-def start_simulator(constellation, package_name, launch_file_name, launch_args, task_timeout):
-
-    log("1")
-    constellation_dict = get_constellation_data(  constellation)
-    constellation_directory = constellation_dict['constellation_directory']
-    sim_key_pair_name    = constellation_dict['sim_key_pair_name']
-    log("2")
-    sim_ip    = constellation_dict['simulation_ip']
-    sim_machine_name = constellation_dict['sim_machine_name']
-    sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
-    c = "bash cloudsim/start_sim.bash %s %s %s" %(package_name, launch_file_name, launch_args)
-    cmd = c.strip()
-    ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
-    log("3")
-    r = ssh_sim.cmd(cmd)
-    log('start_simulator %s' % r)
-
-
-def stop_simulator(constellation):
-    constellation_dict = get_constellation_data( constellation)
-    constellation_directory = constellation_dict['constellation_directory']
-    sim_key_pair_name    = constellation_dict['sim_key_pair_name']
-    sim_ip    = constellation_dict['simulation_ip']
-    sim_machine_name = constellation_dict['sim_machine_name']
-    sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
-    cmd = "bash cloudsim/stop_sim.bash"
-    ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
-    r = ssh_sim.cmd(cmd)
-    log('stop_simulator %s' % r)
-
+def update(constellation_name):
+    """
+    Upadate the constellation software on the servers.
+    This function is a plugin function that should be implemented by 
+    each constellation type
+    """
+    constellation = ConstellationState( constellation_name)
+    constellation_directory = constellation.get_value('constellation_directory')
+    
+    # Do the software update here, via ssh
+     
 
 def start_task(constellation, task):
     
@@ -116,6 +97,37 @@ def stop_task(constellation):
     log("** stop simulator ***")
     stop_simulator(constellation)
     
+def start_simulator(constellation, package_name, launch_file_name, launch_args, task_timeout):
+
+    log("1")
+    constellation_dict = get_constellation_data(  constellation)
+    constellation_directory = constellation_dict['constellation_directory']
+    sim_key_pair_name    = constellation_dict['sim_key_pair_name']
+    log("2")
+    sim_ip    = constellation_dict['simulation_ip']
+    sim_machine_name = constellation_dict['sim_machine_name']
+    sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
+    c = "bash cloudsim/start_sim.bash %s %s %s" %(package_name, launch_file_name, launch_args)
+    cmd = c.strip()
+    ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
+    log("3")
+    r = ssh_sim.cmd(cmd)
+    log('start_simulator %s' % r)
+
+
+def stop_simulator(constellation):
+    constellation_dict = get_constellation_data( constellation)
+    constellation_directory = constellation_dict['constellation_directory']
+    sim_key_pair_name    = constellation_dict['sim_key_pair_name']
+    sim_ip    = constellation_dict['simulation_ip']
+    sim_machine_name = constellation_dict['sim_machine_name']
+    sim_machine_dir = os.path.join(constellation_directory, sim_machine_name)
+    cmd = "bash cloudsim/stop_sim.bash"
+    ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
+    r = ssh_sim.cmd(cmd)
+    log('stop_simulator %s' % r)
+
+
 
 def monitor(username, constellation_name, credentials_ec2, counter):
     _monitor(username, constellation_name, credentials_ec2, "simulator", counter)

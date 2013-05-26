@@ -111,9 +111,36 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
         };
         
         top_div.appendChild(terminate_button);
+
 	}
 
+	if(get_user_info()['role'] == 'admin')
+	{
+        
+        var update_button= document.createElement('input');
+        update_button.setAttribute('type','button');
+        update_button.setAttribute('value','Update software');
 
+        // do not allow users to Terminate constellations 
+        update_button.onclick =  function()
+        {   
+        	var msg = "Update software on " + constellation_name + "?";
+            msg += "\n\n";
+            msg += "This operation will restart running processes, and ";
+            msg += "may interrupt important tasks"; 
+        
+            var r = confirm(msg);
+            
+            if (r==false)
+            {
+                return;
+            }
+            update_constellation(constellation_name);
+        };
+
+        top_div.appendChild(update_button);
+	}
+        
     //create_task_list_widget(const_div, constellation_name);
 //    var tasks_div = document.createElement("div");
 //    tasks_div.id = "tasks";

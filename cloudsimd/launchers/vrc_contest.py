@@ -60,6 +60,19 @@ def log(msg, channel="vrc_contest"):
     print("vrc_contest log> %s" % msg)
 
 
+
+def update(constellation_name):
+    """
+    Upadate the constellation software on the servers.
+    This function is a plugin function that should be implemented by 
+    each constellation type
+    """
+    constellation = ConstellationState( constellation_name)
+    constellation_directory = constellation.get_value('constellation_directory')
+    
+    # Do the software update here, via ssh
+    
+
 def get_ping_data(ping_str):
     mini, avg, maxi, mdev = [float(x) for x in ping_str.split()[-2].split('/')]
     return (mini, avg, maxi, mdev)
@@ -1498,9 +1511,8 @@ def launch(username, config, constellation_name, tags, constellation_directory):
     run_machines(constellation_name, constellation_directory)
 
 
-def terminate(constellation_name, osrf_creds_fname=None):
+def terminate(constellation_name):
 
-    # osrf_creds = load_osrf_creds(osrf_creds_fname)
     constellation = ConstellationState(constellation_name)
 
     constellation_prefix = None
