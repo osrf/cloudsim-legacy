@@ -125,8 +125,8 @@ class Launcher:
         args = dict()
         # Set auto_launch_configuration to None to not launch a follow-on
         # constellation from the newly created CloudSim Jr.
-        #args['auto_launch_configuration'] = team['quad']
-        args['auto_launch_configuration'] = None
+        args['auto_launch_configuration'] = team['quad']
+        #args['auto_launch_configuration'] = None
         args['softlayer_path'] = team['softlayer_fname']
         args['cloudsim_portal_json_path'] = team['portal_fname']
         args['cloudsim_portal_key_path'] = self.data['portal_key_path']
