@@ -6,6 +6,7 @@ import yaml
 import tempfile
 import json
 import argparse
+import time
 
 # This script is meant to be run on the same machine that's running the "papa
 # cloudsim."  It'll talk through redis to the local cloudsim to make it launch
@@ -25,6 +26,7 @@ class Launcher:
         self.data = None
         self.team = None
         self.teams = {}
+        self.auto_launch_configuration = False
         self.softlayer_credentials = {}
         self.additional_cs_admins = []
         self.parse_args(argv)
@@ -36,11 +38,16 @@ class Launcher:
            description=('Launch VRC constellations'))
         parser.add_argument('teams_file', help='YAML file with the team info')
         parser.add_argument('-t', '--team',
-                            help='Attach CloudSim only for this team')
+                            help='Attach CloudSim only for this team',)
+        parser.add_argument('-a', '--auto_launch',
+                            help='Also provision the constellation once CloudSim is ready',
+                            action="store_true")
         args = parser.parse_args()
         self.teams_yaml = args.teams_file
         self.team = args.team
-
+        print(args)
+        self.auto_launch = args.auto_launch
+        
     def load(self):
         # Parse everything out of the yaml file
         with open(self.teams_yaml) as f:
@@ -125,8 +132,13 @@ class Launcher:
         args = dict()
         # Set auto_launch_configuration to None to not launch a follow-on
         # constellation from the newly created CloudSim Jr.
-        #args['auto_launch_configuration'] = team['quad']
-        args['auto_launch_configuration'] = None
+        if self.auto_launch:
+            configuration = team['quad']
+            args['auto_launch_configuration'] = configuration
+            print("Auto launch configuration: %s" % configuration)
+        else:
+            args['auto_launch_configuration'] = None
+        
         args['softlayer_path'] = team['softlayer_fname']
         args['cloudsim_portal_json_path'] = team['portal_fname']
         args['cloudsim_portal_key_path'] = self.data['portal_key_path']
@@ -144,6 +156,8 @@ class Launcher:
         else:
             for t in self.teams:
                 self.launch(t)
+                # make it easy in the network load
+                time.sleep(5) 
         print("\n ** Remember to delete %s after the launch has completed **" % (self.tmpdir))
 
 if __name__ == '__main__':
