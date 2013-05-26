@@ -103,12 +103,20 @@ page =  """<!DOCTYPE html>
 
 <div style="float:right;">
 
-Welcome, """ + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-<div class="admin_only" style="display:none; padding: 20px 0px 0px 0px;" align="right">
+Welcome, """ + email + """ <br>
+
+<div class="admin_only" style="display:none; padding: 0px 0px 0px 0px;" align="right">
     <a href="/cloudsim/inside/cgi-bin/admin_download">SSH key download</a><br>
 
 </div>
+    <div style="padding:0px 0px 0px;" align="right">
     <a href="/cloudsim/inside/cgi-bin/console">Back to the console</a><br>
+    </div>
+
+    <div style="padding:0px 0px 0px;" align="right">
+    <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
+    </div>
+
 </div>    
 
 

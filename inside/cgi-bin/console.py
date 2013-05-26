@@ -140,10 +140,15 @@ page =  """<!DOCTYPE html>
 
 <div style="float:right;">
 
-Welcome, """ + role + " " + email + """ | <a href="/cloudsim/inside/cgi-bin/logout">Logout</a>
-<div id="officer_only" style="display:none; padding:  20px 0px 0px 0px;" align="right">
+Welcome, """ + role + " " + email + """<br> 
+    <div id="officer_only" style="display:none; padding:  0px 0px 0px 0px;" align="right">
     <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
-</div>
+    </div>
+    <div style="padding:0px 0px 0px;" align="right">
+    <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
+    </div>
+
+ 
 </div>    
 
 
