@@ -1,8 +1,3 @@
-function update_constellation(config)
-{
-	alert('not implemented yet ' + config);
-}
-
 function get_configurations()
 {
 	var url = "/cloudsim/inside/cgi-bin/machine_configs";
@@ -19,6 +14,18 @@ function launch_constellation(configuration)
     console.log("[POST]" + url);
     msg = httpPost(url);
     console.log(msg);
+}
+
+
+function update_constellation(constellation_name)
+{
+	var url = '/cloudsim/inside/cgi-bin/constellations';
+    url += '/' + constellation_name;
+
+    console.log("[PUT (update)]" + url);
+    msg = httpPut(url);
+    console.log(msg);
+    return msg;
 }
 
 function terminate_constellation(constellation_name)

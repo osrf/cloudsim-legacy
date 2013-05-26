@@ -46,6 +46,21 @@ def log(msg, channel="cloudsim"):
     #print("cloudsim log> %s" % msg)
 
 
+def update(constellation_name):
+    """
+    Upadate the constellation software on the servers.
+    This function is a plugin function that should be implemented by 
+    each constellation type
+    """
+    log("Cloudsim update of constellation %s " % constellation_name)
+    constellation = ConstellationState( constellation_name)
+    constellation_directory = constellation.get_value('constellation_directory')
+
+    # Do the software update here, via ssh
+    website_distribution = CLOUDSIM_ZIP_PATH
+    upload_and_deploy_cloudsim(constellation_name, website_distribution,
+                               force=False)
+
 def start_task(constellation, package_name, launch_file_name,
                timeout, launch_args, latency, data_cap):
 
@@ -96,17 +111,6 @@ def reload_os(constellation_name, constellation_prefix, osrf_creds_fname):
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('os_reload'):
         return
-
-    constellation.set_value('constellation_state', 'launching')
-    constellation.set_value('simulation_state', 'network_setup')
-    constellation.set_value('simulation_aws_state', 'pending')
-    constellation.set_value('simulation_launch_msg', "starting")
-    constellation.set_value('simulation_latency', '[]')
-    constellation.set_value('sim_zip_file', 'not ready')
-    constellation.set_value("error", "")
-
-    constellation.set_value("gazebo", "not running")
-    constellation.set_value('simulation_glx_state', "not running")
 
     osrf_creds = load_osrf_creds(osrf_creds_fname)
     # compute the softlayer machine names
@@ -235,8 +239,8 @@ def upload_and_deploy_cloudsim(constellation_name, website_distribution, force=F
     log("\t%s" % out_s)
 
 
-def launch(username, configuration, constellation_name, tags, 
-           constellation_directory, website_distribution = CLOUDSIM_ZIP_PATH ):
+def launch(username, configuration, constellation_name, tags,
+           constellation_directory, website_distribution=CLOUDSIM_ZIP_PATH):
 
     cfg = get_cloudsim_config()
     osrf_creds_fname = cfg['softlayer_path']
@@ -247,7 +251,18 @@ def launch(username, configuration, constellation_name, tags,
     constellation.set_value('simulation_state', 'starting')
     constellation.set_value("launch_stage", "nothing")
     constellation.set_value('simulation_latency','[]')
-    
+
+    constellation.set_value('constellation_state', 'launching')
+    constellation.set_value('simulation_state', 'network_setup')
+    constellation.set_value('simulation_aws_state', 'pending')
+    constellation.set_value('simulation_launch_msg', "starting")
+    constellation.set_value('simulation_latency', '[]')
+    constellation.set_value('sim_zip_file', 'not ready')
+    constellation.set_value("error", "")
+
+    constellation.set_value("gazebo", "not running")
+    constellation.set_value('simulation_glx_state', "not running")
+
     if configuration.find("update") >= 0:
         upload_and_deploy_cloudsim(constellation_name, website_distribution, force=False)
         return
@@ -445,14 +460,13 @@ def launch(username, configuration, constellation_name, tags,
         out = ssh_sim.upload_file(jr_bitbucket_key_path, remote_fname)
         log("\t%s" % out)
     else:
-        constellation.set_value('simulation_launch_msg', "No bitbucket key uploaded")
-
+        constellation.set_value('simulation_launch_msg',
+                                "No bitbucket key uploaded")
     #
     #  Upload cloudsim.zip and Deploy
     #
-    upload_and_deploy_cloudsim(constellation_name, website_distribution, force=True)
-
-
+    upload_and_deploy_cloudsim(constellation_name, website_distribution,
+                               force=True)
     #
     # For a CLoudSim launch, we look at the tags for a configuration to launch
     # at the end.
@@ -462,7 +476,8 @@ def launch(username, configuration, constellation_name, tags,
         log(msg)
         constellation.set_value('simulation_launch_msg', msg)
         time.sleep(20)
-        ssh_sim.cmd("/home/ubuntu/cloudsim/launch.py \"%s\" \"%s\"" % (username, auto_launch_configuration))
+        ssh_sim.cmd("/home/ubuntu/cloudsim/launch.py \"%s\" \"%s\"" % (username,
+                                                    auto_launch_configuration))
 
     print ("\033[1;32mCloudSim ready. Visit http://%s \033[0m\n" % ip)
     print ("Stop your CloudSim using the AWS console")
@@ -475,17 +490,14 @@ def launch(username, configuration, constellation_name, tags,
     log("provisioning done")
 
 
-def terminate(username,  constellation_name):
-
-    # osrf_creds_fname = get_softlayer_path()
+def terminate(constellation_name):
 
     constellation = ConstellationState(constellation_name)
-
     constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
     constellation.set_value('simulation_launch_msg', "terminating")
     constellation.set_value('constellation_state', 'terminating')
     constellation.set_value('simulation_state', 'terminating')
-    
+
     log("terminate %s [constellation_name=%s]" % (CONFIGURATION, 
                                                   constellation_name))
 
