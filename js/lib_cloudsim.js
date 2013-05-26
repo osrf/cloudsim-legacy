@@ -337,23 +337,43 @@ function async_get_constellations(callback)
 {
 	var url = '/cloudsim/inside/cgi-bin/constellations/';
 	
-    // console.log(url);
-    httpAsyncGet(url, callback);
+	$.ajax({
+		url: url,
+		cache: false,
+		success: function(json)
+		{
+			callback(json);
+		}
+	});
 }
 
 function async_get_constellation(constellation, callback)
 {
 	var url = '/cloudsim/inside/cgi-bin/constellations/';
 	url += constellation;
-    // console.log(url);
-    httpAsyncGet(url, callback);
+	
+	$.ajax({
+		url: url,
+		cache: false,
+		success: function(json)
+		{
+			callback(json);
+		}
+	});
 }
 
 function async_get_users(callback)
 {
 	var url = '/cloudsim/inside/cgi-bin/users/';
     // console.log(url);
-    httpAsyncGet(url, callback);
+	$.ajax({
+		url: url,
+		cache: false,
+		success: function(json)
+		{
+			callback(json);
+		}
+	});
 }
 
 
@@ -406,20 +426,6 @@ function clear_div(div_name)
    document.getElementById(div_name).innerHTML = "";  
 }
 
-
-///////////////////////// AJAX GET
-
-httpAsyncGet = function(url, callback) 
-{
-	$.ajax({
-		url: url,
-		cache: false,
-		success: function(json)
-		{
-			callback(json);
-		}
-	});
-}
 
 
 ///////////////// pub sub 
