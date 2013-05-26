@@ -65,13 +65,26 @@ def _get_hardware(api_username, api_key, server_name = None):
     return hardware
 
 
-def _send_reload_server_cmd(api_username, api_key, server_id):
-    client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id,
-                                  api_username,
-                                  api_key)
-
-    result = client.reloadCurrentOperatingSystemConfiguration('FORCE')
-    print (result)
+def _send_reload_server_cmd(api_username, api_key, server_name, server_id):
+    for i in range(100):
+        try:
+            client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id,
+                                      api_username,
+                                      api_key)
+            try:
+                result = client.reloadCurrentOperatingSystemConfiguration('FORCE')
+                print (result)
+                return result
+                    except SoftLayerAPIError, e:
+            if str(e).find("outstanding transaction") < 0:
+                raise
+            else
+                return True # 
+            
+        except Exception, e:
+            log("%s" % e)
+            time.sleep(10)
+    raise SoftLayerException("Can't enable public ip on server %s", server_name)
 
 
 def _send_shutdown_public_port(api_username, api_key, server_name, server_id):
@@ -525,12 +538,9 @@ def reload_servers(osrf_creds, server_names):
                                     {'hostname': {'operation': server_name}}})
         server_id = hardware[0]['id']
         print("reloading server %s id %s" % (server_name, server_id))
-        try:
-            _send_reload_server_cmd(osrf_creds['user'], osrf_creds['api_key'],
-                                    server_id)
-        except SoftLayerAPIError, e:
-            if str(e).find("outstanding transaction") < 0:
-                raise
+        _send_reload_server_cmd(osrf_creds['user'], osrf_creds['api_key'],
+                                    server_name, server_id)
+
         print("Continuing despite exception: %s" % e)
 
 
