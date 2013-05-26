@@ -18,10 +18,11 @@ def log(msg, channel="softlayer"):
         redis_client = redis.Redis()
         redis_client.publish(channel, msg)
         logging.info(msg)
-        print("launch_db>",msg)
+        print("softlayer>",msg)
     except:
         print("Warning: redis not installed.")
     #print("cloudsim log> %s" % msg)
+
 
 class SoftLayerException(Exception):
     pass
@@ -73,13 +74,14 @@ def _send_reload_server_cmd(api_username, api_key, server_name, server_id):
                                       api_key)
             try:
                 result = client.reloadCurrentOperatingSystemConfiguration('FORCE')
-                print (result)
+                log("Reload of %s returned %s" % (server_name, result))
                 return result
             except SoftLayerAPIError, e:
-                if str(e).find("outstanding transaction") < 0:
-                    raise
-                else:
+                if str(e).find("outstanding transaction") > 0:
+                    log("Reload of %s skipped due to outstanding transaction" % server_name)
                     return True
+                else:
+                    raise
 
         except Exception, e:
             log("%s" % e)
@@ -109,12 +111,17 @@ def _send_enable_public_port(api_username, api_key, server_name, server_id):
         result = False
         try:
             result = client.setPublicNetworkInterfaceSpeed(10000)
-            log("_send_enable_public_port %s" % result)
+            log("_send_enable_public_port %s = %s" % (server_name, result))
             return result
         except Exception, e:
+            if str(e).find("outstanding transaction") > 0:
+                log("_send_enable_public_port of %s skipped due to outstanding transaction" % server_name)
+                return True
+            else:
+                raise
             log("%s" % e)
             time.sleep(10)
-    raise SoftLayerException("Can't enable public ip on server %s", server_name )
+    raise SoftLayerException("Can't enable public ip on server %s", server_name)
 
 
 def _wait_for_server_reload(api_username, api_key, server_id, callback):
@@ -182,7 +189,7 @@ def get_servers_info(osrf_creds):
 
 def hardware_info(osrf_creds):
     servers = get_servers_info(osrf_creds)
-    
+
     for server in servers:
         server_id, host, username, password, priv_ip, pub_ip = server
         print ("[%7s] %10s [%s, %10s] [%s / %s]" % (server_id, host, username, password, priv_ip, pub_ip))
@@ -214,7 +221,7 @@ def softlayer_server_scan(osrf_creds):
         client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, osrf_creds['user'], osrf_creds['api_key'])
         print(server_name, server_id, client.getActiveTransaction())
 
-    
+
 def print_cb(server_name, status):
     print("PCB %s  [%s] = %s" % (datetime.datetime.now(),server_name, status))
 
@@ -250,6 +257,7 @@ def create_openvpn_key(key_fname):
     st,output = commands.getstatusoutput(cmd)
     if st != 0:
         raise SoftLayerException(cmd)
+
 
 def create_ssh_key(key_prefix, target_directory ):
     path = os.path.join(target_directory, key_prefix)
@@ -691,9 +699,9 @@ class sTestSoftLayer(unittest.TestCase):
         servers = ['cs-44', 'sim-44', 'fc1-44', 'fc2-44']
         shutdown_public_ips(osrf_creds, servers)
 
-    def stest_enable_public_ip(self):
+    def test_enable_public_ip(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
-        servers = ['cs-44', 'sim-44', 'fc1-44', 'fc2-44']
+        servers = ['sim-44', 'fc1-44', 'fc2-39']
         enable_public_ips(osrf_creds, servers)
 
     def atest_get_constellation_prefixes(self):
@@ -707,10 +715,7 @@ if __name__ == "__main__":
 
     p = get_softlayer_path()
     osrf_creds = load_osrf_creds(p)
-    softlayer_dash_board(osrf_creds)
+#   softlayer_dash_board(osrf_creds)
     unittest.main()
-#    softlayer_server_scan(osrf_creds)
-    #hardware_helpers(osrf_creds)
-    #hardware_info(osrf_creds)
 
 
