@@ -357,29 +357,6 @@ function async_get_users(callback)
 }
 
 
-
-///////////////////////// AJAX
-
-
-
-httpAsyncGet = function(url, callback) 
-{
-    var request = new XMLHttpRequest();
-    request.onreadystatechange = function()
-    {
-    	
-    	// if (request.readyState == 4) console.log("url " + url + " ready " + request.readyState + " status " + request.status);
-    	
-        if (request.readyState == 4 && request.status == 200)
-        {
-            callback(request.responseText); 
-        }    
-    }
-    request.open('GET', url);
-    request.send();
-}
-
-
 function httpGet(theUrl)
 {
     var xmlHttp = null;
@@ -428,6 +405,22 @@ function clear_div(div_name)
 {
    document.getElementById(div_name).innerHTML = "";  
 }
+
+
+///////////////////////// AJAX GET
+
+httpAsyncGet = function(url, callback) 
+{
+	$.ajax({
+		url: url,
+		cache: false,
+		success: function(json)
+		{
+			callback(json);
+		}
+	});
+}
+
 
 ///////////////// pub sub 
 

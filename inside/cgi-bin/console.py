@@ -94,12 +94,13 @@ page =  """<!DOCTYPE html>
         {
             console.log("update");
             
-            var callback = function(str_data)
+            var callback = function(data)
             {
                var constellations = null;
                try
-               {
-                   constellations = eval( '(' + str_data + ')' );
+                {
+                    constellations = data;
+                    // constellations = eval( '(' + data + ')' );
                 }
                 catch(err)
                 {
