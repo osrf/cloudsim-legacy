@@ -98,18 +98,22 @@ page =  """<!DOCTYPE html>
                var constellations = null;
                try
                 {
+                    
                     constellations = data;
                     remove_old_constellations(constellations);
                     for (var i=0; i< constellations.length; i++)
                     {
+                       
                        var constellation = constellations[i];
+                       
                        $.publish("/constellation" , constellation);
+                      
                     }
                 }
                 catch(err)
                 {
                     // the user is probably logged out.
-                    page_refresh();
+                    console.log(err.message);
                 }
                 
                // let's do it again in 500 ms

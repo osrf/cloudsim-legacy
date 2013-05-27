@@ -114,7 +114,18 @@ function create_latency_widget(machine_div,
 //    	console.log(values_str);
     	var values = eval(values_str)
 //    	console.log(values.length)
-   	
+   		
+    	try
+    	{
+        	var avg_latency = values[0][2];
+        	var str = avg_latency.toFixed(3) + " ms"; 
+        	title_div.innerHTML = "<b>" + title  +" [" + str + "]"+ "</b>";
+    	}
+    	catch(err)
+    	{
+    		
+    	}
+    	
     	var latency_plot_data = latency_data[unique_plot_id]['plot_data'];
     	_set_latency_data(latency_plot_data, values);
     	
