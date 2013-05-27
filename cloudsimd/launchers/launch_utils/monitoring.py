@@ -55,7 +55,10 @@ def parse_dpkg_line(s):
 
 
 def _parse_ping_data(ping_str):
-    mini, avg, maxi, mdev = [float(x) for x in ping_str.split()[-2].split('/')]
+    values = [float(x) for x in ping_str.split()[-2].split('/')]
+    if len(values) == 5:
+        values = values[1:]
+    mini, avg, maxi, mdev = values
     return (mini, avg, maxi, mdev)
 
 
@@ -78,11 +81,26 @@ def record_ping_result(data_str, ping_str, cutoff_time_span):
     Takes a ping result, parses it and keeps in a time stamped list.
     Old samples are discarded
     """
-    data = eval(data_str)
-    mini, avg, maxi, mdev = _parse_ping_data(ping_str)
+    data = None
+    try:
+        data = eval(data_str)
+    except:
+        tb = traceback.format_exc()
+        log("BAD data %s" % data_str,"ping")
+        data = []
+    
+    mini, avg, maxi, mdev = (0.0 ,0.0, 0.0, 0.0)
+    try:
+        
+        mini, avg, maxi, mdev = _parse_ping_data(ping_str)
+    except:
+        pass
     _accumulate_ping_data(data, mini, avg, maxi, mdev, cutoff_time_span)
     s = "%s" % data
+    
     return s
+    
+
 
 
 def update_machine_aws_states(constellation_name, aws_id_keys_to_state_keys_dict):
@@ -197,7 +215,8 @@ def _monitor_ping(constellation_name, ping_data_key, ping_str):
     """
     internal implementation for monitor_cloudsim_ping and monitor_ssh_ping
     """
-    log("_monitor_ping %s %s %s" % (constellation_name, ping_data_key, ping_str) )
+    log("_monitor_ping %s %s %s" % (constellation_name, ping_data_key, ping_str), "ping")
+    
     constellation = ConstellationState(constellation_name)
     latency = constellation.get_value(ping_data_key)
     latency = record_ping_result(latency, ping_str, LATENCY_TIME_BUFFER)
@@ -225,8 +244,15 @@ def monitor_ssh_ping(constellation_name, ssh_client, ip_address, ping_data_key):
     """
     if ssh_client == None:
         return 
-    ping_str = ssh_client.cmd("ping -c3 %s" % ip_address)
-    _monitor_ping(constellation_name, ping_data_key, ping_str)
+    try:
+        ping_str = ssh_client.cmd("ping -c3 %s" % ip_address)
+        log("XXX %s = %s" % (ping_data_key, ping_str), "ping")
+        _monitor_ping(constellation_name, ping_data_key, ping_str)
+    except:
+        tb = traceback.format_exc()
+        log("monitor_ssh_ping traceback:  %s" % tb)
+        constellation = ConstellationState(constellation_name)
+        constellation.set_value(ping_data_key, "[]")
 
 
 class TaskTimeOut(Exception):
@@ -253,7 +279,7 @@ def monitor_task(constellation_name, ssh_router):
         msg = d['message']
         return (score, sim_time, fall_count, msg)
 
-    log("monitor_task BEGIN")
+    #log("monitor_task BEGIN")
     constellation = ConstellationState(constellation_name)
     task_id = constellation.get_value("current_task")
 
@@ -312,9 +338,10 @@ def monitor_task(constellation_name, ssh_router):
 
         if net_str and score_str:
             final_score = "%s %s" % (score_str, net_str)
+            log("score %s" % final_score)
             constellation.update_task_value(task['task_id'], 'task_message', final_score)
             
-    log("monitor_task END")
+    #log("monitor_task END")
 
 
 class Testos(unittest.TestCase):
