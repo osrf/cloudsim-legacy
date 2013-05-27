@@ -6,6 +6,22 @@ function machines_on_load_page()
     
 }
 
+function create_task_section(parent_div, div_id, left_content, right_content)
+{
+	var new_div = document.createElement("div");
+    new_div.id = div_id;    
+    _set_mach_style(new_div.style);
+    
+    if(!right_content) 
+        right_content = "";
+    var str =  _get_machine_div_str(left_content, right_content);
+    new_div.innerHTML = str;
+    var last= parent_div.childElementCount -1;
+    parent_div.insertBefore(new_div, parent_div.childNodes[last]);
+    // parent_div.appendChild(new_div);
+    return new_div;	
+}
+
 function create_section(parent_div, div_id, left_content, right_content)
 {
 	var new_div = document.createElement("div");
