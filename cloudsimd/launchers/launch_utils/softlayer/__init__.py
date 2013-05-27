@@ -58,7 +58,8 @@ def _get_hardware(api_username, api_key, server_name = None):
             client.set_object_mask(object_mask)
             hardware = client.getHardware()
             done = True
-        except:
+        except Exception, e:
+            print('%s' %e)
             time.sleep(10)
             count += 1
             if count > 20:
