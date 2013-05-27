@@ -145,6 +145,13 @@ def _get_boot_status(api_username, api_key, server_id):
     name = stat['name']
     if stat.has_key('friendlyName'):
         name = stat['friendlyName']
+
+    elapsed_seconds = int(t['elapsedSeconds'])
+    average_duration = float(stat['averageDuration']) * 60
+
+    age = average_duration - elapsed_seconds
+    if age >0:
+        name += " (late by %s seconds)" % age
     return name
 
 
@@ -661,7 +668,16 @@ def get_machine_login_info(osrf_creds, server_name):
 
     return public_ip, priv_ip, password
 
-
+def wait_for_all_server_reloads(creds = None):
+    osrf_creds = creds
+    if not osrf_creds:
+        osrf_creds = load_osrf_creds(get_softlayer_path())
+    servers = []
+    for i in range(50):
+        s = "%02d" % (i + 1)
+        servers += ['cs-%s' % s, 'sim-%s' % s, 'fc1-%s' % s, 'fc2-%s' % s]
+    wait_for_server_reloads(osrf_creds, servers)
+    
 class sTestSoftLayer(unittest.TestCase):
 
     def atest_list_loop(self):
@@ -680,10 +696,9 @@ class sTestSoftLayer(unittest.TestCase):
 
         self.assertTrue(len(x) == 3, 'did not get creds')
 
-    def atest_wait_for_server_reloads(self):
-        osrf_creds = load_osrf_creds(get_softlayer_path())
-        servers = ['cs-14', 'sim-14', 'fc1-14', 'fc2-14']
-        wait_for_server_reloads(osrf_creds, servers)
+
+    def test_wait_for_server_reloads(self):
+        self.wait_for_all_server_reloads()
 
     def etest_reload_Server(self):
         p = get_softlayer_path()
@@ -715,7 +730,9 @@ if __name__ == "__main__":
 
     p = get_softlayer_path()
     osrf_creds = load_osrf_creds(p)
+    
     softlayer_dash_board(osrf_creds)
+    wait_for_all_server_reloads(osrf_creds)
     unittest.main()
 
 
