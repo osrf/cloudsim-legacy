@@ -353,11 +353,8 @@ TASK_DIRNAME=\$1
 
 mkdir -p /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
 
-# Create a zip file
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@10.0.0.51 zip -0 -j /tmp/\$TASK_DIRNAME.zip /tmp/\$TASK_DIRNAME/* || true
-
-# Copy the zip file
-scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@10.0.0.51:/tmp/\$TASK_DIRNAME.zip /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME || true
+# Copy the log files
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@10.0.0.51:/tmp/\$TASK_DIRNAME/* /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME || true
 
 # Copy the network usage
 if [ -f /tmp/vrc_netwatcher_usage.log ];
