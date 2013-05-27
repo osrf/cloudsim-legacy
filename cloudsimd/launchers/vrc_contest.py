@@ -114,23 +114,22 @@ def stop_simulator(constellation_name):
 
 
 def notify_portal(constellation, task):
-
     try:
         # Get metadata (team, competition, ...)
         config = get_cloudsim_config()
         portal_info_fname = config['cloudsim_portal_json_path']
-        portal_info = None
         log("** Portal JSON path: %s ***" % portal_info_fname)
+        portal_info = None
         with open(portal_info_fname, 'r') as f:
             portal_info = json.loads(f.read())
 
         log("** Portal JSON file opened ***")
         team = portal_info['team']
         comp = portal_info['event']
+        task_num = task['vrc_num']
 
         log("** Team: %s, Event: %s ***" % (team, comp))
 
-        task_num = task['vrc_num']
         if task_num < '1' or task_num > '3':
             task_num = '1'
         run = task['vrc_id']
@@ -140,7 +139,6 @@ def notify_portal(constellation, task):
         start_time = task['start_time']
         start_task = dateutil.parser.parse(start_time)
         start_task = start_task.strftime("%d/%m/%y %H:%M:%S")
-        #start_task = '12:15:03'
 
         const = ConstellationState(constellation)
         constellation_dict = get_constellation_data(constellation)
@@ -161,21 +159,14 @@ def notify_portal(constellation, task):
         subprocess.check_call(cmd.split())
         log("** Log directory created***")
 
-        # Get the elapsed task time
-
         # Get the score and falls
         score = '0'
         #falls = 'N/A'
         runtime = 'N/A'
-        if os.path.exists(os.path.join('/home/ubuntu/cloudsim/logs',
-                                       task_dirname, task_dirname + '.zip')):
-            log("** Simulator zip file found **")
-            sim_zip_file = zipfile.ZipFile(os.path.join('/home/ubuntu/cloudsim/logs',
-                                                        task_dirname,
-                                                        task_dirname + '.zip'))
-            if 'score.log' in sim_zip_file.namelist():
+        try:
+            with open(os.path.join('/home/ubuntu/cloudsim/logs', task_dirname, 'score.log')) as f:
                 log("** score.log found **")
-                data = sim_zip_file.read('score.log')
+                data = f.read()
                 log("** Reading score.log file **")
                 lines = data.split('\n')
                 last_line = lines[-2]
@@ -186,6 +177,8 @@ def notify_portal(constellation, task):
                 # Time when the task stopped
                 runtime = last_line.split(',')[1]
                 log("** All sim score fields parsed **")
+        except Exception:
+            None
 
         # Create JSON file with the task metadata
         data = json.dumps({'team': team, 'event': comp, 'task': task_num,
@@ -198,22 +191,20 @@ def notify_portal(constellation, task):
                                'end_task.json'), 'w') as f:
             f.write(str(data))
 
-        log("** JSON Task Created ***")
+        log("** JSON file created ***")
 
-        new_msg = new_msg.replace('Getting logs', 'Compressing logs')
+        new_msg = new_msg.replace('Getting logs', 'Creating tar file')
         const.update_task_value(task['task_id'], 'task_message', new_msg)
 
-        # Zip all the log content
-        zip_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(run) +
-                    '.zip')
-        f = zipfile.ZipFile('/tmp/' + zip_name, 'w')
-        for file in glob.glob(os.path.join('/home/ubuntu/cloudsim/logs',
-                                           task_dirname, '*')):
-            f.write(file, os.path.basename(file))
-        f.close()
-        log("** Log directory zipped***")
+        # Tar all the log content
+        tar_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(run) +
+                    '.tar')
+        cmd = 'tar cf /tmp/' + tar_name + ' -C ' + os.path.join('/home/ubuntu/cloudsim/logs', task_dirname) + ' .'
+        subprocess.check_call(cmd.split())
 
-        new_msg = new_msg.replace('Compressing logs', 'Uploading logs to the portal')
+        log("** Log directory stored in a tar file ***")
+
+        new_msg = new_msg.replace('Creating tar file', 'Uploading logs to the portal')
         const.update_task_value(task['task_id'], 'task_message', new_msg)
 
         # Send the log to the portal
@@ -229,7 +220,7 @@ def notify_portal(constellation, task):
         ssh_portal.key_fname = config['cloudsim_portal_key_path']
 
         # Upload the file to the Portal temp dir
-        dest = os.path.join('/tmp', zip_name)
+        dest = os.path.join('/tmp', tar_name)
         #ssh_portal.upload_file(portal_info_fname, dest)
         cmd = ('scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
                ' -i ' + ssh_portal.key_fname + ' ' + dest + ' ubuntu@' +
@@ -239,13 +230,12 @@ def notify_portal(constellation, task):
 
         # Move the file to the final destination into the Portal
         final_dest = os.path.join(portal_info['final_destination_dir'],
-                                  zip_name)
+                                  tar_name)
         cmd = 'sudo mv %s %s' % (dest, final_dest)
         ssh_portal.cmd(cmd)
 
-        new_msg = new_msg.replace('Uploading logs to the portal', 'Task completed')
+        new_msg = new_msg.replace('Uploading logs to the portal', 'Logs uploaded to the portal')
         const.update_task_value(task['task_id'], 'task_message', new_msg)
-        log("** Log uploaded succesfully ***")
 
     except Exception, excep:
         print ('Notify_portal() Exception: %s' % (repr(excep)))
