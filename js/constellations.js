@@ -193,3 +193,35 @@ function _set_const_style(style)
 }
 
 
+
+// returns true if name is the name of one of the constellations
+function _find_in_constellations(name, constellations)
+{
+	for (var i=0; i < constellations.length; i++)
+	{
+		var c_name = constellations[i].constellation_name;
+		if(c_name == name)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+function remove_old_constellations(constellations)
+{
+	constellations_div = document.querySelector("#constellations_div");
+	// skip the first chid, i.e. "<h2>Constellations</h2>"
+	for (var i=1; i < constellations_div.childElementCount; i++)
+	{
+		var id = constellations_div.childNodes[i].id;
+		var exists = _find_in_constellations(id, constellations);
+		if (!exists)
+		{
+			console.log(id + " DOES NOT EXISTS ANYMORE");
+			constellation_remove("constellations_div", id)
+		}
+		
+	}
+
+}
