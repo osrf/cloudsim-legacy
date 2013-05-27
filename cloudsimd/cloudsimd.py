@@ -171,11 +171,11 @@ def get_plugin(configuration):
     launch-terminate and start-stop simulation.
     This is the switch.
     """
-    def make_plugin(module):
-        ConstellationPlugin(module.launch, module.terminate, module.update,
-                            module.monitor,
-                            module.start_task,
-                            module.stop_task)
+#     def make_plugin(module):
+#         ConstellationPlugin(module.launch, module.terminate, module.update,
+#                             module.monitor,
+#                             module.start_task,
+#                             module.stop_task)
         
     plugin = None
     #log("get_plugin '%s'" % configuration)
@@ -191,7 +191,10 @@ def get_plugin(configuration):
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
     elif configuration == 'AWS CloudSim':
-        return make_plugin(launchers.amazon_cloudsim)
+        #return make_plugin(launchers.amazon_cloudsim)
+        from launchers import amazon_cloudsim as c
+        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
+                                     c.start_task, c.stop_task)
         
     elif configuration == 'AWS simulator':
         from launchers import simulator as c

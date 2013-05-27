@@ -203,8 +203,9 @@ function create_task_list_widget(const_div, constellation_name)
     };
 
     
-
-	var tasks_div = create_section(const_div, "tasks", "Simulation tasks");
+    var tasks_div = create_task_section(const_div, "tasks", "Simulation tasks");
+	// var tasks_div = create_section(const_div, "tasks", "Simulation tasks");
+    
     //
     // create a form for the content 
     //

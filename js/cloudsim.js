@@ -75,8 +75,10 @@ function create_constellation(div_name, configuration, constellation, username, 
     if( (configuration == "AWS CloudSim") || (configuration.indexOf("OSRF CloudSim") ==0) )
     {
         var machine_name = "CloudSim";
+        
+        // create_task_list_widget(constellation_div, constellation);
+        
         var machine_div = create_machine(machines_div, machine_name);
-
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file", false );
         create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "simulation_launch_msg", "simulation_state");
         create_machine_state_widget(machine_div, constellation, machine_name, "simulation_aws_state", "simulation_state");
