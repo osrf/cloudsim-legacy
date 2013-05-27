@@ -100,6 +100,7 @@ page =  """<!DOCTYPE html>
                 {
                     
                     constellations = data;
+                    remove_old_constellations(constellations);
                     for (var i=0; i< constellations.length; i++)
                     {
                        
