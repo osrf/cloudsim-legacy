@@ -123,7 +123,7 @@ function create_latency_widget(machine_div,
     	}
     	catch(err)
     	{
-    		
+    		title_div.innerHTML = "<b>" + title + "</b>";
     	}
     	
     	var latency_plot_data = latency_data[unique_plot_id]['plot_data'];

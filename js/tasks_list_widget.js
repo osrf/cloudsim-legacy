@@ -124,8 +124,8 @@ function _create_task_form(form_id)
     _add_form_separator(form_div, "Network parameters");
     
     var latency =  _add_form_textinput(form_div, "Minimum latency (ms, round trip)");
-    var uplink_data_cap=  _add_form_textinput(form_div, "Uplink data cap (bits)");
-    var downlink_data_cap = _add_form_textinput(form_div, "Downlink data cap (bits)");
+    var uplink_data_cap=  _add_form_textinput(form_div, "Uplink data cap (bits, 0 for unlimited)");
+    var downlink_data_cap = _add_form_textinput(form_div, "Downlink data cap (bits, 0 for unlimited)");
 
     _add_form_separator(form_div, "VRC parameters");
 
@@ -136,13 +136,15 @@ function _create_task_form(form_id)
 
     // default values
     ros_package.value = "atlas_utils";
-    launch_file.value = "atlas.launch";
+    launch_file.value = "vrc_task_1.launch";
     timeout.value = "1800";
     launch_arguments.value = "";
     latency.value ="0";
-    uplink_data_cap.value =   "100000000";
-    downlink_data_cap.value = "100000000";
-
+    uplink_data_cap.value =   "0";
+    downlink_data_cap.value = "0";
+    vrc_id.value = "1";
+    vrc_num.value = "1";
+    
     local_start.value = '2013-01-01T00:00:00.0';
     local_stop.value  = '2014-01-01T00:00:00.0';
 
