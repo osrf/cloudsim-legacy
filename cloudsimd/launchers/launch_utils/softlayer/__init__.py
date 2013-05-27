@@ -699,7 +699,7 @@ class sTestSoftLayer(unittest.TestCase):
         servers = ['cs-44', 'sim-44', 'fc1-44', 'fc2-44']
         shutdown_public_ips(osrf_creds, servers)
 
-    def test_enable_public_ip(self):
+    def atest_enable_public_ip(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         servers = ['sim-44', 'fc1-44', 'fc2-39']
         enable_public_ips(osrf_creds, servers)
@@ -715,7 +715,7 @@ if __name__ == "__main__":
 
     p = get_softlayer_path()
     osrf_creds = load_osrf_creds(p)
-#   softlayer_dash_board(osrf_creds)
+    softlayer_dash_board(osrf_creds)
     unittest.main()
 
 
