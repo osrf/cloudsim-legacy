@@ -133,9 +133,8 @@ class Launcher:
         # Set auto_launch_configuration to None to not launch a follow-on
         # constellation from the newly created CloudSim Jr.
         if self.auto_launch:
-            configuration = team['quad']
-            args['auto_launch_configuration'] = configuration
-            print("Auto launch configuration: %s" % configuration)
+            args['auto_launch_configuration'] = team['quad']
+            print("Auto launch configuration: %s" % team['quad'])
         else:
             args['auto_launch_configuration'] = None
         
