@@ -700,7 +700,8 @@ timeout -k 1 5 gztopic list
 while [[ \$? -ne 0 ]]; do
     tnow=\$(date +%s)
     if ((tnow-tstart>MAX_TIME)) ;then
-        break
+        echo "[simulator start_sim.bash] Timed out waiting for simulation to start"
+        exit 1
     fi
 
     sleep 1
