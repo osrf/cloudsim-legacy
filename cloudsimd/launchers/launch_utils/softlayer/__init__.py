@@ -698,8 +698,8 @@ class sTestSoftLayer(unittest.TestCase):
         self.assertTrue(len(x) == 3, 'did not get creds')
 
 
-    def test_wait_for_server_reloads(self):
-        self.wait_for_all_server_reloads()
+    def stest_wait_for_server_reloads(self):
+        wait_for_all_server_reloads()
 
     def etest_reload_Server(self):
         p = get_softlayer_path()
