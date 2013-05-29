@@ -163,6 +163,11 @@ class ConstellationState(object):
     def delete_task(self, task_id):
         with Lock(self.my_lock):
             resources = get_constellation_data(self.constellation_name)
+            # Not allowed to delete the current task
+            current_task = resources['current_task']
+            if current_task == task_id:
+                log("Warning: attempted to delete the current task: %s"%(task_id))
+                return
             tasks = resources['tasks']
             for task in tasks:
                 if task['task_id'] == task_id:
