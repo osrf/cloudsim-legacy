@@ -115,6 +115,8 @@ def stop_simulator(constellation_name):
 
 def notify_portal(constellation, task):
     try:
+        root_log_dir = '/tmp/cloudsim_logs'
+
         # Get metadata (team, competition, ...)
         config = get_cloudsim_config()
         portal_info_fname = config['cloudsim_portal_json_path']
@@ -154,7 +156,7 @@ def notify_portal(constellation, task):
         new_msg = task['task_message'] + '<B> Getting logs</B>'
         const.update_task_value(task['task_id'], 'task_message', new_msg)
 
-        cmd = ('bash /home/ubuntu/cloudsim/get_logs.bash %s %s %s'
+        cmd = ('bash /var/www/bin/get_logs.bash %s %s %s'
                % (task_dirname, router_ip, router_key))
         subprocess.check_call(cmd.split())
         log("** Log directory created***")
@@ -164,7 +166,7 @@ def notify_portal(constellation, task):
         #falls = 'N/A'
         runtime = 'N/A'
         try:
-            with open(os.path.join('/home/ubuntu/cloudsim/logs', task_dirname, 'score.log')) as f:
+            with open(os.path.join(root_log_dir, task_dirname, 'score.log')) as f:
                 log("** score.log found **")
                 data = f.read()
                 log("** Reading score.log file **")
@@ -187,7 +189,7 @@ def notify_portal(constellation, task):
                           sort_keys=True, indent=4, separators=(',', ': '))
 
         log("** JSON data created **")
-        with open(os.path.join('/home/ubuntu/cloudsim/logs', task_dirname,
+        with open(os.path.join(root_log_dir, task_dirname,
                                'end_task.json'), 'w') as f:
             f.write(str(data))
 
@@ -199,7 +201,7 @@ def notify_portal(constellation, task):
         # Tar all the log content
         tar_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(run) +
                     '.tar')
-        cmd = 'tar cf /tmp/' + tar_name + ' -C ' + os.path.join('/home/ubuntu/cloudsim/logs', task_dirname) + ' .'
+        cmd = 'tar cf /tmp/' + tar_name + ' -C ' + os.path.join(root_log_dir, task_dirname) + ' .'
         subprocess.check_call(cmd.split())
 
         log("** Log directory stored in a tar file ***")
