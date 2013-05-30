@@ -1,17 +1,11 @@
-import logging
 import commands
 import os
 import subprocess
+from launch_db import log_msg
 
-def log(msg, channel="ssh"):
-    try:
-        import redis
-        redis_client = redis.Redis()
-        redis_client.publish(channel, msg)
-        logging.info(msg)
-    except:
-        print("Warning: redis not installed.")
-    print("ssh> %s" % msg)
+
+def log(msg, channel=__name__, severity="debug"):
+    log_msg(msg, channel, severity)
 
 """
 Removes the key for this ip, in case we connect to a different machine with the
@@ -50,6 +44,7 @@ class SshClient(object):
         log(" ".join(ssh_cmd) )
         po = subprocess.Popen(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out,err = po.communicate()
+        log(out)
         if po.returncode != 0:
             raise SshClientException(out + err)
         else:

@@ -3,22 +3,26 @@ import uuid
 import boto
 from boto.pyami.config import Config as BotoConfig
 
-from launch_db import log
 from launch_db import get_cloudsim_config
+from launch_db import log_msg
 
 
 class LaunchException(Exception):
     pass
 
 
+def log(msg, channel=__name__, severity="info"):
+    log_msg(msg, channel, severity)
+
 
 def aws_connect():
-    config =get_cloudsim_config()
-    credentials_ec2 = config['boto_path']     
+    config = get_cloudsim_config()
+    credentials_ec2 = config['boto_path']
     boto.config = BotoConfig(credentials_ec2)
     ec2conn = boto.connect_ec2()
-    vpcconn =  boto.connect_vpc()    
+    vpcconn = boto.connect_vpc()
     return ec2conn, vpcconn
+
 
 def get_amazon_amis():
     """

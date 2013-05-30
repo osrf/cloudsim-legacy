@@ -7,14 +7,28 @@ import time
 import redis
 
 
-def log(msg, channel="launch_db"):
+def log_msg(msg, channel, severity):
+    """
+    Main logging function
+    """
+    print("%s> %s" % (channel, msg))
     try:
         redis_client = redis.Redis()
         redis_client.publish(channel, msg)
-        logging.info(msg)
-        print("launch_db>", msg)
     except:
         print("Warning: redis not installed.")
+    logger = logging.getLogger(channel)
+
+    if severity == "error":
+        logger.error(msg)
+    elif severity == "debug":
+        logger.debug(msg)
+    else:
+        logger.info(msg)
+
+
+def log(msg, channel=__name__, severity='debug'):
+    log_msg(msg, channel, severity)
     #print("cloudsim log> %s" % msg)
 
 
@@ -158,7 +172,7 @@ class ConstellationState(object):
                     task[key] = value
                     self._set_value('tasks', tasks)
                     return
-            raise KeyError(task_id)    
+            raise KeyError(task_id)
 
     def delete_task(self, task_id):
         with Lock(self.my_lock):
