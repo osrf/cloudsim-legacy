@@ -10,7 +10,7 @@ def simulator_event(username, configuration, constellation_name, machine_name, c
            'machine_name': machine_name, 
            'color': color,
            'text':text}
-    
+
     publish_event(username, "simulator", msg)
 
 def gl_event(username, configuration, constellation_name, machine_name, color, text):

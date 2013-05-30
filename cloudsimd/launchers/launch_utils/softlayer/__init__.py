@@ -13,15 +13,17 @@ from pprint import pprint
 from SoftLayer.exceptions import SoftLayerAPIError
 
 
-def log(msg, channel="softlayer"):
+def log(msg, channel="softlayer", severity="info"):
+    print("%s> %s" % (channel, msg))
     try:
         redis_client = redis.Redis()
         redis_client.publish(channel, msg)
-        logging.info(msg)
-        print("softlayer>",msg)
     except:
         print("Warning: redis not installed.")
-    #print("cloudsim log> %s" % msg)
+    logger = logging.getLogger(channel)
+    if severity == "error":
+        logger.error(msg)
+    logger.info(msg)
 
 
 class SoftLayerException(Exception):

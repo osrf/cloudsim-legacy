@@ -50,11 +50,25 @@ def download(filename):
     
     log("download AS %s" % short_name)
     
-    print ("Content-Type: application/octet-stream")
-    print ("Content-Disposition: attachment; filename=%s" % short_name)
+    #print ("Content-Type: application/octet-stream")
+#     print ("Content-Type: hugo")
+#     print ("Content-Disposition: attachment; filename=%s" % short_name)
+#     print ("")
+    
+    print("Pragma: public")
+    print("Expires: 0")
+    print("Cache-Control: must-revalidate, post-check=0, pre-check=0")
+    print("Cache-Control: public")
+    print("Content-Description: File Transfer")
+    print("Content-type: application/octet-stream")
+    print('Content-Disposition: attachment; filename="%s"' % filename)
+    print("Content-Transfer-Encoding: binary")
+    size = os.path.getsize(filename)
+    print("Content-Length: %s" % size)
     print ("")
-
+    
     with open(filename, 'rb') as f:
+        
         while True:
             data = f.read(4096)
             sys.stdout.write(data)

@@ -7,8 +7,7 @@ import commands
 
 import tempfile
 import shutil
-import redis
-import logging
+
 
 from launch_utils import get_unique_short_name
 
@@ -27,7 +26,7 @@ from launch_utils.softlayer import load_osrf_creds,\
     reload_servers, wait_for_server_reloads, get_machine_login_info
 from vrc_contest import ReloadOsCallBack, add_ubuntu_user_to_router,\
     create_private_machine_zip
-from launch_utils.launch_db import get_cloudsim_config
+from launch_utils.launch_db import get_cloudsim_config, log_msg
 
 
 CONFIGURATION = "cloudsim"
@@ -35,15 +34,8 @@ CONFIGURATION = "cloudsim"
 CLOUDSIM_ZIP_PATH = '/var/www-cloudsim-auth/cloudsim.zip'
 
 
-def log(msg, channel="cloudsim"):
-    try:
-        redis_client = redis.Redis()
-        redis_client.publish(channel, msg)
-        logging.info(msg)
-        print("cloudsim> %s" % msg)
-    except:
-        print("Warning: redis not installed.")
-    #print("cloudsim log> %s" % msg)
+def log(msg, channel=__name__):
+    log_msg(msg, channel)
 
 
 def update(constellation_name):

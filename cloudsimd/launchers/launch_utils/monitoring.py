@@ -3,11 +3,10 @@ import time
 import unittest
 from launch_db import ConstellationState
 from launch import aws_connect
-import redis
-import logging
 from sshclient import SshClient
 import commands
 import traceback
+from launch_db import log_msg
 
 machine_states = ['terminated', 'terminating', 'stopped' 'stopping',
                   'nothing', 'starting', 'booting',
@@ -18,14 +17,8 @@ constellation_states = ['terminated', 'terminating', 'launching', 'running']
 LATENCY_TIME_BUFFER = 60
 
 
-def log(msg, channel="monitoring"):
-    try:
-        redis_client = redis.Redis()
-        redis_client.publish(channel, msg)
-        logging.info(msg)
-    except:
-        print("Warning: redis not installed.")
-    print("monitoring log> %s" % msg)
+def log(msg, channel=__name__, severity="debug"):
+    log_msg(msg, channel, severity)
 
 
 def get_aws_states(ec2conn, machine_names_to_ids):
@@ -86,20 +79,17 @@ def record_ping_result(data_str, ping_str, cutoff_time_span):
         data = eval(data_str)
     except:
         tb = traceback.format_exc()
-        log("BAD data %s" % data_str,"ping")
+        #log("BAD data %s" % data_str,"ping")
         data = []
-    
     mini, avg, maxi, mdev = (0.0 ,0.0, 0.0, 0.0)
     try:
-        
         mini, avg, maxi, mdev = _parse_ping_data(ping_str)
     except:
         pass
     _accumulate_ping_data(data, mini, avg, maxi, mdev, cutoff_time_span)
     s = "%s" % data
-    
     return s
-    
+
 
 
 
@@ -143,6 +133,7 @@ def constellation_is_terminated(constellation_name):
     except:
         log("Can't access constellation  %s data" % constellation_name)
         return True
+    return False
 
 
 def get_ssh_client(constellation_name, machine_state, ip_key, sshkey_key):
@@ -185,7 +176,6 @@ def monitor_launch_state(constellation_name, ssh_client,
                 log("monitor_launch_state traceback:  %s" % tb)
 
 
-
 def monitor_simulator(constellation_name, ssh_client, sim_state_key='simulation_state'):
     """
     Detects if the simulator is running and writes the 
@@ -202,7 +192,6 @@ def monitor_simulator(constellation_name, ssh_client, sim_state_key='simulation_
         if gl_state == "running":
             try:
                 ping_gazebo = ssh_client.cmd("bash cloudsim/ping_gazebo.bash")
-                log("cloudsim/ping_gazebo.bash = %s" % ping_gazebo )
                 constellation.set_value("gazebo", "running")
             except Exception, e:
                 log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
@@ -215,8 +204,8 @@ def _monitor_ping(constellation_name, ping_data_key, ping_str):
     """
     internal implementation for monitor_cloudsim_ping and monitor_ssh_ping
     """
-    log("_monitor_ping %s %s %s" % (constellation_name, ping_data_key, ping_str), "ping")
-    
+    #log("_monitor_ping %s %s %s" % (constellation_name, ping_data_key, ping_str), "ping")
+
     constellation = ConstellationState(constellation_name)
     latency = constellation.get_value(ping_data_key)
     latency = record_ping_result(latency, ping_str, LATENCY_TIME_BUFFER)
@@ -246,7 +235,6 @@ def monitor_ssh_ping(constellation_name, ssh_client, ip_address, ping_data_key):
         return 
     try:
         ping_str = ssh_client.cmd("ping -c3 %s" % ip_address)
-        log("XXX %s = %s" % (ping_data_key, ping_str), "ping")
         _monitor_ping(constellation_name, ping_data_key, ping_str)
     except:
         tb = traceback.format_exc()

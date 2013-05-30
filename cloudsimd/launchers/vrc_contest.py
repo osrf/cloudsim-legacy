@@ -28,7 +28,7 @@ from launch_utils.softlayer import load_osrf_creds, reload_servers,\
     shutdown_public_ips, enable_public_ips
 
 from launch_utils.launch_db import get_constellation_data, ConstellationState,\
-    get_cloudsim_config
+    get_cloudsim_config, log_msg
 from launch_utils import sshclient
 from launch_utils.testing import get_test_runner, get_test_path
 from launch_utils.launch import get_unique_short_name
@@ -38,7 +38,7 @@ from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
 
 from launch_utils.sshclient import SshClient, clean_local_ssh_key_entry
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
-import json
+
 
 ROUTER_IP = '10.0.0.50'
 SIM_IP = '10.0.0.51'
@@ -51,14 +51,8 @@ launch_sequence = ["nothing", "os_reload", "init_router", "init_privates",
         "zip", "change_ip", "startup", "block_public_ips", "reboot", "running"]
 
 
-def log(msg, channel="vrc_contest"):
-    try:
-        redis_client = redis.Redis()
-        redis_client.publish(channel, msg)
-        logging.info(msg)
-    except:
-        print("Warning: redis not installed.")
-    print("vrc_contest log> %s" % msg)
+def log(msg, channel=__name__, severity="info"):
+    log_msg(msg, channel, severity)
 
 
 def update(constellation_name):
@@ -84,6 +78,7 @@ def update(constellation_name):
         for state in ["sim_state", "router_state", "fc1_state", "fc2_state",]:
             constellation.set_value("sim_state", "running")
         log("UPDATE DONE", "toto")
+
 
 def get_ping_data(ping_str):
     mini, avg, maxi, mdev = [float(x) for x in ping_str.split()[-2].split('/')]
@@ -297,30 +292,21 @@ def monitor(username, constellation_name, counter):
             monitor_launch_state(constellation_name, ssh_router, fc1_state, "cloudsim/dpkg_log_fc1.bash", 'fc1_launch_msg')
             monitor_launch_state(constellation_name, ssh_router, fc2_state, "cloudsim/dpkg_log_fc2.bash", 'fc2_launch_msg')
             monitor_launch_state(constellation_name, ssh_router, sim_state, "cloudsim/dpkg_log_sim.bash", 'sim_launch_msg')
- 
-            monitor_simulator(constellation_name, ssh_router, "sim_state")
-            monitor_task(constellation_name, ssh_router)
- 
-            monitor_ssh_ping(constellation_name, ssh_router, FC1_IP, 'fc1_latency')
-            monitor_task(constellation_name, ssh_router)
- 
-            monitor_ssh_ping(constellation_name, ssh_router, FC2_IP, 'fc2_latency')
-            monitor_task(constellation_name, ssh_router)
- 
-            monitor_simulator(constellation_name, ssh_router, "sim_state")
- 
-            monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'sim_latency')
-            monitor_task(constellation_name, ssh_router)
 
+#             monitor_ssh_ping(constellation_name, ssh_router, FC1_IP, 'fc1_latency')
+#             monitor_ssh_ping(constellation_name, ssh_router, FC2_IP, 'fc2_latency')
+#             monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'sim_latency')
             monitor_ssh_ping(constellation_name, ssh_router, OPENVPN_CLIENT_IP, 'router_latency')
+ 
             monitor_task(constellation_name, ssh_router)
+            monitor_simulator(constellation_name, ssh_router, "sim_state")
 
         except TaskTimeOut, e:
             #
             # stop current task
             task = e.task
             log("TASKTIMEOUT %s" % e)
-            
+
             d = {}
             d['command'] = 'stop_task'
             d['constellation'] = constellation_name

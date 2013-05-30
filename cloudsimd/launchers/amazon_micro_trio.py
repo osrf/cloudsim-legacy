@@ -4,30 +4,20 @@ import unittest
 import os
 import time
 
-import amazon_trio 
-import redis
-import logging
+import amazon_trio
 import cloudsim
 
 from launch_utils.launch import get_unique_short_name
 from launch_utils.testing import get_test_runner
 from launch_utils.testing import get_boto_path, get_test_path
 from launch_utils.startup_scripts import get_vpc_router_script, get_vpc_open_vpn
-from launch_utils.launch_db import ConstellationState
+from launch_utils.launch_db import ConstellationState, log_msg
 
 CONFIGURATION = "vpc_micro_trio"
 
-def log(msg, channel = "micro_trio"):
-    try:
-        
-        redis_client = redis.Redis()
-        redis_client.publish(channel, msg)
-        logging.info(msg)
-    except:
-        print("Warning: redis not installed.")
-    print("vpc_micro_trio log> %s" % msg)
-    
 
+def log(msg, channel=__name__, severity="info"):
+    log_msg(msg, channel, severity)
 
 
 def update(constellation_name):
@@ -38,9 +28,9 @@ def update(constellation_name):
     """
     constellation = ConstellationState( constellation_name)
     constellation_directory = constellation.get_value('constellation_directory')
-    
+
     # Do the software update here, via ssh
-    
+
 
 def get_micro_sim_script(routing_script):
     s = """#!/bin/bash

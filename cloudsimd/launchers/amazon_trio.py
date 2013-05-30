@@ -35,6 +35,7 @@ from launch_utils.monitoring import  update_machine_aws_states,\
     monitor_simulator, monitor_ssh_ping, monitor_cloudsim_ping
 from launch_utils.launch import aws_connect, get_amazon_amis
 from launch_utils.traffic_shapping import run_tc_command
+from launch_utils.launch_db import log_msg
 
 
 ROBOT_IP='10.0.0.52'
@@ -44,14 +45,8 @@ OPENVPN_SERVER_IP='11.8.0.1'
 OPENVPN_CLIENT_IP='11.8.0.2'
 
     
-def log(msg, channel = "trio"):
-    try:
-        redis_client = redis.Redis()
-        redis_client.publish(channel, msg)
-        logging.info(msg)
-    except:
-        print("Warning: redis not installed.")
-    print("cloudsim log> %s" % msg)
+def log(msg, channel=__name__, severity="info"):
+    log_msg(msg, channel, severity)
 
 
 

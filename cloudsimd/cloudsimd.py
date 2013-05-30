@@ -30,8 +30,10 @@ from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
 from launchers.launch_utils.launch import aws_connect
 from launchers.launch_utils.softlayer import get_constellation_prefixes
-from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch import LaunchException
+
+from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
+from launchers.launch_utils.launch_db import log_msg
 
 # for interactive use
 from launchers.launch_utils.softlayer import load_osrf_creds
@@ -42,16 +44,13 @@ from launchers.launch_utils.softlayer import get_machine_login_info
 import datetime
 
 
-def log(msg, chan="cloudsimd"):
-    try:
+logging.basicConfig(filename='/tmp/cloudsimd.log',
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    level=logging.DEBUG)
 
-        print ("LOG: %s" % msg)
-        red = redis.Redis()
-        red.publish(chan, msg)
-        logging.info(msg)
-    except Exception, e:
-        print("Warning: redis not installed.")
-    print("cloudsimd> %s" % msg)
+
+def log(msg, channel=__name__, severity="info"):
+    log_msg(msg, channel, severity)
 
 
 class UnknownConfig(LaunchException):
@@ -298,7 +297,6 @@ def launch(username,
         constellation.set_value('gmt', gmt)
         constellation.set_value('configuration', config)
         constellation.set_value('constellation_directory', constellation_directory)
-        constellation.set_value('constellation_state', 'launching')
         constellation.set_value('error', '')
 
         constellation.set_value('current_task', "")
@@ -717,6 +715,8 @@ def launch_cmd(root_dir, data):
             constellation_name = "c" + get_unique_short_name()
             constellation_path = os.path.join(root_dir, constellation_name)
             os.makedirs(constellation_path)
+            cs = ConstellationState(constellation_name)
+            cs.set_value('constellation_state', 'launching')
             async_launch(username, config, constellation_name, args, constellation_path)
             async_monitor(username, config, constellation_name)
 
