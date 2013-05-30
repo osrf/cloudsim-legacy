@@ -466,7 +466,10 @@ def start_task(constellation_name, task_id):
                 except Exception, e:
                     log("Start task error %s" % e)
                     cs.update_task_value(task_id, 'task_message', 'Task failed to start: %s'%(e))
-                    stop_task(constellation_name)
+                    task = cs.get_task(task_id)
+                    constellation_plugin.stop_task(constellation_name, task)
+                    cs.update_task_value(task_id, 'task_state', 'stopped')
+                    cs.set_value('current_task', '')
                     raise
                 cs.update_task_value(task_id, 'task_state', 'running')
                 log('task_state running')
@@ -492,7 +495,7 @@ def stop_task(constellation_name):
             task = cs.get_task(task_id)
 
             # you can only stop a running task
-            if task['task_state'] in ['running', 'starting']:
+            if task['task_state'] == 'running':
 
                 log('task_state stopping')
                 cs.update_task_value(task_id, 'task_state', 'stopping')
