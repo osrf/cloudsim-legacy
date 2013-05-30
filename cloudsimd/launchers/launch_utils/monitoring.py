@@ -133,6 +133,7 @@ def constellation_is_terminated(constellation_name):
     except:
         log("Can't access constellation  %s data" % constellation_name)
         return True
+    return False
 
 
 def get_ssh_client(constellation_name, machine_state, ip_key, sshkey_key):

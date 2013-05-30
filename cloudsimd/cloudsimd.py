@@ -297,7 +297,6 @@ def launch(username,
         constellation.set_value('gmt', gmt)
         constellation.set_value('configuration', config)
         constellation.set_value('constellation_directory', constellation_directory)
-        constellation.set_value('constellation_state', 'launching')
         constellation.set_value('error', '')
 
         constellation.set_value('current_task', "")
@@ -716,6 +715,8 @@ def launch_cmd(root_dir, data):
             constellation_name = "c" + get_unique_short_name()
             constellation_path = os.path.join(root_dir, constellation_name)
             os.makedirs(constellation_path)
+            cs = ConstellationState(constellation_name)
+            cs.set_value('constellation_state', 'launching')
             async_launch(username, config, constellation_name, args, constellation_path)
             async_monitor(username, config, constellation_name)
 

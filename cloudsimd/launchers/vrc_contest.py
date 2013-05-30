@@ -292,30 +292,21 @@ def monitor(username, constellation_name, counter):
             monitor_launch_state(constellation_name, ssh_router, fc1_state, "cloudsim/dpkg_log_fc1.bash", 'fc1_launch_msg')
             monitor_launch_state(constellation_name, ssh_router, fc2_state, "cloudsim/dpkg_log_fc2.bash", 'fc2_launch_msg')
             monitor_launch_state(constellation_name, ssh_router, sim_state, "cloudsim/dpkg_log_sim.bash", 'sim_launch_msg')
- 
-            monitor_simulator(constellation_name, ssh_router, "sim_state")
-            monitor_task(constellation_name, ssh_router)
- 
-            monitor_ssh_ping(constellation_name, ssh_router, FC1_IP, 'fc1_latency')
-            monitor_task(constellation_name, ssh_router)
- 
-            monitor_ssh_ping(constellation_name, ssh_router, FC2_IP, 'fc2_latency')
-            monitor_task(constellation_name, ssh_router)
- 
-            monitor_simulator(constellation_name, ssh_router, "sim_state")
- 
-            monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'sim_latency')
-            monitor_task(constellation_name, ssh_router)
 
+#             monitor_ssh_ping(constellation_name, ssh_router, FC1_IP, 'fc1_latency')
+#             monitor_ssh_ping(constellation_name, ssh_router, FC2_IP, 'fc2_latency')
+#             monitor_ssh_ping(constellation_name, ssh_router, SIM_IP, 'sim_latency')
             monitor_ssh_ping(constellation_name, ssh_router, OPENVPN_CLIENT_IP, 'router_latency')
+ 
             monitor_task(constellation_name, ssh_router)
+            monitor_simulator(constellation_name, ssh_router, "sim_state")
 
         except TaskTimeOut, e:
             #
             # stop current task
             task = e.task
             log("TASKTIMEOUT %s" % e)
-            
+
             d = {}
             d['command'] = 'stop_task'
             d['constellation'] = constellation_name
