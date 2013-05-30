@@ -632,7 +632,7 @@ fi
 
 echo "Killing other openvpn connections..."
 killall openvpn || true
-openvpn --config  $DIR/openvpn.config >/dev/null 2>&1 &
+openvpn --config  "$DIR"/openvpn.config >/dev/null 2>&1 &
 
 echo "VPN ready.  To kill it:"
 echo "    sudo killall openvpn"
@@ -650,7 +650,7 @@ fi
 
 echo "Killing other openvpn connections..."
 killall openvpn || true
-openvpn --config  $DIR/openvpn.config >/dev/null 2>&1 &
+openvpn --config  "$DIR"/openvpn.config >/dev/null 2>&1 &
 
 # Wait for tun0 to come up, then add a static route to the 10.0.0.0/24 network, which is the VPC on the other side
 # of the router.
@@ -716,7 +716,7 @@ def create_ssh_connect_file(key_file, ip):
 # from any directory
 #    
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/""" + key_file + " ubuntu@" + ip + """
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i "$DIR"/""" + key_file + " ubuntu@" + ip + """
     """ 
     return s
 
