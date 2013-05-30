@@ -238,7 +238,8 @@ def notify_portal(constellation, task):
         const.update_task_value(task['task_id'], 'task_message', new_msg)
 
     except Exception, excep:
-        print ('Notify_portal() Exception: %s' % (repr(excep)))
+        log ('notify_portal() Exception: %s' % (repr(excep)))
+        raise
 
 
 def start_task(constellation, task):
