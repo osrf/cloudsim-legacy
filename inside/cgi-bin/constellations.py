@@ -38,7 +38,7 @@ def get_user_tasks(tasks):
             latest_tasks.append(task)
 
     for task in tasks:
-        if task['task_state'] in ['running', 'stopping']:
+        if task['task_state'] in ['running', 'stopping', 'starting']:
             latest_tasks.append(task)
             return latest_tasks
 

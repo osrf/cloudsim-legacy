@@ -327,8 +327,12 @@ def monitor_task(constellation_name, ssh_router):
             up_cap = int(task['uplink_data_cap'])
             down_cap = int(task['downlink_data_cap'])
 
-            up = 100.0 * up_bits / up_cap
-            down = 100.0 * down_bits / down_cap
+            up = 0.0
+            down = 0.0
+            if up_cap != 0.0:
+                up = 100.0 * up_bits / up_cap
+            if down_cap != 0.0:
+                down = 100.0 * down_bits / down_cap
             net_str = "<b>up/down link (%%)</b>: %0.2f / %0.2f" % (up, down)
         except Exception, e:
             # net_str = "no network usage available"
