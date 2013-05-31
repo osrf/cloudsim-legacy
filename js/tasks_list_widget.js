@@ -1,4 +1,3 @@
-
 //
 //  Example task
 //
@@ -497,10 +496,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     x_button.onclick =  function()
     {
         var title = task_title_div.innerHTML;
-        // remove the html and score message to extract the title
-        // "<b>title</b>xxx" => "title"
-        var str = title.split("</b>")[0].replace("<b>","");
-        var r=confirm('Delete task: "' + str + '"?'  );
+        var r=confirm('Delete task?'  );
         if (r==false)
         {
             return;
