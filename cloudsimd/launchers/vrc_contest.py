@@ -681,6 +681,10 @@ cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
 
 MAX_TIME=30
 
+# Remove the old logs
+DIR=\`echo \$2 | cut -d'.' -f 1\`
+rm -rf /tmp/\$DIR
+
 echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
 
 . /usr/share/drcsim/setup.sh
