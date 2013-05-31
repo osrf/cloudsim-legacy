@@ -61,7 +61,7 @@ def download(filename):
     print("Cache-Control: public")
     print("Content-Description: File Transfer")
     print("Content-type: application/octet-stream")
-    print('Content-Disposition: attachment; filename="%s"' % filename)
+    print('Content-Disposition: attachment; filename="%s"' % short_name)
     print("Content-Transfer-Encoding: binary")
     size = os.path.getsize(filename)
     print("Content-Length: %s" % size)
