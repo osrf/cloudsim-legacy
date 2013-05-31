@@ -1,4 +1,3 @@
-
 //
 //  Example task
 //
@@ -496,8 +495,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
 
     x_button.onclick =  function()
     {
-        var title = task_title_div.innerHTML;
-        var r=confirm('Delete task: "' + title + '"?'  );
+        var r=confirm('Delete task?'  );
         if (r==false)
         {
             return;
