@@ -30,14 +30,14 @@ class SshClientException(Exception):
 
 class SshClient(object):
     def __init__(self, constellation_directory, key_name, username, ip, ):
-        
+
         clean_local_ssh_key_entry(ip)
-        
+
         self.key_fname = os.path.join(constellation_directory, "%s.pem" % key_name) 
         self.user = '%s@%s' % (username, ip)
         self.ssh_connect_timeout = 10
-        
-        
+
+
     def cmd(self, cmd, extra_ssh_args=[] ): 
         ssh_cmd = ['ssh', '-o','UserKnownHostsFile=/dev/null' ,'-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=%d'%(self.ssh_connect_timeout), '-i', self.key_fname] + extra_ssh_args + [self.user]
         ssh_cmd.append(cmd)
