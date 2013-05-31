@@ -58,10 +58,21 @@ function remove_user(user_name)
     return x;
 }
 
-function change_osrf_credentials(user, api_key)
+function set_portal_info(phostname, pteam)
 {
-    var user = encodeURIComponent(user);
-    var api_key = encodeURIComponent(api_key);
+	var hostname = encodeURIComponent(phostname);
+	var team = encodeURIComponent(pteam);
+	var url = '/cloudsim/inside/cgi-bin/portal';
+	
+	'?hostname=';
+    url += user+'&api_key=' +api_key;
+    console.log("[PUT] " + url);
+}
+
+function change_osrf_credentials(nuser, napi_key)
+{
+    var user = encodeURIComponent(nuser);
+    var api_key = encodeURIComponent(napi_key);
     var url = '/cloudsim/inside/cgi-bin/cloud_credentials_softlayer?user=';
     url += user+'&api_key=' +api_key;
     console.log("[PUT] " + url);

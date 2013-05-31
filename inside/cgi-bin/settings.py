@@ -67,6 +67,7 @@ page =  """<!DOCTYPE html>
             $('.admin_only').show();
             add_osrf_cloud_credentials_widget("osrf_credentials_div");
             add_cloud_credentials_widget("amazon_credentials_div");
+            add_portal_settings_widget("portal_settings_div");
         }
         add_users_admin_widget("users_div");
         
@@ -129,7 +130,10 @@ Welcome, """ + email + """ <br>
         
         <div id="amazon_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
         </div>
-    
+        
+        <div id="portal_settings_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
+        </div>
+        
     </div>
         
         <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
