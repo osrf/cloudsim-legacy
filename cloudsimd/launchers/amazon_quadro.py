@@ -35,6 +35,7 @@ from launch_utils.testing import get_boto_path, get_test_path, get_test_runner
 from launch_utils.monitoring import  update_machine_aws_states, constellation_is_terminated,\
     monitor_launch_state, monitor_simulator, monitor_cloudsim_ping,\
     get_ssh_client
+from launch_utils.launch_db import log_msg
 
 ROUTER_IP='10.0.0.50'
 SIM_IP='10.0.0.51'
@@ -44,15 +45,8 @@ OPENVPN_SERVER_IP='11.8.0.1'
 OPENVPN_CLIENT_IP='11.8.0.2'
 
 
-def log(msg, channel = "vrc_constellation"):
-    try:
-        
-        redis_client = redis.Redis()
-        redis_client.publish(channel, msg)
-        logging.info(msg)
-    except:
-        print("Warning: redis not installed.")
-    print("cloudsim log> %s" % msg)
+def log(msg, channel=__name__, severity="info"):
+    log_msg(msg, channel, severity)
 
 
 def get_ping_data(ping_str):

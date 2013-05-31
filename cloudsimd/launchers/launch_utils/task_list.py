@@ -6,6 +6,7 @@ from sshclient import SshClientException
 
 from launch_db import log
 
+
 class SshRetryException(Exception):
     pass
 

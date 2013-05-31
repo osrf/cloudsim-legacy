@@ -39,24 +39,16 @@ from launch_utils.monitoring import record_ping_result, LATENCY_TIME_BUFFER,\
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
 import tempfile
 import shutil
-import redis
-import logging
-from launch_utils.launch_db import get_cloudsim_config
+
+from launch_utils.launch_db import get_cloudsim_config, log_msg
 
 CONFIGURATION = "cloudsim"
 
 CLOUDSIM_ZIP_PATH= '/var/www-cloudsim-auth/cloudsim.zip'
 
-def log(msg, channel = "cloudsim"):
-    try:
-        
-        redis_client = redis.Redis()
-        redis_client.publish(channel, msg)
-        logging.info(msg)
-        print("cloudsim> %s" % msg)
-    except:
-        print("Warning: redis not installed.")
-    #print("cloudsim log> %s" % msg)
+
+def log(msg, channel=__name__):
+    log_msg(msg, channel)
 
 
 def update(constellation_name):
