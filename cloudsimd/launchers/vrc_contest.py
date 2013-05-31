@@ -302,75 +302,60 @@ def monitor(username, constellation_name, counter):
     constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('init_router'):
+        constellation_directory = constellation.get_value('constellation_directory')
+        router_ip = constellation.get_value("router_public_ip")
+        
+        ssh_router = SshClient(constellation_directory, "key-router",
+                               'ubuntu', router_ip)
+        
+        router_state = constellation.get_value('router_state')
+        fc1_state = constellation.get_value('fc1_state')
+        fc2_state = constellation.get_value('fc2_state')
+        sim_state = constellation.get_value('sim_state')
+        
+        monitor_launch_state(constellation_name, ssh_router, router_state,
+                          "tail -1 /var/log/dpkg.log", 'router_launch_msg')
+        monitor_launch_state(constellation_name, ssh_router, fc1_state,
+                            "cloudsim/dpkg_log_fc1.bash", 'fc1_launch_msg')
+        monitor_launch_state(constellation_name, ssh_router, fc2_state,
+                            "cloudsim/dpkg_log_fc2.bash", 'fc2_launch_msg')
+        monitor_launch_state(constellation_name, ssh_router, sim_state,
+                             "cloudsim/dpkg_log_sim.bash", 'sim_launch_msg')
+        
+        #monitor_ssh_ping(constellation_name, ssh_router, OPENVPN_CLIENT_IP, 'router_latency')
+        #monitor_task(constellation_name, ssh_router)
+        #monitor_simulator(constellation_name, ssh_router, "sim_state")
+        
+        procs = []
+        p = multiprocessing.Process(target=ssh_ping_proc,
+                        args=(constellation_name, FC1_IP, 'fc1_latency'))
+        procs.append(p)
+        
+        p = multiprocessing.Process(target=ssh_ping_proc,
+                        args=(constellation_name, FC2_IP, 'fc2_latency'))
+        procs.append(p)
+        
+        p = multiprocessing.Process(target=ssh_ping_proc,
+                        args=(constellation_name, SIM_IP, 'sim_latency'))
+        procs.append(p)
+        
+        p = multiprocessing.Process(target=ssh_ping_proc,
+            args=(constellation_name, OPENVPN_CLIENT_IP, 'router_latency'))
+        procs.append(p)
+        
+        p = multiprocessing.Process(target=monitor_task_proc,
+                                    args=(constellation_name,))
+        procs.append(p)
+        p = multiprocessing.Process(target=monitor_simulator_proc,
+                                    args=(constellation_name,))
+        procs.append(p)
+        
+        for p in procs:
+            p.start()
+        
+        for p in procs:
+            p.join()
 
-        try:
-            constellation_directory = constellation.get_value('constellation_directory')
-            router_ip = constellation.get_value("router_public_ip")
-
-            ssh_router = SshClient(constellation_directory, "key-router",
-                                   'ubuntu', router_ip)
-
-            router_state = constellation.get_value('router_state')
-            fc1_state = constellation.get_value('fc1_state')
-            fc2_state = constellation.get_value('fc2_state')
-            sim_state = constellation.get_value('sim_state')
- 
-            monitor_launch_state(constellation_name, ssh_router, router_state,
-                              "tail -1 /var/log/dpkg.log", 'router_launch_msg')
-            monitor_launch_state(constellation_name, ssh_router, fc1_state,
-                                "cloudsim/dpkg_log_fc1.bash", 'fc1_launch_msg')
-            monitor_launch_state(constellation_name, ssh_router, fc2_state,
-                                "cloudsim/dpkg_log_fc2.bash", 'fc2_launch_msg')
-            monitor_launch_state(constellation_name, ssh_router, sim_state,
-                                 "cloudsim/dpkg_log_sim.bash", 'sim_launch_msg')
-
-            #monitor_ssh_ping(constellation_name, ssh_router, OPENVPN_CLIENT_IP, 'router_latency')
-            #monitor_task(constellation_name, ssh_router)
-            #monitor_simulator(constellation_name, ssh_router, "sim_state")
-
-            procs = []
-            p = multiprocessing.Process(target=ssh_ping_proc,
-                            args=(constellation_name, FC1_IP, 'fc1_latency'))
-            procs.append(p)
-
-            p = multiprocessing.Process(target=ssh_ping_proc,
-                            args=(constellation_name, FC2_IP, 'fc2_latency'))
-            procs.append(p)
-
-            p = multiprocessing.Process(target=ssh_ping_proc,
-                            args=(constellation_name, SIM_IP, 'sim_latency'))
-            procs.append(p)
-
-            p = multiprocessing.Process(target=ssh_ping_proc,
-                args=(constellation_name, OPENVPN_CLIENT_IP, 'router_latency'))
-            procs.append(p)
-
-            p = multiprocessing.Process(target=monitor_task_proc,
-                                        args=(constellation_name,))
-            procs.append(p)
-            p = multiprocessing.Process(target=monitor_simulator_proc,
-                                        args=(constellation_name,))
-            procs.append(p)
-
-            for p in procs:
-                p.start()
-
-            for p in procs:
-                p.join()
-
-        except TaskTimeOut, e:
-            #
-            # stop current task
-            task = e.task
-            log("TASKTIMEOUT %s" % e)
-
-            d = {}
-            d['command'] = 'stop_task'
-            d['constellation'] = constellation_name
-            #stop_task(constellation_name, task)
-            r = redis.Redis()
-            s = json.dumps(d)
-            r.publish("cloudsim_cmds", s)
 
     return False
 

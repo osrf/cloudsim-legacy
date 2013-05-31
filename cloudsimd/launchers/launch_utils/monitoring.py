@@ -7,6 +7,8 @@ from sshclient import SshClient
 import commands
 import traceback
 from launch_db import log_msg
+import redis
+import json
 
 machine_states = ['terminated', 'terminating', 'stopped' 'stopping',
                   'nothing', 'starting', 'booting',
@@ -287,10 +289,7 @@ def monitor_task(constellation_name, ssh_router):
             score_str += "<b>%s</b>: %s. " % ("sim time",   sim_time)
             score_str += " %s" % (msg)
             score_str += "<b>falls:</b> %s." % fall_count
-            #
-            # The task has timed out
-            #
-
+                
         except Exception, e:
             #score_str = "No score available."
             tb = traceback.format_exc()
@@ -298,14 +297,7 @@ def monitor_task(constellation_name, ssh_router):
         log("score %s" % score_str)
         net_str = None
 
-        if sim_time > timeout:
-            timeout_msg = ' [Timeout]'
-            msg = task['task_message']
-            if not msg.find(timeout_msg):
-                msg += timeout_msg
-                constellation.update_task_value(task['task_id'], 'task_message', msg)
 
-            raise TaskTimeOut("Task timeout %s > %s" % (sim_time, timeout), task)
         try:
             n = ssh_router.cmd("cloudsim/get_network_usage.bash")
             log(n)
@@ -332,7 +324,25 @@ def monitor_task(constellation_name, ssh_router):
             final_score = "%s %s" % (score_str, net_str)
             log("score %s" % final_score)
             constellation.update_task_value(task['task_id'], 'task_message', final_score)
-            
+
+        if sim_time > timeout:
+            task = constellation.get_task(task_id)
+            timeout_msg = ' [Timeout]'
+            msg = task['task_message']
+            if  msg.find(timeout_msg) < 0:
+                msg += timeout_msg
+                constellation.update_task_value(task['task_id'], 'task_message', msg)
+
+            task = constellation.get_task(task_id)
+            if task['task_state'] == 'running':
+                log("TASKTIMEOUT" )
+                d = {}
+                d['command'] = 'stop_task'
+                d['constellation'] = constellation_name
+                #stop_task(constellation_name, task)
+                r = redis.Redis()
+                s = json.dumps(d)
+                r.publish("cloudsim_cmds", s)
     #log("monitor_task END")
 
 
