@@ -330,10 +330,6 @@ def monitor(username, constellation_name, counter):
 
             procs = []
             p = multiprocessing.Process(target=ssh_ping_proc,
-                args=(constellation_name, OPENVPN_CLIENT_IP, 'router_latency'))
-            procs.append(p)
-
-            p = multiprocessing.Process(target=ssh_ping_proc,
                             args=(constellation_name, FC1_IP, 'fc1_latency'))
             procs.append(p)
 
