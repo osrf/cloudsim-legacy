@@ -24,7 +24,7 @@ function create_simulator_state_widget(machine_div, constellation_name, machine_
             if(data[simulator_key] == "running")
                 color = "blue";
             else
-                color = "red";
+                color = "gray";
         }
         if(color == 'red' )
         {
