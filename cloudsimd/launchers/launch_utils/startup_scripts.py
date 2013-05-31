@@ -666,7 +666,7 @@ def create_ros_connect_file(machine_ip, master_ip ):
 
 # ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path
 oldrpp=$ROS_PACKAGE_PATH
-. /opt/ros/fuerte/setup.sh
+. /usr/share/drcsim/setup.sh
 eval export ROS_PACKAGE_PATH=$oldrpp:\$ROS_PACKAGE_PATH
 export ROS_IP=""" + machine_ip + """
 export ROS_MASTER_URI=http://""" + master_ip + """:11311 
