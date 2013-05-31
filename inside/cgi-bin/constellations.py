@@ -42,13 +42,15 @@ def get_user_tasks(tasks):
             latest_tasks.append(task)
             return latest_tasks
 
-    now = datetime.datetime.now()
+    now = datetime.datetime.utcnow()
     for task in tasks:
-        task_start = parser.parse(task['local_start'])
-        task_stop  = parser.parse(task['local_stop'])
+        t1 = task['local_start']
+        t2 = task['local_stop']
+        task_start = parser.parse(t1)
+        task_stop = parser.parse(t2)
 
-        start_age = (datetime.datetime.now() - task_start).total_seconds()
-        end_age = (datetime.datetime.now() - task_stop).total_seconds()
+        start_age = (now - task_start).total_seconds()
+        end_age = (now - task_stop).total_seconds()
 
         if task['task_state'] in ['ready']:
             if start_age >0 and end_age <0:
