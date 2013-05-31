@@ -29,7 +29,7 @@ function create_constellation(div_name, configuration, constellation, username, 
             //create_glx_state_widget(machine_div, constellation, machine_name, "simulation_glx_state");
             
             create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
-            //create_latency_widget(machine_div, constellation, machine_name, "sim_latency", "RTT latency to the Router", 1.1);
+            create_latency_widget(machine_div, constellation, machine_name, "sim_latency", "RTT latency to the Router", 550);
         }
     	// router computer
         {
@@ -41,7 +41,6 @@ function create_constellation(div_name, configuration, constellation, username, 
             create_machine_state_widget(machine_div,constellation, machine_name, "router_aws_state");
             //create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
             create_hostname_widget(machine_div, constellation, machine_name, "router_ip", "router_aws_id", "username", "gmt", "router_zip_file", false);
-            
             create_latency_widget(machine_div, constellation, machine_name, "router_latency", "RTT latency to the OCU accross the VPN", 550); 
         }
     	// field computer 1
@@ -54,7 +53,7 @@ function create_constellation(div_name, configuration, constellation, username, 
             create_machine_state_widget(machine_div,constellation, machine_name, "fc1_aws_state");
             // create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
 
-            //create_latency_widget(machine_div, constellation, machine_name, "fc1_latency", "RTT latency to the Router", 1.1); 
+            create_latency_widget(machine_div, constellation, machine_name, "fc1_latency", "RTT latency to the Router", 550); 
     	}
     	// field computer 2
         { 
@@ -68,7 +67,7 @@ function create_constellation(div_name, configuration, constellation, username, 
             create_machine_state_widget(machine_div,constellation, machine_name, "fc2_aws_state");
             // create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
             
-            //create_latency_widget(machine_div, constellation, machine_name, "fc2_latency", "RTT latency to the Router", 1.1); 
+            create_latency_widget(machine_div, constellation, machine_name, "fc2_latency", "RTT latency to the Router", 550); 
     	}
     }
     	 
@@ -85,7 +84,7 @@ function create_constellation(div_name, configuration, constellation, username, 
         // create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
 
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file", false );
-        create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to its parent CloudSim", 1.1);
+        create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to its parent CloudSim", 550);
     }
 
     if(configuration.indexOf("AWS trio") ==0 || configuration.indexOf("AWS micro trio") ==0  )
