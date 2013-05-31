@@ -221,9 +221,10 @@ def notify_portal(constellation, task):
         # Upload the file to the Portal temp dir
         dest = os.path.join('/tmp', tar_name)
         #ssh_portal.upload_file(portal_info_fname, dest)
-        cmd = ('scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
-               ' -i ' + ssh_portal.key_fname + ' ' + dest + ' ubuntu@' +
-               portal_info['hostname'] + ':/tmp')
+        #cmd = ('scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+        #       ' -i ' + ssh_portal.key_fname + ' ' + dest + ' ubuntu@' +
+        #       portal_info['hostname'] + ':/tmp')
+        cmd = ('bbcp -r -f -P 2 -v -w 2M ' + dest + ' ubuntu@' + portal_info['hostname'] + ':/tmp')
         log('cmd: %s' % cmd)
         subprocess.check_call(cmd.split())
 
@@ -237,7 +238,7 @@ def notify_portal(constellation, task):
         const.update_task_value(task['task_id'], 'task_message', new_msg)
 
     except Exception, excep:
-        log ('notify_portal() Exception: %s' % (repr(excep)))
+        log('notify_portal() Exception: %s' % (repr(excep)))
         raise
 
 
