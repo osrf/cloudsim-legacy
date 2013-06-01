@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import with_statement
 from __future__ import print_function
 import cgitb
 import json
@@ -8,7 +7,41 @@ import os
 
 from common.web import get_javascripts, authorize, UserDatabase,\
     get_cloudsim_version_txt, print_http_header
+from common.constants import get_cloudsim_config
 cgitb.enable()
+
+# def read_data():
+#     cfg = get_cloudsim_config()
+# 
+#     softlayer = {}
+#     softlayer['user'] = ""
+#     softlayer['api_key'] = ""
+# 
+#     if os.path.exists(cfg['softlayer_path']):
+#         with open(cfg['softlayer_path'],'r') as f:
+#             d = json.loads(f.read())
+#             softlayer['user'] = d['user']
+#             softlayer['api_key'] = d['api_key']
+# 
+#     aws ={}
+#     aws['aws_access'] = ""
+#     aws['aws_secret'] = ""
+#     aws['aws_az'] = ""
+# 
+#     portal = {}
+#     portal['hostname'] = ""
+#     portal['team'] = ""
+#     
+#     if os.path.exists(cfg['cloudsim_portal_json_path']):
+#         with open(cfg['cloudsim_portal_json_path'],'r') as f:
+#             d = json.loads(f.read())
+#             portal['hostname'] = d['hostname']
+#             portal['team'] = d['team']
+#     
+#     
+#     data = {'softlayer':softlayer, 'aws':aws, 'portal':portal}
+#     return data
+# data = read_data()
 
 
 email = authorize("officer")
@@ -22,13 +55,15 @@ if method != 'GET':
 
 
 version = get_cloudsim_version_txt()
-
 user = {'user':email, 'role': role}
-
 user_info = json.dumps(user)
 scripts = get_javascripts(['jquery-1.8.3.min.js'])
 
+
+
 print_http_header()
+
+
 
 page =  """<!DOCTYPE html>
 <html>
@@ -46,20 +81,17 @@ page =  """<!DOCTYPE html>
 
 
 """ + scripts +"""
-    
-<script language="javascript">
 
+<script language="javascript">
 
     function get_user_info()
     {
        var user_info = """ + user_info + """;
        return user_info; 
     }
-    
+
     function on_load_page()
-    {        
-       
-        
+    {
         var user_info = get_user_info();
         console.log("User role: " +  user_info.role);
         if(user_info.role == "admin")
@@ -70,8 +102,7 @@ page =  """<!DOCTYPE html>
             add_portal_settings_widget("portal_settings_div");
         }
         add_users_admin_widget("users_div");
-        
-        setTimeout(users_update , 500);        
+        setTimeout(users_update , 500);
     }
     
     function users_update()

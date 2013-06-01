@@ -122,7 +122,7 @@ function _create_task_form(form_id)
     var launch_arguments =  _add_form_textinput(form_div, "Arguments" );
 
     _add_form_separator(form_div, "Network parameters");
-    
+
     var latency =  _add_form_textinput(form_div, "Minimum latency (ms, round trip)");
     var uplink_data_cap=  _add_form_textinput(form_div, "Uplink data cap (bits, 0 for unlimited)");
     var downlink_data_cap = _add_form_textinput(form_div, "Downlink data cap (bits, 0 for unlimited)");

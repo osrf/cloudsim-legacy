@@ -5,11 +5,18 @@ function add_portal_settings_widget(place_holder_div_name)
 {
 
     var the_div = document.getElementById(place_holder_div_name);
+    
+    var portal = get_portal_info();
+    var hostname = portal['hostname']
+    var team = portal['team']
     var str  = '<h2>OSRF Portal</h2>'; 
     str += '';
-    str += 'Hostname <input type="text" name="hostname"/>';
-    str += 'team <input type="text" name="team"/>';
-    //str += '<input type="checkbox" name="notify" value="Bike"/>Send logs'
+    str += 'Hostname <input type="text" name="hostname" ';
+    str += 'value= "' + hostname  +'"/>';
+    str += 'team <input type="text" name="team" ';
+    str += ' value="' + team + '"'
+    str +=  '/>';
+
 
     str += '<button type="button" onclick="_portal_click(\'';
     str += place_holder_div_name;

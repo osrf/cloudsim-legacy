@@ -9,31 +9,33 @@ import json
 import redis
 from common import  authorize, get_cloudsim_config
 import urlparse
-from common import SoftLayerCredentials
-
 
 
 cgitb.enable()
 
 
-def override_creds(user, api_key):
-    """
-    writes new SoftLayer credentials 
-    when validation succeeds
-    """
-    config = get_cloudsim_config()
-    path = config['softlayer_path']
-    creds = SoftLayerCredentials(user, api_key, path)
-    valid = creds.validate()
-    if valid:
-        creds.save()
-    return valid
+def read_portal():
+    cfg = get_cloudsim_config()
+    if os.path.exists(cfg['cloudsim_portal_json_path']):
+        with open(cfg['cloudsim_portal_json_path'], 'r') as f:
+            d = json.loads(f.read())
+            return d
+    return {"hostname": "vrcportal-test.osrfoundation.org", "user": "ubuntu", "team": "T001", "upload_dir": "/tmp", "final_destination_dir": "/tmp", "live_destination": "/tmp"}
+
+
+def write_portal(d):
+    cfg = get_cloudsim_config()
+    if os.path.exists(cfg['cloudsim_portal_json_path']):
+        with open(cfg['cloudsim_portal_json_path'], 'w') as f:
+            j = json.dumps(d)
+            f.write(j)
+
 
 def log(msg):
     red = redis.Redis()
-    s = "cloud_credential_softlayers.py > %s" % msg 
-    red.publish("cloud_credentials_softlayer", s)
-    
+    s = "portal.py > %s" % msg 
+    red.publish("portal", s)
+
 
 email = authorize("admin")
 method = os.environ['REQUEST_METHOD']
@@ -42,57 +44,56 @@ log("query string %s" % (q_string) )
 
 
 try:
-    
+
     # get the location of the AWS credentials from the cloudsim daemon
 
     q = urlparse.parse_qs(q_string)
 
     r = {}
     r['success'] = False
-    r['msg']="Undefined"
-    r['user'] = q['user'][0] 
-    r['api_key'] = q['api_key'][0]
+
+    if method == 'PUT':
+
+
+
+        # valid = override_creds(r['team'], r['hostname'])
+        try:
+            
+            team =  q['team'][0] 
+            hostname = q['hostname'][0]
+            r['team'] = team
+            r['hostname'] = hostname
+            
+            portal = read_portal()
+            portal['team'] = team
+            portal['hostname'] = hostname
+            write_portal(portal)
+            r['success'] = True
+            r['msg'] = 'New portal info: team %s on %s.' % (team, hostname)
+        except Exception, e:
+            r['msg'] = 'Error setting portal information: %s' % e
+        
+    if method == 'POST':
+        # not supportedr
+        r['msg'] = 'operation not supported'
+        pass
+
+    if method == 'DELETE':
+        # not supported
+        r['msg'] = 'operation not supported'
+        pass
+
+    if method == 'GET':
+        r = read_portal()
+
+    jr = json.dumps(r)
+    log("JSON response %s" % jr)
     
     print('Content-type: application/json')
     print("\n")
-    
-    if method == 'PUT':
-        log("new credentials:")
-        log("   query %s" % q)
-        log("   user %s" %r['user'])
-        log("   api_key %s" %r['api_key'])
-        valid = True
-        
-        valid = override_creds(r['user'], r['api_key'])
-                               
-        
-        if valid:
-            # save
-            r['success'] = True
-            r['msg'] = 'The credentials have been changed.'
-            
-        else:
-            r['msg'] = "The credentials are not valid."
-            
-    if method == 'POST':
-        # not supported
-        pass
-    
-    if method == 'DELETE':
-        # not supported
-        pass
-    
-    if method == 'GET':
-        # not authorized?
-        pass
-    
-    jr = json.dumps(r)
-    log("JSON response %s" % jr)
+    print(jr)
 
-    print(jr)       
 
-    
 except Exception, e:
     log(e)
-    
-    
+    raise

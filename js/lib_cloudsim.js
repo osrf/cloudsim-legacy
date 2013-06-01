@@ -63,10 +63,23 @@ function set_portal_info(phostname, pteam)
 	var hostname = encodeURIComponent(phostname);
 	var team = encodeURIComponent(pteam);
 	var url = '/cloudsim/inside/cgi-bin/portal';
-	
-	'?hostname=';
-    url += user+'&api_key=' +api_key;
+	url += '?hostname=' + hostname;
+    url += '&team=' +team;
     console.log("[PUT] " + url);
+    var msg = httpPut(url);
+    var jmsg = eval('(' + msg + ')');
+    console.log("set_portal_info: " + msg);
+    return jmsg;
+}
+
+function get_portal_info()
+{
+    var url = '/cloudsim/inside/cgi-bin/portal';
+    console.log("[GET] " + url);
+    var msg = httpGet(url);
+    var jmsg = eval('(' + msg + ')');
+    console.log("get_portal_info: " + msg);
+    return jmsg;
 }
 
 function change_osrf_credentials(nuser, napi_key)

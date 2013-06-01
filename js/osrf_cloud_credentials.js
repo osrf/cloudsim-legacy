@@ -7,7 +7,7 @@ function add_osrf_cloud_credentials_widget(place_holder_div_name)
     //var x = httpGet("/cloudsim/inside/cgi-bin/machine_configs");
     //machine_configurations = eval( '(' + x + ')' );
     var the_div = document.getElementById(place_holder_div_name);
-    var str  = '<h2>OSRF cloud robotics credentials</h2>'; 
+    var str  = '<h2>SoftLayer credentials</h2>'; 
     str += '';
     str += 'Name <input type="text" name="user"/>';
     str += 'API key <input type="text" name="api_key"/>';
