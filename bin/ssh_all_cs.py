@@ -6,11 +6,21 @@ Program that runs a script into a set of machines.
                             __SIM-01
                            |
                            |__FC-01
-                    CS-01__|
-                   (CS-01) |__FC-01
+                 __ CS-01__|
+                |  (CS-01) |__FC-01
+                |  [tasks] |
+                |          |__Router-01
+                |             (quad-01)
+      CS-Local__|
+                |
+                |           __SIM-02
+                |          |
+                |          |__FC-02
+                |__ CS-02__|
+                   (CS-02) |__FC-02
                    [tasks] |
-                           |__Router-01
-                              (quad-01)
+                           |__Router-02
+                              (quad-02)
 """
 
 import argparse
@@ -20,20 +30,26 @@ from threading import Thread
 
 NORMAL = '\033[00m'
 RED = '\033[0;31m'
+UPDATE_PROGRAM = 'update_tasks.py'
 
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
+# Add to the pythonpath the cloudsimd.launchers package
+new_path = os.path.join(basepath, "cloudsimd", "launchers")
+sys.path.insert(0, new_path)
+sys.path.insert(0, basepath)
+
 from launch_utils import sshclient
+from cloudsimd import cloudsimd
 
 
-def run(cloudsim, machines, script, upload_only):
+def run(cloudsim, upload_only, script):
     '''
     For a given cloudsim, run the specified script in a set of machines
     @param cloudsim_const
-    @param machines String value (cs, fc1, fc2, sim)
-    @param script Script file that will be remotely executed
     @param upload_only If True do not execute the script
+    @param script Script file that will be remotely executed
     '''
     # Get the CloudSim credentials
     directory = cloudsim['constellation_directory']
@@ -52,19 +68,14 @@ def run(cloudsim, machines, script, upload_only):
         ssh.cmd(dest)
 
 
-def go(only, upload_only, script):
+def go(upload_only, script, ):
     '''
     Run a script in a set of machines.
-    @param only String value (all, fc1, fc2, sim)
     @param upload_only If True do not execute the script
     @param script Script file that will be remotely executed
     '''
 
     CLOUDSIM_PREFIX = 'OSRF_CloudSim_'
-
-    machines = 'all'
-    if only:
-        machines = only
 
     try:
         # Iterate over the list of CloudSims
@@ -73,7 +84,7 @@ def go(only, upload_only, script):
 
             # Filter only the cloudsim constellations
             if name.startswith(CLOUDSIM_PREFIX):
-                Thread(target=run, args=[constellation, machines, script, upload_only]).start()
+                Thread(target=run, args=[constellation, upload_only, script]).start()
 
     except Exception, excep:
         print (RED + 'Error getting constellation list: %s + NORMAL'
@@ -86,15 +97,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=('Run a script in a set of machines'))
 
-    parser.add_argument('-o', '--only', choices=['all', 'fc1', 'fc2', 'sim'],
-                        help='Run only in the cloudsims or inside a constellation')
     parser.add_argument('-u', '--upload_only', action='store_true', default=False,
                         help='Just upload the file, do not execute it')
     parser.add_argument('script', help='Script to be executed in each machine')
 
     # Parse command line arguments
     args = parser.parse_args()
-    arg_only = args.only
     arg_upload_only = args.upload_only
     arg_script = args.script
 
@@ -104,4 +112,4 @@ if __name__ == '__main__':
         sys.exit(1)'''
 
     # Run the script!
-    go(arg_only, arg_upload_only, arg_script)
+    go(arg_upload_only, arg_script)
