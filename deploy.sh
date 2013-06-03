@@ -41,13 +41,17 @@ sudo mkdir -p /var/www-cloudsim-auth/machines
 sudo cp -f $DIR/../boto.ini /var/www-cloudsim-auth/boto-useast
 sudo cp -f $DIR/../softlayer.json /var/www-cloudsim-auth/softlayer.json 
 sudo cp -f $DIR/../cloudsim_portal.key /var/www-cloudsim-auth/cloudsim_portal.key
-sudo cp -f $DIR/../cloudsim_portal.json /var/www-cloudsim-auth/cloudsim_portal.json
 sudo cp -f $DIR/../cloudsim_bitbucket.key /var/www-cloudsim-auth/cloudsim_bitbucket.key
 
 cd $DIR/..
 zip -r cloudsim.zip cloudsim
 sudo mv -f cloudsim.zip /var/www-cloudsim-auth
 cd $DIR
+
+if sudo test ! -f /var/www-cloudsim-auth/cloudsim_portal.json -o $force -eq 1
+then
+   sudo cp $DIR/../cloudsim_portal.json /var/www-cloudsim-auth/cloudsim_portal.json
+fi
  
 
 if sudo test ! -f /var/www-cloudsim-auth/users -o $force -eq 1
