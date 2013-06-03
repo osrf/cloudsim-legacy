@@ -31,10 +31,14 @@ class UserDatabase (object):
         
     def get_users(self):    
         
-        users = {}
+        tmp_users = {}
         if os.path.exists(self.fname):
             with open(self.fname, 'r') as f:
-                users = json.load(f)
+                tmp_users = json.load(f)
+        # Force email to lowercase
+        users = {}
+        for k,v in tmp_users.iteritems():
+            users[k.lower()] = v
         return users    
     
     def has_role(self, email, minimum_role):
