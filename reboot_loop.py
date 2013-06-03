@@ -3,7 +3,7 @@ import os, sys
 def wait_for_reboot_complete(server, router_public_ip, password):
     found = False
     while not found:
-        time.sleep(30)
+        time.sleep(5)
         router_ssh = paramiko.SSHClient()
         try:
             router_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -12,14 +12,17 @@ def wait_for_reboot_complete(server, router_public_ip, password):
             cmd = '/home/ubuntu/cloudsim/find_file_%s.bash /var/log/dpkg.log' % server_type
             stdi, stdo, stde = router_ssh.exec_command(cmd)
             out = stdo.read().strip()
+            err = stde.read()
+            print("%s out:%s, err:%s" % (datetime.datetime.utcnow(), out.strip(), err.strip())) 
             if out == '/var/log/dpkg.log':
                 found = True
-            
         finally:
             router_ssh.close()
             # print( "%s %s alive: %s" % (datetime.datetime.utcnow(), server, found) )
-            print(".",)
-    print( "%s %s alive: %s" % (datetime.datetime.utcnow(), server, found) )
+            #sys.stdout.write(".")
+            #sys.stdout.flush()
+        
+    print( "\n%s %s alive: %s" % (datetime.datetime.utcnow(), server, found) )
 
 daemon_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
   'cloudsimd', 'launchers', 'launch_utils'))
@@ -73,7 +76,6 @@ while True:
     
     time.sleep(10)
     wait_for_reboot_complete(server, public_ip, password)
-    print( "%s %s reboot" % (datetime.datetime.utcnow(), server) )
     time.sleep(60)
     print( "%s %s reboot" % (datetime.datetime.utcnow(), server) )
     reboot_servers(osrf_creds, [server])

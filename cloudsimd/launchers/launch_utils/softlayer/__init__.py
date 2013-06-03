@@ -88,11 +88,11 @@ def _send_reboot_server_cmd(api_username, api_key, server_name, server_id):
                                       api_key)
             try:
                 result = client.rebootDefault()
-                log("Reload of %s returned %s" % (server_name, result))
+                log("Reboot of %s returned %s" % (server_name, result))
                 return result
             except SoftLayerAPIError, e:
-                if str(e).find("outstanding transaction") > 0:
-                    log("Reload of %s skipped due to outstanding transaction" % server_name)
+                if str(e).find("Cannot issue command at this time.") > 0:
+                    log("Reboot of %s skipped due to recent command" % server_name)
                     return True
                 else:
                     raise
