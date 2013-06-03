@@ -1,6 +1,7 @@
 import os, sys
 
-def wait_for_reboot_complete(server, router_public_ip, password):
+def wait_for_server_alive(server, router_public_ip, password):
+    print( "%s waiting for %s to be alive" % (datetime.datetime.utcnow(), server) )
     found = False
     while not found:
         time.sleep(30)
@@ -18,11 +19,11 @@ def wait_for_reboot_complete(server, router_public_ip, password):
                 found = True
         finally:
             router_ssh.close()
-            # print( "%s %s alive: %s" % (datetime.datetime.utcnow(), server, found) )
+            print( "%s %s alive: %s" % (datetime.datetime.utcnow(), server, found) )
             #sys.stdout.write(".")
             #sys.stdout.flush()
         
-    print( "%s %s alive: %s" % (datetime.datetime.utcnow(), server, found) )
+    #print( "%s %s alive: %s" % (datetime.datetime.utcnow(), server, found) )
 
 daemon_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
   'cloudsimd', 'launchers', 'launch_utils'))
@@ -49,7 +50,7 @@ parser.add_argument('-s', '--server',
 parser.add_argument('-c', '--credentials_sl',
                              help='Credentials fro SoftLayer')
 args = parser.parse_args()
-print(args)
+#print(args)
 
 server = args.server
 print("server: %s" % server)
@@ -73,10 +74,8 @@ count = 0
 while True:
     count += 1
     print("\n\n %s ======== %s =========" % (server, count))
+    wait_for_server_alive(server, public_ip, password)
     
-    time.sleep(10)
-    wait_for_reboot_complete(server, public_ip, password)
-    time.sleep(60)
     print( "%s %s reboot" % (datetime.datetime.utcnow(), server) )
     reboot_servers(osrf_creds, [server])
  
