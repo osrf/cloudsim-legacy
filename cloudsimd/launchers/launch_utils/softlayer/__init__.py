@@ -69,6 +69,39 @@ def _get_hardware(api_username, api_key, server_name = None):
     return hardware
 
 
+def _send_reboot_server_cmd(api_username, api_key, server_name, server_id):
+    """
+    Attempts to reboot the server by issuing a reset (soft reboot) command to
+    the server's remote management card. If the reset (soft reboot) attempt is
+    unsuccessful, a power cycle command will be issued via the powerstrip.
+    The power cycle command is equivalent to unplugging the server from the
+    powerstrip and then plugging the server back into the powerstrip.
+    If a reboot command has been issued successfully in the past 20 minutes,
+    another remote management command (rebootSoft, rebootHard, powerOn,
+    powerOff and powerCycle) will not be allowed.
+    This is to avoid any type of server failures.
+    """
+    for i in range(100):
+        try:
+            client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id,
+                                      api_username,
+                                      api_key)
+            try:
+                result = client.rebootDefault()
+                log("Reload of %s returned %s" % (server_name, result))
+                return result
+            except SoftLayerAPIError, e:
+                if str(e).find("outstanding transaction") > 0:
+                    log("Reload of %s skipped due to outstanding transaction" % server_name)
+                    return True
+                else:
+                    raise
+
+        except Exception, e:
+            log("%s" % e)
+            time.sleep(10)
+    raise SoftLayerException("Can't enable public ip on server %s", server_name)
+
 def _send_reload_server_cmd(api_username, api_key, server_name, server_id):
     for i in range(100):
         try:
@@ -548,8 +581,7 @@ def reload_servers(osrf_creds, server_names):
 
     client = SoftLayer.Client(username=osrf_creds['user'],
                               api_key=osrf_creds['api_key'],)
-    
-    
+
     for server_name in server_names:
         hardware = client['Account'].getHardware(filter={'hardware':
                                     {'hostname': {'operation': server_name}}})
@@ -559,6 +591,16 @@ def reload_servers(osrf_creds, server_names):
                                     server_name, server_id)
 
 
+def reboot_servers(osrf_creds, server_names):
+    client = SoftLayer.Client(username=osrf_creds['user'],
+                              api_key=osrf_creds['api_key'],)
+    for server_name in server_names:
+        hardware = client['Account'].getHardware(filter={'hardware':
+                                    {'hostname': {'operation': server_name}}})
+        server_id = hardware[0]['id']
+        print("reloading server %s id %s" % (server_name, server_id))
+        _send_reboot_server_cmd(osrf_creds['user'], osrf_creds['api_key'],
+                                    server_name, server_id)
 
 
 def get_constellation_prefixes(osrf_creds):
@@ -699,11 +741,10 @@ class sTestSoftLayer(unittest.TestCase):
 
         self.assertTrue(len(x) == 3, 'did not get creds')
 
-
-    def test_wait_for_server_reloads(self):
+    def xtest_wait_for_server_reloads(self):
         self.wait_for_all_server_reloads()
 
-    def etest_reload_Server(self):
+    def etest_reload_server(self):
         p = get_softlayer_path()
         osrf_creds = load_osrf_creds(p)
         servers = ['cs-43', 'sim-43', 'router-43', 'fc1-43', 'fc2-43']
@@ -729,13 +770,23 @@ class sTestSoftLayer(unittest.TestCase):
 
         self.assertTrue(len(prefixes) > 0, "no constellations")
 
+    def test_reboot_server(self):
+        p = get_softlayer_path()
+        osrf_creds = load_osrf_creds(p)
+        servers = ['cs-50']
+        try:
+            reboot_servers(osrf_creds, servers)
+        except Exception, e:
+            print e
+
+    
+
 if __name__ == "__main__":
 
     p = get_softlayer_path()
     osrf_creds = load_osrf_creds(p)
-    
-    softlayer_dash_board(osrf_creds)
-    wait_for_all_server_reloads(osrf_creds)
+#    softlayer_dash_board(osrf_creds)
+#    wait_for_all_server_reloads(osrf_creds)
     unittest.main()
 
 
