@@ -88,3 +88,16 @@ class SshClient(object):
             return False
         return True
 
+def get_cloudsim_info(key_, ip, output_dir):
+    SshClient
+    
+def papa_ping(keys_dir, machine_directory = "/var/www-cloudsim-auth/machines"):
+#     for constellation_directory in os.listdir(machine_directory):
+#         print(constellation_directory)
+#         get_cloudsim_info(constellation_directory)
+#         
+        ip = "75.126.127.94" 
+        
+if __name__ == "__main__":
+    
+    papa_ping("/home/hugo/papa_cloudsim")

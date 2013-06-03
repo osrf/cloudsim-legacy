@@ -43,11 +43,14 @@ from launchers.launch_utils.softlayer import get_machine_login_info
 
 import datetime
 
-
-logging.basicConfig(filename='/tmp/cloudsimd.log',
+try:
+    logging.basicConfig(filename='/tmp/cloudsimd.log',
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     level=logging.DEBUG)
-
+except:
+    logging.basicConfig(filename='/tmp/cloudsimd_no_root.log',
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    level=logging.DEBUG)
 
 def log(msg, channel=__name__, severity="info"):
     log_msg(msg, channel, severity)
