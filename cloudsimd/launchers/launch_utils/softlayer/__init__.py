@@ -647,10 +647,10 @@ def enable_public_ips(osrf_creds, server_names):
 
 
 def wait_for_server_reloads(osrf_creds, server_names, callback=print_cb):
-    api_username = osrf_creds['user'] 
+    api_username = osrf_creds['user']
     api_key = osrf_creds['api_key']
 
-    server_ids_to_hostname = {} 
+    server_ids_to_hostname = {}
 
     for server_name in server_names:
         hardware = _get_server_hardware(osrf_creds, server_name)
@@ -779,7 +779,6 @@ class sTestSoftLayer(unittest.TestCase):
         except Exception, e:
             print e
 
-    
 
 if __name__ == "__main__":
 
