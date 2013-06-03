@@ -34,8 +34,8 @@ CONFIGURATION = "cloudsim"
 CLOUDSIM_ZIP_PATH = '/var/www-cloudsim-auth/cloudsim.zip'
 
 
-def log(msg, channel=__name__):
-    log_msg(msg, channel)
+def log(msg, channel=__name__, severity='info'):
+    log_msg(msg, channel, severity)
 
 
 def update(constellation_name):
