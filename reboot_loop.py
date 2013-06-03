@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os, sys
 
 def wait_for_server_alive(server, router_public_ip, password):
