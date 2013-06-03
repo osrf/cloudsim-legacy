@@ -3,7 +3,7 @@ import os, sys
 def wait_for_reboot_complete(server, router_public_ip, password):
     found = False
     while not found:
-        time.sleep(5)
+        time.sleep(30)
         router_ssh = paramiko.SSHClient()
         try:
             router_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -22,7 +22,7 @@ def wait_for_reboot_complete(server, router_public_ip, password):
             #sys.stdout.write(".")
             #sys.stdout.flush()
         
-    print( "\n%s %s alive: %s" % (datetime.datetime.utcnow(), server, found) )
+    print( "%s %s alive: %s" % (datetime.datetime.utcnow(), server, found) )
 
 daemon_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
   'cloudsimd', 'launchers', 'launch_utils'))
@@ -72,7 +72,7 @@ print("router ip %s / %s pswd: %s\n\n" % (public_ip, priv_ip, password) )
 count = 0
 while True:
     count += 1
-    print("\n\n======== %s =========" % count)
+    print("\n\n %s ======== %s =========" % (server, count))
     
     time.sleep(10)
     wait_for_reboot_complete(server, public_ip, password)

@@ -81,9 +81,11 @@ def _send_reboot_server_cmd(api_username, api_key, server_name, server_id):
     powerOff and powerCycle) will not be allowed.
     This is to avoid any type of server failures.
     """
-    for i in range(100):
+    count = 180
+    for i in range(count):
         try:
-            client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id,
+            client = SoftLayer.API.Client('SoftLayer_Hardware_Server',
+                                      server_id,
                                       api_username,
                                       api_key)
             try:
@@ -92,8 +94,10 @@ def _send_reboot_server_cmd(api_username, api_key, server_name, server_id):
                 return result
             except SoftLayerAPIError, e:
                 if str(e).find("Cannot issue command at this time.") > 0:
-                    log("Reboot of %s skipped due to recent command" % server_name)
-                    return True
+                    log("Rebooting %s (retry %s / %s): %s" % (server_name, i , count, e))
+                    # return False
+                    time.sleep(10)
+                    continue
                 else:
                     raise
 
@@ -101,6 +105,7 @@ def _send_reboot_server_cmd(api_username, api_key, server_name, server_id):
             log("%s" % e)
             time.sleep(10)
     raise SoftLayerException("Can't enable public ip on server %s", server_name)
+
 
 def _send_reload_server_cmd(api_username, api_key, server_name, server_id):
     for i in range(100):
@@ -598,7 +603,7 @@ def reboot_servers(osrf_creds, server_names):
         hardware = client['Account'].getHardware(filter={'hardware':
                                     {'hostname': {'operation': server_name}}})
         server_id = hardware[0]['id']
-        print("reloading server %s id %s" % (server_name, server_id))
+        print("rebooting server %s id %s" % (server_name, server_id))
         _send_reboot_server_cmd(osrf_creds['user'], osrf_creds['api_key'],
                                     server_name, server_id)
 
