@@ -42,11 +42,15 @@ class Launcher:
         parser.add_argument('-a', '--auto_launch',
                             help='Also provision the constellation once CloudSim is ready',
                             action="store_true")
+        parser.add_argument('-n', '--dry-run',
+                            help="Don't actually launch anything",
+                            action="store_true")
         args = parser.parse_args()
         self.teams_yaml = args.teams_file
         self.team = args.team
         print(args)
         self.auto_launch = args.auto_launch
+        self.dry_run = args.dry_run
         
     def load(self):
         # Parse everything out of the yaml file
@@ -71,6 +75,8 @@ class Launcher:
             self.softlayer_credentials[s['team']] = s
 
         for t in self.data['teams']:
+            if self.team and t['team'] != self.team:
+                continue
             # A bit of sanity checking
             required_keys = ['username', 'team', 'cloudsim', 'quad', 'cs_role']
             if not set(required_keys) <= set(t.keys()):
@@ -146,7 +152,8 @@ class Launcher:
         args['cs_role'] = team['cs_role']
         args['cs_admin_users'] = self.additional_cs_admins
         print('Launching (%s,%s,%s)' % (username, configuration, args))
-        launch_constellation(username, configuration, args)
+        if not self.dry_run:
+            launch_constellation(username, configuration, args)
 
     def go(self):
         self.load()
