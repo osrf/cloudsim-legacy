@@ -23,6 +23,23 @@ FC2_IP=10.0.0.53
 #
 sudo apt-get install -y expect
 
+# SSH HPN
+sudo apt-get install -y python-software-properties
+sudo add-apt-repository -y ppa:w-rouesnel/openssh-hpn
+sudo apt-get update -y
+sudo apt-get install -y openssh-server
+
+cat <<EOF >>/etc/ssh/sshd_config
+
+# SSH HPN
+HPNDisabled no
+TcpRcvBufPoll yes
+HPNBufferSize 8192
+NoneEnabled yes
+EOF
+
+sudo service ssh restart
+
 # --------------------------------------------
 
 cat <<DELIM > $DIR/change_ip.bash
