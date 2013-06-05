@@ -513,6 +513,8 @@ def stop_task(constellation_name):
                 finally:
                     cs.update_task_value(task_id, 'task_state', 'stopped')
                     cs.set_value('current_task', '')
+            else:
+                log("""stop_taks error: wrong state "%s" for task "%s" """ % (task['task_state'], task_id))
         else:
             log('stop_task error: no current task')
     except Exception, e:

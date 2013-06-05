@@ -632,10 +632,10 @@ def get_sim_script(drc_package_name, machine_ip=SIM_IP):
 def get_drc_script(drc_package_name, machine_ip):
     ros_master_ip = SIM_IP
 
-    ppa_list = ['xorg-edgers']
+    ppa_list = ['xorg-edgers/ppa']
     gpu_driver_list = ["nvidia-319", 'nvidia-settings']
 
-    # ppa_list = []
+    # ppa_list = [] or ubuntu-x-swat/x-updates 
     #gpu_driver_list = ['nvidia-current', 'nvidia-settings','nvidia-current-dev']
 
     gpu_driver_packages_string = ""
@@ -644,7 +644,7 @@ def get_drc_script(drc_package_name, machine_ip):
 
     ppa_string = ""
     for ppa in ppa_list:
-        ppa_string += "apt-add-repository ppa:%s/x-updates\n" % ppa
+        ppa_string += "apt-add-repository ppa:%s\n" % ppa
 
     s = """#!/bin/bash
 # Exit on error
@@ -991,6 +991,7 @@ def reload_os_machines(constellation_name, constellation_prefix, osrf_creds_fnam
         machine_names = [x + "-" + constellation_prefix for x in ('router', 'sim', 'fc2', 'fc1')]
         # enable nics on machines with disconnected ones (not the router)
         enable_public_ips(osrf_creds, machine_names[1:])
+        
         reload_servers(osrf_creds, machine_names)
         constellation.set_value("launch_stage", "os_reload")
 
