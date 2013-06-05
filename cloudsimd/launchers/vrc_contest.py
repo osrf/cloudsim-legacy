@@ -632,6 +632,20 @@ def get_sim_script(drc_package_name, machine_ip=SIM_IP):
 def get_drc_script(drc_package_name, machine_ip):
     ros_master_ip = SIM_IP
 
+    ppa_list = ['xorg-edgers']
+    gpu_driver_list = ["nvidia-319", 'nvidia-settings']
+
+    # ppa_list = []
+    #gpu_driver_list = ['nvidia-current', 'nvidia-settings','nvidia-current-dev']
+
+    gpu_driver_packages_string = ""
+    for driver in gpu_driver_list:
+        gpu_driver_packages_string += "apt-get install -y %s\n" % driver
+
+    ppa_string = ""
+    for ppa in ppa_list:
+        ppa_string += "apt-add-repository ppa:%s/x-updates\n" % ppa
+
     s = """#!/bin/bash
 # Exit on error
 set -ex
@@ -858,9 +872,8 @@ echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
 wget http://packages.ros.org/ros.key -O - | apt-key add -
 wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
 
-# add new NVIDIA repos too for K10 support
-apt-add-repository ppa:ubuntu-x-swat/x-updates
 
+"""+ ppa_string +"""
 
 echo "update packages" >> /home/ubuntu/setup.log
 apt-get update
@@ -896,8 +909,9 @@ ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
 
 echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
 apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` gnome-session-fallback
-apt-get install -y nvidia-current nvidia-current-dev nvidia-settings
 
+
+""" + gpu_driver_packages_string + """
 
 # Have the NVIDIA tools create the xorg configuration file for us, retrieiving the PCI BusID for the current system.
 # The BusID can vary from machine to machine.  The || true at the end is to allow this line to succeed on fc2, which doesn't have a GPU.
@@ -975,13 +989,9 @@ def reload_os_machines(constellation_name, constellation_prefix, osrf_creds_fnam
         constellation.set_value('fc2_launch_msg', 'reload OS')
         constellation.set_value('sim_launch_msg', 'reload OS')
         machine_names = [x + "-" + constellation_prefix for x in ('router', 'sim', 'fc2', 'fc1')]
-        
         # enable nics on machines with disconnected ones (not the router)
         enable_public_ips(osrf_creds, machine_names[1:])
         reload_servers(osrf_creds, machine_names)
-
-
-
         constellation.set_value("launch_stage", "os_reload")
 
 
