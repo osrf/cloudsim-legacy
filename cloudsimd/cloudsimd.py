@@ -257,6 +257,7 @@ def load_cloudsim_configurations_list():
     for prefix in const_prefixes:
         configs['OSRF VRC Constellation %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
         configs['OSRF VRC Constellation nightly build %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
+        configs['OSRF VRC Constellation nvidia 319.23 %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
     set_cloudsim_configuration_list(configs)
     #log("cloudsim configurations list updated: %s" % configs)
 

@@ -5,10 +5,7 @@ import os
 import time
 import zipfile
 import shutil
-import redis
-import logging
 import json
-import glob
 import subprocess
 import dateutil.parser
 
@@ -19,7 +16,7 @@ from launch_utils.traffic_shapping import  run_tc_command
 import launch_utils.softlayer
 
 from launch_utils.monitoring import constellation_is_terminated,\
-    monitor_launch_state, monitor_cloudsim_ping, machine_states, monitor_ssh_ping,\
+    monitor_launch_state,  monitor_ssh_ping,\
     monitor_task, monitor_simulator, TaskTimeOut
 
 from launch_utils.softlayer import load_osrf_creds, reload_servers,\
@@ -29,7 +26,7 @@ from launch_utils.softlayer import load_osrf_creds, reload_servers,\
 
 from launch_utils.launch_db import get_constellation_data, ConstellationState,\
     get_cloudsim_config, log_msg
-from launch_utils import sshclient
+
 from launch_utils.testing import get_test_runner, get_test_path
 from launch_utils.launch import get_unique_short_name
 from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
@@ -1535,15 +1532,13 @@ def shutdown_constellation_public_ips(constellation_name, constellation_prefix, 
 
 
 def launch(username, config, constellation_name, tags, constellation_directory):
-
-    drc_package = "drcsim"
     log("launch constellation name: %s" % constellation_name)
-    
+    drc_package = "drcsim"
     ppa_list = [] # ['ubuntu-x-swat/x-updates']
     gpu_driver_list = ['nvidia-current', 
                        'nvidia-settings',
                        'nvidia-current-dev']
-    constellation_prefix = None
+    constellation_prefix = config.split()[-1]
     if config.find("nightly") >= 0:
         drc_package = "drcsim-nightly"
         constellation_prefix = config.split(
@@ -1644,11 +1639,7 @@ def terminate(constellation_name):
 
     constellation = ConstellationState(constellation_name)
 
-    constellation_prefix = None
-    if constellation_name.find("nightly") >= 0:
-         constellation_prefix = constellation_name.split("OSRF_VRC_Constellation_nightly_build_")[1]
-    else:
-        constellation_prefix = constellation_name.split("OSRF_VRC_Constellation_")[1]
+    constellation_prefix = constellation_name.split('_')[-1]
 
     constellation.set_value('constellation_state', 'terminating')
     constellation.set_value('router_state', 'terminating')
@@ -1713,10 +1704,10 @@ class VrcCase(unittest.TestCase):
         create_router_zip(router_ip, constellation_name, constellation_directory)
         create_private_machine_zip("fc1", FC1_IP, constellation_name, constellation_directory)
 
-    def test_script(self):
-        s = get_sim_script('drcsim')
-        print(s)
-        print("")
+#     def test_script(self):
+#         s = get_sim_script('drcsim')
+#         print(s)
+#         print("")
 
     def atest_launch(self):
 

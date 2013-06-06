@@ -40,7 +40,9 @@ if not udb.has_role(email, "admin"):
     for name in configs.keys():
         if name.find("nightly") > 0:
             del(configs[name])
-            
+        if name.find("nvidia") > 0:
+            del(configs[name])
+
 #     for bad_config in admin_configs:
 #         if bad_config in configs:
 #             del(configs[bad_config]) # remove it
