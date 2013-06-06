@@ -32,7 +32,8 @@ if not email:
         
 # Force email to lower case for comparison to users list, which we
 # lower-cased when loading.
-email = email.lower()
+if email:
+    email = email.lower()
 
 if email not in users:
     
