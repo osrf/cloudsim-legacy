@@ -25,7 +25,7 @@ from launch_utils.monitoring import constellation_is_terminated,\
 from launch_utils.softlayer import load_osrf_creds, reload_servers,\
     get_softlayer_path, wait_for_server_reloads, get_machine_login_info,\
     setup_ssh_key_access, create_ssh_key, create_openvpn_key,\
-    shutdown_public_ips, enable_public_ips
+    shutdown_public_ips, enable_public_ips, get_active_transaction
 
 from launch_utils.launch_db import get_constellation_data, ConstellationState,\
     get_cloudsim_config, log_msg
@@ -614,37 +614,15 @@ chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
     return s
 
 
-def get_fc2_script(drc_package_name, machine_ip=FC2_IP):
-    s = get_drc_script(drc_package_name, machine_ip)
-    return s
-
-
-def get_fc1_script(drc_package_name, machine_ip=FC1_IP):
-    s = get_drc_script(drc_package_name, machine_ip)
-    return s
-
-
-def get_sim_script(drc_package_name, machine_ip=SIM_IP):
-    s = get_drc_script(drc_package_name, machine_ip)
-    return s
-
-
-def get_drc_script(drc_package_name, machine_ip):
-    ros_master_ip = SIM_IP
-
-    ppa_list = ['xorg-edgers/ppa']
-    gpu_driver_list = ["nvidia-319", 'nvidia-settings']
-
-    # ppa_list = [] or ubuntu-x-swat/x-updates 
-    #gpu_driver_list = ['nvidia-current', 'nvidia-settings','nvidia-current-dev']
-
+def get_drc_script(drc_package_name, machine_ip, ros_master_ip, 
+                   gpu_driver_list, ppa_list):
     gpu_driver_packages_string = ""
     for driver in gpu_driver_list:
         gpu_driver_packages_string += "apt-get install -y %s\n" % driver
 
     ppa_string = ""
     for ppa in ppa_list:
-        ppa_string += "apt-add-repository ppa:%s\n" % ppa
+        ppa_string += "apt-add-repository -y ppa:%s\n" % ppa
 
     s = """#!/bin/bash
 # Exit on error
@@ -991,7 +969,9 @@ def reload_os_machines(constellation_name, constellation_prefix, osrf_creds_fnam
         machine_names = [x + "-" + constellation_prefix for x in ('router', 'sim', 'fc2', 'fc1')]
         # enable nics on machines with disconnected ones (not the router)
         enable_public_ips(osrf_creds, machine_names[1:])
-        
+        for server in machine_names[1:]:
+            t = get_active_transaction(osrf_creds, server)
+            log("Transaction before reload on %s: %s" % (server, t))
         reload_servers(osrf_creds, machine_names)
         constellation.set_value("launch_stage", "os_reload")
 
@@ -1066,7 +1046,8 @@ def upload_user_scripts_to_router(router_ip, constellation_directory, sim_ip, fc
     log("upload %s to %s" % (local_fname, remote_fname))
 
 
-def initialize_router(constellation_name, constellation_prefix, osrf_creds_fname, constellation_directory):
+def initialize_router(constellation_name, constellation_prefix,
+                      osrf_creds_fname, constellation_directory):
 
     constellation = ConstellationState(constellation_name)
 
@@ -1079,7 +1060,7 @@ def initialize_router(constellation_name, constellation_prefix, osrf_creds_fname
         shutil.rmtree(constellation_directory)
     os.makedirs(constellation_directory)
 
-    machines_dict = {'sim-%s' % constellation_prefix: 'simulation_launch_msg',
+    machines_dict = {'sim-%s' % constellation_prefix: 'sim_launch_msg',
                      'router-%s' % constellation_prefix: 'router_launch_msg',
                      'fc2-%s' % constellation_prefix: 'fc2_launch_msg',
                      'fc1-%s' % constellation_prefix: 'fc1_launch_msg',
@@ -1098,7 +1079,7 @@ def initialize_router(constellation_name, constellation_prefix, osrf_creds_fname
     constellation.set_value('fc2_aws_state', m)
     constellation.set_value('sim_aws_state', m)
     constellation.set_value('router_aws_state', m)
-    
+
     router_ip, priv_ip, password = get_machine_login_info(osrf_creds, router_name)
     constellation.set_value("router_public_ip", router_ip)
 
@@ -1120,19 +1101,36 @@ def initialize_router(constellation_name, constellation_prefix, osrf_creds_fname
     constellation.set_value("launch_stage", "init_router")
 
 
-def initialize_private_machines(constellation_name, constellation_prefix, drcsim_package_name, credentials_softlayer, constellation_directory):
+def initialize_private_machines(constellation_name,
+                                constellation_prefix,
+                                drcsim_package_name,
+                                gpu_driver_list,
+                                ppa_list,
+                                ros_master_ip,
+                                credentials_softlayer,
+                                constellation_directory):
 
-    def provision_ssh_private_machine(ssh_router, machine_name_prefix, private_machine_ip, machine_password, startup_script, constellation_directory):
-        constellation.set_value('%s_launch_msg' % machine_name_prefix, 'User account setup')
+    def provision_ssh_private_machine(ssh_router,
+                                      machine_name_prefix,
+                                      private_machine_ip,
+                                      machine_password,
+                                      startup_script,
+                                      constellation_directory):
+
+        constellation.set_value('%s_launch_msg' % machine_name_prefix,
+                                                    'User account setup')
         create_ssh_key("key-%s" % machine_name_prefix, constellation_directory)
-        upload_ssh_keys_to_router(ssh_router, machine_name_prefix, constellation_directory)
+        upload_ssh_keys_to_router(ssh_router, machine_name_prefix,
+                                                    constellation_directory)
 
         # execute script on router to add ubuntu user on the private machine
-        cmd = "cd cloudsim; ./auto_ubuntu.bash %s %s ./key-%s.pem.pub" % (private_machine_ip, machine_password, machine_name_prefix)
+        cmd = "cd cloudsim; ./auto_ubuntu.bash %s %s ./key-%s.pem.pub" % (
+                    private_machine_ip, machine_password, machine_name_prefix)
         log(cmd)
         ssh_router.cmd(cmd)
 
-        local_fname = os.path.join(constellation_directory, '%s_startup.bash' % machine_name_prefix)
+        local_fname = os.path.join(constellation_directory,
+                                   '%s_startup.bash' % machine_name_prefix)
         with open(local_fname, 'w') as f:
             f.write(startup_script)
         remote_fname = 'cloudsim/%s_startup_script.bash' % machine_name_prefix
@@ -1141,11 +1139,13 @@ def initialize_private_machines(constellation_name, constellation_prefix, drcsim
 
     constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
-    if launch_sequence.index(launch_stage) >= launch_sequence.index('init_privates'):
+    if launch_sequence.index(launch_stage) >= \
+                                    launch_sequence.index('init_privates'):
         return
 
     router_ip = constellation.get_value("router_public_ip")
-    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
+    ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu',
+                           router_ip)
 
     router_script = get_router_script(ROUTER_IP, SIM_IP, drcsim_package_name)
     local_fname = os.path.join(constellation_directory, 'router_startup.bash')
@@ -1157,23 +1157,52 @@ def initialize_private_machines(constellation_name, constellation_prefix, drcsim
 
     osrf_creds = load_osrf_creds(credentials_softlayer)
 
-#    private_machines = ["sim-%s"% constellation_prefix, "fc1-%s"% constellation_prefix, "fc2-%s"% constellation_prefix]
-#    shutdown_public_ips(osrf_creds, private_machines)
+    sim_pub_ip, sim_priv_ip, sim_root_password = get_machine_login_info(
+                                osrf_creds, "sim-%s" % constellation_prefix)
 
-    sim_pub_ip, sim_priv_ip, sim_root_password = get_machine_login_info(osrf_creds, "sim-%s" % constellation_prefix)
-    sim_script = get_sim_script(drcsim_package_name)
-    log("provision sim [%s / %s] %s" % (sim_pub_ip, sim_priv_ip, sim_root_password))
-    provision_ssh_private_machine(ssh_router, "sim", sim_priv_ip, sim_root_password, sim_script, constellation_directory)
+    sim_script = get_drc_script(drcsim_package_name,
+                                SIM_IP,
+                                ros_master_ip,
+                                gpu_driver_list,
+                                ppa_list)
 
-    fc1_pub_ip, fc1_priv_ip, fc1_root_password = get_machine_login_info(osrf_creds, "fc1-%s" % constellation_prefix)
-    fc1_script = get_fc1_script(drcsim_package_name)
-    log("provision fc1 [%s / %s] %s" % (fc1_pub_ip, fc1_priv_ip, fc1_root_password))
-    provision_ssh_private_machine(ssh_router, "fc1", fc1_priv_ip, fc1_root_password, fc1_script, constellation_directory)
+    log("provision sim [%s / %s] %s" % (sim_pub_ip,
+                                        sim_priv_ip, sim_root_password))
+    provision_ssh_private_machine(ssh_router,
+                                  "sim", sim_priv_ip, sim_root_password,
+                                  sim_script, constellation_directory)
 
-    fc2_pub_ip, fc2_priv_ip, fc2_root_password = get_machine_login_info(osrf_creds, "fc2-%s" % constellation_prefix)
-    fc2_script = get_fc2_script(drcsim_package_name)
-    log("provision fc2 [%s / %s] %s" % (fc2_pub_ip, fc2_priv_ip, fc2_root_password))
-    provision_ssh_private_machine(ssh_router, "fc2", fc2_priv_ip, fc2_root_password, fc2_script, constellation_directory)
+    fc1_pub_ip, fc1_priv_ip, fc1_root_password = get_machine_login_info(
+                                osrf_creds, "fc1-%s" % constellation_prefix)
+    fc1_script = get_drc_script(drcsim_package_name,
+                                FC1_IP,
+                                ros_master_ip,
+                                gpu_driver_list,
+                                ppa_list)
+
+    log("provision fc1 [%s / %s] %s" % (fc1_pub_ip, fc1_priv_ip,
+                                        fc1_root_password))
+    provision_ssh_private_machine(ssh_router,
+                                  "fc1", fc1_priv_ip, fc1_root_password,
+                                  fc1_script, constellation_directory)
+
+    fc2_pub_ip, fc2_priv_ip, fc2_root_password = get_machine_login_info(
+                                            osrf_creds,
+                                            "fc2-%s" % constellation_prefix)
+    fc2_script = get_drc_script(drcsim_package_name,
+                                FC2_IP,
+                                ros_master_ip,
+                                gpu_driver_list,
+                                ppa_list)
+    log("provision fc2 [%s / %s] %s" % (fc2_pub_ip,
+                                        fc2_priv_ip,
+                                        fc2_root_password))
+
+    provision_ssh_private_machine(ssh_router, "fc2",
+                                  fc2_priv_ip,
+                                  fc2_root_password,
+                                  fc2_script,
+                                  constellation_directory)
 
     log('configure_machines done')
     constellation.set_value("launch_stage", "init_privates")
@@ -1185,8 +1214,6 @@ def startup_scripts(constellation_name):
     if launch_sequence.index(launch_stage) >= launch_sequence.index('startup'):
         return
 
-
-
     constellation_directory = constellation.get_value('constellation_directory')
     # if the change of ip was successful, the script should be in the home directory
     # of each machine
@@ -1197,7 +1224,7 @@ def startup_scripts(constellation_name):
     constellation.set_value('fc2_launch_msg', m)
     constellation.set_value('sim_launch_msg', m)
     constellation.set_value('router_launch_msg', m)
-    
+
     router_ip = constellation.get_value("router_public_ip")
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu', router_ip)
     # load packages onto router
@@ -1237,17 +1264,21 @@ def create_router_zip(router_ip, constellation_name, constellation_directory):
 
     # copy router-key into router directory
     router_key_short_filename = 'key-router.pem'
-    router_key_path = os.path.join(router_machine_dir, router_key_short_filename)
-    copyfile(os.path.join(constellation_directory, router_key_short_filename), router_key_path)
+    router_key_path = os.path.join(router_machine_dir,
+                                   router_key_short_filename)
+    copyfile(os.path.join(constellation_directory, router_key_short_filename),
+             router_key_path)
     os.chmod(router_key_path, 0600)
 
     vpn_key_short_filename = 'openvpn.key'
     vpnkey_fname = os.path.join(router_machine_dir, vpn_key_short_filename)
-    copyfile(os.path.join(constellation_directory, vpn_key_short_filename), vpnkey_fname)
+    copyfile(os.path.join(constellation_directory, vpn_key_short_filename),
+             vpnkey_fname)
     os.chmod(vpnkey_fname, 0600)
 
     # create open vpn config file
-    file_content = create_openvpn_client_cfg_file(router_ip, client_ip=OPENVPN_CLIENT_IP, server_ip=OPENVPN_SERVER_IP)
+    file_content = create_openvpn_client_cfg_file(router_ip,
+                    client_ip=OPENVPN_CLIENT_IP, server_ip=OPENVPN_SERVER_IP)
     fname_vpn_cfg = os.path.join(router_machine_dir, "openvpn.config")
     with open(fname_vpn_cfg, 'w') as f:
         f.write(file_content)
@@ -1259,7 +1290,8 @@ def create_router_zip(router_ip, constellation_name, constellation_directory):
     os.chmod(fname_start_vpn, 0755)
 
     fname_ros = os.path.join(router_machine_dir, "ros.bash")
-    file_content = create_ros_connect_file(machine_ip=OPENVPN_CLIENT_IP, master_ip=SIM_IP)
+    file_content = create_ros_connect_file(machine_ip=OPENVPN_CLIENT_IP,
+                                           master_ip=SIM_IP)
 
     with open(fname_ros, 'w') as f:
         f.write(file_content)
@@ -1279,8 +1311,10 @@ def create_router_zip(router_ip, constellation_name, constellation_directory):
                     fname_vpn_cfg,
                     vpnkey_fname,
                     fname_ros, ]
-    router_fname_zip = os.path.join(router_machine_dir, "router_%s.zip" % constellation_name)
-    create_zip_file(router_fname_zip, "router_%s" % constellation_name, files_to_zip)
+    router_fname_zip = os.path.join(router_machine_dir,
+                                    "router_%s.zip" % constellation_name)
+    create_zip_file(router_fname_zip,
+                            "router_%s" % constellation_name, files_to_zip)
 
     # create another zip file, this time for users only
     # (without the ssh key or the ssh-router.bash)
@@ -1288,8 +1322,10 @@ def create_router_zip(router_ip, constellation_name, constellation_directory):
                     fname_vpn_cfg,
                     vpnkey_fname,
                     fname_ros, ]
-    router_user_fname_zip = os.path.join(router_machine_dir, "user_router_%s.zip" % constellation_name)
-    create_zip_file(router_user_fname_zip, "router_%s" % constellation_name, files_to_zip)
+    router_user_fname_zip = os.path.join(router_machine_dir,
+                                    "user_router_%s.zip" % constellation_name)
+    create_zip_file(router_user_fname_zip,
+                                "router_%s" % constellation_name, files_to_zip)
     return router_fname_zip, router_user_fname_zip
 
 
@@ -1502,13 +1538,30 @@ def launch(username, config, constellation_name, tags, constellation_directory):
 
     drc_package = "drcsim"
     log("launch constellation name: %s" % constellation_name)
-
+    
+    ppa_list = [] # ['ubuntu-x-swat/x-updates']
+    gpu_driver_list = ['nvidia-current', 
+                       'nvidia-settings',
+                       'nvidia-current-dev']
     constellation_prefix = None
     if config.find("nightly") >= 0:
         drc_package = "drcsim-nightly"
-        constellation_prefix = config.split("OSRF VRC Constellation nightly build ")[1]
+        constellation_prefix = config.split(
+                                    "OSRF VRC Constellation nightly build ")[1]
+    elif config.find("nvidia 319") >=0:
+        ppa_list = ['xorg-edgers/ppa']
+        gpu_driver_list = ["nvidia-319", 'nvidia-settings']
+        constellation_prefix = config.split(
+                                    "OSRF VRC Constellation nvidia 319 ")[1]
     else:
         constellation_prefix = config.split("OSRF VRC Constellation ")[1]
+
+
+    
+    
+    # ['ubuntu-x-swat/x-updates']
+    
+    #
 
     cs_cfg = get_cloudsim_config()
     credentials_softlayer = cs_cfg['softlayer_path']
@@ -1549,17 +1602,38 @@ def launch(username, config, constellation_name, tags, constellation_directory):
 
     log("Initialize router: %s" % constellation_name)
     # set ubuntu user and basic scripts on router
-    initialize_router(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory)
+    initialize_router(constellation_name,
+                      constellation_prefix,
+                      credentials_softlayer,
+                      constellation_directory)
+
     # set ubuntu user and basic scripts on fc1, fc2 and sim
-    initialize_private_machines(constellation_name, constellation_prefix, drc_package, credentials_softlayer, constellation_directory)
+    ros_master_ip = SIM_IP
+
+    initialize_private_machines(constellation_name,
+                                constellation_prefix,
+                                drc_package,
+                                gpu_driver_list,
+                                ppa_list,
+                                ros_master_ip,
+                                credentials_softlayer,
+                                constellation_directory)
+
+
     # router, sim, fc1 and fc2 zip files
     create_zip_files(constellation_name, constellation_directory)
     # edit /etc/network/interfaces and restart networking on all machines
-    change_ip_addresses(constellation_name, credentials_softlayer, constellation_directory)
+    change_ip_addresses(constellation_name,
+                        credentials_softlayer,
+                        constellation_directory)
     # launch startup scripts
     startup_scripts(constellation_name)
     # disable access to sim fc1 and fc2 via their public ip addresses
-    shutdown_constellation_public_ips(constellation_name, constellation_prefix, credentials_softlayer, constellation_directory)
+    shutdown_constellation_public_ips(constellation_name,
+                                      constellation_prefix,
+                                      credentials_softlayer,
+                                      constellation_directory)
+
     # reboot fc1, fc2 and sim (but not router)
     reboot_machines(constellation_name, constellation_directory)
     # wait for machines to be back on line
@@ -1597,7 +1671,7 @@ def terminate(constellation_name):
 #     for prefix in ['router','sim','fc1','fc2']:
 #         constellation.set_value('%s_aws_state' % prefix, 'pending')
 #     
-#     machines_dict = {'sim-%s' % constellation_prefix: 'simulation_launch_msg',
+#     machines_dict = {'sim-%s' % constellation_prefix: 'sim_launch_msg',
 #                      'router-%s' % constellation_prefix: 'router_launch_msg',
 #                      'fc2-%s' % constellation_prefix: 'fc2_launch_msg',
 #                      'fc1-%s' % constellation_prefix: 'fc1_launch_msg',
@@ -1639,11 +1713,12 @@ class VrcCase(unittest.TestCase):
         create_router_zip(router_ip, constellation_name, constellation_directory)
         create_private_machine_zip("fc1", FC1_IP, constellation_name, constellation_directory)
 
-    def atest_script(self):
-        s = get_sim_script('drcsim', '50.97.149.35')
+    def test_script(self):
+        s = get_sim_script('drcsim')
         print(s)
+        print("")
 
-    def test_launch(self):
+    def atest_launch(self):
 
         constellation_prefix = "02"
         launch_stage = None  # use the current stage
