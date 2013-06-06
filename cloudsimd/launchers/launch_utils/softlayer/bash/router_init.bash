@@ -270,7 +270,7 @@ cat <<DELIM > $DIR/stop_sim.bash
 #!/bin/bash
 sudo stop vrc_netwatcher
 sudo stop vrc_bytecounter
-sudo redis-cli set vrc_current_outbound_latency 0
+sudo redis-cli set vrc_target_outbound_latency 0
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "bash cloudsim/stop_sim.bash"
 sudo iptables -F FORWARD
 DELIM
