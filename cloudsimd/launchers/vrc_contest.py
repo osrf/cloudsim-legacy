@@ -760,6 +760,9 @@ if timeout -k 1 2 gztopic list; then
   sleep 5
   while [ "\`timeout -k 1 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1\`" != " F" ]; do
     sleep 1
+    if [ "\`ps aux | grep gzserver | wc -l\`" == "1" ]; then
+        break
+    fi
   done
 fi
 killall -INT roslaunch || true
