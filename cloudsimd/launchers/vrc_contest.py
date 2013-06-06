@@ -743,12 +743,15 @@ MAX_TIME=30
 echo \`date\` "Stop sim - Begin" >> /home/ubuntu/cloudsim/stop_sim.log
 . /usr/share/drcsim/setup.sh
 
-if gztopic list; then
+if timeout -k 1 2 gztopic list; then
   gzlog stop
   # Let cleanup start, which pauses the world
   sleep 5
   while [ "\`timeout -k 1 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1\`" != " F" ]; do
     sleep 1
+    if [ "\`ps aux | grep gzserver | wc -l\`" == "1" ]; then
+        break
+    fi
   done
 fi
 killall -INT roslaunch || true
