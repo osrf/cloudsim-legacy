@@ -269,7 +269,7 @@ chmod +x $DIR/ping_gl.bash
 cat <<DELIM > $DIR/stop_sim.bash
 #!/bin/bash
 sudo stop vrc_netwatcher
-sudo killall -9 vrc_netwatcher.py
+kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
 sudo stop vrc_bytecounter
 sudo redis-cli set vrc_target_outbound_latency 0
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "bash cloudsim/stop_sim.bash"
@@ -284,7 +284,7 @@ cat <<DELIM > $DIR/start_sim.bash
 
 sudo iptables -F FORWARD
 sudo stop vrc_netwatcher
-sudo killall -9 vrc_netwatcher.py
+kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
 sudo stop vrc_bytecounter
 sudo start vrc_netwatcher
 if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "nohup bash cloudsim/start_sim.bash \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"; then
