@@ -1065,7 +1065,7 @@ def initialize_router(constellation_name, constellation_prefix,
                      'fc2-%s' % constellation_prefix: 'fc2_launch_msg',
                      'fc1-%s' % constellation_prefix: 'fc1_launch_msg',
                     }
-
+    log("machines_dict %s" % machines_dict)
     osrf_creds = load_osrf_creds(osrf_creds_fname)
 
     router_name = "router-%s" % constellation_prefix
@@ -1541,21 +1541,16 @@ def launch(username, config, constellation_name, tags, constellation_directory):
     gpu_driver_list = ['nvidia-current', 
                        'nvidia-settings',
                        'nvidia-current-dev']
+
     constellation_prefix = config.split()[-1]
+    log("constellation_prefix %s" % constellation_prefix)
+
     if config.find("nightly") >= 0:
         drc_package = "drcsim-nightly"
+
     elif config.find("nvidia 319") >=0:
         ppa_list = ['xorg-edgers/ppa']
         gpu_driver_list = ["nvidia-319", 'nvidia-settings']
-    else:
-        constellation_prefix = config.split("OSRF VRC Constellation ")[1]
-
-
-    
-    
-    # ['ubuntu-x-swat/x-updates']
-    
-    #
 
     cs_cfg = get_cloudsim_config()
     credentials_softlayer = cs_cfg['softlayer_path']

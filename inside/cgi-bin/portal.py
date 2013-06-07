@@ -20,7 +20,12 @@ def read_portal():
         with open(cfg['cloudsim_portal_json_path'], 'r') as f:
             d = json.loads(f.read())
             return d
-    return {"hostname": "vrcportal-test.osrfoundation.org", "user": "ubuntu", "team": "T001", "upload_dir": "/tmp", "final_destination_dir": "/tmp", "live_destination": "/tmp"}
+    return {"hostname": "vrcportal-test.osrfoundation.org", "user": "ubuntu",
+             "event" : "practice",
+             "team": "T001",
+             "upload_dir": "/tmp",
+             "final_destination_dir": "/vrc_logs/end_incoming",
+             "live_destination": "/vrc_logs/live_incoming"}
 
 
 def write_portal(d):

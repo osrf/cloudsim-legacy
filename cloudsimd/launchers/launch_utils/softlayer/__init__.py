@@ -663,7 +663,7 @@ def wait_for_server_reloads(osrf_creds, server_names, callback=print_cb):
 
     for server_name in server_names:
         hardware = _get_server_hardware(osrf_creds, server_name)
-        pprint(hardware)
+        log("%s hardware %s " % (server_name, hardware))
         server_id = hardware[0]['id']
         hostname = hardware[0]['hostname']
         server_ids_to_hostname[server_id] = hostname
@@ -753,10 +753,15 @@ class sTestSoftLayer(unittest.TestCase):
         server = "fc1-14"
         osrf_creds = load_osrf_creds(get_softlayer_path())
         x = get_machine_login_info(osrf_creds, server)
-
         self.assertTrue(len(x) == 3, 'did not get creds')
-
-    def xtest_wait_for_server_reloads(self):
+        
+    def test_wait(self):
+        osrf_creds = load_osrf_creds(get_softlayer_path())
+        s = "24"
+        servers = ['cs-%s' % s, 'sim-%s' % s, 'fc1-%s' % s, 'fc2-%s' % s]
+        wait_for_server_reloads(osrf_creds, servers)
+    
+    def atest_wait_for_server_reloads(self):
         self.wait_for_all_server_reloads()
 
     def etest_reload_server(self):
@@ -778,7 +783,7 @@ class sTestSoftLayer(unittest.TestCase):
         servers = ['sim-44', 'fc1-44', 'fc2-39']
         enable_public_ips(osrf_creds, servers)
 
-    def test_ip_switch(self):
+    def atest_ip_switch(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         servers = ['sim-48']
         shutdown_public_ips(osrf_creds, servers)
@@ -810,7 +815,7 @@ if __name__ == "__main__":
 
     p = get_softlayer_path()
     osrf_creds = load_osrf_creds(p)
-#    softlayer_dash_board(osrf_creds)
+    softlayer_dash_board(osrf_creds)
 #    wait_for_all_server_reloads(osrf_creds)
     unittest.main()
 
