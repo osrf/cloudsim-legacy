@@ -108,15 +108,18 @@ def _send_reboot_server_cmd(api_username, api_key, server_name, server_id):
 
 
 def _send_reload_server_cmd(api_username, api_key, server_name, server_id):
-    for i in range(100):
+    count =100
+    for i in range(count):
         try:
+            log("Reload of %s, [retry %s / %s]" % (server_name, i, count))
             client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id,
                                       api_username,
                                       api_key)
             try:
                 result = client.reloadCurrentOperatingSystemConfiguration('FORCE')
                 log("Reload of %s returned %s" % (server_name, result))
-                return result
+                if result:
+                    return result
             except SoftLayerAPIError, e:
                 if str(e).find("outstanding transaction") > 0:
                     log("Reload of %s skipped due to outstanding transaction" % server_name)
@@ -125,7 +128,7 @@ def _send_reload_server_cmd(api_username, api_key, server_name, server_id):
                     raise
 
         except Exception, e:
-            log("%s" % e)
+            log("Reload error:" % e)
             time.sleep(10)
     raise SoftLayerException("Can't enable public ip on server %s", server_name)
 
@@ -189,10 +192,11 @@ def _get_boot_status(api_username, api_key, server_id):
 
     elapsed_seconds = int(t['elapsedSeconds'])
     average_duration = float(stat['averageDuration']) * 60
-
-    age = average_duration - elapsed_seconds
-    if age >0:
-        name += " (late by %s seconds)" % age
+    if elapsed_seconds >0 :
+        if average_duration > 0:
+            age = average_duration - elapsed_seconds
+            if age >0:
+                name += " (late by %s seconds)" % age
     return name
 
 
@@ -659,7 +663,7 @@ def wait_for_server_reloads(osrf_creds, server_names, callback=print_cb):
 
     for server_name in server_names:
         hardware = _get_server_hardware(osrf_creds, server_name)
-        pprint(hardware)
+        log("%s hardware %s " % (server_name, hardware))
         server_id = hardware[0]['id']
         hostname = hardware[0]['hostname']
         server_ids_to_hostname[server_id] = hostname
@@ -696,6 +700,12 @@ def _get_server_user_object(osrf_creds,  server_name, sid):
             log("Retry %s/100 %s" % (i, e))
     raise SoftLayerException(
                          "Can't get server object for %s" % server_name)
+
+def get_active_transaction(osrf_creds, server_name):
+    hardware = _get_server_hardware(osrf_creds, server_name)
+    server_id = hardware[0]['id']
+    client = SoftLayer.API.Client('SoftLayer_Hardware_Server', server_id, osrf_creds['user'], osrf_creds['api_key'])
+    t = client.getActiveTransaction()
 
 
 def get_machine_login_info(osrf_creds, server_name):
@@ -743,10 +753,15 @@ class sTestSoftLayer(unittest.TestCase):
         server = "fc1-14"
         osrf_creds = load_osrf_creds(get_softlayer_path())
         x = get_machine_login_info(osrf_creds, server)
-
         self.assertTrue(len(x) == 3, 'did not get creds')
-
-    def xtest_wait_for_server_reloads(self):
+        
+    def test_wait(self):
+        osrf_creds = load_osrf_creds(get_softlayer_path())
+        s = "24"
+        servers = ['cs-%s' % s, 'sim-%s' % s, 'fc1-%s' % s, 'fc2-%s' % s]
+        wait_for_server_reloads(osrf_creds, servers)
+    
+    def atest_wait_for_server_reloads(self):
         self.wait_for_all_server_reloads()
 
     def etest_reload_server(self):
@@ -763,11 +778,22 @@ class sTestSoftLayer(unittest.TestCase):
         servers = ['cs-44', 'sim-44', 'fc1-44', 'fc2-44']
         shutdown_public_ips(osrf_creds, servers)
 
-    def atest_enable_public_ip(self):
+    def stest_enable_public_ip(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         servers = ['sim-44', 'fc1-44', 'fc2-39']
         enable_public_ips(osrf_creds, servers)
 
+    def atest_ip_switch(self):
+        osrf_creds = load_osrf_creds(get_softlayer_path())
+        servers = ['sim-48']
+        shutdown_public_ips(osrf_creds, servers)
+        t = get_active_transaction(osrf_creds, servers[0])
+        print("shutdown ip ... then transaction: %s" % t)
+        
+        enable_public_ips(osrf_creds, servers)
+        t = get_active_transaction(osrf_creds, servers[0])
+        print("enable ip ... then transaction: %s" % t)
+            
     def atest_get_constellation_prefixes(self):
         p = get_softlayer_path()
         osrf_creds = load_osrf_creds(p)
@@ -775,7 +801,7 @@ class sTestSoftLayer(unittest.TestCase):
 
         self.assertTrue(len(prefixes) > 0, "no constellations")
 
-    def test_reboot_server(self):
+    def xtest_reboot_server(self):
         p = get_softlayer_path()
         osrf_creds = load_osrf_creds(p)
         servers = ['cs-50']
@@ -789,7 +815,7 @@ if __name__ == "__main__":
 
     p = get_softlayer_path()
     osrf_creds = load_osrf_creds(p)
-#    softlayer_dash_board(osrf_creds)
+    softlayer_dash_board(osrf_creds)
 #    wait_for_all_server_reloads(osrf_creds)
     unittest.main()
 

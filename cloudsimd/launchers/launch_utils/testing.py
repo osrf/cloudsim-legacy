@@ -44,7 +44,7 @@ def get_boto_path():
     return r
 
 if __name__ == "__main__":   
-
-    boto.config  = boto.pyami.config.Config(get_boto_path())
-    ec2 = boto.connect_ec2()
-    kill_all_ec2_instances(ec2)
+    pass
+#     boto.config  = boto.pyami.config.Config(get_boto_path())
+#     ec2 = boto.connect_ec2()
+#     kill_all_ec2_instances(ec2)

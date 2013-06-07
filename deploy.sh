@@ -52,7 +52,7 @@ if sudo test ! -f /var/www-cloudsim-auth/cloudsim_portal.json -o $force -eq 1
 then
    sudo cp $DIR/../cloudsim_portal.json /var/www-cloudsim-auth/cloudsim_portal.json
 fi
- 
+
 
 if sudo test ! -f /var/www-cloudsim-auth/users -o $force -eq 1
 then
