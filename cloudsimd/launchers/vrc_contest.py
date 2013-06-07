@@ -1544,13 +1544,9 @@ def launch(username, config, constellation_name, tags, constellation_directory):
     constellation_prefix = config.split()[-1]
     if config.find("nightly") >= 0:
         drc_package = "drcsim-nightly"
-        constellation_prefix = config.split(
-                                    "OSRF VRC Constellation nightly build ")[1]
     elif config.find("nvidia 319") >=0:
         ppa_list = ['xorg-edgers/ppa']
         gpu_driver_list = ["nvidia-319", 'nvidia-settings']
-        constellation_prefix = config.split(
-                                    "OSRF VRC Constellation nvidia 319 ")[1]
     else:
         constellation_prefix = config.split("OSRF VRC Constellation ")[1]
 
