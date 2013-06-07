@@ -426,8 +426,22 @@ apt-get install -y ntp
 apt-get install -y openvpn
 apt-get install -y vim ipython
 
+# SSH HPN
+sudo apt-get install -y python-software-properties
+sudo add-apt-repository -y ppa:w-rouesnel/openssh-hpn
+sudo apt-get update -y
+sudo apt-get install -y openssh-server
 
+cat <<EOF >>/etc/ssh/sshd_config
 
+# SSH HPN
+HPNDisabled no
+TcpRcvBufPoll yes
+HPNBufferSize 8192
+NoneEnabled yes
+EOF
+
+sudo service ssh restart
 
 cat <<DELIM > /etc/openvpn/openvpn.conf
 dev tun
