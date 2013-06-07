@@ -60,6 +60,18 @@ class UnknownConfig(LaunchException):
     pass
 
 
+def remove_tasks(name=None):
+    """ 
+    Interactive script that removes tasks
+    """
+    constellation_name = name
+    if not constellation_name:
+        constellation_name = get_constellation_names()[-1]
+    cs = ConstellationState(constellation_name)
+    cs.set_value('tasks',[])
+    cs.set_value('current_task','')
+
+
 def launch_constellation(username, configuration, args=None):
     """
     Launches one (or count) constellation of a given configuration
@@ -257,6 +269,7 @@ def load_cloudsim_configurations_list():
     for prefix in const_prefixes:
         configs['OSRF VRC Constellation %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
         configs['OSRF VRC Constellation nightly build %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
+        configs['OSRF VRC Constellation nvidia latest %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
     set_cloudsim_configuration_list(configs)
     #log("cloudsim configurations list updated: %s" % configs)
 
@@ -513,6 +526,8 @@ def stop_task(constellation_name):
                 finally:
                     cs.update_task_value(task_id, 'task_state', 'stopped')
                     cs.set_value('current_task', '')
+            else:
+                log("""stop_taks error: wrong state "%s" for task "%s" """ % (task['task_state'], task_id))
         else:
             log('stop_task error: no current task')
     except Exception, e:
@@ -726,7 +741,7 @@ def launch_cmd(root_dir, data):
     elif config.startswith("OSRF"):
 
         constellation_name = config.replace(" ", "_")
-        constellation_name = constellation_name.replace("_update", "")
+        constellation_name = constellation_name.replace("_nvidia_latest", "")
         constellation_name = constellation_name.replace("_nightly_build", "")
         constellation_path = os.path.join(root_dir, constellation_name)
 

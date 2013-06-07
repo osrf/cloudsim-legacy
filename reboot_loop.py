@@ -80,7 +80,10 @@ while True:
     
     print( "%s %s reboot" % (datetime.datetime.utcnow(), server) )
     reboot_servers(osrf_creds, [server])
-    time.sleep(10*60)
+    for i in range(20):
+        sys.stdout.write('.')
+        sys.stdout.flush()
+        time.sleep(60)
  
 print ('done')
 
