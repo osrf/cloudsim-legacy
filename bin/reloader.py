@@ -20,9 +20,9 @@ import re
 #  - router-01
 
 # We need to import from part of ourself
-daemon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cloudsimd'))
+daemon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'cloudsimd'))
 sys.path.insert(0, daemon_path)
-from launchers.launch_utils.softlayer import load_osrf_creds, enable_public_ips, reload_servers
+from launchers.launch_utils.softlayer import load_osrf_creds, enable_public_ips, reload_servers, shutdown_public_ips
 
 class Reloader:
 
@@ -65,6 +65,8 @@ class Reloader:
                     self.all_machines.append(m)
                 else:
                     raise Exception('Machine did not match expected patterns: %s'%(m))
+        if len(self.all_machines) == 0:
+            raise Exception('No machines')
         print('Will enable IPs on: %s'%(self.machines_to_enable_ip))
         print('Will reload: %s'%(self.all_machines))
 
@@ -74,8 +76,11 @@ class Reloader:
         if not self.dry_run:
             print('  Really enabling (not a dry run)')
             enable_public_ips(self.creds, self.machines_to_enable_ip)
-        print('Sleeping a little...')
-        time.sleep(5.0)
+            # This is a hack; it doesn't appear to be possible to know,
+            # after issuing the IP enable, whether it has completed quickly
+            # or not yet started.
+            print('  Sleeping to let transaction finish')
+            time.sleep(10.0)
         print('Reloading...')
         if not self.dry_run:
             print('  Really reloading (not a dry run)')
