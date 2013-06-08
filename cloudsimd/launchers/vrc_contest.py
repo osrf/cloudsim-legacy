@@ -1753,11 +1753,14 @@ def launch(username, config, constellation_name, tags,
     gpu_driver_list = ['nvidia-current',
                        'nvidia-settings',
                        'nvidia-current-dev']
+    # if true, the machines are reloaded. This is done in the case
+    # of partial reload because the terminate button would wipe out 
+    # all machines
     perform_reload = False
     partial_deploy = False
     if config.find("partial") > 0:
         partial_deploy = True
-        # perform_reload = True
+        perform_reload = True
 
     if config.find("nightly") >= 0:
         drc_package = "drcsim-nightly"
