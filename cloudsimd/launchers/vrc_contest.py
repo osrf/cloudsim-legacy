@@ -1515,6 +1515,11 @@ def _create_zip_files(constellation_name,
                                             "user_field_computer2.zip"))
     constellation.set_value('fc2_zip_file', 'ready')
 
+    constellation.set_value('fc1_launch_msg',
+                    'keys are ready. Waiting for simulator machine')
+    constellation.set_value('fc2_launch_msg',
+                    'keys are ready. Waiting for simulator machine')
+
     constellation.set_value("launch_stage", "zip")
 
 
