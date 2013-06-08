@@ -533,7 +533,13 @@ export ROS_IP=""" + machine_private_ip + """
 source /usr/share/drcsim/setup.sh
 DELIM
 
+# Answer the postfix questions
+debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
+debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+
 apt-get install -y cloudsim-client-tools
+
+start vrc_monitor || true
 
 # Create upstart vrc_sniffer job
 cat <<DELIM > /etc/init/vrc_sniffer.conf
