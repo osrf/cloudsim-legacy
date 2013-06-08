@@ -449,7 +449,7 @@ apt-get install -y vim ipython
 # SSH HPN
 sudo apt-get install -y python-software-properties
 sudo add-apt-repository -y ppa:w-rouesnel/openssh-hpn
-sudo apt-get update -y
+sudo apt-get update
 sudo apt-get install -y openssh-server
 
 cat <<EOF >>/etc/ssh/sshd_config
@@ -696,6 +696,8 @@ DELIM
 # we need python-software-properties for ad
 # it requires apt-get update for some reason
 #
+apt-get remove -y unattended-upgrades
+
 apt-get update
 apt-get install -y python-software-properties zip
 
@@ -968,10 +970,9 @@ DELIM
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
 
-sudo apt-get install -y python-software-properties
-sudo add-apt-repository -y ppa:w-rouesnel/openssh-hpn
-sudo apt-get update -y
-sudo apt-get install -y openssh-server
+add-apt-repository -y ppa:w-rouesnel/openssh-hpn
+apt-get update
+apt-get install -y openssh-server
 
 cat <<EOF >>/etc/ssh/sshd_config
 
@@ -1314,10 +1315,11 @@ def _startup_scripts(constellation_name, partial_deploy):
     constellation_directory = constellation.get_value('constellation_directory')
     # if the change of ip was successful, the script should be in the home
     # directory of each machine
-    wait_for_find_file(constellation_name,
+    __wait_for_find_file(constellation_name,
                        constellation_directory,
                        partial_deploy,
-                       "change_ip.bash", "packages_setup")
+                       "change_ip.bash",
+                       "packages_setup")
 
     m = "Executing startup script"
     constellation.set_value('sim_launch_msg', m)
@@ -1523,7 +1525,7 @@ def _create_zip_files(constellation_name,
     constellation.set_value("launch_stage", "zip")
 
 
-def wait_for_find_file(constellation_name,
+def __wait_for_find_file(constellation_name,
                        constellation_directory,
                        partial_deploy,
                        ls_cmd,
@@ -1599,10 +1601,11 @@ def _reboot_machines(constellation_name,
         constellation.set_value('fc2_aws_state', s)
 
     #constellation.set_value('router_aws_state', m)
-    wait_for_find_file(constellation_name,
+    __wait_for_find_file(constellation_name,
                        constellation_directory,
                        partial_deploy,
-                       "cloudsim/setup/done", "running")
+                       "cloudsim/setup/done",
+                       "running")
 
     router_ip = constellation.get_value("router_public_ip")
     ssh_router = SshClient(constellation_directory,
@@ -1620,7 +1623,7 @@ def _reboot_machines(constellation_name,
 
 def _run_machines(constellation_name, partial_deploy, constellation_directory):
 
-    wait_for_find_file(constellation_name,
+    __wait_for_find_file(constellation_name,
                        constellation_directory,
                        partial_deploy,
                        "cloudsim/setup/done",
@@ -1720,10 +1723,11 @@ def _shutdown_constellation_public_ips(constellation_name,
                                                     "block_public_ips"):
         return
 
-    wait_for_find_file(constellation_name,
+    __wait_for_find_file(constellation_name,
                        constellation_directory,
                        partial_deploy,
-                       "cloudsim/setup/done", "running")
+                       "cloudsim/setup/done",
+                       "running")
 
     m = "Switching off public network interfaces"
     constellation.set_value('sim_launch_msg', m)
@@ -1756,21 +1760,24 @@ def launch(username, config, constellation_name, tags,
     # if true, the machines are reloaded. This is done in the case
     # of partial reload because the terminate button would wipe out 
     # all machines
-    perform_reload = False
+
     partial_deploy = False
     if config.find("partial") > 0:
         partial_deploy = True
-        perform_reload = True
+    log("partial deploy: %s (only sim and router)" % partial_deploy)
 
     if config.find("nightly") >= 0:
         drc_package = "drcsim-nightly"
-
     elif config.find("nvidia 319") >= 0:
         ppa_list = ['xorg-edgers/ppa']
         gpu_driver_list = ["nvidia-319", 'nvidia-settings']
 
     constellation_prefix = config.split()[-1]
+
     log("constellation_prefix %s" % constellation_prefix)
+    log("DRC package %s" % drc_package)
+    log("ppas: %s" % ppa_list)
+    log("gpu packages %s" % gpu_driver_list)
 
     cs_cfg = get_cloudsim_config()
     credentials_softlayer = cs_cfg['softlayer_path']
@@ -1780,13 +1787,10 @@ def launch(username, config, constellation_name, tags,
     constellation.set_value("launch_stage", "os_reload")
 
     _init_computer_data(constellation_name)
-
-    if perform_reload:
-        _reload_os_machines(constellation_name,
-                           constellation_prefix,
-                           partial_deploy,
-                           credentials_softlayer)
-
+#         _reload_os_machines(constellation_name,
+#                            constellation_prefix,
+#                            partial_deploy,
+#                            credentials_softlayer)
     _wait_for_constellation_reload(constellation_name,
                                 constellation_prefix,
                                 partial_deploy,
