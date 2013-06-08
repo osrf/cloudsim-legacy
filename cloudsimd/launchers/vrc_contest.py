@@ -533,7 +533,13 @@ export ROS_IP=""" + machine_private_ip + """
 source /usr/share/drcsim/setup.sh
 DELIM
 
-apt-get install -y cloudsim-client-tools
+# Answer the postfix questions
+sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
+sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+
+sudo apt-get install -y cloudsim-client-tools
+
+sudo start vrc_monitor || true
 
 # Create upstart vrc_sniffer job
 cat <<DELIM > /etc/init/vrc_sniffer.conf
@@ -610,9 +616,9 @@ exec vrc_wrapper.sh vrc_netwatcher.py -o -m replace -d /tmp -p vrc_netwatcher_us
 DELIM
 
 # start vrc_sniffer and vrc_controllers
-start vrc_sniffer || true
-start vrc_controller_private || true
-start vrc_controller_public || true
+sudo start vrc_sniffer || true
+sudo start vrc_controller_private || true
+sudo start vrc_controller_public || true
 
 # Don't start the bytecounter here; netwatcher will start it as needed
 #start vrc_bytecounter
