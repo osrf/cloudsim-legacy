@@ -40,7 +40,7 @@ file=/etc/network/interfaces
 new_ip=\$1
 
 cp \$file \$file.bak
-sed "s/^address 10.*/address \$new_ip/" \$file.bak > \$file
+sed "s/^address 10\..*/address \$new_ip/" \$file.bak > \$file
 
 #
 # Adjust the DNS to use Google instead of SoftLayer

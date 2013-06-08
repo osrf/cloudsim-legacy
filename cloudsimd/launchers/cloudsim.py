@@ -24,8 +24,8 @@ from launch_utils.monitoring import constellation_is_terminated, monitor_cloudsi
 from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
 from launch_utils.softlayer import load_osrf_creds,\
     reload_servers, wait_for_server_reloads, get_machine_login_info
-from vrc_contest import ReloadOsCallBack, add_ubuntu_user_to_router,\
-    create_private_machine_zip
+from vrc_contest import ReloadOsCallBack, __add_ubuntu_user_to_router,\
+    __create_private_machine_zip
 from launch_utils.launch_db import get_cloudsim_config, log_msg
 
 
@@ -145,7 +145,7 @@ def initialize_ubuntu_user(constellation_name,
     # dst_dir = os.path.abspath('.')
 
     log("machine details cs %s %s : %s" % (name, pub_ip, password))
-    add_ubuntu_user_to_router(pub_ip, password, constellation_directory,
+    __add_ubuntu_user_to_router(pub_ip, password, constellation_directory,
                               'key-cs')
     constellation.set_value("launch_stage", "init")
 
@@ -166,7 +166,7 @@ def create_zip(constellation_name):
     ip = constellation.get_value("simulation_ip")
 
     constellation_directory = constellation.get_value("constellation_directory")
-    create_private_machine_zip("cs", ip, constellation_name, constellation_directory)
+    __create_private_machine_zip("cs", ip, constellation_name, constellation_directory)
     constellation.set_value('sim_zip_file', 'ready')
     constellation.set_value("launch_stage", "zip")
     return fname_zip
