@@ -22,7 +22,7 @@ import re
 # We need to import from part of ourself
 daemon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'cloudsimd'))
 sys.path.insert(0, daemon_path)
-from launchers.launch_utils.softlayer import load_osrf_creds, enable_public_ips, reload_servers, shutdown_public_ips, get_active_transaction
+from launchers.launch_utils.softlayer import load_osrf_creds, enable_public_ips, reload_servers, shutdown_public_ips
 
 class Reloader:
 
@@ -79,11 +79,8 @@ class Reloader:
             # This is a hack; it doesn't appear to be possible to know,
             # after issuing the IP enable, whether it has completed quickly
             # or not yet started.
-            print('  Sleeping to let transaction start')
+            print('  Sleeping to let transaction finish')
             time.sleep(10.0)
-            for m in self.machines_to_enable_ip:
-                while get_active_transaction(self.creds, m) is not None:
-                    print('Waiting for transaction to finish on %s'%(m))
         print('Reloading...')
         if not self.dry_run:
             print('  Really reloading (not a dry run)')
