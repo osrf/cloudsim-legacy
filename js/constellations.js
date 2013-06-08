@@ -102,8 +102,13 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
         // do not allow users to Terminate constellations 
         terminate_button.onclick =  function()
         {   
-            var r = confirm("terminate " + constellation_name + "?");
-            if (r==false)
+        	var msg = "Warning!\n\nThis operation will wipe out all data";
+        	msg += " on every computer in this constellation. The subsequent reload ";
+        	msg += " operation will install a bare OS, perform diagnostics";
+        	msg += " and will take about 1h."
+        	msg += "\n\nType 'y' to confirm";
+        	var agree = (prompt(msg, '') == 'y');
+            if (agree==false)
             {
                 return;
             }
@@ -141,10 +146,6 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
         top_div.appendChild(update_button);
 	}
         
-    //create_task_list_widget(const_div, constellation_name);
-//    var tasks_div = document.createElement("div");
-//    tasks_div.id = "tasks";
-//    const_div.appendChild(tasks_div);
     
     var machines_div = document.createElement("div");
     machines_div.id = "machines";
@@ -155,22 +156,6 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     div.insertBefore(const_div, node);
     
     return const_div;
-}
-
-
-function _constellation_terminate(div_name, constellation_name)
-{
-    var msg = 'Terminate "' + constellation_name + '" constellation?';
-    msg += '\n\n';
-    msg += 'This operation erases all the data on all the disks on ';
-    msg += 'every machine in your constellation... and may take up to an hour';
-
-	var r = confirm(msg);
-    if (r==false)
-    {
-        return;
-    }
-    terminate_constellation(constellation_name);
 }
 
 
