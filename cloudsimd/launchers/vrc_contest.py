@@ -698,7 +698,7 @@ cat <<DELIM > /etc/rc.local
 #
 # By default this script does nothing.
 
-insmod /lib/modules/`uname -r`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
+insmod /lib/modules/\`uname -r\`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
 
 exit 0
 DELIM
