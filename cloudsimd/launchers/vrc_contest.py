@@ -430,7 +430,6 @@ deb-src http://extras.ubuntu.com/ubuntu precise main
 
 DELIM
 
-apt-get remove -y unattended-upgrades
 
 
 # Add OSRF repositories
@@ -703,11 +702,24 @@ DELIM
 # we need python-software-properties for ad
 # it requires apt-get update for some reason
 #
-
+apt-get remove -y unattended-upgrades
 
 apt-get update
 apt-get install -y python-software-properties zip
+add-apt-repository -y ppa:w-rouesnel/openssh-hpn
+apt-get update
+apt-get install -y openssh-server
 
+cat <<EOF >>/etc/ssh/sshd_config
+
+# SSH HPN
+HPNDisabled no
+TcpRcvBufPoll yes
+HPNBufferSize 8192
+NoneEnabled yes
+EOF
+
+sudo service ssh restart
 
 mkdir -p /home/ubuntu/cloudsim
 mkdir -p /home/ubuntu/cloudsim/setup
