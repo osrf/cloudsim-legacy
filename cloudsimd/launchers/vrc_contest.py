@@ -430,6 +430,7 @@ deb-src http://extras.ubuntu.com/ubuntu precise main
 
 DELIM
 
+apt-get remove -y unattended-upgrades
 
 
 # Add OSRF repositories
