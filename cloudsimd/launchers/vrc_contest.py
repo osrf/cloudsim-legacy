@@ -1664,8 +1664,8 @@ def _run_machines(constellation_name, partial_deploy, constellation_directory):
     # using a utility script from cloudsim-client-tools
     # careful, we are running as root here?
     constellation.set_value('sim_launch_msg', 'Loading Gazebo models')
-    ssh_router.cmd("set_vrc_private.sh")
-    #
+    ssh_router.cmd("cloudsim/set_vrc_private.bash")
+    
     # Final messages
     #
     m = "Complete"

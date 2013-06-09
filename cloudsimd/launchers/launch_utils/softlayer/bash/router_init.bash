@@ -295,6 +295,15 @@ fi
 DELIM
 chmod +x $DIR/start_sim.bash
 
+# --------------------------------------------
+
+cat <<DELIM > $DIR/set_vrc_private.bash
+#!/bin/bash
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "set_vrc_private.sh"
+
+DELIM
+chmod +x $DIR/set_vrc_private.bash
 
 # --------------------------------------------
 
