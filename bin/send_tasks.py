@@ -222,10 +222,10 @@ if __name__ == '__main__':
     arg_user = args.user
     arg_verbose = args.verbose
 
-    user = os.system('whoami')
-    if user is not "root":
-        print "You should be running this command as root."
-        sys.exit(1)
+    #user = os.system('whoami')
+    #if user is not "root":
+    #    print "You should be running this command as root."
+    #    sys.exit(1)
 
     # Feed the tasks!
     go(arg_yaml_file, arg_team, arg_user, arg_verbose)
