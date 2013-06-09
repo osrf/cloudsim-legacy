@@ -95,10 +95,16 @@ def create_task(team, tasks):
         utc_dt_stop = local_dt_stop.astimezone(pytz.utc)
 
         # Convert from datetime to a string in ISO 8061 format
-        my_task['local_start'] = local_dt_start.isoformat(' ')
-        my_task['local_stop'] = local_dt_stop.isoformat(' ')
-        my_task['utc_start'] = utc_dt_start.isoformat(' ')
-        my_task['utc_stop'] = utc_dt_stop.isoformat(' ')
+        # Note: CloudSim will take the local_start and local_stop values as UTC.
+        # Also we need to ensure that no offset string is appended, because
+        # that confuses the CloudSim code that reads it.
+        #my_task['local_start'] = local_dt_start.isoformat(' ')
+
+        #my_task['local_stop'] = local_dt_stop.isoformat(' ')
+        #my_task['utc_start'] = utc_dt_start.isoformat(' ')
+        #my_task['utc_stop'] = utc_dt_stop.isoformat(' ')
+        my_task['local_start'] = utc_dt_start.replace(tzinfo=None).isoformat(' ')
+        my_task['local_stop'] = utc_dt_stop.replace(tzinfo=None).isoformat(' ')
 
         # A team ClousSim will use this command to update its task list
         my_task['command'] = 'create_task'
