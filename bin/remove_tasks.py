@@ -18,7 +18,7 @@ def remove_redis_tasks():
     '''
     Remove the current list of tasks
     '''
-    #cloudsimd.remove_tasks()
+    cloudsimd.remove_tasks()
 
 
 if __name__ == '__main__':
