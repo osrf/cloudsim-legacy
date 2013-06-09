@@ -703,7 +703,7 @@ DELIM
 # we need python-software-properties for ad
 # it requires apt-get update for some reason
 #
-apt-get remove -y unattended-upgrades
+
 
 apt-get update
 apt-get install -y python-software-properties zip
@@ -977,20 +977,6 @@ DELIM
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
 
-add-apt-repository -y ppa:w-rouesnel/openssh-hpn
-apt-get update
-apt-get install -y openssh-server
-
-cat <<EOF >>/etc/ssh/sshd_config
-
-# SSH HPN
-HPNDisabled no
-TcpRcvBufPoll yes
-HPNBufferSize 8192
-NoneEnabled yes
-EOF
-
-sudo service ssh restart
 
 touch /home/ubuntu/cloudsim/setup/done
 
@@ -1660,6 +1646,13 @@ def _run_machines(constellation_name, partial_deploy, constellation_directory):
                 constellation.set_value('error',
                                         "OpenGL diagnostic failed: %s" % e)
                 raise
+
+    #
+    # Install gazebo models locally
+    # using a utility script from cloudsim-client-tools
+    # careful, we are running as root here?
+    constellation.set_value('sim_launch_msg', 'Loading Gazebo models')
+    ssh_router.cmd("set_vrc_private.sh")
     #
     # Final messages
     #
