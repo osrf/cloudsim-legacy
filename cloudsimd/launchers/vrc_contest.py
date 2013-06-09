@@ -1523,9 +1523,9 @@ def _create_zip_files(constellation_name,
     constellation.set_value('fc2_zip_file', 'ready')
 
     constellation.set_value('fc1_launch_msg',
-                    'keys are ready. Waiting for simulator machine')
+                    'ssh key recovered. Waiting for simulator machine')
     constellation.set_value('fc2_launch_msg',
-                    'keys are ready. Waiting for simulator machine')
+                    'ssh key recovered. Waiting for simulator machine')
 
     constellation.set_value("launch_stage", "zip")
 
