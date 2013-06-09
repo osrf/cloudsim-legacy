@@ -113,6 +113,7 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
                 return;
             }
             terminate_constellation(constellation_name);
+            location.reload(true);
         };
         
         top_div.appendChild(terminate_button);

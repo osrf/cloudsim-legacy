@@ -160,7 +160,7 @@ def monitor(username, constellation_name, counter):
 
 
 
-def init_computer_data(constellation_name, prefixes):
+def _init_computer_data(constellation_name, prefixes):
     constellation = ConstellationState( constellation_name)
     for prefix in prefixes:
         constellation.set_value('%s_ip_address' % prefix, "nothing")
@@ -228,7 +228,7 @@ def boot_machines(username, constellation_name, tags, credentials_ec2, constella
     constellation.set_value("gazebo", "not running")
     constellation.set_value("simulation_glx_state", "not running")
 
-    init_computer_data(constellation_name, ["sim", "field1","field2", "router" ] )
+    _init_computer_data(constellation_name, ["sim", "field1","field2", "router" ] )
     constellation = ConstellationState( constellation_name)
     
     constellation.set_value("error", "")

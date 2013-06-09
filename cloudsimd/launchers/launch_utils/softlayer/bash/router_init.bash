@@ -40,7 +40,7 @@ file=/etc/network/interfaces
 new_ip=\$1
 
 cp \$file \$file.bak
-sed "s/^address 10.*/address \$new_ip/" \$file.bak > \$file
+sed "s/^address 10\..*/address \$new_ip/" \$file.bak > \$file
 
 #
 # Adjust the DNS to use Google instead of SoftLayer
@@ -295,6 +295,15 @@ fi
 DELIM
 chmod +x $DIR/start_sim.bash
 
+# --------------------------------------------
+
+cat <<DELIM > $DIR/set_vrc_private.bash
+#!/bin/bash
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "set_vrc_private.sh"
+
+DELIM
+chmod +x $DIR/set_vrc_private.bash
 
 # --------------------------------------------
 
