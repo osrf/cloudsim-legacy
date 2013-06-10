@@ -130,7 +130,8 @@ def get_constellation_info(my_constellation):
     @param my_constellation Constellation id (string)
     '''
     for constellation in cloudsimd.list_constellations():
-        if constellation['constellation_name'] == my_constellation:
+        if (('constellation_name' in constellation) and
+           (constellation['constellation_name'] == my_constellation)):
             return constellation
     return None
 
