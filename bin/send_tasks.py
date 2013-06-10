@@ -135,7 +135,7 @@ def get_constellation_info(my_constellation):
     return None
 
 
-def feed_cloudsim(team, tasks, user, is_verbose):
+def feed_cloudsim(team, tasks, user, is_verbose, dry_run):
     '''
     For a given team, create a list of tasks, upload them to its cloudsim,
     and update Redis with the new task information.
@@ -169,15 +169,20 @@ def feed_cloudsim(team, tasks, user, is_verbose):
 
         # Scp the JSON into the team's CloudSim
         ssh = sshclient.SshClient(key_dir, key_name, user, ip)
-        ssh.upload_file(temp_file.name, temp_file.name)
+        if not dry_run:
+            ssh.upload_file(temp_file.name, temp_file.name)
 
-    print basepath
+    #print basepath
     # Upload the script to update the set of tasks
-    ssh.upload_file(os.path.join(basepath, 'bin/', UPDATE_PROGRAM), '')
+    if not dry_run:
+        ssh.upload_file(os.path.join(basepath, 'bin/', UPDATE_PROGRAM), '')
 
     # Update Redis with the new information sent
     cmd = ('./' + UPDATE_PROGRAM + ' ' + temp_file.name)
-    ssh.cmd(cmd)
+    if not dry_run:
+        ssh.cmd(cmd)
+    else:
+        print 'Would have run: %s'%(cmd)
 
     # Print stats if verbose mode is activated
     if is_verbose:
@@ -185,7 +190,7 @@ def feed_cloudsim(team, tasks, user, is_verbose):
                         (team['team'], num_tasks))
 
 
-def go(yaml_file, one_team_only, user, is_verbose):
+def go(yaml_file, one_team_only, user, is_verbose, dry_run):
     '''
     Feed a set of CloudSim instances with each set of tasks.
     @param yaml_file YAML file with the team and tasks information
@@ -203,7 +208,7 @@ def go(yaml_file, one_team_only, user, is_verbose):
                 if ((one_team_only and team['team'] == one_team_only) or
                    not one_team_only):
                     Thread(target=feed_cloudsim,
-                           args=[team, info['tasks'], user, is_verbose]).start()
+                           args=[team, info['tasks'], user, is_verbose, dry_run]).start()
 
     except Exception, excep:
         print (RED + 'Error reading yaml file (%s): %s + NORMAL'
@@ -219,6 +224,8 @@ if __name__ == '__main__':
     parser.add_argument('yaml_file', help='YAML file with the team and tasks info')
     parser.add_argument('-t', '--team', help='Feed tasks only for this team')
     parser.add_argument('-u', '--user', default='ubuntu', help='Cloudsim user')
+    parser.add_argument('-n', '--dry-run', action='store_true', default=False, 
+                        help='Dry run')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='Show verbose output of the command')
 
@@ -228,6 +235,7 @@ if __name__ == '__main__':
     arg_team = args.team
     arg_user = args.user
     arg_verbose = args.verbose
+    arg_dry_run = args.dry_run
 
     #user = os.system('whoami')
     #if user is not "root":
@@ -235,4 +243,4 @@ if __name__ == '__main__':
     #    sys.exit(1)
 
     # Feed the tasks!
-    go(arg_yaml_file, arg_team, arg_user, arg_verbose)
+    go(arg_yaml_file, arg_team, arg_user, arg_verbose, arg_dry_run)
