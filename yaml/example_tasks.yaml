@@ -24,8 +24,8 @@ tasks:
     local_start: 2013-01-01 8:00:00.0
     local_stop: 2014-01-01 18:00:00.0
     timeout: 1800
-    vrc_id: 1
-    vrc_num: 1
+    vrc_id: "1"
+    vrc_num: "1"
     ros_package: atlas_utils
     ros_launch: vrc_task_1.launch
     ros_args:
@@ -38,8 +38,8 @@ tasks:
     local_start: 2013-01-01 8:00:00.0
     local_stop: 2014-01-01 18:00:00.0
     timeout: 1800
-    vrc_id: 1
-    vrc_num: 2
+    vrc_id: "1"
+    vrc_num: "2"
     ros_package: atlas_utils
     ros_launch: vrc_task_2.launch
     ros_args:
@@ -52,8 +52,8 @@ tasks:
     local_start: 2013-01-01 8:00:00.0
     local_stop: 2014-01-01 18:00:00.0
     timeout: 1800
-    vrc_id: 1
-    vrc_num: 3
+    vrc_id: "1"
+    vrc_num: "3"
     ros_package: atlas_utils
     ros_launch: vrc_task_3.launch
     ros_args:
@@ -66,8 +66,8 @@ tasks:
     local_start: 2013-01-01 8:00:00.0
     local_stop: 2014-01-01 18:00:00.0
     timeout: 1800
-    vrc_id: 2
-    vrc_num: 1
+    vrc_id: "2"
+    vrc_num: "1"
     ros_package: atlas_utils
     ros_launch: vrc_task_1_vehicle_start.launch
     ros_args:
@@ -80,8 +80,8 @@ tasks:
     local_start: 2013-01-01 8:00:00.0
     local_stop: 2014-01-01 18:00:00.0
     timeout: 1800
-    vrc_id: 2
-    vrc_num: 2
+    vrc_id: "2"
+    vrc_num: "2"
     ros_package: atlas_utils
     ros_launch: vrc_task_2_mud_start.launch
     ros_args:
@@ -94,8 +94,8 @@ tasks:
     local_start: 2013-01-01 8:00:00.0
     local_stop: 2014-01-01 18:00:00.0
     timeout: 1800
-    vrc_id: 3
-    vrc_num: 2
+    vrc_id: "3"
+    vrc_num: "2"
     ros_package: atlas_utils
     ros_launch: vrc_task_2_rubble_start.launch
     ros_args:
@@ -108,8 +108,8 @@ tasks:
     local_start: 2013-01-01 8:00:00.0
     local_stop: 2014-01-01 18:00:00.0
     timeout: 1800
-    vrc_id: 4
-    vrc_num: 2
+    vrc_id: "4"
+    vrc_num: "2"
     ros_package: atlas_utils
     ros_launch: vrc_task_2_uneven_start.launch
     ros_args:
@@ -122,8 +122,8 @@ tasks:
     local_start: 2013-01-01 8:00:00.0
     local_stop: 2014-01-01 18:00:00.0
     timeout: 1800
-    vrc_id: 2
-    vrc_num: 3
+    vrc_id: "2"
+    vrc_num: "3"
     ros_package: atlas_utils
     ros_launch: vrc_task_3_firehose_start.launch
     ros_args:
