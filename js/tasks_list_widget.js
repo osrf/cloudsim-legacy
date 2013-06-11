@@ -358,7 +358,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 
                 $( this ).dialog( "close" );
                  },
-            "Duplicate": function() {
+            "Create new": function() {
         	    var title = inputs[0].value;
         	    var ros_package = inputs[1].value;
         	    var launch = inputs[2].value;
@@ -371,7 +371,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         	    var local_stop = inputs[9].value;
         	    var vrc_id = inputs[10].value;
         	    var vrc_num = inputs[11].value;
-                console.log("Duplicate " + constellation_name + "/" + task_id);
+                console.log("Create duplicate task " + constellation_name + "/" + task_id);
                 create_task(constellation_name, 
                        title, ros_package,launch, timeout, args, latency, 
                        uplink_data_cap, downlink_data_cap,

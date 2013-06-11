@@ -63,6 +63,7 @@ task_states = ['ready',
                #'setup',
                'starting',
                'running',
+               'stopping',
                #'teardown',
                'stopped']
 
