@@ -59,17 +59,55 @@ def log(msg, channel=__name__, severity="info"):
 class UnknownConfig(LaunchException):
     pass
 
+task_states = ['ready', 
+               #'setup',
+               'starting',
+               'running',
+               #'teardown',
+               'stopped']
 
 def remove_tasks(name=None):
     """ 
-    Interactive script that removes tasks
+    Removes tasks for constellation name. If name is None,
+    tasks are removed for all running constellations.
     """
-    constellation_name = name
-    if not constellation_name:
-        constellation_name = get_constellation_names()[-1]
-    cs = ConstellationState(constellation_name)
-    cs.set_value('tasks',[])
-    cs.set_value('current_task','')
+    names = []
+    if name :
+        names = [name]
+    else:
+        names = get_constellation_names()
+    for constellation_name in names:
+        cs = ConstellationState(constellation_name)
+        cs.set_value('tasks',[])
+        cs.set_value('current_task','')
+
+
+def reset_tasks(name=None):
+    """
+    Resets tasks for constellation name. If name is None,
+    tasks are reset for all running constellations.
+    
+    After reset, the current task is empty and any task that was
+     - starting
+     - running
+     - stopping
+    set to stopped, and it can't be run again.
+    Stopped tasks are not affected
+    """
+    names = []
+    if name :
+        names = [name]
+    else:
+        names = get_constellation_names()
+    for constellation_name in names:
+        cs = ConstellationState(constellation_name)
+        cs.set_value('current_task','')
+        tasks = cs.get_value('tasks')
+        for task in tasks:
+            task_id = task['task_id']
+            state = task['task_state']
+            if state not in ['ready', 'stopped']:
+                cs.update_task_value(task_id, 'task_state', 'stopped')
 
 
 def launch_constellation(username, configuration, args=None):
@@ -399,14 +437,6 @@ def terminate(constellation_name):
     constellation.set_value('constellation_state', 'terminated')
     log("Deleting %s from the database" % constellation_name)
     constellation.expire(1)
-
-
-
-task_states = ['ready',
-               #'setup',
-               'running',
-               #'teardown',
-               'stopped']
 
 
 def create_task(constellation_name, data):

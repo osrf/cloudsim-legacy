@@ -330,11 +330,11 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     var dlg = document.querySelector( "#" + form_id);
     var inputs = dlg.querySelectorAll("input");
     var title_input = inputs[0];
+
+
     
     var dlg_buttons = {
             "Update": function() {
-                console.log("Update " + constellation_name + "/" + task_id);
-
                 var title = inputs[0].value;
                 var ros_package = inputs[1].value;
                 var launch = inputs[2].value;
@@ -347,8 +347,32 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 var local_stop = inputs[9].value;
                 var vrc_id = inputs[10].value;
                 var vrc_num = inputs[11].value;
-                
+    			console.log("Update " + constellation_name + "/" + task_id);
                 update_task(constellation_name, task_id,
+                       title, ros_package,launch, timeout, args, latency, 
+                       uplink_data_cap, downlink_data_cap,
+                       local_start,
+                       local_stop,
+                       vrc_id,
+                       vrc_num); 
+                
+                $( this ).dialog( "close" );
+                 },
+            "Duplicate": function() {
+        	    var title = inputs[0].value;
+        	    var ros_package = inputs[1].value;
+        	    var launch = inputs[2].value;
+        	    var timeout = inputs[3].value; 
+        	    var args = inputs[4].value;
+        	    var latency = inputs[5].value;
+        	    var uplink_data_cap = inputs[6].value;
+        	    var downlink_data_cap = inputs[7].value;
+        	    var local_start = inputs[8].value;
+        	    var local_stop = inputs[9].value;
+        	    var vrc_id = inputs[10].value;
+        	    var vrc_num = inputs[11].value;
+                console.log("Duplicate " + constellation_name + "/" + task_id);
+                create_task(constellation_name, 
                        title, ros_package,launch, timeout, args, latency, 
                        uplink_data_cap, downlink_data_cap,
                        local_start,
