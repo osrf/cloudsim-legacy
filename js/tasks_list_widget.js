@@ -358,7 +358,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 
                 $( this ).dialog( "close" );
                  },
-            "Create new": function() {
+            "Duplicate": function() {
         	    var title = inputs[0].value;
         	    var ros_package = inputs[1].value;
         	    var launch = inputs[2].value;
