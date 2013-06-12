@@ -790,6 +790,7 @@ done
 echo \`date\` "$1 $2 $3 - End" >> /home/ubuntu/cloudsim/start_sim.log
 
 DELIM
+chmod +x /home/ubuntu/cloudsim/start_sim.bash
 
 cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
 #!/bin/bash
@@ -798,14 +799,22 @@ MAX_TIME=30
 echo \`date\` "Stop sim - Begin" >> /home/ubuntu/cloudsim/stop_sim.log
 . /usr/share/drcsim/setup.sh
 
-if timeout -k 1 2 gztopic list; then
+if timeout -k 1 2 gztopic list; then 
+  LOG_PATH=\`ps aux | grep gzserver | grep -m 1 record_path | cut -d = -f 3 | cut -d ' ' -f 1\`/state.log
+  echo "  Log file: \$LOG_PATH" >> /home/ubuntu/cloudsim/stop_sim.log 
   gzlog stop
   # Let cleanup start, which pauses the world
   sleep 5
   while [ "\`timeout -k 1 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1\`" != " F" ]; do
     sleep 1
     if [ "\`ps aux | grep gzserver | wc -l\`" == "1" ]; then
+        echo "  gzserver died, force exit" >> /home/ubuntu/cloudsim/stop_sim.log
         break
+    fi
+    # look for the name of the Log file
+    if [ "\`tail -n 1 \$LOG_PATH\`" = "</gazebo_log>" ] ; then 
+        echo "  Log end tag detected" >> /home/ubuntu/cloudsim/stop_sim.log
+        break 
     fi
   done
 fi
@@ -823,11 +832,8 @@ while [ "\`ps aux | grep ros | wc -l\`" != "1" ]; do
     sleep 1
 done
 
-# Kill all remaining ros processes
-kill -9 \$(ps aux | grep ros | awk '{print \$2}') || true
-killall -9 gzserver || true
-
 DELIM
+chmod +x /home/ubuntu/cloudsim/stop_sim.bash
 
 cat <<DELIM > /home/ubuntu/cloudsim/ros.bash
 
