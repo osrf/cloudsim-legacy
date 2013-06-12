@@ -274,6 +274,14 @@ sudo stop vrc_bytecounter
 sudo redis-cli set vrc_target_outbound_latency 0
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "bash cloudsim/stop_sim.bash"
 sudo iptables -F FORWARD
+
+# Stop the latency injection
+sudo stop vrc_controller_private
+sudo stop vrc_controller_public
+
+# Restore the default tc rules
+sudo vrc_init_tc.py bond0
+sudo vrc_init_tc.py bond1
 DELIM
 chmod +x $DIR/stop_sim.bash
 
@@ -281,6 +289,14 @@ chmod +x $DIR/stop_sim.bash
 
 cat <<DELIM > $DIR/start_sim.bash
 #!/bin/bash
+
+# Stop the latency injection
+sudo stop vrc_controller_private
+sudo stop vrc_controller_public
+
+# Restore the default tc rules
+sudo vrc_init_tc.py bond0
+sudo vrc_init_tc.py bond1
 
 sudo iptables -F FORWARD
 sudo stop vrc_netwatcher
