@@ -83,6 +83,26 @@ def remove_tasks(name=None):
         cs.set_value('current_task','')
 
 
+def update_tasks(new_task_values, name=None):
+    """
+    Updates all the tasks of a given constellation (all constellation if name = None)
+    @param new_task_values Dictionary where the keys are the task fields to be updated.
+    @param name Constellation id or None (all the constellations)
+    """
+    names = []
+    if name:
+        names = [name]
+    else:
+        names = get_constellation_names()
+    for constellation_name in names:
+        cs = ConstellationState(constellation_name)
+        tasks = cs.get_value('tasks')
+        for task in tasks:
+            task_id = task['task_id']
+            for k, v in new_task_values.iteritems():
+                cs.update_task_value(task_id, k, v)
+
+
 def reset_tasks(name=None):
     """
     Resets tasks for constellation name. If name is None,
