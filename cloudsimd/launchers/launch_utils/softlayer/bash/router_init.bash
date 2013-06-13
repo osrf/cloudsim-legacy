@@ -290,6 +290,9 @@ chmod +x $DIR/stop_sim.bash
 cat <<DELIM > $DIR/start_sim.bash
 #!/bin/bash
 
+# Just rename the old network usage file
+sudo mv /tmp/vrc_netwatcher_usage.log /tmp/vrc_netwatcher_usage_\`date | tr -d ' '\`.log || true
+
 # Stop the latency injection
 sudo stop vrc_controller_private
 sudo stop vrc_controller_public
