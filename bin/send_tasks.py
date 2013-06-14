@@ -181,7 +181,8 @@ def feed_cloudsim(team, tasks, user, is_verbose, dry_run):
     # Update Redis with the new information sent
     cmd = ('./' + UPDATE_PROGRAM + ' ' + temp_file.name)
     if not dry_run:
-        ssh.cmd(cmd)
+        out = ssh.cmd(cmd)
+        print 'Ran %s; output:\n  %s'%(cmd, out)
     else:
         print 'Would have run: %s'%(cmd)
 
