@@ -48,8 +48,8 @@ page =  """<!DOCTYPE html>
 
 
 """ + scripts +"""
-    
-    
+
+
 <script language="javascript">
 
     function get_user_info()
@@ -57,9 +57,38 @@ page =  """<!DOCTYPE html>
        var user_info = """ + user_info + """;
        return user_info; 
     }
-    
+
     function on_load_page()
     {
+        create_constellations_widget("constellations_div");
+        var div_name = "constellations_div";
+        var configuration = "config";
+        var constellation = "const";
+        var username = "user";
+        var gmt = "gmt";
+        var constellation_div = insert_constellation_div(div_name, configuration, constellation, username, gmt);
+    
+        var machines_div =  constellation_div.querySelector("#machines" );
+    
+        
+        {
+            if(false )create_task_list_widget(constellation_div, constellation);
+    
+            // simulator computer
+            if (true)
+            {            
+                var machine_name = "simulator";
+                var machine_div = create_machine(machines_div, machine_name);
+                
+                if (false)create_hostname_widget (machine_div, constellation, machine_name, "sim_ip", "sim_aws_id", "username", "gmt", "sim_zip_file", disable_key_download);    
+                if (false)create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "sim_launch_msg", "sim_state");
+                if (false)create_machine_state_widget(machine_div, constellation, machine_name,"sim_aws_state");
+                if (false)create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
+                if (false)create_latency_widget(machine_div, constellation, machine_name, "sim_latency", "RTT latency to the Router", 550);
+            }
+        }
+        
+        /*
         var user_info = get_user_info();
         console.log("User role: " +  user_info.role);
         if(user_info.role != "user")
@@ -71,22 +100,19 @@ page =  """<!DOCTYPE html>
         {
             $('.admin_only').show();
         }
-        
-        create_constellations_widget("constellations_div");
-        
-        setTimeout(constellation_update , 500);        
+
+        setTimeout(constellation_update , 500);
+        }
+        */
     }
-    
     
     function constellation_update()
     {
         try
         {
             console.log("update");
-            
-            var callback = function(str_data)
+            var callback = function(constellations)
             {
-               var constellations = eval( '(' + str_data + ')' );
                for (var i=0; i< constellations.length; i++)
                {
                    var constellation = constellations[i];

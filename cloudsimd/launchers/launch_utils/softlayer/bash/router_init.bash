@@ -290,6 +290,12 @@ chmod +x $DIR/stop_sim.bash
 cat <<DELIM > $DIR/start_sim.bash
 #!/bin/bash
 
+/home/ubuntu/cloudsim/mail_ping.py `hostname` "Simulation \$1 \$2 starting" &
+
+# Just rename the old network usage file
+sudo mv /tmp/vrc_netwatcher_usage.log /tmp/vrc_netwatcher_usage_\`date | tr -d ' '\`.log || true
+
+
 # Stop the latency injection
 sudo stop vrc_controller_private
 sudo stop vrc_controller_public
@@ -321,6 +327,37 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.
 DELIM
 chmod +x $DIR/set_vrc_private.bash
 
+# --------------------------------------------
+cat <<DELIM > $DIR/mail_ping.py
+#!/usr/bin/python
+
+#
+# Send a mail to to drcsim-support@osrfoundation.com
+# postfix should be installed on your system
+
+try:
+    import sys
+    import smtplib
+    import datetime
+
+    _from = sys.argv[1]
+    subject = sys.argv[2]
+    
+    text = "at %s UTC" % datetime.datetime.utcnow()
+    server = smtplib.SMTP('localhost')
+    server.set_debuglevel(1)
+
+    fromaddr = "%s@osrfoundation.org" % _from
+    toaddr_list = ["drcsim-support@osrfoundation.org"]
+    content = ('From: %s\r\nTo: %s\r\nSubject: %s\n\n%s'
+                   % (fromaddr, ", ".join(toaddr_list), subject, text))
+    server.sendmail(fromaddr, toaddr_list, content)
+    server.quit()
+finally:
+    print("Done")
+
+DELIM
+chmod +x $DIR/mail_ping.py
 # --------------------------------------------
 
 cat <<DELIM > $DIR/copy_net_usage.bash
