@@ -832,6 +832,10 @@ while [ "\`ps aux | grep ros | wc -l\`" != "1" ]; do
     sleep 1
 done
 
+# Kill all remaining ros processes
+kill -9 \$(ps aux | grep ros | awk '{print \$2}') || true
+killall -9 gzserver || true
+
 DELIM
 chmod +x /home/ubuntu/cloudsim/stop_sim.bash
 

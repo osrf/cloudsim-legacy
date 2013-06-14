@@ -290,6 +290,7 @@ chmod +x $DIR/stop_sim.bash
 cat <<DELIM > $DIR/start_sim.bash
 #!/bin/bash
 
+
 /home/ubuntu/cloudsim/mail_ping.py `hostname` "Simulation \$1 \$2 starting" &
 
 # Just rename the old network usage file
