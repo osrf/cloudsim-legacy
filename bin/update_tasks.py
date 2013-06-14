@@ -40,9 +40,6 @@ def update_redis_tasks(json_file):
                         raise Exception('timeout')
             except Exception as e:
                 print 'Failed to add task %s: %s'%(task, e)
-       
-            # Apparently need to sleep to not overwhelm Redis
-            time.sleep(1.0)
 
     # Remove the tasks file
     #os.remove(json_file)
