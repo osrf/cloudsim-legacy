@@ -22,7 +22,9 @@ from cloudsimd import cloudsimd
 USAGE = 'mode_changer.py <master.yaml> <2013-06-14 07:30:00> <oldmode> <newmode>'
 KEY_NAME = 'key-cs'
 USER = 'ubuntu'
-CMD = """sudo sed -i 's/%s/%s/g' /var/www-cloudsim-auth/cloudsim_portal.json"""
+# Note the quotes added around the search and replace strings.  They're needed
+# to ensure that we match only "final" and not "final_destination_dir"
+CMD = """sudo sed -i 's/"%s"/"%s"/' /var/www-cloudsim-auth/cloudsim_portal.json"""
 
 class LogMover:
 
