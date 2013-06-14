@@ -9,7 +9,12 @@ import redis
 import json
 import os
 import time
+import sys
 
+sys.path.append('/var/www/cloudsimd')
+import cloudsimd
+
+MAX_WAIT = 20.0
 
 def update_redis_tasks(json_file):
     '''
@@ -23,9 +28,18 @@ def update_redis_tasks(json_file):
 
         # The tasks are registered using Redis pub service
         for task in tasks:
-            db.publish('cloudsim_cmds', json.dumps(task))
-            # Apparently need to sleep to not overwhelm Redis
-            time.sleep(1.0)
+            try:
+                old_num_tasks = len(cloudsimd.ConstellationState(cloudsimd.get_constellation_names()[0]).get_value('tasks'))
+                db.publish('cloudsim_cmds', json.dumps(task))
+                # Wait for the new task to appear (to avoid out-of-order insertion
+                # due to the asynchronous processing in cloudsimd)
+                start = time.time()
+                while old_num_tasks == len(cloudsimd.ConstellationState(cloudsimd.get_constellation_names()[0]).get_value('tasks')):
+                    time.sleep(0.25)
+                    if (time.time() - start) > MAX_WAIT:
+                        raise Exception('timeout')
+            except Exception as e:
+                print 'Failed to add task %s: %s'%(task, e)
 
     # Remove the tasks file
     #os.remove(json_file)
