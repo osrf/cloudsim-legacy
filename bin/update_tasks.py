@@ -25,10 +25,10 @@ def update_redis_tasks(json_file):
         for task in tasks:
             db.publish('cloudsim_cmds', json.dumps(task))
             # Apparently need to sleep to not overwhelm Redis
-            time.sleep(0.5)
+            time.sleep(1.0)
 
     # Remove the tasks file
-    os.remove(json_file)
+    #os.remove(json_file)
 
 
 if __name__ == '__main__':
