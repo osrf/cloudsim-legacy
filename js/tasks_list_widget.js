@@ -309,6 +309,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     var widgets_div = tasks_div.querySelector("#widgets");
     
     var task_div = document.createElement("div");
+    task_div.className = "task_line";
     task_div.id = task_id;
     
 
@@ -509,32 +510,35 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         
     };
 
-    /*
-    var task_buttons_div = document.createElement("div");
-    task_buttons_div.id = "buttons";
-    task_buttons_div.appendChild(action_button);
-    // task_buttons_div.appendChild(stop_button);
-    task_buttons_div.appendChild(edit_button);
-    task_buttons_div.appendChild(x_button);
-    */
 
-    var task_title_div = document.createElement("div");
+	var title_text_span = document.createElement("span"); // document.createTextNode(task_title);
+	title_text_span.innerHTML = task_title;
+    var task_table = document.createElement("table");
 
-    task_title_div.id = "task_title";
-    task_title_div.innerHTML = task_title;
-    //task_title_div.style.marginTop="3px";
-    //task_title_div.style.backgroundColor = "#f1f1f2";
-    
-    var task_status_div = document.createElement("div");
-    task_status_div.appendChild(state_widget);
-    //task_status_div.style.cssFloat = "left";
-    //task_status_div.style.width = "3%";
+    task_table.style.width="100%";
+	
+    var tbl_body = document.createElement("tbody");
+	var row = document.createElement("tr");
+	var cell_left = document.createElement("td");
+	cell_left.align="left;"
+	var cell_right = document.createElement("td");
+	cell_right.align = "right";
+	//cell_right.style.width ="20%";
 
-    task_div.className = 'task_line';	
-    task_div.appendChild(task_status_div);
-    task_div.appendChild(task_buttons_div);
+	task_table.appendChild(tbl_body);
+	tbl_body.appendChild(row);
+	row.appendChild(cell_left);
+	
+	row.appendChild(cell_right);
+	
+	cell_left.appendChild(state_widget);
+	cell_left.appendChild(title_text_span);
+	
+	cell_right.appendChild(action_button);
+	cell_right.appendChild(edit_button);
 
-    task_div.appendChild(task_title_div);
+
+	task_div.appendChild(task_table);
 
     var count = 0;
     var cb = function(event, data)
@@ -551,9 +555,9 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         	var task_display_msg = "<b>" + task.task_title + "</b>";
         	task_display_msg += " " + task.task_message;
         	
-            if(task_display_msg != task_title_div.innerHTML)
+            if(task_display_msg != title_text_span.innerHTML )
             {
-                task_title_div.innerHTML = task_display_msg;
+            	title_text_span.innerHTML = task_display_msg;
             }
 
             //  console.log('TASK _set_state_widget: ' + constellation_name + ': '+ task.task_state)

@@ -21,7 +21,7 @@ function create_latency_widget(machine_div,
     // Set widget's title
     var title_div = document.createElement("div")
     title_div.setAttribute("id", "latency_" + machine_name + "_title");
-    title_div.setAttribute("style", "width: 800px; height: 10px; padding: 10px 0px 0px 17px; position: relative;");
+    title_div.setAttribute("style", "width:800px; padding: 10px 0px 0px 17px; position: relative;");
     title_div.innerHTML = "<b>" + title + "</b>";
     widget_div.parentElement.insertBefore(title_div, widget_div);
 
