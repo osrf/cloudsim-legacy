@@ -66,7 +66,7 @@ def check_mode(team, mode, user):
 
     key = os.path.join(key_dir, key_name + '.pem')
     cmd = ('ssh ' + DEFAULT_SSH_OPTS + ' -i ' + key + ' ' + user + '@' + ip +
-           ' cat /var/www/cloudsim_portal.json | tr -d " " | grep \\"event\\":\\"' + mode + '\\"')
+           ' sudo cat /var/www-cloudsim-auth/cloudsim_portal.json | tr -d " " | grep \\"event\\":\\"' + mode + '\\"')
 
     po = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = po.communicate()
