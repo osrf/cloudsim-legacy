@@ -252,8 +252,12 @@ def get_plugin(configuration):
     plugin = None
     #log("get_plugin '%s'" % configuration)
 
-
-    if configuration.startswith("OSRF CloudSim "):
+    if configuration.startswith("bitcoin "):
+        from launchers import bitcoin as c
+        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
+                              c.start_task, c.stop_task)
+        
+    elif configuration.startswith("OSRF CloudSim "):
         from launchers import cloudsim as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                               None, None)
@@ -325,6 +329,8 @@ def load_cloudsim_configurations_list():
         #configs['OSRF CloudSim update %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim update only"}
         
     for prefix in const_prefixes:
+        configs['bitcoin sim %s' % prefix] = {'description':"mining on a sim machine"}
+        configs['bitcoin fc1 %s' % prefix] = {'description':"mining on a field computer machine"}
         configs['OSRF VRC Constellation %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
         configs['OSRF VRC Constellation nightly build %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
         configs['OSRF VRC Constellation nvidia latest %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
@@ -530,6 +536,8 @@ def start_task(constellation_name, task_id):
                     constellation_plugin.start_task(constellation_name, task)
                 except Exception, e:
                     log("Start task error %s" % e)
+                    tb = traceback.format_exc()
+                    log("traceback:  %s" % tb)
                     cs.update_task_value(task_id, 'task_message', 'Task failed to start: %s'%(e))
                     task = cs.get_task(task_id)
                     constellation_plugin.stop_task(constellation_name, task)
@@ -767,6 +775,7 @@ def async_update_cloudsim_configuration_list():
 
 
 def launch_cmd(root_dir, data):
+
     username = data['username']
     config = data['configuration']
     # extra arguments to the launch methd
@@ -789,8 +798,10 @@ def launch_cmd(root_dir, data):
             async_launch(username, config, constellation_name, args,
                          constellation_path)
             async_monitor(username, config, constellation_name)
+    
 
-    elif config.startswith("OSRF"):
+        
+    elif config.startswith("OSRF") or config.startswith("bitcoin"):
         partial_upgrade = False
         if config.find('partial') > 0:
             partial_upgrade = True

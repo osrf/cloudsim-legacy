@@ -335,7 +335,7 @@ def setup_ssh_key_access(ip, root_password, key_path):
     print('cwd: %s'%(os.getcwd()))
     if st != 0:
         print(cmd)
-        raise SoftLayerException(cmd)
+        raise SoftLayerException(cmd + output)
     print("RETURN %s" % st)
     print ("%s" % output)
     print("copying keys")
@@ -817,6 +817,6 @@ if __name__ == "__main__":
     osrf_creds = load_osrf_creds(p)
     softlayer_dash_board(osrf_creds)
 #    wait_for_all_server_reloads(osrf_creds)
-    unittest.main()
+#    unittest.main()
 
 

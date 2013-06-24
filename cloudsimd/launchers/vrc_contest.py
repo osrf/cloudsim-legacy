@@ -267,7 +267,6 @@ def check_for_end_of_task(constellation_name, ssh_router):
         raise TaskTimeOut()
 
 
-
 def _get_ssh_router(constellation_name):
     constellation = ConstellationState(constellation_name)
     constellation_directory = constellation.get_value('constellation_directory')

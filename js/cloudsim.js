@@ -136,11 +136,11 @@ function create_constellation(div_name, configuration, constellation, username, 
         }
     }
     
-    if(configuration == "AWS simulator")
+    if((configuration == "AWS simulator") || (configuration.indexOf("bitcoin") ==0))
     {
-        var machine_name = "simulator_" + constellation;
+       
         create_task_list_widget(constellation_div, constellation);
-        var machine_name = "simulator_" +constellation;
+        var machine_name = "simulator";
         var machine_div = create_machine(machines_div, machine_name);
         
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file", disable_key_download );	
