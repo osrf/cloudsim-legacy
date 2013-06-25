@@ -11,7 +11,7 @@ import dateutil.parser
 
 from shutil import copyfile
 
-from launch_utils.traffic_shapping import  run_tc_command
+from launch_utils.traffic_shaping import  run_tc_command
 
 import launch_utils.softlayer
 

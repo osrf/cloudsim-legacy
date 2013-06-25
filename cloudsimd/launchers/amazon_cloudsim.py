@@ -36,7 +36,7 @@ from launch_utils.monitoring import record_ping_result, LATENCY_TIME_BUFFER,\
     update_machine_aws_states, get_ssh_client, monitor_cloudsim_ping,\
     monitor_launch_state
 
-from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
+from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
 import tempfile
 import shutil
 

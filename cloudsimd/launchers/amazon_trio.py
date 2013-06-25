@@ -19,8 +19,8 @@ from launch_utils import get_ec2_instance
 from launch_utils import set_constellation_data
 from launch_utils import get_constellation_data
 from launch_utils import SshClient
-from launch_utils import get_ssh_cmd_generator, empty_ssh_queue # task_list
-from launch_utils import ConstellationState # launch_db
+from launch_utils import get_ssh_cmd_generator, empty_ssh_queue
+from launch_utils import ConstellationState
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_drc_startup_script,\
     get_vpc_router_script, get_vpc_open_vpn, create_openvpn_client_cfg_file,\
@@ -34,7 +34,7 @@ from launch_utils.monitoring import  update_machine_aws_states,\
     constellation_is_terminated, get_ssh_client, monitor_launch_state,\
     monitor_simulator, monitor_ssh_ping, monitor_cloudsim_ping
 from launch_utils.launch import aws_connect, get_amazon_amis
-from launch_utils.traffic_shapping import run_tc_command
+from launch_utils.traffic_shaping import run_tc_command
 from launch_utils.launch_db import log_msg
 
 
