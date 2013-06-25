@@ -34,7 +34,7 @@ from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
     create_ssh_connect_file
 
 from launch_utils.sshclient import SshClient, clean_local_ssh_key_entry
-from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
+from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
 
 import multiprocessing
 
