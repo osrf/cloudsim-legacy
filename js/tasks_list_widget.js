@@ -151,7 +151,6 @@ function _create_task_form(form_id)
 }
 
 
-
 function create_task_list_widget(const_div, constellation_name)
 { 
 
@@ -201,10 +200,24 @@ function create_task_list_widget(const_div, constellation_name)
             }
     };
 
-    
-    var tasks_div = create_task_section(const_div, "tasks", "Simulation tasks");
-	// var tasks_div = create_section(const_div, "tasks", "Simulation tasks");
-    
+
+	var tasks_div = document.createElement("div");
+	tasks_div.id = "tasks";
+	tasks_div.className = "third_level_container";
+
+
+	var title_div = document.createElement("div");
+	title_div.className = "third_level_title";
+	tasks_div.appendChild(title_div);
+	
+	var title = document.createTextNode("Simulation tasks")
+	title_div.appendChild(title);
+	
+	var widgets_div =  document.createElement("div");
+	widgets_div.id = "widgets";
+	tasks_div.appendChild(widgets_div);
+	
+
     //
     // create a form for the content 
     //
@@ -238,7 +251,6 @@ function create_task_list_widget(const_div, constellation_name)
     var p = widgets_div.parentElement;
     p.insertBefore(add_task_button, widgets_div);
     p.insertBefore(stop_current_task_button, widgets_div);
-
 
 
     var form_div = _create_task_form(form_id);
@@ -279,24 +291,9 @@ function create_task_list_widget(const_div, constellation_name)
                 add_task_widget(const_div, constellation_name, task.task_id, "not started", task.task_title);
             }
         });
-    
-        
-
-
+    var top_div = const_div.querySelector("#top");
+    top_div.appendChild(tasks_div);
 }
-
-
-function _set_task_style(style)
-{   
-    style.border = "1px solid black";
-    style.width = "98%";
-    style.float = "left";
-    style.borderRadius= "8px";
-    style.margin = "2px";
-    //style.margin = "1%";
-    // style.backgroundColor = "#f1f1f2";
-}
-
 
 function _set_button_state(action_button, task_state)
 {
@@ -312,10 +309,10 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     var widgets_div = tasks_div.querySelector("#widgets");
     
     var task_div = document.createElement("div");
+    task_div.className = "task_line";
     task_div.id = task_id;
-    _set_task_style(task_div.style);
-    //task_div.style.float = "left";
-    //task_div.style.width = "100%";
+    
+
     widgets_div.appendChild(task_div);
     
     //
@@ -332,7 +329,6 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     var title_input = inputs[0];
 
 
-    
     var dlg_buttons = {
             "Update": function() {
                 var title = inputs[0].value;
@@ -503,20 +499,6 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         }
     };
     
-    var task_buttons_div = document.createElement("div");
-    task_buttons_div.style.cssFloat = "right";
-    //task_buttons_div.style.width = "20%";
-    task_buttons_div.id = "buttons";
-    task_buttons_div.appendChild(action_button);
-
-    // task_buttons_div.appendChild(stop_button);
-    task_buttons_div.appendChild(edit_button);
-    task_buttons_div.appendChild(x_button);
-
-    var task_title_div = document.createElement("div");
-    task_title_div.style.cssFloat = "left";
-    //task_title_div.style.width = "77%";
-
     x_button.onclick =  function()
     {
         var r=confirm('Delete task?'  );
@@ -528,26 +510,36 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         
     };
 
-    task_title_div.id = "task_title";
-    task_title_div.innerHTML = task_title;
-    task_title_div.style.marginTop="3px";
-    task_title_div.style.backgroundColor = "#f1f1f2";
-    
-    var task_status_div = document.createElement("div");
-    task_status_div.appendChild(state_widget);
-    task_status_div.style.cssFloat = "left";
-    //task_status_div.style.width = "3%";
-    
 
-    	
-    task_div.appendChild(task_status_div);
-    task_div.appendChild(task_buttons_div);
-    task_div.appendChild(task_title_div);
+	var title_text_span = document.createElement("span"); // document.createTextNode(task_title);
+	title_text_span.innerHTML = task_title;
+    var task_table = document.createElement("table");
 
-    var clear_div = document.createElement("div");
-    clear_div.style.clear="both"
-    task_div.appendChild(clear_div);
-    
+    task_table.style.width="100%";
+	
+    var tbl_body = document.createElement("tbody");
+	var row = document.createElement("tr");
+	var cell_left = document.createElement("td");
+	cell_left.align="left;"
+	var cell_right = document.createElement("td");
+	cell_right.align = "right";
+	//cell_right.style.width ="20%";
+
+	task_table.appendChild(tbl_body);
+	tbl_body.appendChild(row);
+	row.appendChild(cell_left);
+	
+	row.appendChild(cell_right);
+	
+	cell_left.appendChild(state_widget);
+	cell_left.appendChild(title_text_span);
+	
+	cell_right.appendChild(action_button);
+	cell_right.appendChild(edit_button);
+
+
+	task_div.appendChild(task_table);
+
     var count = 0;
     var cb = function(event, data)
     {
@@ -563,9 +555,9 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         	var task_display_msg = "<b>" + task.task_title + "</b>";
         	task_display_msg += " " + task.task_message;
         	
-            if(task_display_msg != task_title_div.innerHTML)
+            if(task_display_msg != title_text_span.innerHTML )
             {
-                task_title_div.innerHTML = task_display_msg;
+            	title_text_span.innerHTML = task_display_msg;
             }
 
             //  console.log('TASK _set_state_widget: ' + constellation_name + ': '+ task.task_state)
