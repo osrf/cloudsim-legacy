@@ -21,7 +21,7 @@ def read_portal():
             d = json.loads(f.read())
             return d
     return {"hostname": "vrcportal-test.osrfoundation.org", "user": "ubuntu",
-             "event" : "practice",
+             "event": "practice",
              "team": "T001",
              "upload_dir": "/tmp",
              "final_destination_dir": "/vrc_logs/end_incoming",
@@ -38,37 +38,29 @@ def write_portal(d):
 
 def log(msg):
     red = redis.Redis()
-    s = "portal.py > %s" % msg 
+    s = "portal.py > %s" % msg
     red.publish("portal", s)
 
 
 email = authorize("admin")
 method = os.environ['REQUEST_METHOD']
-q_string= os.environ['QUERY_STRING']
-log("query string %s" % (q_string) )
+q_string = os.environ['QUERY_STRING']
+log("query string %s" % (q_string))
 
 
 try:
 
-    # get the location of the AWS credentials from the cloudsim daemon
-
     q = urlparse.parse_qs(q_string)
-
     r = {}
     r['success'] = False
 
     if method == 'PUT':
-
-
-
         # valid = override_creds(r['team'], r['hostname'])
         try:
-            
-            team =  q['team'][0] 
+            team = q['team'][0]
             hostname = q['hostname'][0]
             r['team'] = team
             r['hostname'] = hostname
-            
             portal = read_portal()
             portal['team'] = team
             portal['hostname'] = hostname
@@ -77,7 +69,6 @@ try:
             r['msg'] = 'New portal info: team %s on %s.' % (team, hostname)
         except Exception, e:
             r['msg'] = 'Error setting portal information: %s' % e
-        
     if method == 'POST':
         # not supportedr
         r['msg'] = 'operation not supported'
@@ -93,7 +84,6 @@ try:
 
     jr = json.dumps(r)
     log("JSON response %s" % jr)
-    
     print('Content-type: application/json')
     print("\n")
     print(jr)

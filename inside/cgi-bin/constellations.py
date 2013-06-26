@@ -91,7 +91,7 @@ def get_constellation(constellation_name, role):
         return constellation
     except Exception, e:
         tb = traceback.format_exc()
-        log("get_constellation traceback:  %s" % tb)
+        log("get_constellation ex: %s traceback:  %s" % (e, tb))
         return None
     return None
 
@@ -147,7 +147,7 @@ if method == 'GET':
 
     except Exception, e:
         s = "%s" % e
-        
+
     print("%s" % s)
     exit(0)
 
@@ -174,7 +174,8 @@ if method == 'PUT':
         s = json.dumps(d)
         print("%s" % s)
         exit(0)
-        
+
+
 if method == 'POST':
     d = {}
     d['username'] = email

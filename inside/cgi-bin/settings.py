@@ -7,42 +7,7 @@ import os
 
 from common.web import get_javascripts, authorize, UserDatabase,\
     get_cloudsim_version_txt, print_http_header
-from common.constants import get_cloudsim_config
 cgitb.enable()
-
-# def read_data():
-#     cfg = get_cloudsim_config()
-# 
-#     softlayer = {}
-#     softlayer['user'] = ""
-#     softlayer['api_key'] = ""
-# 
-#     if os.path.exists(cfg['softlayer_path']):
-#         with open(cfg['softlayer_path'],'r') as f:
-#             d = json.loads(f.read())
-#             softlayer['user'] = d['user']
-#             softlayer['api_key'] = d['api_key']
-# 
-#     aws ={}
-#     aws['aws_access'] = ""
-#     aws['aws_secret'] = ""
-#     aws['aws_az'] = ""
-# 
-#     portal = {}
-#     portal['hostname'] = ""
-#     portal['team'] = ""
-#     
-#     if os.path.exists(cfg['cloudsim_portal_json_path']):
-#         with open(cfg['cloudsim_portal_json_path'],'r') as f:
-#             d = json.loads(f.read())
-#             portal['hostname'] = d['hostname']
-#             portal['team'] = d['team']
-#     
-#     
-#     data = {'softlayer':softlayer, 'aws':aws, 'portal':portal}
-#     return data
-# data = read_data()
-
 
 email = authorize("officer")
 udb = UserDatabase()
@@ -53,19 +18,14 @@ if method != 'GET':
     exit(0)
 
 
-
 version = get_cloudsim_version_txt()
-user = {'user':email, 'role': role}
+user = {'user': email, 'role': role}
 user_info = json.dumps(user)
 scripts = get_javascripts(['jquery-1.8.3.min.js'])
 
-
-
 print_http_header()
 
-
-
-page =  """<!DOCTYPE html>
+page = """<!DOCTYPE html>
 <html>
  <head>
  
@@ -80,7 +40,7 @@ page =  """<!DOCTYPE html>
 
 
 
-""" + scripts +"""
+""" + scripts + """
 
 <script language="javascript">
 
@@ -104,7 +64,7 @@ page =  """<!DOCTYPE html>
         add_users_admin_widget("users_div");
         setTimeout(users_update , 500);
     }
-    
+
     function users_update()
     {
         try
@@ -121,23 +81,24 @@ page =  """<!DOCTYPE html>
             console.log("update error: " + err.messagae);
         }
         async_get_users(callback);
-    }    
+    }
 </script>
-    
 
 </head>
 <body onload = "on_load_page()">
 
     <div style="float:left;">
         <img src="/js/images/CloudSim_Logo.png" width="200px"/>
-        <div  id="server_monitor_div" style="float:left">       
+        <div  id="server_monitor_div" style="float:left">
     </div>
 
 <div style="float:right;">
 
 Welcome, """ + email + """ <br>
 
-<div class="admin_only" style="display:none; padding: 0px 0px 0px 0px;" align="right">
+<div class="admin_only"
+     style="display:none; padding: 0px 0px 0px 0px;"
+     align="right">
     <a href="/cloudsim/inside/cgi-bin/admin_download">SSH key download</a><br>
 
 </div>
@@ -149,7 +110,7 @@ Welcome, """ + email + """ <br>
     <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
     </div>
 
-</div>    
+</div>
 
 
 <div style="width:100%; float:left;"><br><hr><br></div>
@@ -158,35 +119,34 @@ Welcome, """ + email + """ <br>
 
         <div id="osrf_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
         </div>
-        
+
         <div id="amazon_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
         </div>
-        
+
         <div id="portal_settings_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
         </div>
-        
+
     </div>
-        
+
         <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
         </div>
 
-    
 
 <div id="footer" style="width:100%; float:left; ">
- 
+
     <br>
     <hr>
-    
+
     <div style="width:50%; float:left; margin-top:5px;">
             CloudSim Version """ + version + """
     </div>
-    
+
     <div style="width:50%; float:right; " align="right">
      <img src="/js/images/osrf-pos-horz-cmyk.png" height="30px"/>
     </div>
 </div>
 
-   
+
 </body>
 </html>
 
