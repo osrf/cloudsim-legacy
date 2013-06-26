@@ -12,7 +12,7 @@ cgitb.enable()
 email = authorize()
 form = cgi.FieldStorage()
 
-d ={}
+d = {}
 d['command'] = form.getfirst('command')
 d['username'] = email
 
@@ -20,11 +20,10 @@ d['username'] = email
 if d['command'] == 'start_task':
     d['constellation'] = form.getfirst('constellation')
     d['task_id'] = form.getfirst('task_id')
- 
+
 if d['command'] == 'stop_task':
     d['constellation'] = form.getfirst('constellation')
     # d['task_id'] = form.getfirst('task_id')
-
 
 s = dumps(d)
 redis_client = redis.Redis()

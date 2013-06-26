@@ -19,7 +19,6 @@ from launch_utils import get_constellation_data
 from launch_utils import SshClient
 
 
-
 from launch_utils import ConstellationState # launch_db
 
 from launch_utils.sshclient import clean_local_ssh_key_entry
