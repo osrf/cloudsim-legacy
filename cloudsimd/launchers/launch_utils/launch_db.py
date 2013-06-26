@@ -32,10 +32,10 @@ def log(msg, channel=__name__, severity='debug'):
     #print("cloudsim log> %s" % msg)
 
 
-def publish_event(username, type, data):
+def publish_event(username, mtype, data):
     msg = {}
     msg.update(data)
-    msg['type'] = type
+    msg['type'] = mtype
     msg['username'] = username
     try:
         redis_cli = redis.Redis()
@@ -43,7 +43,7 @@ def publish_event(username, type, data):
         j_msg = json.dumps(msg)
         redis_cli.publish(channel_name, j_msg)
     except Exception:
-        log("publish_event: [%s] type %s msg[%s]" % (username, type, msg))
+        log("publish_event: [%s] type %s msg[%s]" % (username, mtype, msg))
 
 
 class Lock(object):
@@ -180,7 +180,7 @@ class ConstellationState(object):
             # Not allowed to delete the current task
             current_task = resources['current_task']
             if current_task == task_id:
-                log("Warning: attempted to delete the current task: %s"%(task_id))
+                log("Warning: attempt to delete current task: %s" % (task_id))
                 return
             tasks = resources['tasks']
             for task in tasks:
@@ -192,9 +192,11 @@ class ConstellationState(object):
 
     def expire(self, nb_of_secs):
         with Lock(self.my_lock):
-            log('expiration of %s in %s sec' % (self.constellation_name, nb_of_secs))
+            log('expiration of %s in %s sec' % (self.constellation_name,
+                                                nb_of_secs))
             resources = get_constellation_data(self.constellation_name)
-            set_constellation_data(self.constellation_name, resources, nb_of_secs)
+            set_constellation_data(self.constellation_name, resources,
+                                   nb_of_secs)
 
 
 def _domain(user_or_domain):
@@ -259,7 +261,8 @@ def set_cloudsim_config(config):
     r = redis.Redis()
     s = json.dumps(config)
     r.set(__CONFIG__KEY__, s)
-    
+
+
 def get_cloudsim_config():
     r = redis.Redis()
     s = r.get(__CONFIG__KEY__)
@@ -267,8 +270,6 @@ def get_cloudsim_config():
     return config
 
 
-
-
 if __name__ == '__main__':
     print('Machine TESTS')
-    unittest.main(testRunner = testing.get_test_runner())
+    unittest.main(testRunner=testing.get_test_runner())

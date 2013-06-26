@@ -1,43 +1,5 @@
 
 
-function machines_on_load_page()
-{
-    console.log("machines_on_load_page");
-    
-}
-
-function create_task_section(parent_div, div_id, left_content, right_content)
-{
-	var new_div = document.createElement("div");
-    new_div.id = div_id;    
-    _set_mach_style(new_div.style);
-    
-    if(!right_content) 
-        right_content = "";
-    var str =  _get_machine_div_str(left_content, right_content);
-    new_div.innerHTML = str;
-    var last= parent_div.childElementCount -1;
-    parent_div.insertBefore(new_div, parent_div.childNodes[last]);
-    // parent_div.appendChild(new_div);
-    return new_div;	
-}
-
-function create_section(parent_div, div_id, left_content, right_content)
-{
-	var new_div = document.createElement("div");
-    new_div.id = div_id;    
-    _set_mach_style(new_div.style);
-    
-    if(!right_content) 
-        right_content = "";
-    var str =  _get_machine_div_str(left_content, right_content);
-    new_div.innerHTML = str;
-    // parent_div.insertBefore(new_div, null);
-    parent_div.appendChild(new_div);
-    return new_div;	
-}
-
-
 function get_machine_names(div_name, constellation)
 {
 	var div = document.getElementById(div_name);
@@ -57,73 +19,42 @@ function get_machine_names(div_name, constellation)
     return machines;
 }
 
-function _get_machine_div_str(left_content, right_content)
-{	
-    var str = "";
-
-    str += '<div id="top" style="float:left; border-top-left-radius:10px; border-top-right-radius:15px; background-color:#44497a; width:100%; float:left;" >' // background-color:#FFA500;
-    str += "<h3 style='margin-bottom:0; margin-top:0; color:white'>";
-    str += "<table width='100%'>";
-    str += "<tr><td align='left'>" + left_content + "</td><td align='right'></td></tr>";
-    str += "<tr><td align='left'>" + right_content+ "</td><td align='right'></td></tr>";
-    str += '</table>';
-    str += '</h3></div>' // top
-
-    str += '<div id="widgets"';
-    str +=   _get_machine_widgets_style();
-    str +='></div>'; // widgets
-
-    str+= "</div>";
-    return str;
-}
-
 function create_machine(div, machine_name )
 {
-    var download = "<form method='get'><button type='submit' disabled>Download Keys</button></form>";
-    var div = create_section(div, machine_name, download);
-    return div;
+	
+	var left = "left";
+	var right = "right";
+
+    console.log("create_machine_widget " + machine_name + " in div " + div.id);
+    var widget = document.createElement("div");
+    widget.className = "third_level_container";
+    widget.id = machine_name;
+    var title_div = document.createElement("div");
+    widget.appendChild(title_div);
+    title_div.className = "third_level_title";
+    
+    var title = '<table width="100%"><tbody><tr><td align="left">' + left +'</td>';
+    title += '<td align="right">' + right + '</td></tr>';
+    title += '<tr><td></td></tr>';
+    title += '</tbody></table>';
+    title_div.innerHTML = title;
+    //var title = document.createTextNode(machine_name);
+    //title_div.appendChild(title);
+    
+    var widgets_div = document.createElement("div");
+    widgets_div.id = "widgets";
+    widget.appendChild(widgets_div);
+    
+    div.appendChild(widget);
+    return widget;
 
 }
 
-
-
-function _set_mach_style(style)
-{   
-    style.border = "1px solid black";
-    style.width = "98%";
-    style.float = "left";
-    style.borderRadius= "15px";
-    style.margin = "1%";
-    style.backgroundColor = "#f1f1f2";
-}
-
-function _get_machine_widgets_style()
-{
-    var str = '';
-    str += ' style="';
-    str += ' width:98%; float:left;';
-    // str += ' border-radius: 15px;';
-    //str += ' border: 1px solid black;';
-    str += ' margin:1%;';
-    //str += 'margin-bottom:10px;';
-    //str += " background-color: #f1f1f2; "
-    str += '"'; 
-    return str;	
-}
-
-
-function _set_widget_style(style)
-{
-     style.width = "100%";
-     style.float = "left";
-}
 
 function _create_empty_widget(machine_div, widget_name)
 {
     var widget = document.createElement("div");
     widget.id = widget_name;
-    _set_widget_style(widget.style);
-    
     var widgets_div = machine_div.querySelector("#widgets");
     widgets_div.insertBefore(widget, null);
     return widget;

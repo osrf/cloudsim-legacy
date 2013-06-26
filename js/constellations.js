@@ -3,10 +3,19 @@ function create_constellations_widget(div_name)
 {
     console.log("create_constellations_widget " + div_name);
     var div = document.getElementById(div_name);
-    
-    
-    var str = "<h2>Constellations</h2>";
-    div.innerHTML = str;
+    var widget = document.createElement("div");
+    widget.className = "top_level_container";
+    widget.id = "constellations";
+    var title_div = document.createElement("div");
+    widget.appendChild(title_div);
+    title_div.className = "top_level_title";
+    var title = document.createTextNode("Constellations");
+    title_div.appendChild(title);
+
+    var div = document.getElementById(div_name);
+
+    //var str = "<h2>Constellations</h2>";
+    //div.innerHTML = str;
 
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name)
@@ -19,17 +28,18 @@ function create_constellations_widget(div_name)
             var constellation_div =  div.querySelector("#"+constellation);
             if( constellation_div == null)
             {
-                create_constellation(div_name, configuration, constellation, username, gmt);
+            	create_constellation(div_name, configuration, constellation, username, gmt);
             }
         }
     });
+    div.appendChild(widget);
 }
-
 
 
 function insert_constellation_div(div_name, configuration_name, constellation_name, username, gmt)
 {
-    var div = document.getElementById(div_name);
+    var top_div = document.getElementById(div_name);
+    var div = top_div.querySelector("#constellations");
     var nodes = div.childNodes;
     var node = null;
     for(var i=0; i<nodes.length; i++) 
@@ -52,44 +62,31 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
         // makes insertBefore at the end
         node = null;
     }
-    
-    var const_div = document.createElement("div");
-    const_div.id = constellation_name;
-    _set_const_style(const_div.style);
 
+    var const_div = document.createElement("div");
+    const_div.className = "second_level_container";
+    const_div.id = constellation_name;
+    
+    var title_div = document.createElement("div");
+    title_div.className = "second_level_title";
+    const_div.appendChild(title_div);
+    title_div.appendChild(document.createTextNode(constellation_name));
+    
+    
     var top_div = document.createElement("div");
 
     top_div.id = "top";
-
-    //var title_str = " <h3 style=' margin-top:0; margin-bottom:0;'><table width='100%'><tr><td align='left'>";
-    //title_str    +=   constellation_name + "</td><td align='right'><FONT SIZE=2> Launched by " + username + "</FONT></td></tr><tr><td><FONT SIZE=2>" + configuration_name + "</FONT></td><td align='right'><FONT SIZE=2> at GMT " + gmt + "</FONT></td></tr></table></h3>";
-    
     var title_str = " <h3 style=' margin-top:0; margin-bottom:0;'><table width='100%'><tr><td align='left'>";
     title_str    +=   constellation_name + "</td><td align='right'><FONT SIZE=2> Launched by " + username + " (UTC " + gmt + ")</FONT></td></tr>"; //"<tr><td><FONT SIZE=2>" + configuration_name + "</FONT></td><td align='right'><FONT SIZE=2> at UTC " + gmt + "</FONT></td></tr></table></h3>";
 
-    
-    
-    top_div.style.backgroundColor ="#44497a";
-    top_div.style.borderTopLeftRadius = "15px";
-    top_div.style.borderTopRightRadius = "15px";
-    top_div.style.color = "white";
-    top_div.style.marginTop = "0";
-    top_div.style.color = "0";
-    top_div.style.float = "left";
-    top_div.style.width = "100%";
-    top_div.style.height = "100%";
-    top_div.innerHTML = title_str;
-    
     const_div.appendChild(top_div);
-    
     // div.insertBefore(top_div, node);
 
 
     var msg_div = document.createElement("div");
     msg_div.id = "error";
     msg_div.style.color = "red"; 
-    msg_div.style.float = "left";
-    const_div.appendChild(msg_div);
+    top_div.appendChild(msg_div);
 
 
     // do not allow simple users to terminate constellations
@@ -143,39 +140,17 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
             }
             update_constellation(constellation_name);
         };
-
         top_div.appendChild(update_button);
 	}
-        
-    
+
     var machines_div = document.createElement("div");
     machines_div.id = "machines";
     const_div.appendChild(machines_div);
-     
 
     // const_div.innerHTML = _get_constellation_div_str(div_name, configuration, constellation);
     div.insertBefore(const_div, node);
     
     return const_div;
-}
-
-
-function constellation_remove(div_name, constellation_name)
-{
-    var div = document.getElementById(div_name);
-    var constellation = div.querySelector("#"+constellation_name);
-    div.removeChild(constellation);   
-}
-
-
-function _set_const_style(style)
-{
-    style.width = "98%";
-    style.float = "left";
-    style.border="1px solid #535453";
-    style.borderRadius = "15px";
-    style.margin = "1%";
-    style.backgroundColor = "#a8a7a7"; // f1f1f2
 }
 
 
@@ -196,16 +171,18 @@ function _find_in_constellations(name, constellations)
 
 function remove_old_constellations(constellations)
 {
-	constellations_div = document.querySelector("#constellations_div");
+	var constellation_widget_div = document.querySelector("#constellations_div");
+	var constellations_div = constellation_widget_div.querySelector("#constellations");
 	// skip the first chid, i.e. "<h2>Constellations</h2>"
 	for (var i=1; i < constellations_div.childElementCount; i++)
 	{
-		var id = constellations_div.childNodes[i].id;
+		var constellation_div = constellations_div.childNodes[i];
+		var id = constellation_div.id;
 		var exists = _find_in_constellations(id, constellations);
 		if (!exists)
 		{
 			console.log(id + " DOES NOT EXISTS ANYMORE");
-			constellation_remove("constellations_div", id)
+			constellations_div.removeChild(constellation_div);
 		}
 		
 	}

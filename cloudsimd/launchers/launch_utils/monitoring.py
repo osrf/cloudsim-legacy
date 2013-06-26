@@ -15,7 +15,6 @@ machine_states = ['terminated', 'terminating', 'stopped' 'stopping',
                   'network_setup', 'packages_setup', 'rebooting',
                   'running',  'simulation_running']
 constellation_states = ['terminated', 'terminating', 'launching', 'running']
-
 LATENCY_TIME_BUFFER = 60
 
 
@@ -25,7 +24,8 @@ def log(msg, channel=__name__, severity="debug"):
 
 def get_aws_states(ec2conn, machine_names_to_ids):
     aws_states = {}
-    ids_to_machine_names = dict((v, k) for k, v in machine_names_to_ids.iteritems())
+    ids_to_machine_names = dict((v, k)
+                                for k, v in machine_names_to_ids.iteritems())
 
     reservations = ec2conn.get_all_instances()
     instances = [i for r in reservations for i in r.instances]
@@ -40,7 +40,7 @@ def get_aws_states(ec2conn, machine_names_to_ids):
 
 def parse_dpkg_line(s):
     """
-    takes a line from /var/log/dpkg.log 
+    takes a line from /var/log/dpkg.log
     removes the date part of the file for readability
     """
     r = s.split("status ")[1]
@@ -57,7 +57,7 @@ def _parse_ping_data(ping_str):
     return (mini, avg, maxi, mdev)
 
 
-def _accumulate_ping_data(data, mini, avg, maxi, mdev, cutoff_time_span = 40):
+def _accumulate_ping_data(data, mini, avg, maxi, mdev, cutoff_time_span=40):
     time_now = time.time()
     data.insert(0, [time_now, mini, avg, maxi, mdev])
 
@@ -68,7 +68,7 @@ def _accumulate_ping_data(data, mini, avg, maxi, mdev, cutoff_time_span = 40):
         if time_span < cutoff_time_span:
             done = True
         else:
-            data.pop() # forget last sample
+            data.pop()  # forget last sample
 
 
 def record_ping_result(data_str, ping_str, cutoff_time_span):
@@ -80,10 +80,8 @@ def record_ping_result(data_str, ping_str, cutoff_time_span):
     try:
         data = eval(data_str)
     except:
-        tb = traceback.format_exc()
-        #log("BAD data %s" % data_str,"ping")
-        data = []
-    mini, avg, maxi, mdev = (0.0 ,0.0, 0.0, 0.0)
+        pass
+    mini, avg, maxi, mdev = (0.0, 0.0, 0.0, 0.0)
     try:
         mini, avg, maxi, mdev = _parse_ping_data(ping_str)
     except:
@@ -93,14 +91,15 @@ def record_ping_result(data_str, ping_str, cutoff_time_span):
     return s
 
 
-
-
-def update_machine_aws_states(constellation_name, aws_id_keys_to_state_keys_dict):
+def update_machine_aws_states(constellation_name,
+                              aws_id_keys_to_state_keys_dict):
     """
     Updates the redis database with aws state of machines for a constellation.
-    The dictionnary contains the keys to the aws ids and mapped to the keys of the states
+    The dictionnary contains the keys to the aws ids and mapped
+    to the keys of the states
 
-    in the case of {'router_aws_id':'router_aws_state'}, the aws id is read from the 'router_aws_id' value and
+    in the case of {'router_aws_id':'router_aws_state'}, the aws id is
+    read from the 'router_aws_id' value and
     written to the 'router_aws_state' value
 
     Some keys may not exist (too early in the launch process)
@@ -110,13 +109,13 @@ def update_machine_aws_states(constellation_name, aws_id_keys_to_state_keys_dict
     for aws_id_key in aws_id_keys_to_state_keys_dict.keys():
         try:
             aws_id = constellation.get_value(aws_id_key)
-            if aws_id != None: 
+            if aws_id != None:
                 aws_ids[aws_id_key] = aws_id
         except:
             pass  # machine is not up yet
 
     if len(aws_ids):
-        ec2conn = aws_connect()[0] 
+        ec2conn = aws_connect()[0]
         aws_states = get_aws_states(ec2conn, aws_ids)
         for aws_id_key, aws_state in  aws_states.iteritems():
             state_key = aws_id_keys_to_state_keys_dict[aws_id_key]
@@ -126,8 +125,7 @@ def update_machine_aws_states(constellation_name, aws_id_keys_to_state_keys_dict
 def constellation_is_terminated(constellation_name):
     try:
         constellation = ConstellationState(constellation_name)
-        constellation_state = constellation.get_value("constellation_state") 
-        # log("constellation %s state %s" % (constellation_name, constellation_state) )
+        constellation_state = constellation.get_value("constellation_state")
         if constellation_state == "terminated":
             constellation.expire(1)
             log("Constellation  %s is terminated" % constellation_name)
@@ -144,16 +142,21 @@ def get_ssh_client(constellation_name, machine_state, ip_key, sshkey_key):
     """
     ssh_client = None
     constellation = ConstellationState(constellation_name)
-    if machine_states.index(machine_state) >= machine_states.index('packages_setup'):
-        constellation_directory = constellation.get_value('constellation_directory')
+    if machine_states.index(machine_state) >= machine_states.index(
+                                                            'packages_setup'):
+        constellation_directory = constellation.get_value(
+                                                'constellation_directory')
         machine_ip = constellation.get_value(ip_key)
         key_pair_name = constellation.get_value(sshkey_key)
-        ssh_client = SshClient(constellation_directory, key_pair_name, 'ubuntu', machine_ip)
+        ssh_client = SshClient(constellation_directory,
+                               key_pair_name,
+                               'ubuntu',
+                               machine_ip)
     return ssh_client
 
 
 def monitor_launch_state(constellation_name, ssh_client,
-                         machine_state, 
+                         machine_state,
                          dpkg_cmd,
                          launch_msg_key):
 
@@ -162,7 +165,8 @@ def monitor_launch_state(constellation_name, ssh_client,
 
     constellation = ConstellationState(constellation_name)
     constellation_state = constellation.get_value("constellation_state")
-    if constellation_states.index(constellation_state) >= constellation_states.index("launching"):
+    if constellation_states.index(constellation_state) >= \
+                            constellation_states.index("launching"):
         if machine_state == "running":
             constellation.set_value(launch_msg_key, "complete")
 
@@ -173,15 +177,17 @@ def monitor_launch_state(constellation_name, ssh_client,
                 current_value = constellation.get_value(launch_msg_key)
                 if current_value != package_msg:
                     constellation.set_value(launch_msg_key, package_msg)
-            except Exception, e:
+            except:
                 tb = traceback.format_exc()
                 log("monitor_launch_state traceback:  %s" % tb)
 
 
-def monitor_simulator(constellation_name, ssh_client, sim_state_key='simulation_state'):
+def monitor_simulator(constellation_name,
+                      ssh_client,
+                      sim_state_key='simulation_state'):
     """
-    Detects if the simulator is running and writes the 
-    result into the "gazebo" dictionary key 
+    Detects if the simulator is running and writes the
+    result into the "gazebo" dictionary key
     """
     if ssh_client == None:
         #constellation.set_value("gazebo", "not running")
@@ -189,14 +195,15 @@ def monitor_simulator(constellation_name, ssh_client, sim_state_key='simulation_
 
     constellation = ConstellationState(constellation_name)
     simulation_state = constellation.get_value(sim_state_key)
-    if machine_states.index(simulation_state) >= machine_states.index('running'):
+    if machine_states.index(simulation_state) >= \
+                            machine_states.index('running'):
         gl_state = constellation.get_value("simulation_glx_state")
         if gl_state == "running":
             try:
-                ping_gazebo = ssh_client.cmd("bash cloudsim/ping_gazebo.bash")
+                _ = ssh_client.cmd("bash cloudsim/ping_gazebo.bash")
                 constellation.set_value("gazebo", "running")
             except Exception, e:
-                log("monitor: cloudsim/ping_gazebo.bash error: %s" % e )
+                log("monitor: cloudsim/ping_gazebo.bash error: %s" % e)
                 constellation.set_value("gazebo", "not running")
                 return False
     return True
@@ -206,8 +213,6 @@ def _monitor_ping(constellation_name, ping_data_key, ping_str):
     """
     internal implementation for monitor_cloudsim_ping and monitor_ssh_ping
     """
-    #log("_monitor_ping %s %s %s" % (constellation_name, ping_data_key, ping_str), "ping")
-
     constellation = ConstellationState(constellation_name)
     latency = constellation.get_value(ping_data_key)
     latency = record_ping_result(latency, ping_str, LATENCY_TIME_BUFFER)
@@ -216,7 +221,8 @@ def _monitor_ping(constellation_name, ping_data_key, ping_str):
 
 def monitor_cloudsim_ping(constellation_name, ip_address_key, ping_data_key):
     """
-    Finds the ip of the machine to pind in redis, pings the machine and integrates
+    Finds the ip of the machine to pind in redis,
+    pings the machine and integrates
     the results with the existing data.
     The ping is done from CloudSim
     """
@@ -225,16 +231,19 @@ def monitor_cloudsim_ping(constellation_name, ip_address_key, ping_data_key):
         ip_address = constellation.get_value(ip_address_key)
         o, ping_str = commands.getstatusoutput("ping -c3 %s" % ip_address)
         if o == 0:
-            _monitor_ping(constellation_name, ping_data_key, ping_str) 
+            _monitor_ping(constellation_name, ping_data_key, ping_str)
 
 
-def monitor_ssh_ping(constellation_name, ssh_client, ip_address, ping_data_key):
+def monitor_ssh_ping(constellation_name,
+                     ssh_client,
+                     ip_address,
+                     ping_data_key):
     """
-    Pings a machine and integrates the results with the existing data into the 
+    Pings a machine and integrates the results with the existing data into the
     database. The ping is done from the ssh client (i.e router computer)
     """
     if ssh_client == None:
-        return 
+        return
     try:
         ping_str = ssh_client.cmd("ping -c3 %s" % ip_address)
         _monitor_ping(constellation_name, ping_data_key, ping_str)
@@ -250,16 +259,19 @@ class TaskTimeOut(Exception):
         Exception.__init__(self, message)
         self.task = task
 
+
 def monitor_task(constellation_name, ssh_router):
     """
-    Read score and net usage data. 
+    Read score and net usage data.
     Aborts tasks that timeout
     """
     def parse_score_data(score_str):
         toks = score_str.split()
         keys = [x[6:] for x in toks[-2].split(',')]
         keys[0] = 'time'
-        # keys = ['time', 'wall_time', 'sim_time', 'wall_time_elapsed', 'sim_time_elapsed', 'completion_score', 'falls', 'message',  'task_type']
+        # keys = ['time', 'wall_time', 'sim_time', 'wall_time_elapsed',
+        # 'sim_time_elapsed', 'completion_score',
+        # 'falls', 'message',  'task_type']
         values_str = toks[-1]
         values = values_str.split(',')
         d = dict(zip(keys, values))
@@ -289,14 +301,13 @@ def monitor_task(constellation_name, ssh_router):
             score_str += "<b>%s</b>: %s. " % ("sim time",   sim_time)
             score_str += " %s" % (msg)
             score_str += "<b>falls:</b> %s." % fall_count
-                
+
         except Exception, e:
             #score_str = "No score available."
             tb = traceback.format_exc()
-            log("traceback:  %s" % tb)
+            log("traceback: %s" % tb)
         log("score %s" % score_str)
         net_str = None
-
 
         try:
             n = ssh_router.cmd("cloudsim/get_network_usage.bash")
@@ -323,7 +334,9 @@ def monitor_task(constellation_name, ssh_router):
         if net_str and score_str:
             final_score = "%s %s" % (score_str, net_str)
             log("score %s" % final_score)
-            constellation.update_task_value(task['task_id'], 'task_message', final_score)
+            constellation.update_task_value(task['task_id'],
+                                            'task_message',
+                                            final_score)
 
         if sim_time > timeout:
             task = constellation.get_task(task_id)
@@ -331,11 +344,13 @@ def monitor_task(constellation_name, ssh_router):
             msg = task['task_message']
             if  msg.find(timeout_msg) < 0:
                 msg += timeout_msg
-                constellation.update_task_value(task['task_id'], 'task_message', msg)
+                constellation.update_task_value(task['task_id'],
+                                                'task_message',
+                                                msg)
 
             task = constellation.get_task(task_id)
             if task['task_state'] == 'running':
-                log("TASKTIMEOUT" )
+                log("TASKTIMEOUT")
                 d = {}
                 d['command'] = 'stop_task'
                 d['constellation'] = constellation_name
@@ -350,9 +365,15 @@ class Testos(unittest.TestCase):
     def test_me(self):
         data = []
         for i in range(10):
-            _accumulate_ping_data(data, mini=i, avg=i, maxi=i, mdev=i, cutoff_time_span = 0.4)
+            _accumulate_ping_data(data,
+                                  mini=i,
+                                  avg=i,
+                                  maxi=i,
+                                  mdev=i,
+                                  cutoff_time_span=0.4)
             time.sleep(0.1)
             print(data)
+
 
 if __name__ == "__main__":
     print("test")
