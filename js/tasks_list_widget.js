@@ -536,7 +536,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
 	
 	cell_right.appendChild(action_button);
 	cell_right.appendChild(edit_button);
-
+	cell_right.appendChild(x_button);
 
 	task_div.appendChild(task_table);
 
