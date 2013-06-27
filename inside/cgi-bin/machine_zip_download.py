@@ -8,18 +8,17 @@ import cgitb
 import os
 import sys
 import redis
-from common.web import print_http_header, UserDatabase
+from common.web import UserDatabase
 from common.machine_configuration import get_constellation_data
 
 cgitb.enable()
 
 from common import  authorize
 
-red = redis.Redis()
-def log(msg):
-    red.publish("machine_zip_download", "[machine_zip_download.py] " + msg)
-    #print("machine_zip_download", "[machine_zip_download.py] " + msg)
 
+def log(msg):
+    red = redis.Redis()
+    red.publish("machine_zip_download", "[machine_zip_download.py] " + msg)
 
 
 def get_machine_zip_key(email, constellation_name, machine_name):
@@ -29,7 +28,7 @@ def get_machine_zip_key(email, constellation_name, machine_name):
     """
     constellation = get_constellation_data(email, constellation_name)
     directory = constellation['constellation_directory']
-    
+
     udb = UserDatabase()
     user_is_officer = udb.has_role(email, "officer")
     log("is_officer %s = %s" % (user_is_officer, user_is_officer))
@@ -41,20 +40,11 @@ def get_machine_zip_key(email, constellation_name, machine_name):
 
 
 def download(filename):
-    
+
     short_name = os.path.split(filename)[1]
-    
-    # print ("\nStatus:200\n)
     if short_name.startswith("user_"):
         short_name = short_name.split("user_")[1]
-    
     log("download AS %s" % short_name)
-    
-    #print ("Content-Type: application/octet-stream")
-#     print ("Content-Type: hugo")
-#     print ("Content-Disposition: attachment; filename=%s" % short_name)
-#     print ("")
-    
     print("Pragma: public")
     print("Expires: 0")
     print("Cache-Control: must-revalidate, post-check=0, pre-check=0")
@@ -66,9 +56,8 @@ def download(filename):
     size = os.path.getsize(filename)
     print("Content-Length: %s" % size)
     print ("")
-    
+
     with open(filename, 'rb') as f:
-        
         while True:
             data = f.read(4096)
             sys.stdout.write(data)
@@ -77,12 +66,10 @@ def download(filename):
 
 email = authorize()
 
-
 form = cgi.FieldStorage()
 constellation_name = form.getfirst('constellation')
 machine_name = form.getfirst('machine')
 
-#try:
 filename = get_machine_zip_key(email, constellation_name, machine_name)
 
 log("constellation_name: %s" % constellation_name)
@@ -93,14 +80,7 @@ if os.path.exists(filename):
     log("EXISITS")
     download(filename)
 else:
-  
     print ("Status: 404 Not Found")
     print ("Content-Type: text/html\n\n")
-    print ("<h1>404 File not found!</h1>" )
+    print ("<h1>404 File not found!</h1>")
     print("<br>" + filename + "")
-    
-# except Exception, e:   
-#     print_http_header()
-#     print ("<title>Access Denied</title>")
-#     print ("<h1>Access Denied: " + str(e) +"</h1>")
-#     raise

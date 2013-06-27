@@ -21,7 +21,7 @@ from launch_utils.testing import get_boto_path
 from launch_utils.monitoring import constellation_is_terminated, monitor_cloudsim_ping,\
     monitor_launch_state
 
-from launch_utils.task_list import get_ssh_cmd_generator, empty_ssh_queue
+from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
 from launch_utils.softlayer import load_osrf_creds,\
     reload_servers, wait_for_server_reloads, get_machine_login_info
 from vrc_contest import ReloadOsCallBack, __add_ubuntu_user_to_router,\

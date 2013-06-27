@@ -30,9 +30,8 @@ def get_user_tasks(tasks):
     """
     Returns the next available task
     """
-    now = datetime.datetime.now()
 
-    latest_tasks =[]
+    latest_tasks = []
     for task in tasks:
         if task['task_state'] == 'stopped':
             latest_tasks.append(task)
@@ -53,7 +52,7 @@ def get_user_tasks(tasks):
         end_age = (now - task_stop).total_seconds()
 
         if task['task_state'] in ['ready']:
-            if start_age >0 and end_age <0:
+            if start_age > 0 and end_age < 0:
                 latest_tasks.append(task)
                 return latest_tasks
 
@@ -82,7 +81,7 @@ def clean_constellation_data(constellation, role):
     return constellation
 
 
-def get_constellation( constellation_name, role):
+def get_constellation(constellation_name, role):
     try:
         key = 'cloudsim/' + constellation_name
         log("get_constellation %s" % key)
@@ -92,7 +91,7 @@ def get_constellation( constellation_name, role):
         return constellation
     except Exception, e:
         tb = traceback.format_exc()
-        log("get_constellation traceback:  %s" % tb)
+        log("get_constellation ex: %s traceback:  %s" % (e, tb))
         return None
     return None
 
@@ -148,7 +147,7 @@ if method == 'GET':
 
     except Exception, e:
         s = "%s" % e
-        
+
     print("%s" % s)
     exit(0)
 
@@ -175,7 +174,8 @@ if method == 'PUT':
         s = json.dumps(d)
         print("%s" % s)
         exit(0)
-        
+
+
 if method == 'POST':
     d = {}
     d['username'] = email

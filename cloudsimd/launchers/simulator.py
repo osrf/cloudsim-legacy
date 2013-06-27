@@ -10,7 +10,7 @@ import boto
 from boto.pyami.config import Config as BotoConfig
 
 
-from launch_utils.traffic_shapping import  run_tc_command
+from launch_utils.traffic_shaping import  run_tc_command
 
 from launch_utils import get_unique_short_name
 from launch_utils import wait_for_multiple_machines_to_terminate
