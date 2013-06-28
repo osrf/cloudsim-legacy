@@ -365,7 +365,7 @@ def setup_ssh_key_access(ip, root_password, key_path):
     print('cwd: %s' % (os.getcwd()))
     if st != 0:
         print(cmd)
-        raise SoftLayerException(cmd)
+        raise SoftLayerException(cmd + output)
     print("RETURN %s" % st)
     print ("%s" % output)
     print("copying keys")
