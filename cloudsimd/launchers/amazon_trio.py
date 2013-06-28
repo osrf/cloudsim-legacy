@@ -189,8 +189,8 @@ def monitor_prerelease(username, constellation_name,  counter):
     return m
 
     
-def monitor(username, constellation_name,  counter):
-    m =_monitor(username, constellation_name,  counter, "vpc_trio")
+def monitor(constellation_name,  counter):
+    m =_monitor( constellation_name,  counter, "vpc_trio")
     return m
 
 def start_simulator(constellation_name, package_name, launch_file_name, launch_args, timeout):
@@ -225,10 +225,9 @@ def stop_simulator( constellation_name):
         log('stop_simulator %s' % r)
     except Exception, e:
         log('error stop_simulator %s' % e)
-    
 
- 
-def _monitor(username, constellation_name,  counter, CONFIGURATION):
+
+def _monitor(constellation_name,  counter, CONFIGURATION):
     
     time.sleep(1)
     if constellation_is_terminated(constellation_name):
@@ -269,21 +268,17 @@ def create_zip_file(zip_file_path, short_name, files_to_zip):
             fzip.write(fname, zip_name)
 
     
-def _launch(username, 
-            constellation_name, 
-            tags, 
-            constellation_directory, 
-            
+def _launch(username,
+            constellation_name,
+            tags,
+            constellation_directory,
             ROUTER_AWS_TYPE,
             ROUTER_SCRIPT,
-            
             ROBOT_AWS_TYPE,
             ROBOT_SCRIPT,
-            
 
             SIM_AWS_TYPE,
             SIM_SCRIPT,
-            
             CONFIGURATION):
 
     log("new trio constellation: %s" % constellation_name) 

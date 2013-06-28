@@ -290,7 +290,14 @@ def get_plugin(configuration):
     return plugin
 
 
-def load_cloudsim_configurations_list():
+def _load_cloudsim_configurations_list():
+    """
+    Loads the available configurations depending on the credentials. 
+     - AWS constellations if AWS credentials are available
+     - A list of constellations for SoftLayer credentials
+     This function is called upon CloudSim startup, and as a redis command
+     (After credentials are overwritten by the web app, for example)
+    """
 
     configs = {}
     
@@ -338,6 +345,11 @@ def launch(username,
            constellation_name,
            args,
            constellation_directory):
+    """
+    Deploys a constellation. The configuration determines what type of
+    constellation will be launched. the constellation directory is where all
+    data should be saved (ssh keys, downloadable scripts, etc.)
+    """
 
     log("launch username %s" % username)
     log("launch config %s" % config)
@@ -404,8 +416,9 @@ def launch(username,
 def update_constellation(constellation_name):
     """
     Updates the constellation via the cloud interface. 
+    This is an operation applied to a running constellation to ugrade the
+    software
     """
-    log("sdlihkflafdhsl")
     proc = multiprocessing.current_process().name
     log("update_constellation '%s' from proc '%s'" % (constellation_name,  proc))
 
@@ -423,16 +436,14 @@ def update_constellation(constellation_name):
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
         log("UPDATE ERROR %s traceback:  %s" % (constellation_name, tb), "launch_errors")
-            
-    #constellation = ConstellationState(constellation_name)
-    #constellation.set_value('constellation_state', 'running')
-    
 
 
 
 def terminate(constellation_name):
     """
     Terminates the constellation via the cloud interface.
+    This could give the resources back to the cloud provider (AWS), 
+    or wipe data.
     """
 
     proc = multiprocessing.current_process().name
@@ -460,6 +471,22 @@ def terminate(constellation_name):
 
 
 def create_task(constellation_name, data):
+    """
+    Adds a task to a constellation simulation ask list. The data is a
+    dictionary. The keys are:
+    - task_title
+    - ros_package
+    - launch_file
+    - launch_args
+    - timeout
+    - latency
+    - uplink_data_cap
+    - downllink_data_cap
+    - local_start
+    - local_stop
+    - vrc_id
+    - vrc_num
+    """
     try:
         log('create_task')
         task_id = "t" + get_unique_short_name()
@@ -481,9 +508,23 @@ def create_task(constellation_name, data):
 
 
 def update_task(constellation_name, data):
-
-    #    for k,v in data.iteritems():
-    #        log('  %s = %s' % (k,v))
+    """
+    Updates a task to a constellation simulation ask list. The data is a
+    dictionary. The keys are:
+    - task_title
+    - ros_package
+    - launch_file
+    - launch_args
+    - timeout
+    - latency
+    - uplink_data_cap
+    - downllink_data_cap
+    - local_start
+    - local_stop
+    - vrc_id
+    - vrc_num
+    - task_id
+    """
     try:
         task_id = data['task_id']
         log("update_task %s/%s" % (constellation_name, task_id))
@@ -497,6 +538,9 @@ def update_task(constellation_name, data):
 
 
 def delete_task(constellation_name, task_id):
+    """
+    Removes a task from the constellation's simulation task list
+    """
     log('delete task')
     try:
         log("delete_task %s/%s" % (constellation_name, task_id))
@@ -510,6 +554,10 @@ def delete_task(constellation_name, task_id):
 
 
 def start_task(constellation_name, task_id):
+    """
+    Starts a simulation task on a constellation. Only one task can run at a
+    time.
+    """
     try:
         log("start_task %s/%s" % (constellation_name, task_id))
         cs = ConstellationState(constellation_name)
@@ -549,6 +597,10 @@ def start_task(constellation_name, task_id):
 
 
 def stop_task(constellation_name):
+    """
+    Stops the current running tasks on a constellation. If no simulation task
+    is running.
+    """
     try:
         log("stop_task %s" % (constellation_name))
         cs = ConstellationState(constellation_name)
@@ -587,8 +639,10 @@ def stop_task(constellation_name):
         log("traceback:  %s" % tb)
 
 
-def monitor(username, config, constellation_name):
-
+def monitor(config, constellation_name):
+    """
+    
+    """
     proc = multiprocessing.current_process().name
     log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))
     try:
@@ -598,7 +652,7 @@ def monitor(username, config, constellation_name):
         while not done:
             try:
                 #log("monitor %s (%s)" % (constellation_name, counter) )
-                done = constellation_plugin.monitor(username, constellation_name, counter)
+                done = constellation_plugin.monitor(constellation_name, counter)
                 #log("monitor return value %s" % ( done) )
                 counter += 1
             except Exception, e:
@@ -614,11 +668,11 @@ def monitor(username, config, constellation_name):
         log("traceback:  %s" % tb)
 
 
-def async_monitor(username, config, constellation_name):
+def async_monitor( config, constellation_name):
 
-    log("cloudsimd async_monitor [config %s] %s/%s" % (config, username, constellation_name))
+    log("cloudsimd async_monitor [config %s] %s" % (config,  constellation_name))
     try:
-        p = multiprocessing.Process(target=monitor, args=(username, config, constellation_name))
+        p = multiprocessing.Process(target=monitor, args=( config, constellation_name))
         p.start()
     except Exception, e:
         log("cloudsimd async_monitor Error %s" % e)
@@ -691,10 +745,9 @@ def resume_monitoring(root_dir):
             constellation = get_constellation_data(constellation_name)
             state = constellation['constellation_state']
             config = constellation['configuration']
-            username = constellation['username']
             log("      resume_monitoring config %s" % config)
             log("      resume_monitoring state %s" % state)
-            async_monitor(username, config, constellation_name)
+            async_monitor(config, constellation_name)
         except Exception, e:
             print ("MONITOR ERROR %s in constellation : %s" % (e, constellation_name))
             tb = traceback.format_exc()
@@ -761,7 +814,7 @@ def async_stop_task(constellation_name):
 
 
 def async_update_cloudsim_configuration_list():
-    p = multiprocessing.Process(target=load_cloudsim_configurations_list,
+    p = multiprocessing.Process(target=_load_cloudsim_configurations_list,
                                 args=())
     p.start()
 
@@ -788,7 +841,7 @@ def launch_cmd(root_dir, data):
             cs.set_value('constellation_state', 'launching')
             async_launch(username, config, constellation_name, args,
                          constellation_path)
-            async_monitor(username, config, constellation_name)
+            async_monitor(config, constellation_name)
 
     elif config.startswith("OSRF"):
         partial_upgrade = False
@@ -856,7 +909,7 @@ def run(root_dir, tick_interval):
 
             log("CMD= \"%s\" DATA=\"%s\" " % (cmd, data))
 
-            if cmd == 'load_cloudsim_configurations_list':
+            if cmd == '_load_cloudsim_configurations_list':
                 async_update_cloudsim_configuration_list()
 
             elif cmd == 'launch':
@@ -951,7 +1004,7 @@ if __name__ == "__main__":
         config ['cs_admin_users'] = []
         
         set_cloudsim_config(config)
-        load_cloudsim_configurations_list()
+        _load_cloudsim_configurations_list()
 
         run(root_dir, tick_interval)
 

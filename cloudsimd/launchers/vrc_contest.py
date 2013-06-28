@@ -320,7 +320,7 @@ def monitor_simulator_proc(constellation_name):
     monitor_simulator(constellation_name, ssh_router, "sim_state")
 
 
-def monitor(username, constellation_name, counter):
+def monitor(constellation_name, counter):
     time.sleep(1)
     if constellation_is_terminated(constellation_name):
         return True
