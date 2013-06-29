@@ -98,17 +98,16 @@ def launch(username, configuration, constellation_name, tags, constellation_dire
                                           amazon_trio.SIM_IP) 
 
 
-    amazon_trio._launch(username, constellation_name, tags, 
+    amazon_trio._launch(username, constellation_name, tags,
                      constellation_directory,
                         ROUTER_AWS_TYPE,
                         ROUTER_SCRIPT,
-                        
                         ROBOT_AWS_TYPE,
                         ROBOT_SCRIPT,
-
                         SIM_AWS_TYPE,
                         SIM_SCRIPT,
                         CONFIGURATION)
+
 
 def monitor(constellation_name, credentials_ec2, counter):
     return amazon_trio._monitor( constellation_name, credentials_ec2, 
@@ -116,8 +115,8 @@ def monitor(constellation_name, credentials_ec2, counter):
 
 
 def terminate( constellation_name):
-    constellation_dict = get_constellation_data(  constellation_name)
-    constellation_directory = constellation_dict['constellation_directory']
+    constellation = ConstellationState( constellation_name)
+    constellation_directory = constellation.get_value('constellation_directory')
     amazon_trio._terminate( constellation_name, constellation_directory, CONFIGURATION)
                            
     

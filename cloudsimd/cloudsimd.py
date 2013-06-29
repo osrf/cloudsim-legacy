@@ -872,8 +872,10 @@ def launch_cmd(root_dir, data):
             backup_path = os.path.join(root_dir, constellation_backup)
             log("move %s to %s" % (constellation_path, backup_path))
             shutil.move(constellation_path, backup_path)
-            os.makedirs(constellation_path)
 
+            # create the directory
+            os.makedirs(constellation_path)
+            
             # move exiting zip keys to new direcory
             if partial_upgrade:
                 for fname in ['key-fc1.pem','key-fc1.pem.pub',
@@ -890,7 +892,7 @@ def launch_cmd(root_dir, data):
                      constellation_name, args,
                      constellation_path)
 
-        async_monitor(username, config, constellation_name)
+        async_monitor(config, constellation_name)
 
 
 def run(root_dir, tick_interval):

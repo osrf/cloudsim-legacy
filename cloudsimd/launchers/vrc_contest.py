@@ -1512,7 +1512,7 @@ def create_router_zip(router_ip, constellation_name, constellation_directory):
     return router_fname_zip, router_user_fname_zip
 
 
-def __create_private_machine_zip(machine_name_prefix,
+def create_private_machine_zip(machine_name_prefix,
                                machine_ip,
                                constellation_name,
                                constellation_directory):
@@ -1565,7 +1565,7 @@ def _create_zip_files(constellation_name,
     constellation.set_value('router_zip_file', 'ready')
     constellation.set_value('sim_launch_msg', 'creating zip files')
 
-    sim_zip_fname = __create_private_machine_zip("sim", SIM_IP,
+    sim_zip_fname = create_private_machine_zip("sim", SIM_IP,
                                                constellation_name,
                                                constellation_directory)
     shutil.copy(sim_zip_fname, os.path.join(constellation_directory,
@@ -1573,7 +1573,7 @@ def _create_zip_files(constellation_name,
     constellation.set_value('sim_zip_file', 'ready')
 
     constellation.set_value('fc1_launch_msg', 'creating zip files')
-    fc1_zip_fname = __create_private_machine_zip("fc1", FC1_IP,
+    fc1_zip_fname = create_private_machine_zip("fc1", FC1_IP,
                                                constellation_name,
                                                constellation_directory)
     shutil.copy(fc1_zip_fname, os.path.join(constellation_directory,
@@ -1583,7 +1583,7 @@ def _create_zip_files(constellation_name,
     constellation.set_value('fc1_zip_file', 'ready')
 
     constellation.set_value('fc2_launch_msg', 'creating zip files')
-    fc2_zip_fname = __create_private_machine_zip("fc2", FC2_IP,
+    fc2_zip_fname = create_private_machine_zip("fc2", FC2_IP,
                                                constellation_name,
                                                constellation_directory)
     shutil.copy(fc2_zip_fname, os.path.join(constellation_directory,
@@ -1985,7 +1985,7 @@ class VrcCase(unittest.TestCase):
         create_router_zip(router_ip,
                           constellation_name,
                           constellation_directory)
-        __create_private_machine_zip("fc1",
+        create_private_machine_zip("fc1",
                                      FC1_IP,
                                      constellation_name,
                                      constellation_directory)

@@ -342,9 +342,9 @@ def create_ssh_key(key_prefix, target_directory):
     path = os.path.join(target_directory, key_prefix)
     cmd = 'ssh-keygen -q -t rsa -f %s.pem -N ""' % path
     print(cmd)
-    st, _ = commands.getstatusoutput(cmd)
+    st, o = commands.getstatusoutput(cmd)
     if st != 0:
-        raise SoftLayerException(cmd)
+        raise SoftLayerException(cmd + ": " + o)
 
 
 def setup_ssh_key_access(ip, root_password, key_path):

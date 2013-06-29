@@ -17,17 +17,19 @@ from launch_utils import ConstellationState  # launch_db
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_cloudsim_startup_script
 from launch_utils.testing import get_test_runner, get_test_path
-from launch_utils.testing import get_boto_path
 from launch_utils.monitoring import constellation_is_terminated
 from launch_utils.monitoring import monitor_cloudsim_ping
 from launch_utils.monitoring import monitor_launch_state
 
 from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
 from launch_utils.softlayer import load_osrf_creds,\
-    reload_servers, wait_for_server_reloads, get_machine_login_info
-from vrc_contest import ReloadOsCallBack, __add_ubuntu_user_to_router,\
-    __create_private_machine_zip
+    reload_servers, wait_for_server_reloads, get_machine_login_info,\
+    create_ssh_key, setup_ssh_key_access
 from launch_utils.launch_db import get_cloudsim_config, log_msg
+
+
+from vrc_contest import ReloadOsCallBack,\
+    create_private_machine_zip
 
 
 CONFIGURATION = "cloudsim"
@@ -119,11 +121,20 @@ def reload_os(constellation_name, constellation_prefix, osrf_creds_fname):
     constellation.set_value("launch_stage", "os_reload")
 
 
-def initialize_ubuntu_user(constellation_name,
-                           constellation_prefix,
+def acquire_aws_server(constellation_name,
+                        aws_creds_fname,
+                        constellation_directory):
+    pass
+
+
+def acquire_dedicated_sl_server(constellation_name,
                            osrf_creds_fname,
                            constellation_directory):
+    """
+    Acquire a dedicated SoftLayer machine
+    """
     constellation = ConstellationState(constellation_name)
+    constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
 
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('init'):
@@ -137,6 +148,8 @@ def initialize_ubuntu_user(constellation_name,
 
     osrf_creds = load_osrf_creds(osrf_creds_fname)
     reload_monitor = ReloadOsCallBack(constellation_name, machines_dict)
+
+    # wait
     wait_for_server_reloads(osrf_creds, machines_dict.keys(),
                             reload_monitor.callback)
     constellation.set_value('simulation_aws_state', 'running')
@@ -149,9 +162,21 @@ def initialize_ubuntu_user(constellation_name,
     # dst_dir = os.path.abspath('.')
 
     log("machine details cs %s %s : %s" % (name, pub_ip, password))
-    __add_ubuntu_user_to_router(pub_ip, password, constellation_directory,
-                              'key-cs')
+    # __add_ubuntu_user_to_router(pub_ip, password, constellation_directory,
+    #                          'key-cs')
+    key_prefix = 'key-cs'
+    clean_local_ssh_key_entry(pub_ip)
+    create_ssh_key(key_prefix, constellation_directory)
+    # setup a ubuntu sudoer no password user with an ssh key
+    pub_key_path = os.path.join(constellation_directory,
+                                       "%s.pem.pub" % key_prefix)
+    setup_ssh_key_access(pub_ip, password, pub_key_path)
+    priv_key_path = os.path.join(constellation_directory,
+                                        "%s.pem" % key_prefix)
+    log("ssh -i %s ubuntu@%s" % (priv_key_path, pub_ip))
+
     constellation.set_value("launch_stage", "init")
+    return pub_ip, pub_key_path, priv_key_path
 
 
 def create_zip(constellation_name):
@@ -172,7 +197,7 @@ def create_zip(constellation_name):
 
     constellation_directory = constellation.get_value(
                                                     "constellation_directory")
-    __create_private_machine_zip("cs",
+    create_private_machine_zip("cs",
                                  ip,
                                  constellation_name,
                                  constellation_directory)
@@ -250,7 +275,6 @@ def launch(username, configuration, constellation_name, tags,
            constellation_directory, website_distribution=CLOUDSIM_ZIP_PATH):
 
     cfg = get_cloudsim_config()
-    osrf_creds_fname = cfg['softlayer_path']
 
     log('launch!!! tags = %s' % tags)
     constellation = ConstellationState(constellation_name)
@@ -269,22 +293,6 @@ def launch(username, configuration, constellation_name, tags,
 
     constellation.set_value("gazebo", "not running")
     constellation.set_value('simulation_glx_state', "not running")
-
-    if configuration.find("update") >= 0:
-        upload_and_deploy_cloudsim(constellation_name,
-                                   website_distribution,
-                                   force=False)
-        return
-
-    constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
-
-    osrf_creds = load_osrf_creds(osrf_creds_fname)
-    pub_ip, priv_ip, password = get_machine_login_info(osrf_creds,
-                                            "cs-%s" % constellation_prefix)
-    log("Cloudsim machine [%s / %s] password %s " % (pub_ip,
-                                                     priv_ip,
-                                                     password))
-    constellation.set_value("simulation_ip", pub_ip)
 
     auto_launch_configuration = None
     jr_softlayer_path = cfg['softlayer_path']
@@ -321,11 +329,24 @@ def launch(username, configuration, constellation_name, tags,
     log('auto_launch_configuration %s' % auto_launch_configuration)
 
     constellation.set_value("simulation_launch_msg",
-                            "seting up user accounts and keys")
-    initialize_ubuntu_user(constellation_name,
-                           constellation_prefix,
+                            "setting up user accounts and keys")
+
+    pub_ip = None
+    if "AWS" in  constellation_name:
+        aws_creds_fname = cfg['boto_path']
+        pub_ip = acquire_aws_server(constellation_name,
+                                    aws_creds_fname,
+                                    constellation_directory)
+    else:
+        osrf_creds_fname = cfg['softlayer_path']
+        pub_ip, _, _ = acquire_dedicated_sl_server(constellation_name,
                            osrf_creds_fname,
                            constellation_directory)
+        constellation.set_value('simulation_state', 'packages_setup')
+        constellation.set_value("simulation_launch_msg", "install packages")
+        startup_script(constellation_name)
+    constellation.set_value("simulation_ip", pub_ip)
+
     constellation.set_value("simulation_launch_msg", "create zip file")
     log("create zip")
     fname_zip = create_zip(constellation_name)
@@ -335,9 +356,6 @@ def launch(username, configuration, constellation_name, tags,
     shutil.copy(fname_zip, local_zip)
 
     log("install packages")
-    constellation.set_value('simulation_state', 'packages_setup')
-    constellation.set_value("simulation_launch_msg", "install packages")
-    startup_script(constellation_name)
 
     print ("\n##############################################")
     print ("# Your CloudSim instance has been launched.  #")
@@ -517,6 +535,9 @@ def launch(username, configuration, constellation_name, tags,
     log("provisioning done")
 
 
+def terminate_aws_server(constellation_name):
+    pass
+
 def terminate(constellation_name):
 
     constellation = ConstellationState(constellation_name)
@@ -532,7 +553,10 @@ def terminate(constellation_name):
     softlayer_path = cs_cfg['softlayer_path']
 
     constellation.set_value("launch_stage", "nothing")
-    reload_os(constellation_name, constellation_prefix, softlayer_path)
+    if "AWS" in  constellation_name:
+        terminate_aws_server(constellation_name)
+    else:
+        reload_os(constellation_name, constellation_prefix, softlayer_path)
 
     constellation.set_value('simulation_aws_state', 'terminated')
     constellation.set_value('simulation_state', "terminated")
