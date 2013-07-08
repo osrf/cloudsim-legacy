@@ -252,12 +252,8 @@ def get_plugin(configuration):
     plugin = None
     #log("get_plugin '%s'" % configuration)
 
-    if configuration.startswith("bitcoin "):
-        from launchers import bitcoin as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-                              c.start_task, c.stop_task)
-        
-    elif configuration.startswith("OSRF CloudSim "):
+
+    if configuration.startswith("OSRF CloudSim "):
         from launchers import cloudsim as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                               None, None)
@@ -336,8 +332,6 @@ def _load_cloudsim_configurations_list():
         #configs['OSRF CloudSim update %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim update only"}
         
     for prefix in const_prefixes:
-        configs['bitcoin sim %s' % prefix] = {'description':"mining on a sim machine"}
-        configs['bitcoin fc1 %s' % prefix] = {'description':"mining on a field computer machine"}
         configs['OSRF VRC Constellation %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
         configs['OSRF VRC Constellation nightly build %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
         configs['OSRF VRC Constellation nvidia latest %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
@@ -854,7 +848,7 @@ def launch_cmd(root_dir, data):
 
 
         
-    elif config.startswith("OSRF") or config.startswith("bitcoin"):
+    elif config.startswith("OSRF"):
         partial_upgrade = False
         if config.find('partial') > 0:
             partial_upgrade = True
