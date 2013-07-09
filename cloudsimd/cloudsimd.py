@@ -153,7 +153,6 @@ def terminate_all_constellations():
 
     for x in get_constellation_names():
         d = {}
-        d['username'] = 'hugo@osrfoundation.org'
         d['command'] = 'terminate'
         d['constellation'] = x
         s = json.dumps(d)
@@ -253,7 +252,7 @@ def get_plugin(configuration):
     #log("get_plugin '%s'" % configuration)
 
 
-    if configuration.startswith("OSRF CloudSim "):
+    if configuration.startswith("OSRF CloudSim ") or configuration == "AWS CloudSim":
         from launchers import cloudsim as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                               None, None)
@@ -262,12 +261,11 @@ def get_plugin(configuration):
         from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
-    elif configuration == 'AWS CloudSim':
-        #return make_plugin(launchers.amazon_cloudsim)
-        from launchers import amazon_cloudsim as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-                                     c.start_task, c.stop_task)
-        
+#     elif configuration == 'AWS CloudSim':
+#         #return make_plugin(launchers.amazon_cloudsim)
+#          from launchers import amazon_cloudsim as c
+#          plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
+#                                       c.start_task, c.stop_task)
     elif configuration == 'AWS simulator':
         from launchers import simulator as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,

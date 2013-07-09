@@ -1515,11 +1515,14 @@ def create_router_zip(router_ip, constellation_name, constellation_directory):
 def create_private_machine_zip(machine_name_prefix,
                                machine_ip,
                                constellation_name,
-                               constellation_directory):
+                               constellation_directory,
+                               key_prefix = None):
 
     machine_dir = os.path.join(constellation_directory, machine_name_prefix)
     os.makedirs(machine_dir)
     key_short_filename = 'key-%s.pem' % machine_name_prefix
+    if key_prefix:
+        key_short_filename = '%s.pem' % key_prefix
     key_fpath = os.path.join(machine_dir, key_short_filename)
     copyfile(os.path.join(constellation_directory, key_short_filename),
              key_fpath)
