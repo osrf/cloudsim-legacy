@@ -1,0 +1,14 @@
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto eth0
+iface eth0 inet dhcp
+
+#Public Interface
+auto eth1
+iface eth1 inet static
+address 172.16.0.1
+netmask 255.255.0.0
+network 172.16.0.0
+broadcast 172.16.255.255
