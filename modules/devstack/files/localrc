@@ -29,4 +29,4 @@ FLOATING_RANGE=10.10.1.0/24
 # Log the screens output (Devstack output logs only on the screens by default)
 SCREEN_LOGDIR=/opt/stack/logs/screen
 
-OFFLINE=True
+#OFFLINE=True
