@@ -125,26 +125,44 @@ page =  """<!DOCTYPE html>
 </head>
 <body onload = "on_load_page()">
 
-    <div style="float:left;">
-        <!-- img src="/js/images/osrf.png" width="200px"/ -->
+<table width='100%'>
+    <tr>
+        <td align='left'>
+            <img src="/js/images/CloudSim_Logo.png" width="200px"/>
+            <div  id="server_monitor_div">
+        </td>
+        <td align='right'>
+            Welcome, """ + role + " " + email + """<br>
+    
+            <div id="officer_only" style="display:none; padding:  0px 0px 0px 0px;" >
+                <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
+            </div>
+            <div style="padding:0px 0px 0px;" align="right">
+                <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!--
+    <div style="width:50%" align="left">
         <img src="/js/images/CloudSim_Logo.png" width="200px"/>
-        <div  id="server_monitor_div" style="float:left">
-        <!-- img src="/js/images/DARPA_Logo.jpg" width="200px"/ -->
-        <!-- HOLA -->
+        <div  id="server_monitor_div">
     </div>
 
-<div style="float:right;">
+    <div align="right">
 
-Welcome, """ + role + " " + email + """<br> 
-    <div id="officer_only" style="display:none; padding:  0px 0px 0px 0px;" align="right">
-    <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
+        Welcome, """ + role + " " + email + """<br>
+
+        <div id="officer_only" style="display:none; padding:  0px 0px 0px 0px;" >
+            <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
+        </div>
+        <div style="padding:0px 0px 0px;" align="right">
+            <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
+        </div>
+-->
+
     </div>
-    <div style="padding:0px 0px 0px;" align="right">
-    <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-    </div>
-
-
-</div>
 
 <!-- Add a little space -->
 <div><br><hr><br></div>
