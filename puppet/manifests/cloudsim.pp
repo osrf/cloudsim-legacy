@@ -98,7 +98,7 @@ define cloudsim::unpack($version, $target_dir) {
         creates => "${target_dir}/cloudsim-${version}/VERSION",
         require => Package['tar', 'bzip2'],
         user => "vagrant",
-        groups => "vagrant",
+        group => "vagrant",
     }
 }
 
