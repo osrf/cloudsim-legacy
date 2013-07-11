@@ -20,18 +20,15 @@ node default {
         'git': ensure => latest;
     }
 
-    cloudsim::install { "cloudsim": version => "1.5.2"; }
+    cloudsim::install { "cloudsim": version => "1.5.6"; }
 
     class {'python':
         version => 'system',
         virtualenv => true,
     }
 
-    puppet::vcsrepo::install { "cloudsim": }
-
-    puppet::python::install { "cloudsim": }
-
     devstack::setup { "cloudsim": }
+
 }
 
 define network::setup() {
@@ -67,44 +64,23 @@ define devstack::setup() {
     }
 
     devstack::clone { "${name}":
-        require => Puppet::Vcsrepo::Install["${name}"];
     }
 
     exec {"devstack-unstack-${name}":
         command => "/home/vagrant/devstack/unstack.sh",
         user => "vagrant",
+        group => "vagrant",
+        environment => ["USER=vagrant", "GROUP=vagrant"],
         require => Devstack::Clone["${name}"];
     }
 
     exec {"devstack-stack-${name}":
         command => "/home/vagrant/devstack/stack.sh",
         user => "vagrant",
-        require => [Devstack::Clone["${name}"], Exec["devstack-unstack-${name}"], File['/home/vagrant/devstack/localrc']];
-    }
-}
-
-define puppet::python::install() {
-    vcsrepo { "/etc/puppet/modules/python":
-        ensure => present,
-        provider => git,
-        source => "git://github.com/stankevich/puppet-python.git",
-        require => [Package['git'], Puppet::Vcsrepo::Install[$name]];
-    }
-}
-
-#    exec {"puppet-python-install-${name}":
-#        command => "git clone git://github.com/stankevich/puppet-python.git ~/.puppet/modules/python",
-#        require => [Package['git'], Puppet::Vcsrepo::Install[$name]];
-#    }
-#}
-
-define puppet::vcsrepo::install() {
-    file { "/etc/puppet/modules" : ensure => directory }
-
-    exec {"puppet-vcsrepo-install-${name}":
-        command => "/opt/vagrant_ruby/bin/puppet module install puppetlabs/vcsrepo",
-        require => [File["/etc/puppet/modules"], Package['git']],
-        creates => "/etc/puppet/modules/vcsrepo/Gemfile";
+        group => "vagrant",
+        environment => ["USER=vagrant", "GROUP=vagrant"],
+        require => [Devstack::Clone["${name}"], Exec["devstack-unstack-${name}"], File['/home/vagrant/devstack/localrc']],
+        timeout => 0;
     }
 }
 

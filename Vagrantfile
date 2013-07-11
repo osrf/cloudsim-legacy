@@ -15,6 +15,7 @@ Vagrant.configure("2") do |config|
 
   precise64.vm.provider "virtualbox" do |vb|
     vb.customize ["modifyvm", :id, "--memory", 2048]
+    vb.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/v-root", "1"]
   end
 
   # The url from where the 'precise64.vm.box' box will be fetched if it
@@ -75,12 +76,14 @@ Vagrant.configure("2") do |config|
   # #               Managed by Puppet.\n"
   # # }
   #
-  #precise64.vm.provision :shell, :path => "shell/main.sh"
+
+  precise64.vm.provision :shell, :path => "shell/main.sh"
 
   precise64.vm.provision :puppet do |puppet|
-    puppet.manifests_path = "manifests"
+    puppet.manifests_path = "puppet/manifests"
     puppet.manifest_file  = "cloudsim.pp"
-    puppet.module_path = "modules"
+    puppet.module_path = "puppet/modules"
+    puppet.options = "--verbose --debug"
   end
 
   # Enable provisioning with chef solo, specifying a cookbooks path, roles
