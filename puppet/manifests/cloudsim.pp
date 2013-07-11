@@ -96,7 +96,9 @@ define cloudsim::unpack($version, $target_dir) {
     exec {"unpack-latest-cloudsim-${name}":
         command => "tar -xjf ${target_dir}/cloudsim-${version}.tar.bz2 -C ${target_dir}",
         creates => "${target_dir}/cloudsim-${version}/VERSION",
-        require => Package['tar', 'bzip2'];
+        require => Package['tar', 'bzip2'],
+        user => "vagrant",
+        groups => "vagrant",
     }
 }
 
@@ -104,4 +106,16 @@ define cloudsim::install($version, $target_dir='/var/tmp') {
     cloudsim::download {$name: version => $version, target_dir => $target_dir; }
 
     cloudsim::unpack {$name: version => $version, target_dir => $target_dir, require=> Cloudsim::Download[$name]; }
+
+#    python::virtualenv { "/var/tmp/cloudsim-${version}":
+#      ensure       => present,
+#      version      => 'system',
+#      requirements => '/var/tmp/cloudsim-${version}/requirements.txt',
+#      systempkgs   => true,
+#      distribute   => false,
+#      owner        => 'vagrant',
+#      group        => 'vagrant',
+#      require => Cloudsim::Unpack[$name];
+#   }
+
 }

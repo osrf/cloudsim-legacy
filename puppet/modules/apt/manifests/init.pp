@@ -21,7 +21,6 @@ define apt::ppa($key=undef) {
       default => "/bin/cat /etc/apt/sources.list /etc/apt/sources.list.d/* | /bin/egrep '^[^#].*${title}.*$'",
     },
     require => [Exec["add-apt-key-${name}"], Package["python-software-properties"]],
-    logoutput => true,
   }
 }
 
