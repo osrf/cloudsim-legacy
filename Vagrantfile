@@ -14,13 +14,13 @@ Vagrant.configure("2") do |config|
   precise64.vm.box = "precise64"
 
   precise64.vm.provider "virtualbox" do |vb|
-    vb.customize ["modifyvm", :id, "--memory", 2048]
+    vb.customize ["modifyvm", :id, "--memory", 4096]
     vb.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/v-root", "1"]
   end
 
   # The url from where the 'precise64.vm.box' box will be fetched if it
   # doesn't already exist on the user's system.
-  # precise64.vm.box_url = "http://domain.com/path/to/above.box"
+  precise64.vm.box_url = "http://files.vagrantup.com/precise64.box"
 
   # Create a forwarded port mapping which allows access to a specific port
   # within the machine from a port on the host machine. In the example below,
@@ -29,8 +29,8 @@ Vagrant.configure("2") do |config|
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-  precise64.vm.network :private_network, ip: "172.16.0.201", :netmask => "255.255.0.0"
-  precise64.vm.network :private_network, ip: "10.10.0.201", :netmask => "255.255.0.0"
+  precise64.vm.network :private_network, :ip => "172.16.0.201", :netmask => "255.255.0.0"
+  precise64.vm.network :private_network, :ip => "10.10.0.201", :netmask => "255.255.0.0"
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
