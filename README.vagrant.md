@@ -19,7 +19,12 @@ The Vagrant image can be started by issuing the following:
 this command will fetch an appropiate base image (Ubuntu 12.04 x86-64) the first
 time, in case it's not already registered within Vagrant.
 
-You may use the following command to stop it:
+After this, you should be able to access the OpenStack dashboard by pointing your
+browser to http://172.16.0.201 and using the credentials for either the admin user
+(username: admin, password: cloudsim) or the demo user (username: demo,
+password: cloudsim).
+
+You may use the following command to stop the Vagrant virtual machine:
 
     :::shell
     $ vagrant halt
