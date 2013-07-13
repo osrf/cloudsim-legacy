@@ -2,13 +2,13 @@ from __future__ import print_function
 import time
 import unittest
 from launch_db import ConstellationState
-from launch import aws_connect
 from sshclient import SshClient
 import commands
 import traceback
 from launch_db import log_msg
 import redis
 import json
+from aws import aws_connect
 
 machine_states = ['terminated', 'terminating', 'stopped' 'stopping',
                   'nothing', 'starting', 'booting',

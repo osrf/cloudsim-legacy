@@ -28,9 +28,9 @@ import traceback
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
-from launchers.launch_utils.launch import aws_connect
+from launchers.launch_utils import aws_connect
 from launchers.launch_utils.softlayer import get_constellation_prefixes
-from launchers.launch_utils.launch import LaunchException
+from launchers.launch_utils import LaunchException
 
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch_db import log_msg
@@ -261,6 +261,7 @@ def get_plugin(configuration):
         from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
+
 #     elif configuration == 'AWS CloudSim':
 #         #return make_plugin(launchers.amazon_cloudsim)
 #          from launchers import amazon_cloudsim as c
@@ -272,7 +273,8 @@ def get_plugin(configuration):
                                      c.start_task, c.stop_task)
 
     elif configuration == 'AWS trio':
-        from launchers import amazon_trio as c
+        #from launchers import amazon_trio as c
+        from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
 
@@ -428,7 +430,6 @@ def update_constellation(constellation_name):
 
         constellation_plugin = get_plugin(config)
         constellation_plugin.update(constellation_name)
-
     except Exception, e:
         log("cloudsimd.py update error: %s" % e)
         tb = traceback.format_exc()

@@ -5,6 +5,12 @@ import testing
 import json
 import time
 import redis
+import uuid
+
+
+def log(msg, channel=__name__, severity='debug'):
+    log_msg(msg, channel, severity)
+    #print("cloudsim log> %s" % msg)
 
 
 def log_msg(msg, channel, severity):
@@ -27,9 +33,9 @@ def log_msg(msg, channel, severity):
         logger.info(msg)
 
 
-def log(msg, channel=__name__, severity='debug'):
-    log_msg(msg, channel, severity)
-    #print("cloudsim log> %s" % msg)
+def get_unique_short_name(prefix='x'):
+    s = str(uuid.uuid1()).split('-')[0]
+    return prefix + s
 
 
 def publish_event(username, mtype, data):
