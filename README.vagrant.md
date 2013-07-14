@@ -1,12 +1,32 @@
 Introduction
 ============
 
-We have prepared a ready to use Vagrant image for OpenStack and CloudSim. It
-has been tested with the following:
+We have prepared a ready to use Vagrant image for OpenStack and CloudSim, this
+makes it easier to test and develop CloudSim without using an external cloud
+provider. The image has been tested with the following requirements:
 
 - Vagrant 1.2.3
 - OpenStack Grizzly
+- VirtualBox 4.2.16
 - Ubuntu 12.04 as the host OS
+
+VirtualBox
+==========
+
+This VM requires two host-only interfaces, one for the private network (i.e.
+the network where the instances are launched) and another one for the public
+one network (i.e. the network from which instances can be accessed from the
+outside world).
+
+You can create the two host-only interfaces with the following commands:
+
+    :::shell
+    $ VBoxManage hostonlyif create
+    $ VBoxManage hostonlyif ipconfig vboxnet0 --ip 172.16.0.254 --netmask 255.255.0.0
+    $ VBoxManage hostonlyif create
+    $ VBoxManage hostonlyif ipconfig vboxnet1 --ip 10.10.0.1 --netmask 255.255.0.0
+    
+vboxnet0 and vboxnet1 will be the public and private interfaces respectively.
 
 Usage
 =====
