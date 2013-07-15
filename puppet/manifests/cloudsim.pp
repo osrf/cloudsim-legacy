@@ -18,6 +18,7 @@ node default {
         'tar': ensure => latest;
         'bzip2': ensure => latest;
         'git': ensure => latest;
+        'iptables-persistent': ensure => latest;
     }
 
     cloudsim::install { "cloudsim": version => "1.5.6"; }
@@ -29,6 +30,14 @@ node default {
 
     devstack::setup { "cloudsim": }
 
+    firewall { '999 nat for network eth0':
+        chain => 'POSTROUTING',
+        jump => 'MASQUERADE',
+        proto => 'all',
+        outiface => "eth0",
+        table => 'nat',
+        require => [Package["iptables-persistent"], Devstack::Setup["cloudsim"]],
+    }
 }
 
 define network::setup() {
