@@ -1395,14 +1395,16 @@ def launch(username, config, constellation_name, tags,
                   'software': 'ubuntu_1204_x64_cluster',
                   'ip': '10.0.0.51',
                   'startup_script': sim_script},
-            'fc1': {'hardware': 'cg1.4xlarge',
-                  'software': 'ubuntu_1204_x64_cluster',
-                  'ip': '10.0.0.52',
-                  'startup_script': fc1_script},
-            'fc2': {'hardware': 'cg1.4xlarge',
-                  'software': 'ubuntu_1204_x64_cluster',
-                  'ip': '10.0.0.53',
-                  'startup_script': fc2_script}}
+#             'fc1': {'hardware': 'cg1.4xlarge',
+#                   'software': 'ubuntu_1204_x64_cluster',
+#                   'ip': '10.0.0.52',
+#                   'startup_script': fc1_script},
+#             'fc2': {'hardware': 'cg1.4xlarge',
+#                   'software': 'ubuntu_1204_x64_cluster',
+#                   'ip': '10.0.0.53',
+#                   'startup_script': fc2_script}
+            }
+        
         acquire_aws_constellation(constellation_name,
                                   credentials_ec2,
                                   machines)

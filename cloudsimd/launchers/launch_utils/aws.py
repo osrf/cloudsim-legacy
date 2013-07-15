@@ -23,11 +23,12 @@ class LaunchException(Exception):
 def acquire_aws_server(constellation_name,
                        credentials_ec2,
                        constellation_directory,
+                       machine_prefix,
                        startup_script,
                        tags):
 
-    sim_machine_name = "cloudsim_%s" % constellation_name
-    sim_key_pair_name = 'key-cs-%s' % constellation_name
+    sim_machine_name = "%s_%s" % (machine_prefix, constellation_name)
+    sim_key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
     #ec2conn = aws_connect()[0]
     boto.config = BotoConfig(credentials_ec2)
     ec2conn = boto.connect_ec2()
@@ -112,7 +113,7 @@ def acquire_aws_server(constellation_name,
     sim_ip = sim_instance.ip_address
     clean_local_ssh_key_entry(sim_ip)
     constellation.set_value('simulation_ip', sim_ip)
-    return sim_ip, simulation_aws_id
+    return sim_ip, simulation_aws_id, sim_key_pair_name
 
 
 def terminate_aws_server(constellation_name):
@@ -327,7 +328,7 @@ def _acquire_key_pair(constellation_name, machine_prefix, ec2conn):
     try:
         constellation_directory = constellation.get_value(
                                                     'constellation_directory')
-        key_pair_name = 'key-%s-%s' % (constellation_name, machine_prefix)
+        key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
         key_key = '%s_key_pair_name' % machine_prefix
         constellation.set_value(key_key, key_pair_name)
         key_pair = ec2conn.create_key_pair(key_pair_name)
@@ -388,7 +389,7 @@ def acquire_aws_constellation(constellation_name,
                               machines):
 
     constellation = ConstellationState(constellation_name)
-    constellation.set_value('machine_names', machines)
+    constellation.set_value('machines', machines)
     boto.config = BotoConfig(credentials_ec2)
     ec2conn = boto.connect_ec2()
     vpcconn = boto.connect_vpc()
@@ -432,10 +433,10 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
     ec2conn = boto.connect_ec2()
     vpcconn = boto.connect_vpc()
     constellation = ConstellationState(constellation_name)
-    machines = constellation.get_value('machine_names')
+    machines = constellation.get_value('machine')
 
     running_machines = {}
-    for machine_prefix in machines:
+    for machine_prefix in machines.keys():
         try:
             state_key = '%s_aws_state' % machine_prefix
             aws_id_key = '%s_aws_id' % machine_prefix
@@ -445,6 +446,7 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
             error_msg = constellation.get_value('error')
             error_msg += "%s" % e
             constellation.set_value('error', error_msg)
+    log("machines to terminate: %s" % running_machines )
     wait_for_multiple_machines_to_terminate(ec2conn,
                                             running_machines,
                                             constellation,

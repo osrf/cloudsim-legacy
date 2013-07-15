@@ -211,6 +211,7 @@ def upload_and_deploy_cloudsim(constellation_name,
 def launch(username, configuration, constellation_name, tags,
            constellation_directory, website_distribution=CLOUDSIM_ZIP_PATH):
 
+    machine_prefix = "cs"
     cfg = get_cloudsim_config()
 
     log('launch!!! tags = %s' % tags)
@@ -271,12 +272,12 @@ def launch(username, configuration, constellation_name, tags,
     pub_ip = None
     key_prefix = None
     if not "OSRF" in  constellation_name:
-        key_prefix = "key-cs-%s" % constellation_name
         aws_creds_fname = cfg['boto_path']
         script = get_cloudsim_startup_script()
-        pub_ip, aws_id = acquire_aws_server(constellation_name,
+        pub_ip, aws_id, key_prefix= acquire_aws_server(constellation_name,
                                     aws_creds_fname,
                                     constellation_directory,
+                                    machine_prefix,
                                     script,
                                     tags)
         # (constellation_name, credentials_ec2, constellation_directory, tags)
