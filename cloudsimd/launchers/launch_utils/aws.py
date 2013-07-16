@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import time
 import boto
 from boto.pyami.config import Config as BotoConfig
@@ -34,6 +36,7 @@ def acquire_aws_server(constellation_name,
     ec2conn = boto.connect_ec2()
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
     constellation = ConstellationState(constellation_name)
+
     constellation.set_value('simulation_launch_msg',
                             "setting up security groups")
     sim_sg_name = 'sim-sg-%s' % (constellation_name)
@@ -46,8 +49,8 @@ def acquire_aws_server(constellation_name,
     sim_security_group_id = sim_security_group.id
     log("Security group created")
     constellation.set_value('sim_security_group_id', sim_security_group_id)
-    constellation.set_value('simulation_launch_msg', "creating ssh keys")
 
+    constellation.set_value('simulation_launch_msg', "creating ssh keys")
     constellation.set_value('sim_key_pair_name', sim_key_pair_name)
     key_pair = ec2conn.create_key_pair(sim_key_pair_name)
     key_pair.save(constellation_directory)
@@ -76,9 +79,9 @@ def acquire_aws_server(constellation_name,
     print ("#                Stay tuned!                 #")
     print ("##############################################\n")
 
-# running_machines = wait_for_multiple_machines_to_run(ec2conn,
-# roles_to_reservations, constellation, max_retries = 150
-# final_state = 'network_setup')
+    # running_machines = wait_for_multiple_machines_to_run(ec2conn,
+    # roles_to_reservations, constellation, max_retries = 150
+    # final_state = 'network_setup')
 
     running_machines = {}
     count = 200
@@ -108,7 +111,8 @@ def acquire_aws_server(constellation_name,
     sim_tags = {'Name': sim_machine_name}
     sim_tags.update(tags)
     ec2conn.create_tags([simulation_aws_id], sim_tags)
-# ec2conn.associate_address(router_aws_id, allocation_id = eip_allocation_id)
+
+    # ec2conn.associate_address(router_aws_id, allocation_id=eip_allocation_id)
     sim_instance = get_ec2_instance(ec2conn, simulation_aws_id)
     sim_ip = sim_instance.ip_address
     clean_local_ssh_key_entry(sim_ip)
@@ -142,8 +146,99 @@ def terminate_aws_server(constellation_name):
         security_group_id = constellation.get_value('sim_security_group_id')
         ec2conn.delete_security_group(group_id=security_group_id)
     except Exception as e:
-        log("error cleaning up sim security group %s: %s" % (security_group_id,
-                                                             e))
+        log("error cleaning up security group %s: %s" % (security_group_id, e))
+
+
+def acquire_aws_constellation(constellation_name,
+                              credentials_ec2,
+                              machines,
+                              tags):
+    """
+    Creates a virtual network with machines inside. Each machine has
+    - an elastic IP
+    - a security group
+    - a key (for the ubuntu user)
+    """
+    constellation = ConstellationState(constellation_name)
+
+    constellation.set_value('machines', machines)
+
+    boto.config = BotoConfig(credentials_ec2)
+    ec2conn = boto.connect_ec2()
+    vpcconn = boto.connect_vpc()
+    availability_zone = boto.config.get('Boto', 'ec2_region_name')
+
+    _acquire_vpc(constellation_name, vpcconn, availability_zone)
+
+    for machine_name in machines.keys():
+        _acquire_vpc_elastic_ip(constellation_name, machine_name, ec2conn)
+
+    for machine_name in machines.keys():
+        _acquire_vpc_security_group(constellation_name,
+                                    machine_name,
+                                    VPN_PRIVATE_SUBNET,
+                                    ec2conn)
+
+    roles_to_reservations = {}
+
+    for machine_name, machine_data in machines.iteritems():
+        key_pair_name = _acquire_key_pair(constellation_name,
+                          machine_name, ec2conn)
+        reservation_id = _acquire_vpc_server(constellation_name,
+                                             machine_name,
+                                             key_pair_name,
+                                             machine_data,
+                                             availability_zone,
+                                             ec2conn)
+        roles_to_reservations[machine_name] = reservation_id
+
+    running_machines = wait_for_multiple_machines_to_run(ec2conn,
+                                            roles_to_reservations,
+                                            tags,
+                                            constellation,
+                                            max_retries=500,
+                                            final_state='network_setup')
+    log("running machines %s" % running_machines)
+
+
+def terminate_aws_constellation(constellation_name, credentials_ec2):
+    """
+    Releases a private network, machines and all its resources
+    """
+    boto.config = BotoConfig(credentials_ec2)
+    ec2conn = boto.connect_ec2()
+    vpcconn = boto.connect_vpc()
+    constellation = ConstellationState(constellation_name)
+
+    machines = constellation.get_value('machines')
+    log("machines: %s" % machines.keys())
+
+    running_machines = {}
+    for machine_prefix in machines.keys():
+        try:
+            state_key = '%s_aws_state' % machine_prefix
+            aws_id_key = '%s_aws_id' % machine_prefix
+            aws_id = constellation.get_value(aws_id_key)
+            log("%s aws id: %s" % (machine_prefix, aws_id))
+            running_machines[state_key] = aws_id
+        except Exception, e:
+            error_msg = constellation.get_value('error')
+            error_msg += "%s" % e
+            constellation.set_value('error', error_msg)
+    log("machines to terminate: %s" % running_machines)
+    wait_for_multiple_machines_to_terminate(ec2conn,
+                                            running_machines,
+                                            constellation,
+                                            max_retries=150)
+
+    for machine_prefix in machines:
+        _release_key_pair(constellation_name, machine_prefix, ec2conn)
+
+    for machine_prefix in machines:
+        _release_vpc_security_group(constellation_name, machine_prefix,
+                                    ec2conn)
+
+    _release_vpc(constellation_name, vpcconn)
 
 
 def _acquire_vpc_elastic_ip(constellation_name, machine_name_prefix, ec2conn):
@@ -189,8 +284,6 @@ def _acquire_vpc(constellation_name, vpcconn, availability_zone):
         constellation.set_value('vpc_id', vpc_id)
         log("VPC %s" % vpc_id)
 
-        aws_vpc.add_tag('constellation', constellation_name)
-        
         aws_subnet = vpcconn.create_subnet(vpc_id, VPN_PRIVATE_SUBNET,
                                         availability_zone=availability_zone)
         subnet_id = aws_subnet.id
@@ -211,6 +304,9 @@ def _acquire_vpc(constellation_name, vpcconn, availability_zone):
         route_table_association_id = vpcconn.associate_route_table(
                                                             route_table_id,
                                                             subnet_id)
+        # add a tag to the vpc so we can identify it
+        aws_vpc.add_tag('constellation', constellation_name)
+
         constellation.set_value('route_table_association_id',
                                 route_table_association_id)
 
@@ -333,6 +429,7 @@ def _acquire_key_pair(constellation_name, machine_prefix, ec2conn):
         constellation.set_value(key_key, key_pair_name)
         key_pair = ec2conn.create_key_pair(key_pair_name)
         key_pair.save(constellation_directory)
+        return key_pair_name
     except Exception, e:
         constellation.set_value('error', "key error: %s" % e)
         raise
@@ -354,6 +451,7 @@ def _release_key_pair(constellation_name, machine_prefix, ec2conn):
 
 def _acquire_vpc_server(constellation_name,
                         machine_prefix,
+                        key_pair_name,
                         machine_data,
                         availability_zone,
                         ec2conn):
@@ -367,7 +465,6 @@ def _acquire_vpc_server(constellation_name,
         soft = machine_data['software']
         aws_image = amis[soft]
         aws_instance = machine_data['hardware']
-        key_pair_name = 'key-%s-%s' % (constellation_name, machine_prefix)
         ip = machine_data['ip']
         startup_script = machine_data['startup_script']
 
@@ -382,83 +479,6 @@ def _acquire_vpc_server(constellation_name,
     except Exception, e:
         constellation.set_value('error', "%s" % e)
         raise
-
-
-def acquire_aws_constellation(constellation_name,
-                              credentials_ec2,
-                              machines):
-
-    constellation = ConstellationState(constellation_name)
-    constellation.set_value('machines', machines)
-    boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn = boto.connect_vpc()
-    availability_zone = boto.config.get('Boto', 'ec2_region_name')
-
-    _acquire_vpc(constellation_name, vpcconn, availability_zone)
-
-    for machine_name in machines.keys():
-        _acquire_vpc_elastic_ip(constellation_name, machine_name, ec2conn)
-
-    for machine_name in machines.keys():
-        _acquire_vpc_security_group(constellation_name,
-                                    machine_name,
-                                    VPN_PRIVATE_SUBNET,
-                                    ec2conn)
-
-    for machine_name in machines.keys():
-        _acquire_key_pair(constellation_name,
-                          machine_name, ec2conn)
-
-    roles_to_reservations={}
-
-    for machine_name, machine_data in machines.iteritems():
-        reservation_id = _acquire_vpc_server(constellation_name,
-                                             machine_name,
-                                             machine_data,
-                                             availability_zone,
-                                             ec2conn)
-        roles_to_reservations["%s_state" % machine_name] = reservation_id
-
-    running_machines = wait_for_multiple_machines_to_run(ec2conn,
-                                            roles_to_reservations,
-                                            constellation,
-                                            max_retries=500,
-                                            final_state='network_setup')
-    log("running machines %s" % running_machines)
-
-
-def terminate_aws_constellation(constellation_name, credentials_ec2):
-    boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn = boto.connect_vpc()
-    constellation = ConstellationState(constellation_name)
-    machines = constellation.get_value('machine')
-
-    running_machines = {}
-    for machine_prefix in machines.keys():
-        try:
-            state_key = '%s_aws_state' % machine_prefix
-            aws_id_key = '%s_aws_id' % machine_prefix
-            aws_id = constellation.get_value(aws_id_key)
-            running_machines[state_key] = aws_id
-        except Exception, e:
-            error_msg = constellation.get_value('error')
-            error_msg += "%s" % e
-            constellation.set_value('error', error_msg)
-    log("machines to terminate: %s" % running_machines )
-    wait_for_multiple_machines_to_terminate(ec2conn,
-                                            running_machines,
-                                            constellation,
-                                            max_retries=150)
-
-    for machine_prefix in machines:
-        _release_key_pair(constellation_name, machine_prefix, ec2conn)
-
-    for machine_prefix in machines:
-        _release_vpc_security_group(constellation_name, machine_prefix, ec2conn)
-
-    _release_vpc(constellation_name, vpcconn)
 
 
 def aws_connect():
@@ -502,21 +522,27 @@ def get_ec2_instance(ec2conn, mid):
 
 
 def wait_for_multiple_machines_to_run(ec2conn,
-                                      roles_to_reservations,
+                                      names_to_reservations,
+                                      tags,
                                       constellation,
                                       max_retries,
                                       initial_state="booting",
                                       final_state="network_setup"):
     """
     returns a dictionary of running machine ids indexed by role
+    Writes xxx_state in redis, initially with initial state (booting)
+    and final state when done (network_setup).
+    It also writes tags for each aws instance (these tags can be read
+    from the AWS EC2 console)
+
     """
 
     # mark all machines as "booting" (or other initial state)
-    for machine_state in roles_to_reservations.keys():
-        constellation.set_value(machine_state, initial_state)
+    for machine_name in names_to_reservations.keys():
+        constellation.set_value("%s_state" % machine_name, initial_state)
 
     reservations_to_roles = dict((v, k)
-                                 for k, v in roles_to_reservations.iteritems())
+                                 for k, v in names_to_reservations.iteritems())
 
     ready_machines = {}
     count = max_retries + len(reservations_to_roles)
@@ -543,9 +569,16 @@ def wait_for_multiple_machines_to_run(ec2conn,
                     aws_id = r.instances[0].id
                     ready_machines[role] = aws_id
                     reservations_to_roles.pop(reservation)
+
+                    # add tags
+                    machine_tags = {'Name': machine_name}
+                    machine_tags.update(tags)
+                    ec2conn.create_tags([aws_id], machine_tags)
+
                     # mark this machines state
-                    constellation.set_value(role, final_state)
-                    print 'Done launching %s (AWS %s)' % (role, aws_id)
+                    constellation.set_value("%s_state" % machine_name,
+                                            final_state)
+                    log('Done launching %s (AWS %s)' % (role, aws_id))
                     done = True
                     break
     return ready_machines

@@ -274,7 +274,7 @@ def launch(username, configuration, constellation_name, tags,
     if not "OSRF" in  constellation_name:
         aws_creds_fname = cfg['boto_path']
         script = get_cloudsim_startup_script()
-        pub_ip, aws_id, key_prefix= acquire_aws_server(constellation_name,
+        pub_ip, aws_id, key_prefix = acquire_aws_server(constellation_name,
                                     aws_creds_fname,
                                     constellation_directory,
                                     machine_prefix,

@@ -48,7 +48,7 @@ FC2_IP = '10.0.0.53'
 OPENVPN_SERVER_IP = '11.8.0.1'
 OPENVPN_CLIENT_IP = '11.8.0.2'
 
-launch_sequence = ["nothing", "os_reload", "init_router", "init_privates",
+launch_sequence = ["nothing", "launch", "os_reload", "init_router", "init_privates",
         "zip", "change_ip", "startup", "block_public_ips", "reboot", "running"]
 
 
@@ -1047,7 +1047,8 @@ def create_zip_file(zip_file_path, short_name, files_to_zip):
             fzip.write(fname, zip_name)
 
 
-def create_router_zip(router_ip, constellation_name, constellation_directory):
+def create_router_zip(router_ip, constellation_name, key_prefix,
+                      constellation_directory):
     # create router zip file with keys
     # This file is kept on the server and provides the user with:
     #  - key file for ssh access to the router
@@ -1058,7 +1059,7 @@ def create_router_zip(router_ip, constellation_name, constellation_directory):
     os.makedirs(router_machine_dir)
 
     # copy router-key into router directory
-    router_key_short_filename = 'key-router.pem'
+    router_key_short_filename = '%s.pem' % key_prefix  # 'key-router'
     router_key_path = os.path.join(router_machine_dir,
                                    router_key_short_filename)
     copyfile(os.path.join(constellation_directory, router_key_short_filename),
@@ -1129,7 +1130,7 @@ def create_private_machine_zip(machine_name_prefix,
                                machine_ip,
                                constellation_name,
                                constellation_directory,
-                               key_prefix = None):
+                               key_prefix=None):
 
     machine_dir = os.path.join(constellation_directory, machine_name_prefix)
     os.makedirs(machine_dir)
@@ -1349,17 +1350,12 @@ def launch(username, config, constellation_name, tags,
         ppa_list = ['xorg-edgers/ppa']
         gpu_driver_list = ["nvidia-319", 'nvidia-settings']
 
-
     log("DRC package %s" % drcsim_package_name)
     log("ppas: %s" % ppa_list)
     log("gpu packages %s" % gpu_driver_list)
 
-    cs_cfg = get_cloudsim_config()
-    credentials_softlayer = cs_cfg['softlayer_path']
-    log("softlayer %s" % credentials_softlayer)
     constellation = ConstellationState(constellation_name)
-
-    constellation.set_value("launch_stage", "os_reload")
+    constellation.set_value("launch_stage", "launch")
 
     _init_computer_data(constellation_name)
 #         terminate_softlayer_constellation(constellation_name,
@@ -1385,30 +1381,27 @@ def launch(username, config, constellation_name, tags,
                                     gpu_driver_list,
                                     ppa_list)
 
-    if not "OSRF" in constellation_name:
-        credentials_ec2 = cs_cfg['boto_path']
-        machines = {'router': {'hardware': 't1.micro',
+    machines = {'router': {'hardware': 't1.micro',
                       'software': 'ubuntu_1204_x64',
-                      'ip': '10.0.0.50',
+                      'ip': ROUTER_IP,
                       'startup_script': router_script},
             'sim': {'hardware': 'cg1.4xlarge',
                   'software': 'ubuntu_1204_x64_cluster',
-                  'ip': '10.0.0.51',
+                  'ip': SIM_IP,
                   'startup_script': sim_script},
 #             'fc1': {'hardware': 'cg1.4xlarge',
 #                   'software': 'ubuntu_1204_x64_cluster',
-#                   'ip': '10.0.0.52',
+#                   'ip': FC1_IP,
 #                   'startup_script': fc1_script},
 #             'fc2': {'hardware': 'cg1.4xlarge',
 #                   'software': 'ubuntu_1204_x64_cluster',
-#                   'ip': '10.0.0.53',
+#                   'ip': FC2_IP,
 #                   'startup_script': fc2_script}
             }
-        
-        acquire_aws_constellation(constellation_name,
-                                  credentials_ec2,
-                                  machines)
-    else:
+    cs_cfg = get_cloudsim_config()
+    if "OSRF" in constellation_name:
+        credentials_softlayer = cs_cfg['softlayer_path']
+        log("softlayer %s" % credentials_softlayer)
         constellation_prefix = config.split()[-1]
         log("constellation_prefix %s" % constellation_prefix)
         acquire_softlayer_constellation(constellation_name,
@@ -1416,14 +1409,20 @@ def launch(username, config, constellation_name, tags,
                                     partial_deploy,
                                     constellation_prefix,
                                     credentials_softlayer,
-                                    ros_master_ip,
+                                    tags,
                                     router_script,
                                     sim_script,
                                     fc1_script,
                                     fc2_script)
 
+    else:
+        credentials_ec2 = cs_cfg['boto_path']
+        log("credentials_ec2 %s" % credentials_ec2)
+        acquire_aws_constellation(constellation_name,
+                                  credentials_ec2,
+                                  machines,
+                                  tags)
     _create_zip_files(constellation_name, constellation_directory)
-
     # reboot fc1, fc2 and sim (but not router)
     _reboot_machines(constellation_name,
                     partial_deploy,
