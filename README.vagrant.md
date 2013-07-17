@@ -6,7 +6,7 @@ make it easier to test and develop CloudSim without using an external cloud
 provider. The included scripts setup OpenStack (Grizzly) in a virtual machine.
 The virtual machine has been tested with the following requirements:
 
-- Vagrant 1.2.3
+- Vagrant 1.2.4
 - VirtualBox 4.2.16
 - Ubuntu 12.04 as the host OS
 
