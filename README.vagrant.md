@@ -3,10 +3,10 @@ Introduction
 
 We have prepared a ready to use Vagrant image for OpenStack and CloudSim to
 make it easier to test and develop CloudSim without using an external cloud
-provider. The image has been tested with the following requirements:
+provider. The included scripts setup OpenStack (Grizzly) in a virtual machine.
+The virtual machine has been tested with the following requirements:
 
 - Vagrant 1.2.3
-- OpenStack Grizzly
 - VirtualBox 4.2.16
 - Ubuntu 12.04 as the host OS
 
