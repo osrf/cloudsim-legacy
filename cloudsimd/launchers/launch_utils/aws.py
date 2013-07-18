@@ -473,7 +473,6 @@ def _acquire_vpc_server(constellation_name,
     amis = _get_amazon_amis(availability_zone)
     constellation = ConstellationState(constellation_name)
     try:
-        
         constellation.set_value('%s_launch_msg' % machine_prefix, "booting")
         soft = machine_data['software']
         aws_image = amis[soft]

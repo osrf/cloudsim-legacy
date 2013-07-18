@@ -1668,7 +1668,7 @@ class AwsCase(unittest.TestCase):
         print("setup")
         self.config = "AWS trio"
         self.username = "test@osrfoundation.org"
-        
+
         self.constellation_name = get_unique_short_name('cxtest_')
         print("%s %s" % (self.config, self.constellation_name))
 
