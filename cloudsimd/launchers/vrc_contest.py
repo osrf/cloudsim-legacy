@@ -24,7 +24,8 @@ from launch_utils.softlayer import load_osrf_creds,\
 from launch_utils.launch_db import get_constellation_data, ConstellationState,\
     get_cloudsim_config, log_msg
 
-from launch_utils.testing import get_test_runner, get_test_path
+from launch_utils.testing import get_test_runner, get_test_path, get_boto_path,\
+    get_test_dir
 from launch_utils import get_unique_short_name
 from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
     create_vpc_vpn_connect_file, create_ros_connect_file,\
@@ -1100,7 +1101,6 @@ def create_router_zip(router_ip, constellation_name, key_prefix,
     os.chmod(fname_ssh_sh, 0755)
 
     # wait (if necessary) for openvpn key to have been generated
-
     #creating zip for admin and officer users
     files_to_zip = [router_key_path,
                     fname_start_vpn,
@@ -1161,7 +1161,8 @@ def create_private_machine_zip(machine_name_prefix,
 
 
 def _create_zip_files(constellation_name,
-                     constellation_directory):
+                     constellation_directory,
+                     machines):
 
     constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
@@ -1180,14 +1181,6 @@ def _create_zip_files(constellation_name,
     shutil.copy(router_zip_user_fname, os.path.join(constellation_directory,
                                                     "user_router.zip"))
     constellation.set_value('router_zip_file', 'ready')
-    constellation.set_value('sim_launch_msg', 'creating zip files')
-
-    sim_zip_fname = create_private_machine_zip("sim", SIM_IP,
-                                               constellation_name,
-                                               constellation_directory)
-    shutil.copy(sim_zip_fname, os.path.join(constellation_directory,
-                                            "simulator.zip"))
-    constellation.set_value('sim_zip_file', 'ready')
 
     constellation.set_value('fc1_launch_msg', 'creating zip files')
     fc1_zip_fname = create_private_machine_zip("fc1", FC1_IP,
@@ -1209,10 +1202,18 @@ def _create_zip_files(constellation_name,
                                             "user_field_computer2.zip"))
     constellation.set_value('fc2_zip_file', 'ready')
 
-    constellation.set_value('fc1_launch_msg',
-                    'ssh key recovered. Waiting for simulator machine')
-    constellation.set_value('fc2_launch_msg',
-                    'ssh key recovered. Waiting for simulator machine')
+    constellation.set_value('sim_launch_msg', 'creating zip files')
+    sim_zip_fname = create_private_machine_zip("sim", SIM_IP,
+                                               constellation_name,
+                                               constellation_directory)
+    shutil.copy(sim_zip_fname, os.path.join(constellation_directory,
+                                            "simulator.zip"))
+    constellation.set_value('sim_zip_file', 'ready')
+
+#     constellation.set_value('fc1_launch_msg',
+#                     'ssh key recovered. Waiting for simulator machine')
+#     constellation.set_value('fc2_launch_msg',
+#                     'ssh key recovered. Waiting for simulator machine')
 
     constellation.set_value("launch_stage", "zip")
 
@@ -1323,12 +1324,15 @@ def _run_machines(constellation_name, partial_deploy, constellation_directory):
 
 
 def launch(username, config, constellation_name, tags,
-           constellation_directory):
+           constellation_directory, credentials_override=None):
     """
     Called by cloudsimd when it receives a launch message
     """
 
     log("launch constellation name: %s" % constellation_name)
+
+    constellation = ConstellationState(constellation_name)
+    constellation.set_value("launch_stage", "launch")
 
     drcsim_package_name = "drcsim"
     ppa_list = []  # ['ubuntu-x-swat/x-updates']
@@ -1353,9 +1357,6 @@ def launch(username, config, constellation_name, tags,
     log("DRC package %s" % drcsim_package_name)
     log("ppas: %s" % ppa_list)
     log("gpu packages %s" % gpu_driver_list)
-
-    constellation = ConstellationState(constellation_name)
-    constellation.set_value("launch_stage", "launch")
 
     _init_computer_data(constellation_name)
 #         terminate_softlayer_constellation(constellation_name,
@@ -1400,15 +1401,17 @@ def launch(username, config, constellation_name, tags,
             }
     cs_cfg = get_cloudsim_config()
     if "OSRF" in constellation_name:
-        credentials_softlayer = cs_cfg['softlayer_path']
-        log("softlayer %s" % credentials_softlayer)
+        credentials_fname = cs_cfg['softlayer_path']
+        if credentials_override:
+            credentials_fname = credentials_override
+        log("softlayer %s" % credentials_fname)
         constellation_prefix = config.split()[-1]
         log("constellation_prefix %s" % constellation_prefix)
         acquire_softlayer_constellation(constellation_name,
                                     constellation_directory,
                                     partial_deploy,
                                     constellation_prefix,
-                                    credentials_softlayer,
+                                    credentials_fname,
                                     tags,
                                     router_script,
                                     sim_script,
@@ -1416,13 +1419,15 @@ def launch(username, config, constellation_name, tags,
                                     fc2_script)
 
     else:
-        credentials_ec2 = cs_cfg['boto_path']
-        log("credentials_ec2 %s" % credentials_ec2)
+        credentials_fname = cs_cfg['boto_path']
+        if credentials_override:
+            credentials_fname = credentials_override
+        log("credentials_ec2 %s" % credentials_fname)
         acquire_aws_constellation(constellation_name,
-                                  credentials_ec2,
+                                  credentials_fname,
                                   machines,
                                   tags)
-    _create_zip_files(constellation_name, constellation_directory)
+    _create_zip_files(constellation_name, constellation_directory, machines)
     # reboot fc1, fc2 and sim (but not router)
     _reboot_machines(constellation_name,
                     partial_deploy,
@@ -1431,7 +1436,7 @@ def launch(username, config, constellation_name, tags,
     _run_machines(constellation_name, partial_deploy, constellation_directory)
 
 
-def terminate(constellation_name):
+def terminate(constellation_name, credentials_override=None):
     constellation = ConstellationState(constellation_name)
     constellation.set_value('constellation_state', 'terminating')
     constellation.set_value('router_state', 'terminating')
@@ -1446,20 +1451,23 @@ def terminate(constellation_name):
     constellation.set_value('field2_launch_msg', "terminating")
 
     cs_cfg = get_cloudsim_config()
-    credentials_softlayer = cs_cfg['softlayer_path']
-    log("softlayer %s" % credentials_softlayer)
     constellation.set_value("launch_stage", "nothing")
 
     if not "OSRF" in constellation_name:
-        credentials_ec2 = cs_cfg['boto_path']
-        terminate_aws_constellation(constellation_name, credentials_ec2)
+        credentials_fname = cs_cfg['boto_path']
+        if credentials_override:
+            credentials_fname = credentials_override
+        terminate_aws_constellation(constellation_name, credentials_fname)
     else:
+        credentials_fname = cs_cfg['boto_path']
+        if credentials_override:
+            credentials_fname = credentials_override
         partial = False
         constellation_prefix = constellation_name.split('_')[-1]
         terminate_softlayer_constellation(constellation_name,
                        constellation_prefix,
                        partial,
-                       credentials_softlayer)
+                       credentials_fname)
 
     constellation.set_value('sim_state', 'terminated')
     constellation.set_value('sim_launch_msg', "terminated")
@@ -1536,7 +1544,7 @@ class MonitorCase(unittest.TestCase):
         monitor(user, const, cred)
 
 
-class VrcCase(unittest.TestCase):
+class VrcCase(object):  # (unittest.TestCase):
 
     def atest_zip_create(self):
         constellation_name = "toto"
@@ -1653,6 +1661,52 @@ class VrcCase(unittest.TestCase):
     def tearDown(self):
         unittest.TestCase.tearDown(self)
 
+
+class AwsCase(unittest.TestCase):
+
+    def setUp(self):
+        print("setup")
+        self.config = "AWS trio"
+        self.username = "test@osrfoundation.org"
+        
+        self.constellation_name = get_unique_short_name('cxtest_')
+        print("%s %s" % (self.config, self.constellation_name))
+
+        self.constellation_directory = os.path.join(get_test_dir(),
+                                               self.constellation_name)
+        print(self.constellation_directory)
+
+        os.makedirs(self.constellation_directory)
+        constellation = ConstellationState(self.constellation_name)
+        constellation.set_value("constellation_directory",
+                                self.constellation_directory)
+
+        constellation.set_value('username', self.username)
+        constellation.set_value('constellation_name', self.constellation_name)
+        constellation.set_value('gmt', 'gmt')
+        constellation.set_value('configuration', self.config)
+        constellation.set_value('constellation_directory',
+                                self.constellation_directory)
+        constellation.set_value('error', '')
+
+        constellation.set_value('current_task', "")
+        constellation.set_value('tasks', [])
+
+    def test_it(self):
+        print("test_launch")
+        tags = {}
+        launch(self.username,
+               self. config,
+               self.constellation_name,
+               tags,
+               self.constellation_directory,
+               credentials_override=get_boto_path())
+        print("launched")
+
+    def tearDown(self):
+        print("teardown")
+        terminate(self.constellation_name,
+                  credentials_override=get_boto_path())
 
 if __name__ == "__main__":
     xmlTestRunner = get_test_runner()

@@ -49,8 +49,8 @@ function create_constellation_launcher_widget(div_name)
             
             var msg = 'Deploy a new "' + config + '" constellation?';
             msg += "\n\n";
-            msg += "Each machine should be in their initial condition.";
-            msg += "You should use the terminate operation to trigger a reload, first.";
+            msg += "This operation may incur charges";
+            msg += "";
             var r=confirm(msg);
             if (r==false)
             {

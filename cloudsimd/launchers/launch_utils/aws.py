@@ -168,37 +168,43 @@ def acquire_aws_constellation(constellation_name,
     vpcconn = boto.connect_vpc()
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
 
-    _acquire_vpc(constellation_name, vpcconn, availability_zone)
-
-    for machine_name in machines.keys():
-        _acquire_vpc_elastic_ip(constellation_name, machine_name, ec2conn)
-
-    for machine_name in machines.keys():
-        _acquire_vpc_security_group(constellation_name,
-                                    machine_name,
-                                    VPN_PRIVATE_SUBNET,
-                                    ec2conn)
-
+    vpc_id, subnet_id = _acquire_vpc(constellation_name,
+                                     vpcconn,
+                                     availability_zone)
+    log("VPC %s" % vpc_id)
     roles_to_reservations = {}
-
     for machine_name, machine_data in machines.iteritems():
         key_pair_name = _acquire_key_pair(constellation_name,
                           machine_name, ec2conn)
+
+        security_group_id = _acquire_vpc_security_group(constellation_name,
+                                    machine_name,
+                                    VPN_PRIVATE_SUBNET,
+                                    ec2conn)
         reservation_id = _acquire_vpc_server(constellation_name,
                                              machine_name,
                                              key_pair_name,
                                              machine_data,
+                                             subnet_id,
+                                             security_group_id,
                                              availability_zone,
                                              ec2conn)
         roles_to_reservations[machine_name] = reservation_id
 
-    running_machines = wait_for_multiple_machines_to_run(ec2conn,
+        machines_to_awsid = wait_for_multiple_machines_to_run(ec2conn,
                                             roles_to_reservations,
                                             tags,
                                             constellation,
                                             max_retries=500,
                                             final_state='network_setup')
-    log("running machines %s" % running_machines)
+
+    for machine_name, aws_id in machines_to_awsid.iteritems():
+        _acquire_vpc_elastic_ip(constellation_name,
+                                machine_name,
+                                aws_id,
+                                ec2conn)
+
+    log("running machines %s" % machines_to_awsid)
 
 
 def terminate_aws_constellation(constellation_name, credentials_ec2):
@@ -241,21 +247,28 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
     _release_vpc(constellation_name, vpcconn)
 
 
-def _acquire_vpc_elastic_ip(constellation_name, machine_name_prefix, ec2conn):
+def _acquire_vpc_elastic_ip(constellation_name,
+                            machine_name_prefix,
+                            aws_id,
+                            ec2conn):
     constellation = ConstellationState(constellation_name)
     try:
         aws_elastic_ip = ec2conn.allocate_address('vpc')
-        router_eip_allocation_id = aws_elastic_ip.allocation_id
+        eip_allocation_id = aws_elastic_ip.allocation_id
         allocation_id_key = '%s_eip_allocation_id' % machine_name_prefix
-        constellation.set_value(allocation_id_key, router_eip_allocation_id)
-        router_ip = aws_elastic_ip.public_ip
-        ip_key = '%s_public_ip' % machine_name_prefix
-        constellation.set_value(ip_key, router_ip)
+        constellation.set_value(allocation_id_key, eip_allocation_id)
+
+        public_ip = aws_elastic_ip.public_ip
         log("%s elastic ip %s" % (machine_name_prefix,
                                   aws_elastic_ip.public_ip))
-        clean_local_ssh_key_entry(router_ip)
+        ip_key = '%s_public_ip' % machine_name_prefix
+        constellation.set_value(ip_key, public_ip)
+
+        ec2conn.associate_address(aws_id,  allocation_id=allocation_id_key)
+        clean_local_ssh_key_entry(public_ip)
+        return public_ip
     except Exception, e:
-        constellation.set_value('error', "%s" % e)
+        constellation.set_value('error', "Elastic IP error: %s" % e)
         raise
 
 
@@ -282,7 +295,6 @@ def _acquire_vpc(constellation_name, vpcconn, availability_zone):
         aws_vpc = vpcconn.create_vpc(VPN_PRIVATE_SUBNET)
         vpc_id = aws_vpc.id
         constellation.set_value('vpc_id', vpc_id)
-        log("VPC %s" % vpc_id)
 
         aws_subnet = vpcconn.create_subnet(vpc_id, VPN_PRIVATE_SUBNET,
                                         availability_zone=availability_zone)
@@ -304,15 +316,15 @@ def _acquire_vpc(constellation_name, vpcconn, availability_zone):
         route_table_association_id = vpcconn.associate_route_table(
                                                             route_table_id,
                                                             subnet_id)
-        # add a tag to the vpc so we can identify it
-        aws_vpc.add_tag('constellation', constellation_name)
-
         constellation.set_value('route_table_association_id',
                                 route_table_association_id)
 
+        # add a tag to the vpc so we can identify it
+        aws_vpc.add_tag('constellation', constellation_name)
     except Exception as e:
         constellation.set_value('error', "%s" % e)
         raise
+    return vpc_id, subnet_id
 
 
 def _release_vpc(constellation_name, vpcconn):
@@ -397,11 +409,12 @@ def _acquire_vpc_security_group(constellation_name,
             sg.authorize('tcp', 0, 65535, openvpn_client_addr)
             sg.authorize('udp', 0, 65535, openvpn_client_addr)
         security_group_id = sg.id
-        constellation.set_value('%s_security_group_id' % machine_prefix,
-                                security_group_id)
+        sg_key = '%s_security_group_id' % machine_prefix
+        constellation.set_value(sg_key, security_group_id)
     except Exception, e:
         constellation.set_value('error',  "security group error: %s" % e)
         raise
+    return security_group_id
 
 
 def _release_vpc_security_group(constellation_name, machine_prefix, ec2conn):
@@ -453,14 +466,14 @@ def _acquire_vpc_server(constellation_name,
                         machine_prefix,
                         key_pair_name,
                         machine_data,
+                        subnet_id,
+                        security_group_id,
                         availability_zone,
                         ec2conn):
     amis = _get_amazon_amis(availability_zone)
     constellation = ConstellationState(constellation_name)
     try:
-        sg_key = '%s_security_group_id' % machine_prefix
-        subnet_id = constellation.get_value('subnet_id')
-        security_group_id = constellation.get_value(sg_key)
+        
         constellation.set_value('%s_launch_msg' % machine_prefix, "booting")
         soft = machine_data['software']
         aws_image = amis[soft]
@@ -565,9 +578,9 @@ def wait_for_multiple_machines_to_run(ec2conn,
                 reservation = r.id
                 if r.id in reservations_to_roles \
                         and r.instances[0].state == 'running':
-                    role = reservations_to_roles[reservation]
+                    machine_name = reservations_to_roles[reservation]
                     aws_id = r.instances[0].id
-                    ready_machines[role] = aws_id
+                    ready_machines[machine_name] = aws_id
                     reservations_to_roles.pop(reservation)
 
                     # add tags
@@ -578,7 +591,7 @@ def wait_for_multiple_machines_to_run(ec2conn,
                     # mark this machines state
                     constellation.set_value("%s_state" % machine_name,
                                             final_state)
-                    log('Done launching %s (AWS %s)' % (role, aws_id))
+                    log('Done launching %s (AWS %s)' % (machine_name, aws_id))
                     done = True
                     break
     return ready_machines
