@@ -133,7 +133,6 @@ page =  """<!DOCTYPE html>
         </td>
         <td align='right'>
             Welcome, """ + role + " " + email + """<br>
-    
             <div id="officer_only" style="display:none; padding:  0px 0px 0px 0px;" >
                 <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
             </div>
@@ -144,51 +143,67 @@ page =  """<!DOCTYPE html>
     </tr>
 </table>
 
-<!--
-    <div style="width:50%" align="left">
-        <img src="/js/images/CloudSim_Logo.png" width="200px"/>
-        <div  id="server_monitor_div">
-    </div>
 
-    <div align="right">
 
-        Welcome, """ + role + " " + email + """<br>
-
-        <div id="officer_only" style="display:none; padding:  0px 0px 0px 0px;" >
-            <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
-        </div>
-        <div style="padding:0px 0px 0px;" align="right">
-            <a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-        </div>
--->
-
-    </div>
-
-<!-- Add a little space -->
+<!-- Add a little space and line -->
 <div><br><hr><br></div>
 
-
+    <!-- Constellation provisioning widget -->
     <div id='officer_only2' style="display: none;">
         <div id="launcher_div" ></div>
     </div>
 
+    <!-- Constellation view widget -->
     <div id="constellations_div"></div>
 
 
+<!-- Add a little space and a line -->
+<div><br><hr></div>
+
+
+<!-- Footer -->
+
+<table width='100%'>
+    <tr>
+        <td align='left'>
+           CloudSim Version [""" + version + """] 
+        </td>
+        <td align='right'>
+           <img src="/js/images/osrf-pos-horz-cmyk.png" height="30px"/> 
+        </td>
+    </tr>
+</table>
+
+
+
+
+
+<!--
+<div id="footer" style="width:100%;">
+    <span style="display: inline-block; text-align:left; margin-top:5px;">
+         CloudSim Version [""" + version + """]
+    </span>
+
+    <span style="display: inline-block; text-align: right; margin-top:5px;">
+         <img src="/js/images/osrf-pos-horz-cmyk.png" height="30px"/>
+    </span>
+</div>
+
+
 <div id="footer" style="width:100%; float:left; ">
-   
+
     <br>
     <hr>
-    
+
     <div style="width:50%; float:left; margin-top:5px;">
-            CloudSim Version """ + version + """
+            CloudSim version """ + version + """
     </div>
-    
+
     <div style="width:50%; float:right; " align="right">
      <img src="/js/images/osrf-pos-horz-cmyk.png" height="30px"/>
     </div>
 </div>
-
+-->
     
 </body>
 </html>

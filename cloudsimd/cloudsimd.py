@@ -449,14 +449,11 @@ def terminate(constellation_name):
     log("terminate '%s' from proc '%s'" % (constellation_name,  proc))
 
     try:
-
         data = get_constellation_data(constellation_name)
         config = data['configuration']
         log("    configuration is '%s'" % (config))
-
         constellation_plugin = get_plugin(config)
         constellation_plugin.terminate(constellation_name)
-
     except Exception, e:
         log("cloudsimd.py terminate error: %s" % e)
         tb = traceback.format_exc()

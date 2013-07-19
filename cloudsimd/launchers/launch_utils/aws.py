@@ -180,6 +180,7 @@ def acquire_aws_constellation(constellation_name,
         security_group_id = _acquire_vpc_security_group(constellation_name,
                                     machine_name,
                                     VPN_PRIVATE_SUBNET,
+                                    vpc_id,
                                     ec2conn)
         reservation_id = _acquire_vpc_server(constellation_name,
                                              machine_name,
@@ -229,7 +230,7 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
             running_machines[state_key] = aws_id
         except Exception, e:
             error_msg = constellation.get_value('error')
-            error_msg += "%s" % e
+            error_msg += " get aws id error %s" % e
             constellation.set_value('error', error_msg)
     log("machines to terminate: %s" % running_machines)
     wait_for_multiple_machines_to_terminate(ec2conn,
@@ -247,6 +248,11 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
     _release_vpc(constellation_name, vpcconn)
 
 
+def __get_allocation_id_key(machine_name_prefix):
+    allocation_id_key = '%s_eip_allocation_id' % machine_name_prefix
+    return allocation_id_key
+
+
 def _acquire_vpc_elastic_ip(constellation_name,
                             machine_name_prefix,
                             aws_id,
@@ -254,9 +260,9 @@ def _acquire_vpc_elastic_ip(constellation_name,
     constellation = ConstellationState(constellation_name)
     try:
         aws_elastic_ip = ec2conn.allocate_address('vpc')
-        eip_allocation_id = aws_elastic_ip.allocation_id
-        allocation_id_key = '%s_eip_allocation_id' % machine_name_prefix
-        constellation.set_value(allocation_id_key, eip_allocation_id)
+        allocation_id = aws_elastic_ip.allocation_id
+        allocation_id_key = __get_allocation_id_key(machine_name_prefix)
+        constellation.set_value(allocation_id_key, allocation_id)
 
         public_ip = aws_elastic_ip.public_ip
         log("%s elastic ip %s" % (machine_name_prefix,
@@ -264,7 +270,7 @@ def _acquire_vpc_elastic_ip(constellation_name,
         ip_key = '%s_public_ip' % machine_name_prefix
         constellation.set_value(ip_key, public_ip)
 
-        ec2conn.associate_address(aws_id,  allocation_id=allocation_id_key)
+        ec2conn.associate_address(aws_id,  allocation_id=allocation_id)
         clean_local_ssh_key_entry(public_ip)
         return public_ip
     except Exception, e:
@@ -275,7 +281,7 @@ def _acquire_vpc_elastic_ip(constellation_name,
 def _release_vpc_elastic_ip(constellation_name, machine_name_prefix, ec2conn):
     constellation = ConstellationState(constellation_name)
     try:
-        allocation_id_key = '%s_eip_allocation_id' % machine_name_prefix
+        allocation_id_key = __get_allocation_id_key(machine_name_prefix)
         eip_allocation_id = constellation.get_value(allocation_id_key)
         ec2conn.release_address(allocation_id=eip_allocation_id)
     except Exception, e:
@@ -383,14 +389,15 @@ def _release_vpc(constellation_name, vpcconn):
 def _acquire_vpc_security_group(constellation_name,
                                 machine_prefix,
                                 vpn_subnet,
+                                vpc_id,
                                 ec2conn):
     constellation = ConstellationState(constellation_name)
     try:
-        vpc_id = constellation.get_value('vpc_id')
         sg_name = '%s-sg-%s' % (machine_prefix, constellation_name)
         sg = None
         if machine_prefix == "router":
-            dsc = 'Security group for %s vpc %s' % (constellation_name, vpc_id)
+            dsc = 'router security group for %s vpc %s' % (constellation_name,
+                                                           vpc_id)
             sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
             sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
             sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
@@ -398,7 +405,9 @@ def _acquire_vpc_security_group(constellation_name,
             sg.authorize('udp', 0, 65535, vpn_subnet)
             sg.authorize('tcp', 0, 65535, vpn_subnet)
         else:
-            dsc = 'Security group for %s vpc %s' % (constellation_name, vpc_id)
+            dsc = '%s security group for %s vpc %s' % (machine_prefix,
+                                                           constellation_name,
+                                                           vpc_id)
             sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
             sg.authorize('icmp', -1, -1, vpn_subnet)
             sg.authorize('tcp',  0, 65535, vpn_subnet)
@@ -590,6 +599,7 @@ def wait_for_multiple_machines_to_run(ec2conn,
                     # mark this machines state
                     constellation.set_value("%s_state" % machine_name,
                                             final_state)
+                    constellation.set_value("%s_aws_id" % machine_name, aws_id)
                     log('Done launching %s (AWS %s)' % (machine_name, aws_id))
                     done = True
                     break

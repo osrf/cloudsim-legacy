@@ -1130,13 +1130,11 @@ def create_private_machine_zip(machine_name_prefix,
                                machine_ip,
                                constellation_name,
                                constellation_directory,
-                               key_prefix=None):
+                               key_prefix):
 
     machine_dir = os.path.join(constellation_directory, machine_name_prefix)
     os.makedirs(machine_dir)
-    key_short_filename = 'key-%s.pem' % machine_name_prefix
-    if key_prefix:
-        key_short_filename = '%s.pem' % key_prefix
+    key_short_filename = '%s.pem' % key_prefix
     key_fpath = os.path.join(machine_dir, key_short_filename)
     copyfile(os.path.join(constellation_directory, key_short_filename),
              key_fpath)
@@ -1163,57 +1161,46 @@ def create_private_machine_zip(machine_name_prefix,
 def _create_zip_files(constellation_name,
                      constellation_directory,
                      machines):
-
+    """
+    Creates zip files for each machines. Different files are generated for
+    user roles (ex: user_router.zip has no router ssh key)
+    """
     constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index('zip'):
         return
 
-    constellation.set_value('router_launch_msg', 'creating zip files')
-    router_ip = constellation.get_value("router_public_ip")
-    constellation.set_value('router_launch_msg',
-                            "creating key zip file bundle")
-    router_zip_fname, router_zip_user_fname = create_router_zip(router_ip,
+    for machine_name, machine_data in machines.iteritems():
+        machine_key_prefix = 'key-%s-%s' % (machine_name, constellation_name)
+        msg_key = '%s_launch_msg' % machine_name
+        zip_ready_key = "%s_zip_file" % machine_name
+        zip_fname = os.path.join(constellation_directory,
+                                 "%s.zip" % machine_name)
+        zip_user_fname = os.path.join(constellation_directory,
+                                 "user_%s.zip" % machine_name)
+
+        constellation.set_value(msg_key, 'creating zip file')
+        if machine_name == "router":
+            router_ip = constellation.get_value("router_public_ip")
+            router_zip_fname, router_zip_user_fname = create_router_zip(
+                                                    router_ip,
                                                     constellation_name,
+                                                    machine_key_prefix,
                                                     constellation_directory)
-    shutil.copy(router_zip_fname, os.path.join(constellation_directory,
-                                               "router.zip"))
-    shutil.copy(router_zip_user_fname, os.path.join(constellation_directory,
-                                                    "user_router.zip"))
-    constellation.set_value('router_zip_file', 'ready')
-
-    constellation.set_value('fc1_launch_msg', 'creating zip files')
-    fc1_zip_fname = create_private_machine_zip("fc1", FC1_IP,
+            shutil.copy(router_zip_fname, zip_fname)
+            shutil.copy(router_zip_user_fname, zip_user_fname)
+        else:
+            constellation.set_value(msg_key, 'creating zip files')
+            ip = machine_data['ip']
+            machine_zip_fname = create_private_machine_zip(machine_name,
+                                               ip,
                                                constellation_name,
-                                               constellation_directory)
-    shutil.copy(fc1_zip_fname, os.path.join(constellation_directory,
-                                            "field_computer1.zip"))
-    shutil.copy(fc1_zip_fname, os.path.join(constellation_directory,
-                                            "user_field_computer1.zip"))
-    constellation.set_value('fc1_zip_file', 'ready')
-
-    constellation.set_value('fc2_launch_msg', 'creating zip files')
-    fc2_zip_fname = create_private_machine_zip("fc2", FC2_IP,
-                                               constellation_name,
-                                               constellation_directory)
-    shutil.copy(fc2_zip_fname, os.path.join(constellation_directory,
-                                            "field_computer2.zip"))
-    shutil.copy(fc2_zip_fname, os.path.join(constellation_directory,
-                                            "user_field_computer2.zip"))
-    constellation.set_value('fc2_zip_file', 'ready')
-
-    constellation.set_value('sim_launch_msg', 'creating zip files')
-    sim_zip_fname = create_private_machine_zip("sim", SIM_IP,
-                                               constellation_name,
-                                               constellation_directory)
-    shutil.copy(sim_zip_fname, os.path.join(constellation_directory,
-                                            "simulator.zip"))
-    constellation.set_value('sim_zip_file', 'ready')
-
-#     constellation.set_value('fc1_launch_msg',
-#                     'ssh key recovered. Waiting for simulator machine')
-#     constellation.set_value('fc2_launch_msg',
-#                     'ssh key recovered. Waiting for simulator machine')
+                                               constellation_directory,
+                                               machine_key_prefix)
+            shutil.copy(machine_zip_fname, zip_fname)
+            if machine_name != "sim":
+                shutil.copy(machine_zip_fname, zip_user_fname)
+        constellation.set_value(zip_ready_key, 'ready')
 
     constellation.set_value("launch_stage", "zip")
 
@@ -1666,10 +1653,14 @@ class AwsCase(unittest.TestCase):
 
     def setUp(self):
         print("setup")
+
+        #self.constellation_name = get_unique_short_name('test_')
+        self.constellation_name = "test_8d71719c"
+        print(self.constellation_name)
+
         self.config = "AWS trio"
         self.username = "test@osrfoundation.org"
 
-        self.constellation_name = get_unique_short_name('cxtest_')
         print("%s %s" % (self.config, self.constellation_name))
 
         self.constellation_directory = os.path.join(get_test_dir(),
@@ -1707,6 +1698,10 @@ class AwsCase(unittest.TestCase):
         print("teardown")
         terminate(self.constellation_name,
                   credentials_override=get_boto_path())
+        constellation = ConstellationState(self.constellation_name)
+        constellation.set_value('constellation_state', 'terminated')
+        log("Deleting %s from the database" % self.constellation_name)
+        constellation.expire(1)
 
 if __name__ == "__main__":
     xmlTestRunner = get_test_runner()
