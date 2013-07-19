@@ -75,7 +75,7 @@ def stop_task(constellation):
     for i in range(10):
         log("** STOP TASK %s ***" % constellation)
 
-def monitor(username, constellation_name, counter):
+def monitor( constellation_name, counter):
     
     
     time.sleep(1)
