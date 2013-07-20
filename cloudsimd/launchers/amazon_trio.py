@@ -526,7 +526,9 @@ def _launch(username,
         constellation.set_value('error', "%s" % e)
         raise
 
-    running_machines = wait_for_multiple_machines_to_run(ec2conn, roles_to_reservations, constellation, max_retries = 500, final_state = 'network_setup')
+    running_machines = wait_for_multiple_machines_to_run(ec2conn,
+        roles_to_reservations,
+        constellation, max_retries=500, final_state='network_setup')
 
     # monitor_constellation(username, constellation_name, credentials_ec2, constellation_directory )
 

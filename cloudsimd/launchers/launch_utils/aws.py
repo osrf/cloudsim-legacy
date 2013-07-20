@@ -192,7 +192,7 @@ def acquire_aws_constellation(constellation_name,
                                              ec2conn)
         roles_to_reservations[machine_name] = reservation_id
 
-        machines_to_awsid = wait_for_multiple_machines_to_run(ec2conn,
+    machines_to_awsid = wait_for_multiple_machines_to_run(ec2conn,
                                             roles_to_reservations,
                                             tags,
                                             constellation,
@@ -228,6 +228,8 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
             aws_id = constellation.get_value(aws_id_key)
             log("%s aws id: %s" % (machine_prefix, aws_id))
             running_machines[state_key] = aws_id
+            m = "terminate machine instance"
+            constellation.set_value("%s_launch_msg" % machine_prefix, m)
         except Exception, e:
             error_msg = constellation.get_value('error')
             error_msg += " get aws id error %s" % e
@@ -239,13 +241,37 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
                                             max_retries=150)
 
     for machine_prefix in machines:
+        m = "releasing ssh key"
+        constellation.set_value("%s_launch_msg" % machine_prefix, m)
         _release_key_pair(constellation_name, machine_prefix, ec2conn)
 
     for machine_prefix in machines:
-        _release_vpc_security_group(constellation_name, machine_prefix,
-                                    ec2conn)
+        m = "releasing security group"
+        constellation.set_value("%s_launch_msg" % machine_prefix, m)
+        released = False
+        # this often fails... because machine does not appear dead to aws
+        # so we retry
+        count = 0
+        while not released:
+            time.sleep(count)
+            if count > 0:
+                log("_release_vpc_security_group retry")
+            released = _release_vpc_security_group(constellation_name,
+                                                   machine_prefix, ec2conn)
+            count += 2
+            if count > 10:
+                released = True
 
+    if "router" in machines:
+        m = "releasing private network resources"
+        constellation.set_value("%s_launch_msg" % "router", m)
     _release_vpc(constellation_name, vpcconn)
+
+    for machine_prefix in machines:
+        m = "releasing IP address"
+        constellation.set_value("%s_launch_msg" % machine_prefix, m)
+        _release_vpc_elastic_ip(constellation_name,
+                                machine_prefix, ec2conn)
 
 
 def __get_allocation_id_key(machine_name_prefix):
@@ -386,6 +412,11 @@ def _release_vpc(constellation_name, vpcconn):
         constellation.set_value('error', error_msg)
 
 
+def _get_security_group_key(machine_prefix):
+    sg_key = '%s_security_group_id' % machine_prefix
+    return sg_key
+
+
 def _acquire_vpc_security_group(constellation_name,
                                 machine_prefix,
                                 vpn_subnet,
@@ -418,7 +449,7 @@ def _acquire_vpc_security_group(constellation_name,
             sg.authorize('tcp', 0, 65535, openvpn_client_addr)
             sg.authorize('udp', 0, 65535, openvpn_client_addr)
         security_group_id = sg.id
-        sg_key = '%s_security_group_id' % machine_prefix
+        sg_key = _get_security_group_key(machine_prefix)
         constellation.set_value(sg_key, security_group_id)
     except Exception, e:
         constellation.set_value('error',  "security group error: %s" % e)
@@ -430,15 +461,17 @@ def _release_vpc_security_group(constellation_name, machine_prefix, ec2conn):
     constellation = ConstellationState(constellation_name)
     security_group_id = None
     try:
-        sg_key = '%s_security_group_id' % machine_prefix
+        sg_key = _get_security_group_key(machine_prefix)
         security_group_id = constellation.get_value(sg_key)
         ec2conn.delete_security_group(group_id=security_group_id)
+        return True
     except Exception, e:
         error_msg = constellation.get_value('error')
-        error_msg += "<b>Simulator security group</b>: %s<br>" % e
+        error_msg += "<b>%s security group</b>: %s<br>" % (machine_prefix, e)
         constellation.set_value('error', error_msg)
         log("error cleaning up sim security group"
                             " %s: %s" % (security_group_id, e))
+    return False
 
 
 def _acquire_key_pair(constellation_name, machine_prefix, ec2conn):
@@ -612,7 +645,6 @@ def wait_for_multiple_machines_to_terminate(ec2conn,
                                             max_retries,
                                             final_state="terminated"):
 
-    strict = False
     count = max_retries + len(roles_to_aws_ids)
     aws_ids_to_roles = dict((v, k) for k, v in roles_to_aws_ids.iteritems())
 
@@ -627,9 +659,8 @@ def wait_for_multiple_machines_to_terminate(ec2conn,
         if len(terminated) == 0:
             missing_machines[role] = aws_id
     if len(missing_machines) > 0:
-        msg = "machine(s) %s cannot be terminated" % missing_machines
-        if strict:
-            raise LaunchException(msg)
+        msg = "machine(s) %s not terminated" % missing_machines
+        log(msg)
 
     # todo: recalc the aws_ids_to_roles without the missing machines
     while len(aws_ids_to_roles) > 0:

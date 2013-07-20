@@ -258,7 +258,7 @@ def notify_portal(constellation, task):
         raise
 
 
-def start_task(constellation, task):
+def start_task(constellation_name, task):
 
     log("** SIMULATOR *** start_task %s" % task)
 
@@ -267,14 +267,14 @@ def start_task(constellation, task):
     down = task['downlink_data_cap']
 
     log("** TC COMMAND ***")
-    run_tc_command(constellation,
+    run_tc_command(constellation_name,
                    'sim_machine_name',
                    'key-router',
                    'router_public_ip',
                    latency, up, down)
 
     log("** START SIMULATOR ***")
-    start_simulator(constellation,
+    start_simulator(constellation_name,
                     task['ros_package'],
                     task['ros_launch'],
                     task['ros_args'],
@@ -463,7 +463,9 @@ deb-src http://extras.ubuntu.com/ubuntu precise main
 
 DELIM
 
-
+# this is where we store all data for this part
+mkdir -p /home/ubuntu/cloudsim
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
 # Add OSRF repositories
 echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
@@ -1259,7 +1261,8 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
                 break
             except Exception, e:
                 if gl_retries > 30:
-                    constellation.set_value('simulation_glx_state', "not running")
+                    constellation.set_value('simulation_glx_state',
+                                            "not running")
                     constellation.set_value('error',
                                             "OpenGL diagnostic failed: %s" % e)
                     raise
@@ -1296,10 +1299,10 @@ def launch(username, config, constellation_name, tags,
     # of partial reload because the terminate button would wipe out
     # all machines
 
-    partial_deploy = False
-    if config.find("partial") > 0:
-        partial_deploy = True
-    log("partial deploy: %s (only sim and router)" % partial_deploy)
+#     partial_deploy = False
+#     if config.find("partial") > 0:
+#         partial_deploy = True
+    
 
     if config.find("nightly") >= 0:
         drcsim_package_name = "drcsim-nightly"
@@ -1329,6 +1332,7 @@ def launch(username, config, constellation_name, tags,
                                     ros_master_ip,
                                     gpu_driver_list,
                                     ppa_list)
+
     fc2_script = get_drc_script(drcsim_package_name,
                                     FC2_IP,
                                     ros_master_ip,
@@ -1360,6 +1364,10 @@ def launch(username, config, constellation_name, tags,
         log("softlayer %s" % credentials_fname)
         constellation_prefix = config.split()[-1]
         log("constellation_prefix %s" % constellation_prefix)
+        partial_deploy = False
+        if config.find("partial") > 0:
+            partial_deploy = True
+        log("partial deploy: %s (only sim and router)" % partial_deploy)
         acquire_softlayer_constellation(constellation_name,
                                     constellation_directory,
                                     partial_deploy,
@@ -1400,6 +1408,19 @@ def launch(username, config, constellation_name, tags,
                                         max_retries=500)]
     empty_ssh_queue(q, sleep=2)
     ssh_router.download_file(openvpn_fname, remote_fname)
+
+#     count = 0
+#     downloaded = False
+#     while not downloaded:
+#         try:
+#             ssh_router.download_file(openvpn_fname, remote_fname)
+#             downloaded = True
+#         except:
+#             # Permission denied failures can occur for no reason... try again
+#             time.sleep(count)
+#             count += 2
+#             if count > 10:
+#                 raise
 
     _create_zip_files(constellation_name, constellation_directory, machines)
     # reboot fc1, fc2 and sim (but not router)
@@ -1617,8 +1638,7 @@ class AwsCase(unittest.TestCase):
     def setUp(self):
         print("setup")
 
-        #self.constellation_name = get_unique_short_name('test_')
-        self.constellation_name = "test_8d71719c"
+        self.constellation_name = "test_xxx"
         print(self.constellation_name)
 
         self.config = "AWS trio"
@@ -1630,8 +1650,11 @@ class AwsCase(unittest.TestCase):
                                                self.constellation_name)
         print(self.constellation_directory)
 
-        if not os.path.exists(self.constellation_directory):
-            os.makedirs(self.constellation_directory)
+        if os.path.exists(self.constellation_directory):
+            bk_name = self.constellation_directory + get_unique_short_name('_')
+            os.rename(self.constellation_directory, bk_name)
+        os.makedirs(self.constellation_directory)
+
         constellation = ConstellationState(self.constellation_name)
         constellation.set_value("constellation_directory",
                                 self.constellation_directory)
@@ -1650,13 +1673,45 @@ class AwsCase(unittest.TestCase):
     def test_it(self):
         print("test_launch")
         tags = {}
+        p = get_boto_path()
         launch(self.username,
                self. config,
                self.constellation_name,
                tags,
                self.constellation_directory,
-               credentials_override=get_boto_path())
+               credentials_override=p)
         print("launched")
+
+        for i in range(20):
+            print('monitor %s' % i)
+            monitor(self.constellation_name, i)
+            time.sleep(5)
+
+        constellation = ConstellationState(self.constellation_name)
+        self.assert_(constellation.get_value('gazebo') == "not running", "!")
+
+        task = {}
+        task['latency'] = 0
+        task['uplink_data_cap'] = 0
+        task['downlink_data_cap'] = 0
+        task['ros_package'] = "atlas_utils"
+        task['ros_launch'] = "vrc_task_1.launch"
+        task['ros_args'] = ""
+        task['timeout'] = 60
+
+        start_task(self.constellation_name, task)
+
+        for i in range(3):
+            print('monitor %s' % i)
+            monitor(self.constellation_name, i)
+            time.sleep(5)
+
+        self.assert_(constellation.get_value('gazebo') == "running", "!")
+
+        for i in range(20):
+            print('monitor %s' % i)
+            monitor(self.constellation_name, i)
+            time.sleep(5)
 
     def tearDown(self):
         print("teardown")

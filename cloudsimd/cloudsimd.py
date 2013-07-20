@@ -458,7 +458,8 @@ def terminate(constellation_name):
         log("cloudsimd.py terminate error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
-        log("LAUNCH ERROR %s traceback:  %s" % (constellation_name, tb), "launch_errors")
+        log("LAUNCH ERROR %s traceback:  %s" % (constellation_name, tb),
+            "launch_errors")
             
     constellation = ConstellationState(constellation_name)
     constellation.set_value('constellation_state', 'terminated')
@@ -500,7 +501,7 @@ def create_task(constellation_name, data):
     except Exception, e:
         log("update_task error %s" % e)
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb)
+        log("traceback: %s" % tb)
 
 
 def update_task(constellation_name, data):
@@ -666,7 +667,7 @@ def monitor(config, constellation_name):
         log("traceback:  %s" % tb)
 
 
-def async_monitor( config, constellation_name):
+def async_monitor(config, constellation_name):
 
     log("cloudsimd async_monitor [config %s] %s" % (config,  constellation_name))
     try:

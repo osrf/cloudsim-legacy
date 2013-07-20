@@ -144,7 +144,7 @@ class StormAPI:
         url = 'https://api.stormondemand.com/Storm/Server/status'
         values = {'params': {"uniq_id": uniq_id}}
         jsondump = json.dumps(values)
-        try: 
+        try:
             request = urllib2.Request(url, jsondump)
         except URLError, ex:
             print "Failed to get url %s with exception %s" % (url, ex)
