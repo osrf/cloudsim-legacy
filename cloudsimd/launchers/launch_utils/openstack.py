@@ -1,33 +1,54 @@
-#!/usr/bin/python
 from __future__ import print_function
+
 import os
 import time
 import sys
 import uuid
 import unittest
-from testing import get_test_runner, get_test_path, get_boto_path,\
-    get_test_dir
+import redis
 
 import novaclient.v1_1.client as nvclient
 import novaclient.exceptions
- 
-def launch(image_id):
+
+from testing import get_test_runner, get_test_path, get_boto_path,\
+    get_test_dir
+from launch_db import ConstellationState
+from launch_db import get_unique_short_name
+
+
+def acquire_openstack_server(constellation_name, creds, machine_name, constellation_directory):
+    floating_ip, instance_name, keypair_name, security_group_name = launch(constellation_name, machine_name)
+    constellation = ConstellationState(constellation_name)
+    constellation.set_value("security_group", security_group_name)
+    constellation.set_value("keypair", keypair_name)
+    constellation.set_value("instance", instance_name)
+    return floating_ip, instance_name, keypair_name
+
+def terminate_openstack_server(constellation_name):
+    #get secgroups and key
+    constellation = ConstellationState(constellation_name)
+    secgroup = constellation.get_value("security_group")
+    keypair = constellation.get_value("keypair")
+    instance_name = constellation.get_value("instance")
+    terminate(instance_name, keypair, secgroup)
+
+def launch(constellation_name, machine_name):
     creds = get_nova_creds()
     nova = nvclient.Client(**creds)
-    print(image_id)
     #keypair
-    keypair_name = "key_" + image_id
-    if not nova.keypairs.findall(name="key_"+image_id):
+    keypair_name = "key_" + constellation_name
+    #nova.keypairs.create(name=keypair_name) 
+    if not nova.keypairs.findall(name="key_"+constellation_name):
         with open(os.path.expanduser('~/.ssh/id_rsa.pub')) as fpubkey:
             nova.keypairs.create(name=keypair_name, public_key=fpubkey.read())
     #security group
-    security_group_name = "security_" + image_id
+    security_group_name = "security_" + constellation_name
     security_group = nova.security_groups.create(name=security_group_name,
-        description="Security group for " + image_id)
+        description="Security group for " + constellation_name)
     nova.security_group_rules.create(security_group.id,"TCP",22,22,"0.0.0.0/0")
     nova.security_group_rules.create(security_group.id,"ICMP",-1,-1,"0.0.0.0/0")
     #create instance
-    instance_name = "instance_" + image_id
+    instance_name = machine_name + "_" + constellation_name
     image = nova.images.find(name="cirros-0.3.1-x86_64-uec")
     flavor = nova.flavors.find(name="m1.tiny")
     instance = nova.servers.create(name=instance_name, image=image,
@@ -51,8 +72,7 @@ def launch(image_id):
     if not flag:
         floating_ip = nova.floating_ips.create()
         instance.add_floating_ip(floating_ip)
-        instance_ip = floating_ip
-    #return image_name,keypair_name#,security group 
+    return floating_ip, instance_name, keypair_name, security_group_name
 
 def terminate(instance_name, keypair_name, secgroup_name):
     creds = get_nova_creds()
@@ -91,10 +111,25 @@ def get_nova_creds():
     creds['project_id'] = os.environ['OS_TENANT_NAME']
     return creds
 
+
 class TestOpenstack(unittest.TestCase):
     def test1(self):
-        print("asdf")
-    
+        self.constellation_name = get_unique_short_name("x")
+        p = os.path.join(get_test_path("openstack"), self.constellation_name)
+        self.constellation_directory = os.path.abspath(p)
+        os.makedirs(self.constellation_directory)
+        print(self.constellation_directory)
+        creds = get_nova_creds()
+        machine_name = "cloudsim_server"
+        acquire_openstack_server(self.constellation_name, creds, machine_name, self.constellation_directory)
+
+        self.assertTrue(True)
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        terminate_openstack_server(self.constellation_name)
 
 
 if __name__ == "__main__":
