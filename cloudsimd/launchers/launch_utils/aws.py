@@ -295,7 +295,11 @@ def _acquire_vpc_elastic_ip(constellation_name,
                                   aws_elastic_ip.public_ip))
         ip_key = '%s_public_ip' % machine_name_prefix
         constellation.set_value(ip_key, public_ip)
-
+        #
+        #
+        # <Response><Errors><Error><Code>InvalidAllocationID.NotFound</Code><Message>The allocation ID 'eipalloc-d1c83abf' does not exist</Message></Error></Errors><RequestID>12897757-db5b-40b5-a3d1-9ac94ff0d20b</RequestID></Response>
+        #
+        #
         ec2conn.associate_address(aws_id,  allocation_id=allocation_id)
         clean_local_ssh_key_entry(public_ip)
         return public_ip
@@ -351,8 +355,16 @@ def _acquire_vpc(constellation_name, vpcconn, availability_zone):
         constellation.set_value('route_table_association_id',
                                 route_table_association_id)
 
-        # add a tag to the vpc so we can identify it
-        aws_vpc.add_tag('constellation', constellation_name)
+        i = 0
+        while i < 5:
+            # add a tag to the vpc so we can identify it
+            try:
+                log('adding tag to VPC %s' % i)
+                aws_vpc.add_tag('constellation', constellation_name)
+                i = 10
+            except:
+                i +1
+                time.sleep(i * 2)
     except Exception as e:
         constellation.set_value('error', "%s" % e)
         raise
@@ -423,12 +435,11 @@ def _acquire_vpc_security_group(constellation_name,
                                 vpc_id,
                                 ec2conn):
     constellation = ConstellationState(constellation_name)
+    sg = None
     try:
         sg_name = '%s-sg-%s' % (machine_prefix, constellation_name)
-        sg = None
         if machine_prefix == "router":
-            dsc = 'router security group for %s vpc %s' % (constellation_name,
-                                                           vpc_id)
+            dsc = 'router security group for %s'% (constellation_name)
             sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
             sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
             sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
@@ -454,6 +465,17 @@ def _acquire_vpc_security_group(constellation_name,
     except Exception, e:
         constellation.set_value('error',  "security group error: %s" % e)
         raise
+
+    i = 0
+    while i < 5:
+        log("adding tag to %s/%s security group" % (constellation_name,
+                                                machine_prefix))
+        try:
+            sg.add_tag('vpc', vpc_id)
+            sg.add_tag('constellation', constellation_name)
+            i = 5
+        except:
+            time.sleep(i * 2)
     return security_group_id
 
 
