@@ -19,7 +19,7 @@ from launch_utils.monitoring import constellation_is_terminated,\
     monitor_task, monitor_simulator, TaskTimeOut
 
 from launch_utils.softlayer import load_osrf_creds,\
-    get_softlayer_path, get_machine_login_info
+    get_softlayer_path, get_machine_login_info, create_openvpn_key
 
 from launch_utils.launch_db import get_constellation_data, ConstellationState,\
     get_cloudsim_config, log_msg
@@ -848,7 +848,7 @@ if timeout -k 1 2 gztopic list; then
     # look for the name of the Log file
     if [ "\`tail -n 1 \$LOG_PATH\`" = "</gazebo_log>" ] ; then 
         echo "  Log end tag detected" >> /home/ubuntu/cloudsim/stop_sim.log
-        break 
+        break
     fi
   done
 fi
@@ -1396,31 +1396,21 @@ def launch(username, config, constellation_name, tags,
                             'ubuntu',
                             router_ip)
 
+#     openvpn_fname = os.path.join(constellation_directory, 'openvpn.key')
+#     remote_fname = 'cloudsim/openvpn.key'
+# 
+#     q = [get_ssh_cmd_generator(ssh_router,
+#                                "ls %s" % remote_fname,
+#                                remote_fname,
+#                                constellation,
+#                                "router_state",
+#                                "running",
+#                                max_retries=500)]
+#     empty_ssh_queue(q, sleep=2)
+#     ssh_router.download_file(openvpn_fname, remote_fname)
+
     openvpn_fname = os.path.join(constellation_directory, 'openvpn.key')
-    remote_fname = 'cloudsim/openvpn.key'
-
-    q = [get_ssh_cmd_generator(ssh_router,
-                                        "ls %s" % remote_fname,
-                                        remote_fname,
-                                        constellation,
-                                        "router_state",
-                                        "running",
-                                        max_retries=500)]
-    empty_ssh_queue(q, sleep=2)
-    ssh_router.download_file(openvpn_fname, remote_fname)
-
-#     count = 0
-#     downloaded = False
-#     while not downloaded:
-#         try:
-#             ssh_router.download_file(openvpn_fname, remote_fname)
-#             downloaded = True
-#         except:
-#             # Permission denied failures can occur for no reason... try again
-#             time.sleep(count)
-#             count += 2
-#             if count > 10:
-#                 raise
+    create_openvpn_key(openvpn_fname)
 
     _create_zip_files(constellation_name, constellation_directory, machines)
     # reboot fc1, fc2 and sim (but not router)
@@ -1430,6 +1420,11 @@ def launch(username, config, constellation_name, tags,
                      ssh_router,
                      machines_to_reboot,
                      constellation_directory)
+
+
+    remote_fname = 'static.key'
+    ssh_router.upload_file(openvpn_fname, remote_fname)
+    
     # wait for all machines to be ready
     _run_machines(constellation_name, machines.keys(), constellation_directory)
 
