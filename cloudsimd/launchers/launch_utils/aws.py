@@ -33,9 +33,7 @@ def acquire_aws_server(constellation_name,
 
     sim_machine_name = "%s_%s" % (machine_prefix, constellation_name)
     sim_key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
-    #ec2conn = aws_connect()[0]
-    boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
+    ec2conn = aws_connect()[0]
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
     constellation = ConstellationState(constellation_name)
 
@@ -165,9 +163,7 @@ def acquire_aws_constellation(constellation_name,
 
     constellation.set_value('machines', machines)
 
-    boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn = boto.connect_vpc()
+    ec2conn, vpcconn = aws_connect()
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
 
     vpc_id, subnet_id = _acquire_vpc(constellation_name,
@@ -215,8 +211,7 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
     Releases a private network, machines and all its resources
     """
     boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn = boto.connect_vpc()
+    ec2conn, vpcconn = aws_connect()
     constellation = ConstellationState(constellation_name)
 
     machines = constellation.get_value('machines')
