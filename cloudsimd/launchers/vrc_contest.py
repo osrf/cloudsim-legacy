@@ -331,225 +331,10 @@ DELIM
 
 # this is where we store all data for this part
 mkdir -p /home/ubuntu/cloudsim
-
-cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_sim.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "tail -1 /var/log/dpkg.log"
-DELIM
-chmod +x /home/ubuntu/cloudsim/dpkg_log_sim.bash
-
-# --------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_sim.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "ls \$1"
-DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_sim.bash
-
-# --------------------------------------------
-
-cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_fc2.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc2.pem ubuntu@""" + FC2_IP + """  "tail -1 /var/log/dpkg.log"
-DELIM
-chmod +x /home/ubuntu/cloudsim/dpkg_log_fc2.bash
-
-# --------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_fc2.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc2.pem ubuntu@""" + FC1_IP + """  "ls \$1"
-DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_fc2.bash
-
-# --------------------------------------------
-
-
-cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_fc1.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc1.pem ubuntu@""" + FC1_IP + """  "tail -1 /var/log/dpkg.log"
-DELIM
-chmod +x /home/ubuntu/cloudsim/dpkg_log_fc1.bash
-
-# --------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_fc1.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc1.pem ubuntu@""" + FC1_IP + """  "ls \$1"
-DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_fc1.bash
-
-# --------------------------------------------
-
-cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
-#!/bin/bash
-
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "DISPLAY=localhost:0 timeout -k 1 5 glxinfo"
-DELIM
-chmod +x /home/ubuntu/cloudsim/ping_gl.bash
-
-
-# --------------------------------------------
-
-cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
-#!/bin/bash
-sudo stop vrc_netwatcher
-kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
-sudo stop vrc_bytecounter
-sudo redis-cli set vrc_target_outbound_latency 0
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "bash cloudsim/stop_sim.bash"
-sudo iptables -F FORWARD
-
-# Stop the latency injection
-sudo stop vrc_controller_private
-sudo stop vrc_controller_public
-
-# Restore the default tc rules
-sudo vrc_init_tc.py bond0
-sudo vrc_init_tc.py bond1
-DELIM
-chmod +x /home/ubuntu/cloudsim/stop_sim.bash
-
-# --------------------------------------------
-
-cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
-#!/bin/bash
-
-# Just rename the old network usage file
-sudo mv /tmp/vrc_netwatcher_usage.log /tmp/vrc_netwatcher_usage_\`date | tr -d ' '\`.log || true
-
-# Stop the latency injection
-sudo stop vrc_controller_private
-sudo stop vrc_controller_public
-
-# Restore the default tc rules
-sudo vrc_init_tc.py bond0
-sudo vrc_init_tc.py bond1
-
-sudo iptables -F FORWARD
-sudo stop vrc_netwatcher
-kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
-sudo stop vrc_bytecounter
-sudo start vrc_netwatcher
-if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "nohup bash cloudsim/start_sim.bash \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"; then
-  echo "[router start_sim.bash] simulator start_sim.bash returned non-zero"
-  exit 1
-fi
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/start_sim.bash
-
-# --------------------------------------------
-
-cat <<DELIM > /home/ubuntu/cloudsim/copy_net_usage.bash
-#!/bin/bash
-
-# 1. Copy the directory containing the JSON task file and the network usage to the simulator
-# 2. Run a script on the simulator that zip all the log files and send them to the portal
-USAGE="Usage: copy_net_usage <task_dirname> <zipname>"
-
-if [ \$# -ne 2 ]; then
-  echo \$USAGE
-  exit 1
-fi
-
-echo --- >> copy_net_usage.log 2>&1
-
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  mkdir -p /home/ubuntu/cloudsim/logs >> copy_net_usage.log 2>&1
-
-TASK_DIRNAME=\$1
-if [ -f /tmp/vrc_netwatcher_usage.log ];
-then
-  cp /tmp/vrc_netwatcher_usage.log \$TASK_DIRNAME >> copy_net_usage.log 2>&1
-fi
-scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem -r /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME ubuntu@""" + SIM_IP + """ :/home/ubuntu/cloudsim/logs/ >> copy_net_usage.log 2>&1
-
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  bash /home/ubuntu/cloudsim/send_to_portal.bash \$1 \$2 /home/ubuntu/ubuntu-portal.key vrcportal-test.osrfoundation.org >> copy_net_usage.log 2>&1
-DELIM
-chmod +x /home/ubuntu/cloudsim/copy_net_usage.bash
-
-# --------------------------------------------
-
-cat <<DELIM > /home/ubuntu/cloudsim/get_sim_logs.bash
-#!/bin/bash
-
-# Get state.log and score.log from the simulator 
-
-USAGE="Usage: get_sim_logs.bash <task_dirname>"
-
-if [ \$# -ne 1 ]; then
-  echo \$USAGE
-  exit 1
-fi
-
-TASK_DIRNAME=\$1
-
-mkdir -p /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
-
-# Copy the log files
-scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """ :/tmp/\$TASK_DIRNAME/* /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME || true
-
-# Copy the network usage
-if [ -f /tmp/vrc_netwatcher_usage.log ];
-then
-  cp /tmp/vrc_netwatcher_usage.log /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME >> copy_net_usage.log 2>&1
-fi
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/get_sim_logs.bash
-
-# ----------------------------------------------------
-
-
-cat <<DELIM > /home/ubuntu/cloudsim/update_constellation.bash
-#!/bin/bash
-set -ex
-exec > /home/ubuntu/cloudsim/update_constellation.log 2>&1
-
-echo "TODO: update_drcsim.bash"
-
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "nohup sudo cloudsim/update_drcsim.bash > update_drcsim_sim.out 2> update_drcsim_sim.err < /dev/null"
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc1.pem ubuntu@""" + FC1_IP + """  "nohup sudo cloudsim/update_drcsim.bash > update_drcsim_fc1.out 2> update_drcsim_sim.err < /dev/null"
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc2.pem ubuntu@""" + FC2_IP + """  "nohup sudo cloudsim/update_drcsim.bash > update_drcsim_fc2.out 2> update_drcsim_sim.err < /dev/null"
-
-# update local packages on the router
-sudo cloudsim/update_drcsim.bash &
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/update_constellation.bash
-
-# ----------------------------------------------------
-
-cat <<DELIM > /home/ubuntu/cloudsim/get_network_usage.bash
-#!/bin/bash
-
-#
-# wall or sim clock, wall or sim clock, uplink downlink
-# space is the separator
-tail -1 /tmp/vrc_netwatcher_usage.log
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/get_network_usage.bash
-
-# ----------------------------------------------------
-
-cat <<DELIM > /home/ubuntu/cloudsim/get_score.bash
-#!/bin/bash
-
-. /usr/share/drcsim/setup.sh
-# rostopic echo the last message of the score
-timeout -k 1 10 rostopic echo -p /vrc_score -n 1
-
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/get_score.bash
-
-# ----------------------------------------------------
-
-#
+mkdir -p /home/ubuntu/cloudsim/setup
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
 # Signal we can send the keys to the router
-touch /home/ubuntu/cloudsim/ready_for_keys
-
-
 
 # Add OSRF repositories
 echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
@@ -736,7 +521,7 @@ sudo start vrc_controller_public || true
 # Don't start the bytecounter here; netwatcher will start it as needed
 #start vrc_bytecounter
 
-mkdir -p /home/ubuntu/cloudsim/setup
+
 touch /home/ubuntu/cloudsim/setup/done
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
@@ -1142,17 +927,253 @@ def create_private_machine_zip(machine_name_prefix,
 
 def _create_deploy_zip_files(constellation_name,
                      constellation_directory,
-                     machines):
-    deploy_script = """
-#!/bin/bash
+                     machines,
+                     files=[]):
+
+    deploy_script = """#!/bin/bash
 
 # copy keys to cloudsim directory
 cp /home/ubuntu/cloudsim/deploy/*.pem /home/ubuntu/cloudsim
 
+
+cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_sim.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "tail -1 /var/log/dpkg.log"
+DELIM
+chmod +x /home/ubuntu/cloudsim/dpkg_log_sim.bash
+
+# --------------------------------------------
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_sim.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "ls \$1"
+DELIM
+chmod +x /home/ubuntu/cloudsim/find_file_sim.bash
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_fc2.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc2.pem ubuntu@""" + FC2_IP + """  "tail -1 /var/log/dpkg.log"
+DELIM
+chmod +x /home/ubuntu/cloudsim/dpkg_log_fc2.bash
+
+# --------------------------------------------
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_fc2.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc2.pem ubuntu@""" + FC1_IP + """  "ls \$1"
+DELIM
+chmod +x /home/ubuntu/cloudsim/find_file_fc2.bash
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_fc1.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc1.pem ubuntu@""" + FC1_IP + """  "tail -1 /var/log/dpkg.log"
+DELIM
+chmod +x /home/ubuntu/cloudsim/dpkg_log_fc1.bash
+
+# --------------------------------------------
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_fc1.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc1.pem ubuntu@""" + FC1_IP + """  "ls \$1"
+DELIM
+chmod +x /home/ubuntu/cloudsim/find_file_fc1.bash
+
+
+# --------------------------------------------
+cat <<DELIM > /home/ubuntu/cloudsim/reboot_fc1.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/hugo/code/cloudsim/cloudsimd/launchers/launch_utils/softlayer/bash/key-fc1.pem ubuntu@""" + FC1_IP + """ "sudo reboot"
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/reboot_fc1.bash
+
+# --------------------------------------------
+cat <<DELIM > /home/ubuntu/cloudsim/reboot_fc2.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/hugo/code/cloudsim/cloudsimd/launchers/launch_utils/softlayer/bash/key-fc2.pem ubuntu@""" + FC2_IP + """ "sudo reboot"
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/reboot_fc2.bash
+
+# --------------------------------------------
+cat <<DELIM > /home/ubuntu/cloudsim/reboot_sim.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/hugo/code/cloudsim/cloudsimd/launchers/launch_utils/softlayer/bash/key-sim.pem ubuntu@""" + SIM_IP + """ "sudo reboot"
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/reboot_sim.bash
+
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
+#!/bin/bash
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "DISPLAY=localhost:0 timeout -k 1 5 glxinfo"
+DELIM
+chmod +x /home/ubuntu/cloudsim/ping_gl.bash
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
+#!/bin/bash
+sudo stop vrc_netwatcher
+kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
+sudo stop vrc_bytecounter
+sudo redis-cli set vrc_target_outbound_latency 0
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "bash cloudsim/stop_sim.bash"
+sudo iptables -F FORWARD
+
+# Stop the latency injection
+sudo stop vrc_controller_private
+sudo stop vrc_controller_public
+
+# Restore the default tc rules
+sudo vrc_init_tc.py bond0
+sudo vrc_init_tc.py bond1
+DELIM
+chmod +x /home/ubuntu/cloudsim/stop_sim.bash
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
+#!/bin/bash
+
+# Just rename the old network usage file
+sudo mv /tmp/vrc_netwatcher_usage.log /tmp/vrc_netwatcher_usage_\`date | tr -d ' '\`.log || true
+
+# Stop the latency injection
+sudo stop vrc_controller_private
+sudo stop vrc_controller_public
+
+# Restore the default tc rules
+sudo vrc_init_tc.py bond0
+sudo vrc_init_tc.py bond1
+
+sudo iptables -F FORWARD
+sudo stop vrc_netwatcher
+kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
+sudo stop vrc_bytecounter
+sudo start vrc_netwatcher
+if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "nohup bash cloudsim/start_sim.bash \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"; then
+  echo "[router start_sim.bash] simulator start_sim.bash returned non-zero"
+  exit 1
+fi
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/start_sim.bash
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/copy_net_usage.bash
+#!/bin/bash
+
+# 1. Copy the directory containing the JSON task file and the network usage to the simulator
+# 2. Run a script on the simulator that zip all the log files and send them to the portal
+USAGE="Usage: copy_net_usage <task_dirname> <zipname>"
+
+if [ \$# -ne 2 ]; then
+  echo \$USAGE
+  exit 1
+fi
+
+echo --- >> copy_net_usage.log 2>&1
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  mkdir -p /home/ubuntu/cloudsim/logs >> copy_net_usage.log 2>&1
+
+TASK_DIRNAME=\$1
+if [ -f /tmp/vrc_netwatcher_usage.log ];
+then
+  cp /tmp/vrc_netwatcher_usage.log \$TASK_DIRNAME >> copy_net_usage.log 2>&1
+fi
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem -r /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME ubuntu@""" + SIM_IP + """ :/home/ubuntu/cloudsim/logs/ >> copy_net_usage.log 2>&1
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  bash /home/ubuntu/cloudsim/send_to_portal.bash \$1 \$2 /home/ubuntu/ubuntu-portal.key vrcportal-test.osrfoundation.org >> copy_net_usage.log 2>&1
+DELIM
+chmod +x /home/ubuntu/cloudsim/copy_net_usage.bash
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/get_sim_logs.bash
+#!/bin/bash
+
+# Get state.log and score.log from the simulator 
+
+USAGE="Usage: get_sim_logs.bash <task_dirname>"
+
+if [ \$# -ne 1 ]; then
+  echo \$USAGE
+  exit 1
+fi
+
+TASK_DIRNAME=\$1
+
+mkdir -p /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
+
+# Copy the log files
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """ :/tmp/\$TASK_DIRNAME/* /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME || true
+
+# Copy the network usage
+if [ -f /tmp/vrc_netwatcher_usage.log ];
+then
+  cp /tmp/vrc_netwatcher_usage.log /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME >> copy_net_usage.log 2>&1
+fi
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/get_sim_logs.bash
+
+# ----------------------------------------------------
+
+
+cat <<DELIM > /home/ubuntu/cloudsim/update_constellation.bash
+#!/bin/bash
+set -ex
+exec > /home/ubuntu/cloudsim/update_constellation.log 2>&1
+
+echo "TODO: update_drcsim.bash"
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "nohup sudo cloudsim/update_drcsim.bash > update_drcsim_sim.out 2> update_drcsim_sim.err < /dev/null"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc1.pem ubuntu@""" + FC1_IP + """  "nohup sudo cloudsim/update_drcsim.bash > update_drcsim_fc1.out 2> update_drcsim_sim.err < /dev/null"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc2.pem ubuntu@""" + FC2_IP + """  "nohup sudo cloudsim/update_drcsim.bash > update_drcsim_fc2.out 2> update_drcsim_sim.err < /dev/null"
+
+# update local packages on the router
+sudo cloudsim/update_drcsim.bash &
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/update_constellation.bash
+
+# ----------------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/get_network_usage.bash
+#!/bin/bash
+
+#
+# wall or sim clock, wall or sim clock, uplink downlink
+# space is the separator
+tail -1 /tmp/vrc_netwatcher_usage.log
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/get_network_usage.bash
+
+# ----------------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/get_score.bash
+#!/bin/bash
+
+. /usr/share/drcsim/setup.sh
+# rostopic echo the last message of the score
+timeout -k 1 10 rostopic echo -p /vrc_score -n 1
+
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/get_score.bash
+
+
 # configure openvpn
-cp /home/ubuntu/cloudsim/deploy/openvpn.key /etc/openvpn/static.key
-chmod 644 /etc/openvpn/static.key
-service openvpn restart
+sudo cp /home/ubuntu/cloudsim/deploy/openvpn.key /etc/openvpn/static.key
+sudo chmod 644 /etc/openvpn/static.key
+sudo service openvpn restart
 
 """
 
@@ -1161,10 +1182,11 @@ service openvpn restart
     os.makedirs(deploy_dir)
 
     deploy_script_fname = os.path.join(deploy_dir, "deploy.bash")
-    with open(deploy_script_fname) as f:
+    with open(deploy_script_fname, 'w') as f:
         f.write(deploy_script)
 
-    files_to_zip = [deploy_script_fname]
+    files_to_zip = [f for f in files]
+    files_to_zip.append(deploy_script_fname)
     for machine_name in machines:
         short_fname = "key-%s.pem" % machine_name
         fname_key = os.path.join(deploy_dir, short_fname)
@@ -1376,6 +1398,51 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
     constellation.set_value("launch_stage", "running")
 
 
+def deploy_constellation(constellation_name):
+
+    constellation = ConstellationState(constellation_name)
+
+    machines = constellation.get_value('machines')
+    constellation_directory = constellation.get_value(
+                                                    'constellation_directory')
+    router_ip = constellation.get_value('router_public_ip')
+    ssh_router = SshClient(constellation_directory,
+                           'key-router',
+                           'ubuntu',
+                           router_ip)
+    openvpn_fname = os.path.join(constellation_directory, 'openvpn.key')
+    create_openvpn_key(openvpn_fname)
+
+    _create_zip_files(constellation_name, constellation_directory, machines)
+
+    deploy_fname = _create_deploy_zip_files(constellation_name, 
+        constellation_directory,
+        machines,
+        [openvpn_fname])
+    constellation.set_value('router_launch_msg',
+                            "waiting for setup script completion")
+
+    __wait_for_find_file(constellation_name,
+                         constellation_directory,
+                         ["router"],
+                         "launch_stdout_stderr.log",
+                         "running")
+
+
+    constellation.set_value('router_launch_msg', "deploying keys")
+    ssh_router.upload_file(deploy_fname, "cloudsim/deploy.zip")
+    ssh_router.cmd('cd cloudsim; unzip deploy.zip')
+    ssh_router.cmd('bash cloudsim/deploy/deploy.bash')
+    # reboot fc1, fc2 and sim (but not router)
+    machines_to_reboot = machines.keys()
+    machines_to_reboot.remove('router')
+
+    _reboot_machines(constellation_name, ssh_router,
+                     machines_to_reboot, constellation_directory)
+    # wait for all machines to be ready
+    _run_machines(constellation_name, machines.keys(), constellation_directory)
+
+
 def launch(username, config, constellation_name, tags,
            constellation_directory, credentials_override=None):
     """
@@ -1488,51 +1555,7 @@ def launch(username, config, constellation_name, tags,
                                   machines,
                                   tags)
 
-    router_ip = constellation.get_value('router_public_ip')
-    router_key_pair_name = constellation.get_value("router_key_pair_name")
-    ssh_router = SshClient(constellation_directory,
-                            router_key_pair_name,
-                            'ubuntu',
-                            router_ip)
-
-    openvpn_fname = os.path.join(constellation_directory, 'openvpn.key')
-    create_openvpn_key(openvpn_fname)
-
-    _create_zip_files(constellation_name, constellation_directory, machines)
-
-    constellation.set_value('router_launch_msg',
-                            "waiting for setup script completion")
-    # constellation.set_value('router_aws_state', m)
-    __wait_for_find_file(constellation_name,
-                       constellation_directory,
-                       ["router"],
-                       "cloudsim/ready_for_keys",
-                       "running")
-
-    deploy_fname = _create_deploy_zip_files(constellation_name,
-                             constellation_directory,
-                             machines)
-    constellation.set_value('router_launch_msg', "deploying keys")
-#    remote_fname = 'openvpn.key'
-#     ssh_router.upload_file(openvpn_fname, remote_fname)
-#     ssh_router.cmd('sudo cp openvpn.key /etc/openvpn/static.key; '
-#                    'sudo chmod 644 /etc/openvpn/static.key; '
-#                    'sudo service openvpn restart')
-
-    ssh_router.upload_file(deploy_fname, "cloudsim/deploy.zip")
-    ssh_router.cmd('unzip cloudsim/deploy.zip')
-    ssh_router.cmd('sudo bash cloudsim/deploy/deploy.bash')
-
-    # reboot fc1, fc2 and sim (but not router)
-    machines_to_reboot = machines.keys()
-    machines_to_reboot.remove('router')
-    _reboot_machines(constellation_name,
-                     ssh_router,
-                     machines_to_reboot,
-                     constellation_directory)
-
-    # wait for all machines to be ready
-    _run_machines(constellation_name, machines.keys(), constellation_directory)
+    deploy_constellation(constellation_name)
 
 
 def terminate(constellation_name, credentials_override=None):
@@ -1959,9 +1982,9 @@ class AwsCase(object):  # (unittest.TestCase):
         constellation.expire(1)
 
 
-class ZipCase(unittest.TestCase):
+class SumCase(unittest.TestCase):
 
-    def testO(self):
+    def atestO(self):
         constellation_name = 'toto'
         p = os.path.join(os.path.expanduser('~'), 'tests', 'toto')
         constellation_directory = p
@@ -1973,6 +1996,11 @@ class ZipCase(unittest.TestCase):
                                  constellation_directory,
                                  machines)
         self.assertTrue(os.path.exists(zip_fname), "not there")
+
+    def test_deploy(self):
+        constellation_name = 'cx11fc02b4'
+        deploy_constellation(constellation_name)
+
 
 if __name__ == "__main__":
     xmlTestRunner = get_test_runner()

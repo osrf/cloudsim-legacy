@@ -13,7 +13,7 @@ function create_constellation(div_name, configuration, constellation, username, 
     
     var machines_div =  constellation_div.querySelector("#machines" );
     
-    if(configuration.indexOf ("OSRF VRC Constellation") == 0 )
+    if(configuration.indexOf ("OSRF VRC Constellation") == 0 || configuration.indexOf("AWS trio") ==0)
     {
     	create_task_list_widget(constellation_div, constellation);
 
@@ -87,7 +87,8 @@ function create_constellation(div_name, configuration, constellation, username, 
         create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to its parent CloudSim", 550);
     }
 
-    if(configuration.indexOf("AWS trio") ==0 || configuration.indexOf("AWS micro trio") ==0  )
+    // if(configuration.indexOf("AWS trio") ==0 || configuration.indexOf("AWS micro trio") ==0  )
+    if (false)
     {
     	create_task_list_widget(constellation_div, constellation);
     	// field computer
