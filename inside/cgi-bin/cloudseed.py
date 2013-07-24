@@ -12,9 +12,6 @@ import common
 from common import  authorize
 
 
-
-
-
 email = authorize()
 udb = common.UserDatabase()
 role = udb.get_role(email)

@@ -1,8 +1,11 @@
 from __future__ import print_function
 
 
-def get_vpc_router_script(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP, machine_ip, ros_master_ip):
-    
+def get_vpc_router_script(OPENVPN_SERVER_IP,
+                          OPENVPN_CLIENT_IP,
+                          machine_ip,
+                          ros_master_ip):
+
     return """#!/bin/bash
 # Exit on error
 set -ex
@@ -27,9 +30,13 @@ dev tun
 ifconfig """ + OPENVPN_SERVER_IP + " " + OPENVPN_CLIENT_IP + """
 secret static.key
 DELIM
+
+
 openvpn --genkey --secret /etc/openvpn/static.key
 service openvpn restart
 chmod 644 /etc/openvpn/static.key
+
+
 sysctl -w net.ipv4.ip_forward=1
 iptables -A FORWARD -i tun0 -o eth0 -j ACCEPT
 iptables -A FORWARD -o tun0 -i eth0 -j ACCEPT
@@ -93,21 +100,19 @@ DELIM
 
 # start vrc_sniffer and vrc_controllers
 start vrc_sniffer
-start vrc_controller
-start vrc_bandwidth
+start vrc_controller_private
+start vrc_controller_public
 
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
+mkdir -p /home/ubuntu/cloudsim/setup
 touch /home/ubuntu/cloudsim/setup/done
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
 """
 
-"""
-Create a service that persist out routing rules accross reboots
-"""
 def get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP):
-    
+    """
+    Create a service that persist out routing rules accross reboots
+    """
     s  = """
 
 cat <<DELIM > /etc/init.d/vpcroute
@@ -130,19 +135,19 @@ esac
 DELIM
 
 chmod +x  /etc/init.d/vpcroute 
-ln -s /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
+ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
 
 # invoke it now to add route to the router
 /etc/init.d/vpcroute start
 
-""" 
-    return s 
+"""
+    return s
+
 
 def get_open_vpn_single(client_ip,
                         server_ip):
-    
     s = """
-    
+
 cat <<DELIM >  /home/ubuntu/openvpn.config  
 dev tun
 ifconfig """ + server_ip + " " + client_ip + """
@@ -167,12 +172,14 @@ echo "openvpn setup complete" >> /home/ubuntu/setup.log
 
 """
     return s
-    
+
 
 def get_cloudsim_startup_script():
     s = """#!/bin/bash
 # Exit on error
 set -ex
+mkdir -p /home/ubuntu/cloudsim/setup
+chown -R ubuntu:ubuntu /home/ubuntu/
 # Redirect everybody's output to a file
 logfile=/home/ubuntu/launch_stdout_stderr.log
 exec > $logfile 2>&1
@@ -181,7 +188,7 @@ exec > $logfile 2>&1
 cat <<DELIM > /etc/apt/sources.list
 
 ##
-## cloudsim 
+## cloudsim
 ##
 ## Note, this file is written by cloud-init on first boot of an instance
 ## modifications made here will not survive a re-bundle.
@@ -246,15 +253,17 @@ deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
 
 DELIM
 
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
-chown -R ubuntu:ubuntu /home/ubuntu/
-
 apt-get update
+apt-get install -y python-software-properties
+
+apt-add-repository -y ppa:rye/ppa
+apt-get update
+
+echo "ppa:rye/ppa repository added" >> /home/ubuntu/setup.log
 
 echo "Installing packages" >> /home/ubuntu/setup.log
 
-apt-get install -y unzip zip
+apt-get install -y unzip zip expect vim ipython
 echo "unzip installed" >> /home/ubuntu/setup.log
 
 # install mercurial and fetch latest version of the Team Login website
@@ -267,6 +276,9 @@ echo "mercurial installed" >> /home/ubuntu/setup.log
 apt-get install -y ntp
 echo "ntp installed" >> /home/ubuntu/setup.log
 
+apt-get install -y openvpn
+echo "ntp installed" >> /home/ubuntu/setup.log
+
 apt-get install -y apache2
 echo "apache2 installed" >> /home/ubuntu/setup.log
 
@@ -277,20 +289,29 @@ apt-get install -y redis-server python-pip
 pip install redis
 echo "redis installed" >> /home/ubuntu/setup.log
 
+apt-get install -y python-dateutil
+echo "python-dateutil installed" >> /home/ubuntu/setup.log
+
 sudo pip install --upgrade boto
 echo "boto installed" >> /home/ubuntu/setup.log
 
+sudo pip install SoftLayer
+echo "SoftLayer installed" >> /home/ubuntu/setup.log
 
 sudo pip install unittest-xml-reporting
 echo "XmlTestRunner installed" >> /home/ubuntu/setup.log
 
- 
-apt-add-repository -y ppa:rye/ppa
-apt-get update
-echo "ppa:rye/ppa repository added" >> /home/ubuntu/setup.log
+#
+# FIREWALL
+#
+ufw default deny
+ufw allow ssh
+ufw allow http
+yes | ufw enable
+
 
 apt-get install -y libapache2-mod-auth-openid
-ln -s /etc/apache2/mods-available/authopenid.load /etc/apache2/mods-enabled
+ln -sf /etc/apache2/mods-available/authopenid.load /etc/apache2/mods-enabled
 echo "libapache2-mod-auth-openid 0.6 installed from ppa:rye/ppa" >> /home/ubuntu/setup.log
 
 /etc/init.d/apache2 restart
@@ -301,16 +322,33 @@ echo "apache2 restarted" >> /home/ubuntu/setup.log
 
 # Make sure that www-data can run programs in the background (used inside CGI scripts)
 echo www-data > /etc/at.allow
- 
+
+# SSH HPN
+sudo apt-get install -y python-software-properties
+sudo add-apt-repository -y ppa:w-rouesnel/openssh-hpn
+sudo apt-get update -y
+sudo apt-get install -y openssh-server
+
+cat <<EOF >>/etc/ssh/sshd_config
+
+# SSH HPN
+HPNDisabled no
+TcpRcvBufPoll yes
+HPNBufferSize 8192
+NoneEnabled yes
+EOF
+
+sudo service ssh restart
+
 touch /home/ubuntu/cloudsim/setup/done
 echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
 """
 
     return s
-    
 
-def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51"):
-    
+
+def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3", prefix = "", extra = ""):
+
     s = """#!/bin/bash
 # Exit on error
 set -ex
@@ -322,7 +360,7 @@ exec > $logfile 2>&1
 cat <<DELIM > /etc/apt/sources.list
 
 ##
-## cloudsim 
+## cloudsim
 ##
 ## Note, this file is written by cloud-init on first boot of an instance
 ## modifications made here will not survive a re-bundle.
@@ -390,14 +428,17 @@ DELIM
 mkdir /home/ubuntu/cloudsim
 mkdir /home/ubuntu/cloudsim/setup
 
+""" + prefix + """
+
 cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
 
 echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
 
-. /usr/share/drcsim/setup.sh 
-export ROS_IP=""" + machine_ip +""" 
-export GAZEBO_IP=""" + machine_ip +"""
-export DISPLAY=:0 
+. /usr/share/drcsim/setup.sh
+export ROS_IP=""" + machine_ip + """
+export GAZEBO_IP=""" + machine_ip + """
+export DISPLAY=:0
+ulimit -c unlimited
 roslaunch \$1 \$2 \$3 gzname:=gzserver  &
 
 DELIM
@@ -417,11 +458,11 @@ oldrpp=$ROS_PACKAGE_PATH
 
 . /usr/share/drcsim/setup.sh
 eval export ROS_PACKAGE_PATH=\$oldrpp:\\$ROS_PACKAGE_PATH
-export ROS_IP=""" + machine_ip +"""
-export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311 
+export ROS_IP=""" + machine_ip + """
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
 
-export GAZEBO_IP=""" + machine_ip +"""
-export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
+export GAZEBO_IP=""" + machine_ip + """
+export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:113451
 
 DELIM
 
@@ -432,7 +473,7 @@ DISPLAY=localhost:0 timeout 10 glxinfo
 DELIM
 
 
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim  
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
 # Add ROS and OSRF repositories
 echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
@@ -442,19 +483,28 @@ date >> /home/ubuntu/setup.log
 echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
 wget http://packages.ros.org/ros.key -O - | apt-key add -
 wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
-    
+
 echo "update packages" >> /home/ubuntu/setup.log
 apt-get update
 
 """ + open_vpn_script + """
-    
+
 echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
 apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
-    
+
 #
 # The BusID is given by lspci (but lspci gives it in hex, and BusID needs dec)
 # This value is required for Tesla cards
-cat <<DELIM > etc/X11/xorg.conf
+cat <<DELIM > /etc/X11/xorg.conf
+
+# take the hex from lspci and turn it into dec
+# root@gpu02:/home/ubuntu# lspci | grep Tesla
+
+# SOFTLAYER
+# 82:00.0 3D controller: NVIDIA Corporation Tesla M2090 (rev a1)
+# 82 hex is 130 dec
+# Amazon is 3 dec for cg1.4xLarge
+
 Section "ServerLayout"
     Identifier     "Layout0"
     Screen      0  "Screen0"
@@ -470,7 +520,7 @@ EndSection
 Section "Device"
     Identifier     "Device0"
     Driver         "nvidia"
-    BusID          "PCI:0:3:0"
+    BusID          "PCI:0:""" + pcibus_id + """:0"
     VendorName     "NVIDIA Corporation"
 EndSection
 Section "Screen"
@@ -499,8 +549,8 @@ initctl start lightdm
 
 apt-get install -y ntp 
 
-echo "install """ + drc_package_name+ """ ">> /home/ubuntu/setup.log
-apt-get install -y """ + drc_package_name+ """
+echo "install """ + drc_package_name + """ ">> /home/ubuntu/setup.log
+apt-get install -y """ + drc_package_name + """
 
 echo "Updating bashrc file">> /home/ubuntu/setup.log
 
@@ -547,15 +597,19 @@ respawn
 DELIM
 
 # start vrc_sniffer and vrc_controllers
-start vrc_sniffer
-start vrc_controller
+#start vrc_sniffer
+#start vrc_controller_private
+#start vrc_controller_public
 
-rm `which vrc_bandwidth.py`
+#rm `which vrc_bandwidth.py`
+
+""" + extra + """
  
 touch /home/ubuntu/cloudsim/setup/done
 
 """
     return s
+
 
 def create_vpn_connect_file(openvpn_client_ip):
     return """#!/bin/bash
@@ -569,11 +623,12 @@ fi
 
 echo "Killing other openvpn connections..."
 killall openvpn || true
-openvpn --config  $DIR/openvpn.config >/dev/null 2>&1 &
+openvpn --config  "$DIR"/openvpn.config >/dev/null 2>&1 &
 
 echo "VPN ready.  To kill it:"
 echo "    sudo killall openvpn"
 """
+
 
 def create_vpc_vpn_connect_file(openvpn_client_ip):
     return """#!/bin/bash
@@ -587,7 +642,7 @@ fi
 
 echo "Killing other openvpn connections..."
 killall openvpn || true
-openvpn --config  $DIR/openvpn.config >/dev/null 2>&1 &
+openvpn --config  "$DIR"/openvpn.config >/dev/null 2>&1 &
 
 # Wait for tun0 to come up, then add a static route to the 10.0.0.0/24 network, which is the VPC on the other side
 # of the router.
@@ -603,22 +658,24 @@ echo "VPN ready.  To kill it:"
 echo "    sudo killall openvpn"
 """
 
+
 def create_openvpn_client_cfg_file(hostname,
                             client_ip,
-                            server_ip ):
+                            server_ip):
     s = """
 remote """ + hostname + """
 dev tun
-ifconfig """ + client_ip + " " + server_ip +  """
+ifconfig """ + client_ip + " " + server_ip + """
 secret openvpn.key
-    """ 
+    """
     return s
 
+
 def create_ros_connect_file(machine_ip, master_ip ):
-    
+
     s = """
 # To connect via ROS:
-# 1. Connect via OpenVPN 
+# 1. Connect via OpenVPN
 # 2. Download this file: [ros.sh] <- autogenerated with the right IP addresses
 # 3. In a terminal, go to the directory containing that file.
 # 4. Execute the following command:
@@ -627,48 +684,51 @@ def create_ros_connect_file(machine_ip, master_ip ):
 
 # ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path
 oldrpp=$ROS_PACKAGE_PATH
-. /opt/ros/fuerte/setup.sh
+. /usr/share/drcsim/setup.sh
 eval export ROS_PACKAGE_PATH=$oldrpp:\$ROS_PACKAGE_PATH
 export ROS_IP=""" + machine_ip + """
-export ROS_MASTER_URI=http://""" + master_ip + """:11311 
+export ROS_MASTER_URI=http://""" + master_ip + """:11311
 
 export GAZEBO_IP=""" + machine_ip + """
 export GAZEBO_MASTER_URI=http://""" + master_ip + """:11345
-                
-    """  
+
+    """
     return s
+
 
 def create_ssh_connect_file(key_file, ip):
     s = """#!/bin/bash
 
 #
 # This command connects you to the simulation
-# It passes a keyfile to the ssh command and logs you in as the 
+# It passes a keyfile to the ssh command and logs you in as the
 # default user on the cloud machine
 
 # ssh -i """ + key_file + " ubuntu@" + ip + """
-    
+
 #
 # This commands is similar, but it suppresses prompts and can be invoked 
 # from any directory
-#    
+#
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/""" + key_file + " ubuntu@" + ip + """
-    """ 
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i "$DIR"/""" + key_file + " ubuntu@" + ip + """
+    """
     return s
 
 
 if __name__ == "__main__":
-    
+
     print("MAIN")
-    
-    OPENVPN_SERVER_IP='11.8.0.1'
-    OPENVPN_CLIENT_IP='11.8.0.2'
+
+    OPENVPN_SERVER_IP = '11.8.0.1'
+    OPENVPN_CLIENT_IP = '11.8.0.2'
     drc_package_name = 'drcsim'
     open_vpn_script = get_open_vpn_single(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
-    SIM_SCRIPT = get_drc_startup_script(open_vpn_script, OPENVPN_SERVER_IP, drc_package_name)
+    SIM_SCRIPT = get_drc_startup_script(open_vpn_script,
+                                        OPENVPN_SERVER_IP,
+                                        drc_package_name,
+                                        ros_master_ip="10.0.0.51",
+                                        pcibus_id="130")
 
     print(SIM_SCRIPT)
-    
-    
-    
+

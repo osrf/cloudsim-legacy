@@ -11,16 +11,17 @@ function create_latency_widget(machine_div,
                                constellation_name, 
                                machine_name,
                                data_key,
-                               title)
+                               title,
+                               max_value)
 {
-    var unique_plot_id = "latency_"+machine_name;
+    var unique_plot_id = "latency_"+ constellation_name + "_" + machine_name;
     var widget_div = _create_empty_widget(machine_div, unique_plot_id);
     widget_div.style.height = "150px";
     
     // Set widget's title
     var title_div = document.createElement("div")
     title_div.setAttribute("id", "latency_" + machine_name + "_title");
-    title_div.setAttribute("style", "width: 100%; float: left; height: 10px; padding: 10px 0px 0px 17px; position: relative;");
+    title_div.setAttribute("style", "width:800px; padding: 10px 0px 0px 17px; position: relative;");
     title_div.innerHTML = "<b>" + title + "</b>";
     widget_div.parentElement.insertBefore(title_div, widget_div);
 
@@ -29,19 +30,26 @@ function create_latency_widget(machine_div,
                              { label:"max", color: max_color, data:[]}, 
                              { label:"average", color:avg_color, data:[]} 
                          ];
-
-
+    
+    // how to display the decimal values on
+    // the y axis
+    var decimal_places = 0;
+    if (max_value < 100)
+    {
+    	decimal_places = 2;
+    }
+    	
     var plot_options = {
 
     		yaxis: {
     		        min: 0,
-    		        max: 550,
+    		        max: max_value,
     		        tickFormatter : function (v, yaxis) 
         			{ 
         				//var v = (xaxis.max -v);   
-        				var str = v.toFixed(0) + " ms"; 
+        				var str = v.toFixed(decimal_places) + " ms"; 
         				return  str;
-        			},
+        			}
     		   },
 
     		xaxis: { 
@@ -106,7 +114,18 @@ function create_latency_widget(machine_div,
 //    	console.log(values_str);
     	var values = eval(values_str)
 //    	console.log(values.length)
-   	
+   		
+    	try
+    	{
+        	var avg_latency = values[0][2];
+        	var str = avg_latency.toFixed(3) + " ms"; 
+        	title_div.innerHTML = "<b>" + title  +" [" + str + "]"+ "</b>";
+    	}
+    	catch(err)
+    	{
+    		title_div.innerHTML = "<b>" + title + "</b>";
+    	}
+    	
     	var latency_plot_data = latency_data[unique_plot_id]['plot_data'];
     	_set_latency_data(latency_plot_data, values);
     	
@@ -123,6 +142,10 @@ function create_latency_widget(machine_div,
 
 function _set_latency_data(latency_plot_data, values)
 {
+	if (values == undefined)
+	{
+		return;
+	}
 	if(values.length ==0)
 		return;
 	

@@ -11,7 +11,7 @@ cgitb.enable()
 from common import  authorize
 
 
-TEAM_LOGIN_SSH_FNAME= '/var/www/cloudsim_ssh.zip'
+TEAM_LOGIN_SSH_FNAME = '/var/www/cloudsim_ssh.zip'
 
 
 email = authorize("admin")
@@ -30,4 +30,3 @@ while True:
     sys.stdout.write(data)
     if not data:
         break
-    

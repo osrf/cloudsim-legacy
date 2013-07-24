@@ -9,3 +9,85 @@ body {
 h2 {
    color: #444A7B;
 }
+
+body {
+  font-family: sans-serif;
+  font-size: 16px;
+  margin: 50px;
+  max-width: 1000px;
+  background-color: transparent; // for round status images
+}
+
+h2 {
+   color: #444A7B;
+}
+
+.top_level_title
+{
+   color: #444A7B;
+   font-family: sans-serif;
+   font-size: 1.5em;
+   font-weight: bold;
+}
+
+.second_level_title, .third_level_title
+{
+    font-weight: bold;
+    font-family: sans-serif;
+    font-weight: bold;
+    border-top-left-radius: 15px; 
+    border-top-right-radius: 15px; 
+    color: white; 
+    padding-left:10px;
+    padding-right:10px;
+}
+.second_level_title
+{
+    background-color: #44497a; //rgb(68, 73, 122);
+    font-size: 1.17em;
+}
+
+.third_level_title
+{
+    background-color: #44497a;
+}
+
+.top_level_container, .second_level_container, .third_level_container
+{
+    border: 1px solid black;
+    border-radius: 15px;
+    margin-bottom: 10px;
+}
+
+.top_level_container
+{
+    background-color: #f1f1f2; 
+    border: 1px solid; 
+
+    padding: 10px;
+    margin-bottom:20px;
+}
+
+.second_level_container
+{
+    border: 1px solid rgb(83, 84, 83);
+    background-color: #a7a6a6;
+}
+
+.third_level_container
+{
+    background-color: #f1f1f2;  
+    margin: 10px;
+}
+
+
+
+.task_line
+{
+    border: 1px solid black; 
+    border-top-left-radius: 8px; 
+    border-top-right-radius: 8px; 
+    border-bottom-right-radius: 8px; 
+    border-bottom-left-radius: 8px; 
+    margin: 5px;
+}

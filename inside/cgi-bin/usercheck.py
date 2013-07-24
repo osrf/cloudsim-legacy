@@ -30,7 +30,10 @@ if not email:
     if openid_session in sdb.db:
         email = sdb.db[openid_session]
         
-
+# Force email to lower case for comparison to users list, which we
+# lower-cased when loading.
+if email:
+    email = email.lower()
 
 if email not in users:
     
@@ -51,9 +54,9 @@ if email not in users:
         <a href="/cloudsim/login.html">login</a>
         """)
         sys.exit(0)
-    
 
-    
+
+
 # Save session ID and email to our own database
 
 sdb.db[openid_session] = email
