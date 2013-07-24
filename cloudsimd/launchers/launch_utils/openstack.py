@@ -6,6 +6,8 @@ import sys
 import uuid
 import unittest
 import redis
+import paramiko
+import commands
 
 import novaclient.v1_1.client as nvclient
 import novaclient.exceptions
@@ -14,15 +16,21 @@ from testing import get_test_runner, get_test_path, get_boto_path,\
     get_test_dir
 from launch_db import ConstellationState
 from launch_db import get_unique_short_name
+from sshclient import SshClient
+from ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
 
-
-def acquire_openstack_server(constellation_name, creds, machine_name, constellation_directory):
-    floating_ip, instance_name, keypair_name, security_group_name = launch(constellation_name, machine_name)
+def acquire_openstack_server(constellation_name,
+                             creds,
+                             machine_name,
+                             constellation_directory):
+    floating_ip, instance_name, keypair_name, security_group_name = launch(
+        constellation_name, machine_name)
     constellation = ConstellationState(constellation_name)
     constellation.set_value("security_group", security_group_name)
     constellation.set_value("keypair", keypair_name)
     constellation.set_value("instance", instance_name)
     return floating_ip, instance_name, keypair_name
+
 
 def terminate_openstack_server(constellation_name):
     #get secgroups and key
@@ -32,27 +40,36 @@ def terminate_openstack_server(constellation_name):
     instance_name = constellation.get_value("instance")
     terminate(instance_name, keypair, secgroup)
 
+
 def launch(constellation_name, machine_name):
     creds = get_nova_creds()
     nova = nvclient.Client(**creds)
     #keypair
     keypair_name = "key_" + constellation_name
-    #nova.keypairs.create(name=keypair_name) 
+    #nova.keypairs.create(name=keypair_name)
     if not nova.keypairs.findall(name="key_"+constellation_name):
         with open(os.path.expanduser('~/.ssh/id_rsa.pub')) as fpubkey:
             nova.keypairs.create(name=keypair_name, public_key=fpubkey.read())
     #security group
     security_group_name = "security_" + constellation_name
-    security_group = nova.security_groups.create(name=security_group_name,
+    security_group = nova.security_groups.create(
+        name=security_group_name,
         description="Security group for " + constellation_name)
-    nova.security_group_rules.create(security_group.id,"TCP",22,22,"0.0.0.0/0")
-    nova.security_group_rules.create(security_group.id,"ICMP",-1,-1,"0.0.0.0/0")
+    nova.security_group_rules.create(
+        security_group.id, "TCP", 22, 22, "0.0.0.0/0")
+    nova.security_group_rules.create(
+        security_group.id, "ICMP", -1, -1, "0.0.0.0/0")
     #create instance
     instance_name = machine_name + "_" + constellation_name
     image = nova.images.find(name="cirros-0.3.1-x86_64-uec")
     flavor = nova.flavors.find(name="m1.tiny")
-    instance = nova.servers.create(name=instance_name, image=image,
-        flavor=flavor, security_groups=[security_group.name], key_name=keypair_name)
+    user_data = startup_scripts.py #startup script
+    instance = nova.servers.create(name=instance_name,
+                                   image=image,
+                                   flavor=flavor,
+                                   security_groups=[security_group.name],
+                                   key_name=keypair_name,
+                                   user_data=user_data)
     status = instance.status
     while status == 'BUILD':
         time.sleep(5)
@@ -62,17 +79,17 @@ def launch(constellation_name, machine_name):
     #assign_floating_ip
     instance = nova.servers.get(instance.id)
     flag = 0
-    instance_ip=None
+    instance_ip = None
     for floating_ip in nova.floating_ips.list():
-        if floating_ip.instance_id == None:
+        if floating_ip.instance_id is None:
             instance.add_floating_ip(floating_ip)
-            instance_ip = floating_ip
             flag = 1
             break
     if not flag:
         floating_ip = nova.floating_ips.create()
         instance.add_floating_ip(floating_ip)
     return floating_ip, instance_name, keypair_name, security_group_name
+
 
 def terminate(instance_name, keypair_name, secgroup_name):
     creds = get_nova_creds()
@@ -95,13 +112,14 @@ def terminate(instance_name, keypair_name, secgroup_name):
     print("Terminating instance")
     terminated = False
     instance.delete()
-    while not terminated: 
+    while not terminated:
         try:
             nova.servers.find(name=instance_name)
             time.sleep(5)
         except novaclient.exceptions.NotFound:
             print("Instance terminated")
             terminated = True
+
 
 def get_nova_creds():
     creds = {}
@@ -121,10 +139,23 @@ class TestOpenstack(unittest.TestCase):
         print(self.constellation_directory)
         creds = get_nova_creds()
         machine_name = "cloudsim_server"
-        acquire_openstack_server(self.constellation_name, creds, machine_name, self.constellation_directory)
-
-        self.assertTrue(True)
-
+        floating_ip, instance_name, keypair_name = acquire_openstack_server(
+            self.constellation_name, creds, machine_name,
+            self.constellation_directory)
+        
+        uname = 'cirros'
+        ssh = SshClient(self.constellation_directory, keypair_name,
+                'cirros', floating_ip.ip)
+        get_ssh_cmd_generator(ssh_client, cmd, expected_output
+        #assertTrue(ssh.cmd(
+        time.sleep(2)
+        #TODO fix timing
+        pingable, ping_str = commands.getstatusoutput(
+            "ping -c3 %s" % floating_ip.ip)
+        print("pingable",pingable)
+        raw_input("enter to continue")
+        #ssh = paramiko.SSHClient()
+        self.assertEqual(pingable, 0, ping_str)
     def setUp(self):
         pass
 
