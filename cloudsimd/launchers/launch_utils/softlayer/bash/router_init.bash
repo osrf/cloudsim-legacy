@@ -383,7 +383,7 @@ fi
 DELIM
 chmod +x $DIR/get_sim_logs.bash
 
-echo "done :-)"
+# --------------------------------------------
 
 
 cat <<DELIM > $DIR/update_constellation.bash
@@ -393,9 +393,9 @@ exec > $DIR/update_constellation.log 2>&1
 
 echo "TODO: update_drcsim.bash"
 
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "nohup sudo cloudsim/update_drcsim.bash > update_drcsim_sim.out 2> update_drcsim_sim.err < /dev/null"
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_IP "nohup sudo cloudsim/update_drcsim.bash > update_drcsim_fc1.out 2> update_drcsim_sim.err < /dev/null"
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem ubuntu@$FC2_IP "nohup sudo cloudsim/update_drcsim.bash > update_drcsim_fc2.out 2> update_drcsim_sim.err < /dev/null"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-sim.pem ubuntu@$SIM_IP "nohup sudo cloudsim/update_software.bash > update_software_sim.out 2> update_software_sim.err < /dev/null"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc1.pem ubuntu@$FC1_IP "nohup sudo cloudsim/update_software.bash > update_software_fc1.out 2> update_software_fc1.err < /dev/null"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i $DIR/key-fc2.pem ubuntu@$FC2_IP "nohup sudo cloudsim/update_software.bash > update_software_fc2.out 2> update_software_fc2.err < /dev/null"
 
 # update local packages on the router
 sudo cloudsim/update_drcsim.bash &
@@ -403,3 +403,4 @@ sudo cloudsim/update_drcsim.bash &
 DELIM
 chmod +x $DIR/update_constellation.bash
 
+echo "done :-)"

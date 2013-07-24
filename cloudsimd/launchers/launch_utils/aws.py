@@ -8,6 +8,8 @@ from launch_db import get_cloudsim_config
 from launch_db import log_msg
 from launch_db import ConstellationState
 from sshclient import clean_local_ssh_key_entry
+import shutil
+import os
 
 
 VPN_PRIVATE_SUBNET = '10.0.0.0/24'
@@ -174,7 +176,7 @@ def acquire_aws_constellation(constellation_name,
     log("VPC %s" % vpc_id)
     roles_to_reservations = {}
     for machine_name, machine_data in machines.iteritems():
-        key_pair_name = _acquire_key_pair(constellation_name,
+        aws_key_name = _acquire_key_pair(constellation_name,
                           machine_name, ec2conn)
 
         security_group_id = _acquire_vpc_security_group(constellation_name,
@@ -184,7 +186,7 @@ def acquire_aws_constellation(constellation_name,
                                     ec2conn)
         reservation_id = _acquire_vpc_server(constellation_name,
                                              machine_name,
-                                             key_pair_name,
+                                             aws_key_name,
                                              machine_data,
                                              subnet_id,
                                              security_group_id,
@@ -297,10 +299,27 @@ def _acquire_vpc_elastic_ip(constellation_name,
         constellation.set_value(ip_key, public_ip)
         #
         #
-        # <Response><Errors><Error><Code>InvalidAllocationID.NotFound</Code><Message>The allocation ID 'eipalloc-d1c83abf' does not exist</Message></Error></Errors><RequestID>12897757-db5b-40b5-a3d1-9ac94ff0d20b</RequestID></Response>
+        # <Response>
+        # <Errors><Error><Code>InvalidAllocationID.NotFound</Code>
+        #   <Message>
+        # The allocation ID 'eipalloc-d1c83abf' does not exist
+        #   </Message>
+        # </Error></Errors>
+        #  <RequestID>
+        #    12897757-db5b-40b5-a3d1-9ac94ff0d20b
+        #  </RequestID>
+        # </Response>
         #
         #
-        ec2conn.associate_address(aws_id,  allocation_id=allocation_id)
+        i = 0
+        while i < 5:
+            try:
+                time.sleep(i * 2)
+                ec2conn.associate_address(aws_id, allocation_id=allocation_id)
+                i = 5
+            except:
+                i += 1
+
         clean_local_ssh_key_entry(public_ip)
         return public_ip
     except Exception, e:
@@ -363,7 +382,7 @@ def _acquire_vpc(constellation_name, vpcconn, availability_zone):
                 aws_vpc.add_tag('constellation', constellation_name)
                 i = 10
             except:
-                i +1
+                i += 1
                 time.sleep(i * 2)
     except Exception as e:
         constellation.set_value('error', "%s" % e)
@@ -439,7 +458,7 @@ def _acquire_vpc_security_group(constellation_name,
     try:
         sg_name = '%s-sg-%s' % (machine_prefix, constellation_name)
         if machine_prefix == "router":
-            dsc = 'router security group for %s'% (constellation_name)
+            dsc = 'router security group for %s' % (constellation_name)
             sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
             sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
             sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
@@ -502,10 +521,12 @@ def _acquire_key_pair(constellation_name, machine_prefix, ec2conn):
         constellation_directory = constellation.get_value(
                                                     'constellation_directory')
         key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
-        key_key = '%s_key_pair_name' % machine_prefix
-        constellation.set_value(key_key, key_pair_name)
         key_pair = ec2conn.create_key_pair(key_pair_name)
         key_pair.save(constellation_directory)
+        src = os.path.join(constellation_directory, '%s.pem' % key_pair_name)
+        dst = os.path.join(constellation_directory,
+                                    'key-%s.pem' % machine_prefix)
+        shutil.copy(src, dst)
         return key_pair_name
     except Exception, e:
         constellation.set_value('error', "key error: %s" % e)
@@ -516,8 +537,7 @@ def _release_key_pair(constellation_name, machine_prefix, ec2conn):
     constellation = ConstellationState(constellation_name)
     key_pair_name = None
     try:
-        key_key = '%s_key_pair_name' % machine_prefix
-        key_pair_name = constellation.get_value(key_key)
+        key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
         ec2conn.delete_key_pair(key_pair_name)
     except Exception, e:
         error_msg = constellation.get_value('error')
