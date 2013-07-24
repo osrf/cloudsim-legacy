@@ -30,7 +30,7 @@ parser.add_argument('access_key', metavar='ACCESS-KEY', help='AWS access key')
 parser.add_argument('secret_key', metavar='SECRET-KEY', help='AWS secret key')
 parser.add_argument('ec2_zone', metavar='EC2-AVAILABILITY-ZONE',
                     help='Amazon EC2 availability zone',
-                    choices=['us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d', 'eu-west-1a', 'eu-west-1b', 'eu-west-1c',])
+                    choices=['nova', 'us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d', 'eu-west-1a', 'eu-west-1b', 'eu-west-1c',])
 
 # Parse command line arguments
 args = parser.parse_args()
