@@ -334,23 +334,17 @@ mkdir -p /home/ubuntu/cloudsim
 mkdir -p /home/ubuntu/cloudsim/setup
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
-# Signal we can send the keys to the router (we need unzip)
-apt-get install -y unzip
-touch cloudsim/setup/deploy_ready
-
-
-# Add OSRF repositories
-echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
-wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
-
-# ROS setup
-sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
-wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
 
 apt-get update
 
-apt-get install -y ntp
+apt-get install -y unzip
 apt-get install -y openvpn
+# Signal we are ready to send the keys to the router. We need:
+# * unzip, and unzip needs update
+# * openvpn
+touch cloudsim/setup/deploy_ready
+
+apt-get install -y ntp
 apt-get install -y vim ipython
 
 # SSH HPN
@@ -420,6 +414,20 @@ ln -sf /etc/init.d/iptables_cloudsim /etc/rc2.d/S99iptables_cloudsim
 /etc/init.d/iptables_cloudsim start
 
 
+##############################################################
+#
+# ROBOTICS software install
+#
+#
+
+# Add OSRF repositories
+echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
+
+# ROS setup
+sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
+wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+
 # At least in some cases, we need to explicitly install graphviz before ROS to avoid apt-get dependency problems.
 sudo apt-get install -y graphviz
 # That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
@@ -441,6 +449,9 @@ sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Intern
 sudo apt-get install -y cloudsim-client-tools
 
 sudo start vrc_monitor || true
+
+
+##############################################################
 
 # Create upstart vrc_sniffer job
 cat <<DELIM > /etc/init/vrc_sniffer.conf
@@ -1422,9 +1433,17 @@ def deploy_constellation(constellation_name):
         constellation_directory,
         machines,
         [openvpn_fname])
+
     constellation.set_value('router_launch_msg',
                             "waiting for machine to be online")
+    __wait_for_find_file(constellation_name,
+                         constellation_directory,
+                         ["router"],
+                         "cloudsim/setup/launch_stdout_stderr.log",
+                         "running")
 
+    constellation.set_value('router_launch_msg',
+                            "waiting for base packages to be installed")
     __wait_for_find_file(constellation_name,
                          constellation_directory,
                          ["router"],
