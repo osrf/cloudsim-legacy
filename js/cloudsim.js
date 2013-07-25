@@ -13,7 +13,7 @@ function create_constellation(div_name, configuration, constellation, username, 
     
     var machines_div =  constellation_div.querySelector("#machines" );
     
-    if(configuration.indexOf ("OSRF VRC Constellation") == 0 )
+    if(configuration.indexOf ("OSRF VRC Constellation") == 0 || configuration.indexOf("AWS trio") ==0)
     {
     	create_task_list_widget(constellation_div, constellation);
 
@@ -35,12 +35,11 @@ function create_constellation(div_name, configuration, constellation, username, 
         {
             var machine_name = "router";
             var machine_div = create_machine(machines_div, machine_name);
-            
 
+            create_hostname_widget(machine_div, constellation, machine_name, "router_ip", "router_aws_id", "username", "gmt", "router_zip_file", false);
             create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "router_launch_msg", "router_state");
             create_machine_state_widget(machine_div,constellation, machine_name, "router_aws_state");
             //create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
-            create_hostname_widget(machine_div, constellation, machine_name, "router_ip", "router_aws_id", "username", "gmt", "router_zip_file", false);
             create_latency_widget(machine_div, constellation, machine_name, "router_latency", "RTT latency to the OCU accross the VPN", 550); 
         }
     	// field computer 1
@@ -87,7 +86,8 @@ function create_constellation(div_name, configuration, constellation, username, 
         create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to its parent CloudSim", 550);
     }
 
-    if(configuration.indexOf("AWS trio") ==0 || configuration.indexOf("AWS micro trio") ==0  )
+    // if(configuration.indexOf("AWS trio") ==0 || configuration.indexOf("AWS micro trio") ==0  )
+    if (false)
     {
     	create_task_list_widget(constellation_div, constellation);
     	// field computer

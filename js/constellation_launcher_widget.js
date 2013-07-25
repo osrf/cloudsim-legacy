@@ -27,21 +27,24 @@ function create_constellation_launcher_widget(div_name)
         var option=document.createElement("option");
         option.text=configuration;
         configs_select.add(option,null);
-    }
-
+	}
+	
+	var desc = document.createElement("div");
     configs_select.onchange = function()
     {
     	var i = configs_select.selectedIndex;
         var config = configs_select.options[i].text;
         var description = machine_configurations[config].description;
         
-        desc.innerHTML = description;	
+        desc.innerHTML = "<br>"+description;
     }
 
     var launch_button= document.createElement('input');
     widget.appendChild(launch_button);
     launch_button.setAttribute('type','button');
     launch_button.setAttribute('value','Deploy');
+	
+	widget.appendChild(desc);
 
     launch_button.onclick =  function() {
             var i = configs_select.selectedIndex;
