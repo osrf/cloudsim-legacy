@@ -334,7 +334,10 @@ mkdir -p /home/ubuntu/cloudsim
 mkdir -p /home/ubuntu/cloudsim/setup
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
-# Signal we can send the keys to the router
+# Signal we can send the keys to the router (we need unzip)
+apt-get install -y unzip
+touch cloudsim/setup/deploy_ready
+
 
 # Add OSRF repositories
 echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
@@ -1420,14 +1423,13 @@ def deploy_constellation(constellation_name):
         machines,
         [openvpn_fname])
     constellation.set_value('router_launch_msg',
-                            "waiting for setup script completion")
+                            "waiting for machine to be online")
 
     __wait_for_find_file(constellation_name,
                          constellation_directory,
                          ["router"],
-                         "launch_stdout_stderr.log",
+                         "cloudsim/setup/deploy_ready",
                          "running")
-
 
     constellation.set_value('router_launch_msg', "deploying keys")
     ssh_router.upload_file(deploy_fname, "cloudsim/deploy.zip")
