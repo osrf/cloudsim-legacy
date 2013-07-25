@@ -202,6 +202,8 @@ def acquire_aws_constellation(constellation_name,
                                             final_state='network_setup')
 
     for machine_name, aws_id in machines_to_awsid.iteritems():
+        m = "acquiring public Internet IP"
+        constellation.set_value("%s_launch_msg" % machine_name, m)
         _acquire_vpc_elastic_ip(constellation_name,
                                 machine_name,
                                 aws_id,
@@ -312,13 +314,15 @@ def _acquire_vpc_elastic_ip(constellation_name,
         #
         #
         i = 0
-        while i < 5:
+        while i < 10:
             try:
                 time.sleep(i * 2)
                 ec2conn.associate_address(aws_id, allocation_id=allocation_id)
-                i = 5
+                i = 10
             except:
                 i += 1
+                if i == 10:
+                    raise
 
         clean_local_ssh_key_entry(public_ip)
         return public_ip
