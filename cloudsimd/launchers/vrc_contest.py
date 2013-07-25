@@ -1439,7 +1439,7 @@ def deploy_constellation(constellation_name):
     __wait_for_find_file(constellation_name,
                          constellation_directory,
                          ["router"],
-                         "cloudsim/launch_stdout_stderr.log",
+                         "launch_stdout_stderr.log",
                          "running")
 
     constellation.set_value('router_launch_msg',

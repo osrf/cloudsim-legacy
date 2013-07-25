@@ -300,28 +300,19 @@ def _acquire_vpc_elastic_ip(constellation_name,
         ip_key = '%s_public_ip' % machine_name_prefix
         constellation.set_value(ip_key, public_ip)
         #
-        #
-        # <Response>
         # <Errors><Error><Code>InvalidAllocationID.NotFound</Code>
-        #   <Message>
-        # The allocation ID 'eipalloc-d1c83abf' does not exist
-        #   </Message>
-        # </Error></Errors>
-        #  <RequestID>
-        #    12897757-db5b-40b5-a3d1-9ac94ff0d20b
-        #  </RequestID>
-        # </Response>
         #
-        #
+        time.sleep(5)
+        max = 20
         i = 0
-        while i < 10:
+        while i < max:
             try:
                 time.sleep(i * 2)
                 ec2conn.associate_address(aws_id, allocation_id=allocation_id)
-                i = 10
+                i = max  # leave the loop
             except:
                 i += 1
-                if i == 10:
+                if i == max:
                     raise
 
         clean_local_ssh_key_entry(public_ip)
