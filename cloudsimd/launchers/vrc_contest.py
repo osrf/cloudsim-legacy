@@ -334,15 +334,16 @@ mkdir -p /home/ubuntu/cloudsim
 mkdir -p /home/ubuntu/cloudsim/setup
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
-
+#
+# Install minimum to deploy cloudsim scripts
+#
 apt-get update
-
 apt-get install -y unzip
 apt-get install -y openvpn
 # Signal we are ready to send the keys to the router. We need:
 # * unzip, and unzip needs update
 # * openvpn
-touch cloudsim/setup/deploy_ready
+touch /home/ubuntu/cloudsim/setup/deploy_ready
 
 apt-get install -y ntp
 apt-get install -y vim ipython
@@ -427,6 +428,9 @@ wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
 # ROS setup
 sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
 wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+
+# we need to tell apt about the new repos
+apt-get update
 
 # At least in some cases, we need to explicitly install graphviz before ROS to avoid apt-get dependency problems.
 sudo apt-get install -y graphviz
