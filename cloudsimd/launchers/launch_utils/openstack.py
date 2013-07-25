@@ -23,8 +23,8 @@ def acquire_openstack_server(constellation_name,
                              creds,
                              machine_name,
                              constellation_directory):
-    floating_ip, instance_name, keypair_name, security_group_name = launch(
-        constellation_name, machine_name)
+    floating_ip, instance_name, keypair_name, security_group_name = \
+        launch(constellation_name, machine_name, constellation_directory)
     constellation = ConstellationState(constellation_name)
     constellation.set_value("security_group", security_group_name)
     constellation.set_value("keypair", keypair_name)
@@ -41,15 +41,17 @@ def terminate_openstack_server(constellation_name):
     terminate(instance_name, keypair, secgroup)
 
 
-def launch(constellation_name, machine_name):
+def launch(constellation_name, machine_name, constellation_directory):
     creds = get_nova_creds()
     nova = nvclient.Client(**creds)
     #keypair
     keypair_name = "key_" + constellation_name
-    #nova.keypairs.create(name=keypair_name)
-    if not nova.keypairs.findall(name="key_"+constellation_name):
-        with open(os.path.expanduser('~/.ssh/id_rsa.pub')) as fpubkey:
-            nova.keypairs.create(name=keypair_name, public_key=fpubkey.read())
+    keypair = nova.keypairs.create(name=keypair_name)
+    private_key = keypair.private_key
+    path = os.path.join(constellation_directory, "%s.pem" % keypair_name)
+    with open(path, 'w') as key_file: 
+        key_file.write(private_key)
+    os.chmod(path, 0600)
     #security group
     security_group_name = "security_" + constellation_name
     security_group = nova.security_groups.create(
@@ -63,7 +65,7 @@ def launch(constellation_name, machine_name):
     instance_name = machine_name + "_" + constellation_name
     image = nova.images.find(name="cirros-0.3.1-x86_64-uec")
     flavor = nova.flavors.find(name="m1.tiny")
-    user_data = startup_scripts.py #startup script
+    user_data = "startup_scripts.py" #startup script
     instance = nova.servers.create(name=instance_name,
                                    image=image,
                                    flavor=flavor,
@@ -135,6 +137,7 @@ class TestOpenstack(unittest.TestCase):
         self.constellation_name = get_unique_short_name("x")
         p = os.path.join(get_test_path("openstack"), self.constellation_name)
         self.constellation_directory = os.path.abspath(p)
+        print(self.constellation_directory)
         os.makedirs(self.constellation_directory)
         print(self.constellation_directory)
         creds = get_nova_creds()
@@ -142,20 +145,29 @@ class TestOpenstack(unittest.TestCase):
         floating_ip, instance_name, keypair_name = acquire_openstack_server(
             self.constellation_name, creds, machine_name,
             self.constellation_directory)
-        
+        constellation = ConstellationState(self.constellation_name)
         uname = 'cirros'
         ssh = SshClient(self.constellation_directory, keypair_name,
                 'cirros', floating_ip.ip)
-        get_ssh_cmd_generator(ssh_client, cmd, expected_output
-        #assertTrue(ssh.cmd(
-        time.sleep(2)
-        #TODO fix timing
-        pingable, ping_str = commands.getstatusoutput(
-            "ping -c3 %s" % floating_ip.ip)
-        print("pingable",pingable)
-        raw_input("enter to continue")
-        #ssh = paramiko.SSHClient()
+        cmd = 'pwd'
+        expected_output = '/home/cirros'
+        ssh_command = get_ssh_cmd_generator(ssh, cmd, expected_output,
+                constellation, "can_ssh", 1, max_retries=100)
+        ctr = 30
+        done = False
+        while not done:
+            time.sleep(2)
+            ctr -= 1
+            if ctr < 0:
+                msg = ("timeout while waiting for floating ip for %s" 
+                    % sim_machine_name)
+            pingable, ping_str = commands.getstatusoutput(
+                "ping -c3 %s" % floating_ip.ip)
+            if pingable == 0:
+                done = True
+        empty_ssh_queue([ssh_command], 2)
         self.assertEqual(pingable, 0, ping_str)
+
     def setUp(self):
         pass
 
