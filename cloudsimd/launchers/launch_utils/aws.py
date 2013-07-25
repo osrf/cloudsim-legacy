@@ -199,7 +199,7 @@ def acquire_aws_constellation(constellation_name,
                                             tags,
                                             constellation,
                                             max_retries=500,
-                                            final_state='network_setup')
+                                            final_state='packages_setup')
 
     for machine_name, aws_id in machines_to_awsid.iteritems():
         m = "acquiring public Internet IP"

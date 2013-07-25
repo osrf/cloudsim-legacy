@@ -329,15 +329,28 @@ deb-src http://extras.ubuntu.com/ubuntu precise main
 
 DELIM
 
+
+# Add OSRF repositories
+echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
+
+# ROS setup
+sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
+wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+
+# we need to tell apt about the new repos
+apt-get update
+
+
 # this is where we store all data for this part
 mkdir -p /home/ubuntu/cloudsim
 mkdir -p /home/ubuntu/cloudsim/setup
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
+
 #
 # Install minimum to deploy cloudsim scripts
 #
-apt-get update
 apt-get install -y unzip
 apt-get install -y openvpn
 # Signal we are ready to send the keys to the router. We need:
@@ -421,16 +434,6 @@ ln -sf /etc/init.d/iptables_cloudsim /etc/rc2.d/S99iptables_cloudsim
 #
 #
 
-# Add OSRF repositories
-echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
-wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
-
-# ROS setup
-sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
-wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
-
-# we need to tell apt about the new repos
-apt-get update
 
 # At least in some cases, we need to explicitly install graphviz before ROS to avoid apt-get dependency problems.
 sudo apt-get install -y graphviz
@@ -1001,7 +1004,7 @@ chmod +x /home/ubuntu/cloudsim/find_file_fc1.bash
 # --------------------------------------------
 cat <<DELIM > /home/ubuntu/cloudsim/reboot_fc1.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/hugo/code/cloudsim/cloudsimd/launchers/launch_utils/softlayer/bash/key-fc1.pem ubuntu@""" + FC1_IP + """ "sudo reboot"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc1.pem ubuntu@""" + FC1_IP + """ "sudo reboot"
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/reboot_fc1.bash
@@ -1009,7 +1012,7 @@ chmod +x /home/ubuntu/cloudsim/reboot_fc1.bash
 # --------------------------------------------
 cat <<DELIM > /home/ubuntu/cloudsim/reboot_fc2.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/hugo/code/cloudsim/cloudsimd/launchers/launch_utils/softlayer/bash/key-fc2.pem ubuntu@""" + FC2_IP + """ "sudo reboot"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc2.pem ubuntu@""" + FC2_IP + """ "sudo reboot"
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/reboot_fc2.bash
@@ -1017,7 +1020,7 @@ chmod +x /home/ubuntu/cloudsim/reboot_fc2.bash
 # --------------------------------------------
 cat <<DELIM > /home/ubuntu/cloudsim/reboot_sim.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/hugo/code/cloudsim/cloudsimd/launchers/launch_utils/softlayer/bash/key-sim.pem ubuntu@""" + SIM_IP + """ "sudo reboot"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """ "sudo reboot"
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/reboot_sim.bash
