@@ -12,12 +12,12 @@ import commands
 import novaclient.v1_1.client as nvclient
 import novaclient.exceptions
 
-from testing import get_test_runner, get_test_path, get_boto_path,\
-    get_test_dir
+from testing import get_test_runner, get_test_path
 from launch_db import ConstellationState
 from launch_db import get_unique_short_name
 from sshclient import SshClient
 from ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
+
 
 def acquire_openstack_server(constellation_name,
                              creds,
@@ -44,15 +44,15 @@ def terminate_openstack_server(constellation_name):
 def launch(constellation_name, machine_name, constellation_directory):
     creds = get_nova_creds()
     nova = nvclient.Client(**creds)
-    #keypair
+    #create keypair
     keypair_name = "key_" + constellation_name
     keypair = nova.keypairs.create(name=keypair_name)
     private_key = keypair.private_key
     path = os.path.join(constellation_directory, "%s.pem" % keypair_name)
-    with open(path, 'w') as key_file: 
+    with open(path, 'w') as key_file:
         key_file.write(private_key)
     os.chmod(path, 0600)
-    #security group
+    #create security group
     security_group_name = "security_" + constellation_name
     security_group = nova.security_groups.create(
         name=security_group_name,
@@ -63,15 +63,18 @@ def launch(constellation_name, machine_name, constellation_directory):
         security_group.id, "ICMP", -1, -1, "0.0.0.0/0")
     #create instance
     instance_name = machine_name + "_" + constellation_name
-    image = nova.images.find(name="cirros-0.3.1-x86_64-uec")
-    flavor = nova.flavors.find(name="m1.tiny")
-    user_data = "startup_scripts.py" #startup script
+    #image = nova.images.find(name="cirros-0.3.1-x86_64-uec")
+    #flavor = nova.flavors.find(name="m1.tiny")
+    image = nova.images.find(name="ubuntu12.04")
+    flavor = nova.flavors.find(name="ubuntu")
+    user_data = '''#!/bin/bash
+touch /home/ubuntu/new_file.txt'''  # startup script
     instance = nova.servers.create(name=instance_name,
                                    image=image,
                                    flavor=flavor,
                                    security_groups=[security_group.name],
                                    key_name=keypair_name,
-                                   user_data=user_data)
+                                   userdata=user_data)
     status = instance.status
     while status == 'BUILD':
         time.sleep(5)
@@ -146,11 +149,13 @@ class TestOpenstack(unittest.TestCase):
             self.constellation_name, creds, machine_name,
             self.constellation_directory)
         constellation = ConstellationState(self.constellation_name)
-        uname = 'cirros'
+        #uname = 'cirros'
+        uname = 'ubuntu'
         ssh = SshClient(self.constellation_directory, keypair_name,
-                'cirros', floating_ip.ip)
+                uname, floating_ip.ip)
         cmd = 'pwd'
-        expected_output = '/home/cirros'
+        #expected_output = '/home/cirros'
+        expected_output = '/home/ubuntu'
         ssh_command = get_ssh_cmd_generator(ssh, cmd, expected_output,
                 constellation, "can_ssh", 1, max_retries=100)
         ctr = 30
@@ -159,7 +164,7 @@ class TestOpenstack(unittest.TestCase):
             time.sleep(2)
             ctr -= 1
             if ctr < 0:
-                msg = ("timeout while waiting for floating ip for %s" 
+                msg = ("timeout while waiting for floating ip for %s"
                     % sim_machine_name)
             pingable, ping_str = commands.getstatusoutput(
                 "ping -c3 %s" % floating_ip.ip)
@@ -172,8 +177,8 @@ class TestOpenstack(unittest.TestCase):
         pass
 
     def tearDown(self):
-        terminate_openstack_server(self.constellation_name)
-
+        #terminate_openstack_server(self.constellation_name)
+        pass
 
 if __name__ == "__main__":
     xmlTestRunner = get_test_runner()
