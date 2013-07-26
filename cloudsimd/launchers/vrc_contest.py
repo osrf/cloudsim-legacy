@@ -297,35 +297,12 @@ set -ex
 exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
 
-
 cat <<DELIM > /etc/apt/sources.list
 
-
-deb http://us.archive.ubuntu.com/ubuntu/ precise main restricted
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise main restricted
-deb http://us.archive.ubuntu.com/ubuntu/ precise-updates main restricted
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates main restricted
-deb http://us.archive.ubuntu.com/ubuntu/ precise universe
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise universe
-deb http://us.archive.ubuntu.com/ubuntu/ precise-updates universe
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates universe
-deb http://us.archive.ubuntu.com/ubuntu/ precise multiverse
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise multiverse
-deb http://us.archive.ubuntu.com/ubuntu/ precise-updates multiverse
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates multiverse
-deb http://us.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
-deb http://security.ubuntu.com/ubuntu precise-security main restricted
-deb-src http://security.ubuntu.com/ubuntu precise-security main restricted
-deb http://security.ubuntu.com/ubuntu precise-security universe
-deb-src http://security.ubuntu.com/ubuntu precise-security universe
-deb http://security.ubuntu.com/ubuntu precise-security multiverse
-deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
-# deb http://archive.canonical.com/ubuntu precise partner
-# deb-src http://archive.canonical.com/ubuntu precise partner
-deb http://extras.ubuntu.com/ubuntu precise main
-deb-src http://extras.ubuntu.com/ubuntu precise main
-
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-updates main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-backports main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-security main restricted universe multiverse
 
 DELIM
 
@@ -570,41 +547,37 @@ exec > $logfile 2>&1
 
 cat <<DELIM > /etc/apt/sources.list
 
-deb http://us.archive.ubuntu.com/ubuntu/ precise main restricted
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise main restricted
-deb http://us.archive.ubuntu.com/ubuntu/ precise-updates main restricted
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates main restricted
-deb http://us.archive.ubuntu.com/ubuntu/ precise universe
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise universe
-deb http://us.archive.ubuntu.com/ubuntu/ precise-updates universe
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates universe
-deb http://us.archive.ubuntu.com/ubuntu/ precise multiverse
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise multiverse
-deb http://us.archive.ubuntu.com/ubuntu/ precise-updates multiverse
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise-updates multiverse
-deb http://us.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
-deb-src http://us.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
-deb http://security.ubuntu.com/ubuntu precise-security main restricted
-deb-src http://security.ubuntu.com/ubuntu precise-security main restricted
-deb http://security.ubuntu.com/ubuntu precise-security universe
-deb-src http://security.ubuntu.com/ubuntu precise-security universe
-deb http://security.ubuntu.com/ubuntu precise-security multiverse
-deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
-# deb http://archive.canonical.com/ubuntu precise partner
-# deb-src http://archive.canonical.com/ubuntu precise partner
-deb http://extras.ubuntu.com/ubuntu precise main
-deb-src http://extras.ubuntu.com/ubuntu precise main
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-updates main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-backports main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-security main restricted universe multiverse
+
 
 DELIM
 
+
+# Add ROS and OSRF repositories
+echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
+echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+
+date >> /home/ubuntu/setup.log
+echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
+wget http://packages.ros.org/ros.key -O - | apt-key add -
+wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
+
+
+""" + ppa_string + """
+
+echo "update packages" >> /home/ubuntu/setup.log
+apt-get update
+
 #
-# we need python-software-properties for ad
+# we need python-software-properties for ad-apt-repository
 # it requires apt-get update for some reason
 #
 apt-get remove -y unattended-upgrades
-
-apt-get update
 apt-get install -y python-software-properties zip
+
 add-apt-repository -y ppa:w-rouesnel/openssh-hpn
 apt-get update
 apt-get install -y openssh-server
@@ -618,6 +591,7 @@ HPNBufferSize 8192
 NoneEnabled yes
 EOF
 
+echo "restart ssh" >> /home/ubuntu/setup.log
 sudo service ssh restart
 
 mkdir -p /home/ubuntu/cloudsim
@@ -638,7 +612,7 @@ cat <<DELIM > /etc/rc.local
 #
 # By default this script does nothing.
 
-insmod /lib/modules/\`uname -r\`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
+# insmod /lib/modules/\`uname -r\`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
 
 exit 0
 DELIM
@@ -698,7 +672,7 @@ MAX_TIME=30
 echo \`date\` "Stop sim - Begin" >> /home/ubuntu/cloudsim/stop_sim.log
 . /usr/share/drcsim/setup.sh
 
-if timeout -k 1 2 gztopic list; then 
+if timeout -k 1 2 gztopic list; then
   LOG_PATH=\`ps aux | grep gzserver | grep -m 1 record_path | cut -d = -f 3 | cut -d ' ' -f 1\`/state.log
   echo "  Log file: \$LOG_PATH" >> /home/ubuntu/cloudsim/stop_sim.log 
   gzlog stop
@@ -803,22 +777,8 @@ fi
 DELIM
 
 
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
-
-# Add ROS and OSRF repositories
-echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
-echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
-
-date >> /home/ubuntu/setup.log
-echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
-wget http://packages.ros.org/ros.key -O - | apt-key add -
-wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
 
 
-""" + ppa_string + """
-
-echo "update packages" >> /home/ubuntu/setup.log
-apt-get update
 
 
 cat <<DELIM > /etc/init.d/vpcroute
@@ -849,9 +809,28 @@ ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
 # invoke it now to add route to the router
 /etc/init.d/vpcroute start || true
 
-echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
-apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` gnome-session-fallback
+#
+# Packages for X
+#
 
+echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
+apt-get install -y linux-headers-`uname -r`
+apt-get install -y pciutils
+apt-get install -y lsof
+
+
+
+apt-get install -y x11-xserver-utils
+apt-get install -y gnome-session
+apt-get install -y gnome-session-fallback
+apt-get install -y xserver-xorg-core
+
+
+apt-get install -y xserver-xorg
+apt-get install -y mesa-utils
+apt-get install -y lightdm
+
+# apt-get install -y linux-source
 
 """ + gpu_driver_packages_string + """
 
@@ -898,7 +877,7 @@ DELIM
 echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
 apt-get install -y cloudsim-client-tools
 
-
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 touch /home/ubuntu/cloudsim/setup/done
 
 """
@@ -950,82 +929,67 @@ def _create_deploy_zip_files(constellation_name,
                      constellation_directory,
                      machines,
                      files=[]):
+    
+    ssh_scripts = ""
 
+    for machine_name, data in machines.iteritems():
+        ip = data['ip']
+        ssh_scripts += """
+#
+# interactive ssh script
+#
+cat <<DELIM > /home/ubuntu/cloudsim/ssh-""" + machine_name+ """.bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name+ """.pem ubuntu@""" + ip + """
+DELIM
+chmod +x /home/ubuntu/cloudsim/ssh-""" + machine_name + """.bash
+# --------------------------------------------
+
+#
+# dpkg log script
+#
+cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_""" + machine_name+ """.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name+ """.pem ubuntu@""" + ip + """  "tail -1 /var/log/dpkg.log"
+DELIM
+chmod +x /home/ubuntu/cloudsim/dpkg_log_""" + machine_name+ """.bash
+# --------------------------------------------
+
+#
+# find file script
+#
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_""" + machine_name+ """.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name+ """.pem ubuntu@""" + ip + """  "ls \$1"
+DELIM
+chmod +x /home/ubuntu/cloudsim/find_file_""" + machine_name+ """.bash
+# --------------------------------------------
+
+#
+# reboot script
+#
+cat <<DELIM > /home/ubuntu/cloudsim/reboot_""" + machine_name+ """.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name+ """.pem ubuntu@""" + ip + """ "sudo reboot"
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/reboot_""" + machine_name+ """.bash
+
+"""
+
+    # now create a script that contains all the scripts together
     deploy_script = """#!/bin/bash
 
 # copy keys to cloudsim directory
 cp /home/ubuntu/cloudsim/deploy/*.pem /home/ubuntu/cloudsim
 
+""" + ssh_scripts + """
 
-cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_sim.bash
+
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_router.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "tail -1 /var/log/dpkg.log"
+ls \$1
 DELIM
-chmod +x /home/ubuntu/cloudsim/dpkg_log_sim.bash
-
-# --------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_sim.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "ls \$1"
-DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_sim.bash
-
-# --------------------------------------------
-
-cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_fc2.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc2.pem ubuntu@""" + FC2_IP + """  "tail -1 /var/log/dpkg.log"
-DELIM
-chmod +x /home/ubuntu/cloudsim/dpkg_log_fc2.bash
-
-# --------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_fc2.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc2.pem ubuntu@""" + FC1_IP + """  "ls \$1"
-DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_fc2.bash
-
-# --------------------------------------------
-
-cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_fc1.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc1.pem ubuntu@""" + FC1_IP + """  "tail -1 /var/log/dpkg.log"
-DELIM
-chmod +x /home/ubuntu/cloudsim/dpkg_log_fc1.bash
-
-# --------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_fc1.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc1.pem ubuntu@""" + FC1_IP + """  "ls \$1"
-DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_fc1.bash
-
-
-# --------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/reboot_fc1.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc1.pem ubuntu@""" + FC1_IP + """ "sudo reboot"
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/reboot_fc1.bash
-
-# --------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/reboot_fc2.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-fc2.pem ubuntu@""" + FC2_IP + """ "sudo reboot"
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/reboot_fc2.bash
-
-# --------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/reboot_sim.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """ "sudo reboot"
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/reboot_sim.bash
-
-
+chmod +x /home/ubuntu/cloudsim/find_file_""" + machine_name+ """.bash
 # --------------------------------------------
 
 cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
@@ -1486,7 +1450,8 @@ def launch(username, config, constellation_name, tags,
     ppa_list = []  # ['ubuntu-x-swat/x-updates']
     gpu_driver_list = ['nvidia-current',
                        'nvidia-settings',
-                       'nvidia-current-dev']
+                       'nvidia-current-dev',
+                       'nvidia-cg-toolkit']
     # if true, the machines are reloaded. This is done in the case
     # of partial reload because the terminate button would wipe out
     # all machines
@@ -1532,7 +1497,7 @@ def launch(username, config, constellation_name, tags,
                                     gpu_driver_list,
                                     ppa_list)
 
-    machines = {'router': {'hardware': 't1.micro',
+    machines = {'router': {'hardware': 'm1.large',    # 't1.micro',
                       'software': 'ubuntu_1204_x64',
                       'ip': ROUTER_IP,
                       'startup_script': router_script},
@@ -1648,12 +1613,12 @@ def __wait_for_find_file(constellation_name,
     q = []
     for machine_name in machine_names:
         q.append(get_ssh_cmd_generator(ssh_router,
-                                        "ls %s" % ls_cmd,
-                                        ls_cmd,
-                                        constellation,
-                                        "%s_state" % machine_name,
-                                        "running",
-                                        max_retries=500))
+                    "cloudsim/find_file_%s.bash %s" % (machine_name, ls_cmd),
+                    ls_cmd,
+                    constellation,
+                    "%s_state" % machine_name,
+                    "running",
+                    max_retries=500))
     empty_ssh_queue(q, sleep=2)
 
 
