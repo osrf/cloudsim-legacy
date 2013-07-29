@@ -322,6 +322,17 @@ apt-get update
 # this is where we store all data for this part
 mkdir -p /home/ubuntu/cloudsim
 mkdir -p /home/ubuntu/cloudsim/setup
+
+# this is a bootstrap script that we use to detect the presence of a file
+# on the machine. It is used by CloudSim and therefore must be present
+# on the machine soon after boot
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_router.bash
+#!/bin/bash
+ls \$1
+DELIM
+chmod +x /home/ubuntu/cloudsim/find_file_router.bash
+# --------------------------------------------
+
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
 
@@ -556,6 +567,7 @@ deb mirror://mirrors.ubuntu.com/mirrors.txt precise-security main restricted uni
 DELIM
 
 
+
 # Add ROS and OSRF repositories
 echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
 echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
@@ -568,18 +580,23 @@ wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
 
 """ + ppa_string + """
 
-echo "update packages" >> /home/ubuntu/setup.log
-apt-get update
 
 #
 # we need python-software-properties for ad-apt-repository
 # it requires apt-get update for some reason
 #
-apt-get remove -y unattended-upgrades
+
+# apt-get remove -y unattended-upgrades
 apt-get install -y python-software-properties zip
 
 add-apt-repository -y ppa:w-rouesnel/openssh-hpn
+
+
+echo "update packages" >> /home/ubuntu/setup.log
+apt-get upgrade
 apt-get update
+
+
 apt-get install -y openssh-server
 
 cat <<EOF >>/etc/ssh/sshd_config
@@ -598,7 +615,7 @@ mkdir -p /home/ubuntu/cloudsim
 mkdir -p /home/ubuntu/cloudsim/setup
 
 
-cat <<DELIM > /etc/rc.local
+#cat <<DELIM > /etc/rc.local
 #!/bin/sh -e
 #
 # rc.local
@@ -611,11 +628,9 @@ cat <<DELIM > /etc/rc.local
 # bits.
 #
 # By default this script does nothing.
-
 # insmod /lib/modules/\`uname -r\`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
-
-exit 0
-DELIM
+#exit 0
+#DELIM
 
 
 
@@ -984,13 +999,6 @@ cp /home/ubuntu/cloudsim/deploy/*.pem /home/ubuntu/cloudsim
 
 """ + ssh_scripts + """
 
-
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_router.bash
-#!/bin/bash
-ls \$1
-DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_""" + machine_name+ """.bash
-# --------------------------------------------
 
 cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
 #!/bin/bash
