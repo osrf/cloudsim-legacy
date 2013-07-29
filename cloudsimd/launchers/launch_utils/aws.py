@@ -149,6 +149,15 @@ def terminate_aws_server(constellation_name):
         log("error cleaning up security group %s: %s" % (security_group_id, e))
 
 
+def get_aws_sources_list(credentials_ec2):
+    """
+    Returns the package sources for the region
+    """
+    boto.config = BotoConfig(credentials_ec2)
+    # ec2conn = boto.connect_ec2()
+    availability_zone = boto.config.get('Boto', 'ec2_region_name')
+    
+
 def acquire_aws_constellation(constellation_name,
                               credentials_ec2,
                               machines,
@@ -195,9 +204,11 @@ def acquire_aws_constellation(constellation_name,
                                             tags,
                                             constellation,
                                             max_retries=500,
-                                            final_state='network_setup')
+                                            final_state='packages_setup')
 
     for machine_name, aws_id in machines_to_awsid.iteritems():
+        m = "acquiring public Internet IP"
+        constellation.set_value("%s_launch_msg" % machine_name, m)
         _acquire_vpc_elastic_ip(constellation_name,
                                 machine_name,
                                 aws_id,
@@ -293,27 +304,20 @@ def _acquire_vpc_elastic_ip(constellation_name,
         ip_key = '%s_public_ip' % machine_name_prefix
         constellation.set_value(ip_key, public_ip)
         #
-        #
-        # <Response>
         # <Errors><Error><Code>InvalidAllocationID.NotFound</Code>
-        #   <Message>
-        # The allocation ID 'eipalloc-d1c83abf' does not exist
-        #   </Message>
-        # </Error></Errors>
-        #  <RequestID>
-        #    12897757-db5b-40b5-a3d1-9ac94ff0d20b
-        #  </RequestID>
-        # </Response>
         #
-        #
+        time.sleep(5)
+        max = 20
         i = 0
-        while i < 5:
+        while i < max:
             try:
                 time.sleep(i * 2)
                 ec2conn.associate_address(aws_id, allocation_id=allocation_id)
-                i = 5
+                i = max  # leave the loop
             except:
                 i += 1
+                if i == max:
+                    raise
 
         clean_local_ssh_key_entry(public_ip)
         return public_ip
