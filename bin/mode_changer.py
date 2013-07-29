@@ -7,8 +7,6 @@ import sys
 import pytz
 import time
 import os
-import tempfile
-import shutil
 
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))

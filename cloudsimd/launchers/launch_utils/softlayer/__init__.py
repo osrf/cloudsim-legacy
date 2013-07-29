@@ -5,8 +5,6 @@ import time
 import SoftLayer.API
 import unittest
 import json
-import subprocess
-import shutil
 import datetime
 import commands
 import redis

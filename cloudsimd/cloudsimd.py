@@ -27,7 +27,6 @@ import traceback
 
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
-from launchers.launch_utils import set_constellation_data
 from launchers.launch_utils import aws_connect
 from launchers.launch_utils.softlayer import get_constellation_prefixes
 from launchers.launch_utils import LaunchException
@@ -37,9 +36,6 @@ from launchers.launch_utils.launch_db import log_msg
 
 # for interactive use
 from launchers.launch_utils.softlayer import load_osrf_creds
-from launchers.launch_utils.softlayer import softlayer_dash_board
-from launchers.launch_utils.softlayer import softlayer_server_scan
-from launchers.launch_utils.softlayer import get_machine_login_info
 
 import datetime
 
@@ -643,7 +639,7 @@ def monitor(config, constellation_name):
     
     """
     proc = multiprocessing.current_process().name
-    log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))
+    #log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))
     try:
         done = False
         constellation_plugin = get_plugin(config)
