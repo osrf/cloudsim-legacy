@@ -322,6 +322,17 @@ apt-get update
 # this is where we store all data for this part
 mkdir -p /home/ubuntu/cloudsim
 mkdir -p /home/ubuntu/cloudsim/setup
+
+# this is a bootstrap script that we use to detect the presence of a file
+# on the machine. It is used by CloudSim and therefore must be present
+# on the machine soon after boot
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_router.bash
+#!/bin/bash
+ls \$1
+DELIM
+chmod +x /home/ubuntu/cloudsim/find_file_router.bash
+# --------------------------------------------
+
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
 
@@ -556,6 +567,7 @@ deb mirror://mirrors.ubuntu.com/mirrors.txt precise-security main restricted uni
 DELIM
 
 
+
 # Add ROS and OSRF repositories
 echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
 echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
@@ -568,18 +580,27 @@ wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
 
 """ + ppa_string + """
 
-echo "update packages" >> /home/ubuntu/setup.log
-apt-get update
 
 #
 # we need python-software-properties for ad-apt-repository
 # it requires apt-get update for some reason
 #
-apt-get remove -y unattended-upgrades
+
+echo "update packages" >> /home/ubuntu/setup.log
+
+
+apt-get update
+
+
+# apt-get remove -y unattended-upgrades
 apt-get install -y python-software-properties zip
+
+apt-get install -y vim ipython
+apt-get install -y ntp
 
 add-apt-repository -y ppa:w-rouesnel/openssh-hpn
 apt-get update
+
 apt-get install -y openssh-server
 
 cat <<EOF >>/etc/ssh/sshd_config
@@ -598,7 +619,72 @@ mkdir -p /home/ubuntu/cloudsim
 mkdir -p /home/ubuntu/cloudsim/setup
 
 
-cat <<DELIM > /etc/rc.local
+#
+# Packages for X
+#
+
+#apt-get upgrade -y
+#apt-get update
+
+echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
+apt-get install -y linux-headers-`uname -r`
+apt-get install -y pciutils
+apt-get install -y lsof
+
+
+
+apt-get install -y gnome-session
+apt-get install -y gnome-session-fallback
+apt-get install -y xserver-xorg-core
+
+
+apt-get install -y xserver-xorg
+apt-get install -y mesa-utils
+apt-get install -y lightdm
+apt-get install -y x11-xserver-utils
+
+
+# apt-get install -y linux-source
+
+""" + gpu_driver_packages_string + """
+
+# Have the NVIDIA tools create the xorg configuration file for us, retrieiving the PCI BusID for the current system.
+# The BusID can vary from machine to machine.  The || true at the end is to allow this line to succeed on fc2, which doesn't have a GPU.
+if ! nvidia-xconfig --busid `nvidia-xconfig --query-gpu-info | grep BusID | head -n 1 | sed 's/PCI BusID : PCI:/PCI:/'`; then
+  echo "nvidia-xconfig failed; probably no GPU installed.  Proceeding." >> /home/ubuntu/setup.log
+else
+  echo "nvidia-xconfig succeeded." >> /home/ubuntu/setup.log
+fi
+
+echo "setup auto xsession login" >> /home/ubuntu/setup.log
+
+echo "
+[SeatDefaults]
+greeter-session=unity-greeter
+autologin-user=ubuntu
+autologin-user-timeout=0
+user-session=gnome-fallback
+" > /etc/lightdm/lightdm.conf
+initctl stop lightdm || true
+initctl start lightdm
+
+#
+# Install drc sim and related packages
+#
+
+echo "install """ + drc_package_name + """ ">> /home/ubuntu/setup.log
+apt-get install -y """ + drc_package_name + """
+
+
+
+echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
+# Answer the postfix questions
+sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
+sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+apt-get install -y cloudsim-client-tools
+
+
+#cat <<DELIM > /etc/rc.local
 #!/bin/sh -e
 #
 # rc.local
@@ -611,14 +697,9 @@ cat <<DELIM > /etc/rc.local
 # bits.
 #
 # By default this script does nothing.
-
 # insmod /lib/modules/\`uname -r\`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
-
-exit 0
-DELIM
-
-
-
+#exit 0
+#DELIM
 
 
 cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
@@ -735,6 +816,22 @@ DISPLAY=localhost:0 timeout 10 glxinfo
 
 DELIM
 
+
+#
+# Automatic sourcing of drcsim/setup
+#
+
+echo "Updating bashrc file">> /home/ubuntu/setup.log
+cat <<DELIM >> /home/ubuntu/.bashrc
+# CloudSim
+. /usr/share/drcsim/setup.sh
+export DISPLAY=:0
+export ROS_IP="""    + machine_ip + """
+export GAZEBO_IP=""" + machine_ip + """
+
+DELIM
+
+
 cat <<DELIM > /home/ubuntu/cloudsim/send_to_portal.bash
 #!/bin/bash
 
@@ -777,10 +874,6 @@ fi
 DELIM
 
 
-
-
-
-
 cat <<DELIM > /etc/init.d/vpcroute
 #! /bin/sh
 
@@ -809,77 +902,9 @@ ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
 # invoke it now to add route to the router
 /etc/init.d/vpcroute start || true
 
-#
-# Packages for X
-#
-
-echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
-apt-get install -y linux-headers-`uname -r`
-apt-get install -y pciutils
-apt-get install -y lsof
-
-
-
-apt-get install -y x11-xserver-utils
-apt-get install -y gnome-session
-apt-get install -y gnome-session-fallback
-apt-get install -y xserver-xorg-core
-
-
-apt-get install -y xserver-xorg
-apt-get install -y mesa-utils
-apt-get install -y lightdm
-
-# apt-get install -y linux-source
-
-""" + gpu_driver_packages_string + """
-
-# Have the NVIDIA tools create the xorg configuration file for us, retrieiving the PCI BusID for the current system.
-# The BusID can vary from machine to machine.  The || true at the end is to allow this line to succeed on fc2, which doesn't have a GPU.
-if ! nvidia-xconfig --busid `nvidia-xconfig --query-gpu-info | grep BusID | head -n 1 | sed 's/PCI BusID : PCI:/PCI:/'`; then
-  echo "nvidia-xconfig failed; probably no GPU installed.  Proceeding." >> /home/ubuntu/setup.log
-else
-  echo "nvidia-xconfig succeeded." >> /home/ubuntu/setup.log
-fi
-
-echo "setup auto xsession login" >> /home/ubuntu/setup.log
-
-echo "
-[SeatDefaults]
-greeter-session=unity-greeter
-autologin-user=ubuntu
-autologin-user-timeout=0
-user-session=gnome-fallback
-" > /etc/lightdm/lightdm.conf
-initctl stop lightdm || true
-initctl start lightdm
-
-#
-# Install drc sim and related packages
-#
-apt-get install -y vim ipython
-apt-get install -y ntp
-
-echo "install """ + drc_package_name + """ ">> /home/ubuntu/setup.log
-apt-get install -y """ + drc_package_name + """
-
-echo "Updating bashrc file">> /home/ubuntu/setup.log
-
-cat <<DELIM >> /home/ubuntu/.bashrc
-# CloudSim
-. /usr/share/drcsim/setup.sh
-export DISPLAY=:0
-export ROS_IP="""    + machine_ip + """
-export GAZEBO_IP=""" + machine_ip + """
-
-DELIM
-
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-apt-get install -y cloudsim-client-tools
 
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 touch /home/ubuntu/cloudsim/setup/done
-
 """
     return s
 
@@ -929,7 +954,7 @@ def _create_deploy_zip_files(constellation_name,
                      constellation_directory,
                      machines,
                      files=[]):
-    
+
     ssh_scripts = ""
 
     for machine_name, data in machines.iteritems():
@@ -939,7 +964,7 @@ def _create_deploy_zip_files(constellation_name,
 # interactive ssh script
 #
 cat <<DELIM > /home/ubuntu/cloudsim/ssh-""" + machine_name+ """.bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name+ """.pem ubuntu@""" + ip + """
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name+ """.pem ubuntu@""" + ip + """ \$1 \$2 \$3 \$4 \$5 \$6
 DELIM
 chmod +x /home/ubuntu/cloudsim/ssh-""" + machine_name + """.bash
 # --------------------------------------------
@@ -984,13 +1009,6 @@ cp /home/ubuntu/cloudsim/deploy/*.pem /home/ubuntu/cloudsim
 
 """ + ssh_scripts + """
 
-
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_router.bash
-#!/bin/bash
-ls \$1
-DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_""" + machine_name+ """.bash
-# --------------------------------------------
 
 cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
 #!/bin/bash
@@ -1374,7 +1392,7 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
         # using a utility script from cloudsim-client-tools
         # careful, we are running as root here?
         constellation.set_value('sim_launch_msg', 'Loading Gazebo models')
-        ssh_router.cmd("cloudsim/set_vrc_private.bash")
+        ssh_router.cmd("./ssh-sim.bash set_vrc_private.sh")
 
     for machine_name in machine_names:
         constellation.set_value('%s_launch_msg' % machine_name, "Complete")

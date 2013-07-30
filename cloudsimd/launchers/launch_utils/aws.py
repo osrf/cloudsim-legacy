@@ -149,14 +149,31 @@ def terminate_aws_server(constellation_name):
         log("error cleaning up security group %s: %s" % (security_group_id, e))
 
 
-def get_aws_sources_list(credentials_ec2):
-    """
-    Returns the package sources for the region
-    """
-    boto.config = BotoConfig(credentials_ec2)
-    # ec2conn = boto.connect_ec2()
-    availability_zone = boto.config.get('Boto', 'ec2_region_name')
-    
+# def get_aws_sources_list(credentials_ec2):
+#     """
+#     Returns the package sources for the region
+#     """
+#     boto.config = BotoConfig(credentials_ec2)
+#     # ec2conn = boto.connect_ec2()
+#     availability_zone = boto.config.get('Boto', 'ec2_region_name')
+# 
+# #
+# # Dublin 
+# #
+# deb http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted universe multiverse
+# deb http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted universe multiverse
+# deb http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-security main restricted universe multiverse
+# 
+# deb-src http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted universe multiverse
+# deb-src http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted universe multiverse
+# deb-src http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-security main restricted universe multiverse
+#
+# East coast
+# 
+# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted universe multiverse
+# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted universe multiverse
+# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-security main restricted universe multiverse
+
 
 def acquire_aws_constellation(constellation_name,
                               credentials_ec2,
@@ -213,6 +230,9 @@ def acquire_aws_constellation(constellation_name,
                                 machine_name,
                                 aws_id,
                                 ec2conn)
+        if machine_name == "router":
+            router_instance =  get_ec2_instance(ec2conn, aws_id)
+            router_instance.modify_attribute('sourceDestCheck', False)
 
     log("running machines %s" % machines_to_awsid)
 
