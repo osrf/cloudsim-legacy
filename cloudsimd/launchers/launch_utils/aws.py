@@ -234,6 +234,9 @@ def acquire_aws_constellation(constellation_name,
                                 machine_name,
                                 aws_id,
                                 ec2conn)
+        if machine_name == "router":
+            router_instance =  get_ec2_instance(ec2conn, aws_id)
+            router_instance.modify_attribute('sourceDestCheck', False)
 
     log("running machines %s" % machines_to_awsid)
 
