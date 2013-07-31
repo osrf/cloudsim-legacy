@@ -610,7 +610,7 @@ def aws_connect():
     credentials_ec2 = config['boto_path']
     boto.config = BotoConfig(credentials_ec2)
 
-    ec2_zone = config['ec2_zone']
+    ec2_zone = boto.config.get('Boto', 'ec2_region_name')
 
     aws_access_key_id = boto.config.get('Credentials', 'aws_access_key_id')
     aws_secret_access_key = boto.config.get('Credentials', 'aws_secret_access_key')

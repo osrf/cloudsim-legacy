@@ -18,6 +18,7 @@ function add_cloud_credentials_widget(place_holder_div_name)
     str += '<option value="eu-west-1a">eu-west-1a</option>';
     str += '<option value="eu-west-1b">eu-west-1b</option>';
     str += '<option value="eu-west-1c">eu-west-1c</option>';
+    str += '<option value="nova">nova</option>';
     str += '</select>';
     str += '<button type="button" onclick="_cred_click(\'';
     str += place_holder_div_name;
