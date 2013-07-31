@@ -643,7 +643,7 @@ def monitor(config, constellation_name):
     
     """
     proc = multiprocessing.current_process().name
-    log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))
+    #log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))
     try:
         done = False
         constellation_plugin = get_plugin(config)
