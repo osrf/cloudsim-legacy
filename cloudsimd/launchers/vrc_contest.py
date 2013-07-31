@@ -289,7 +289,13 @@ def _init_computer_data(constellation_name):
         constellation.set_value('%s_key_name' % prefix, None)
 
 
-def get_router_script(machine_private_ip, ros_master_ip, drc_package_name):
+def get_router_script(network_interface_name,
+                      machine_private_ip,
+                      ros_master_ip,
+                      drc_package_name):
+
+    vpn_server_ip = OPENVPN_SERVER_IP
+    vpn_client_ip = OPENVPN_CLIENT_IP
 
     s = """#!/bin/bash
 # Exit on error
@@ -368,7 +374,7 @@ sudo service ssh restart
 
 cat <<DELIM > /etc/openvpn/openvpn.conf
 dev tun
-ifconfig """ + OPENVPN_SERVER_IP + " " + OPENVPN_CLIENT_IP + """
+ifconfig """ + vpn_server_ip + " " + vpn_client_ip + """
 secret static.key
 DELIM
 
@@ -384,15 +390,13 @@ cat <<DELIM > /etc/init.d/iptables_cloudsim
 #! /bin/sh
 
 
-
-
 case "\$1" in
   start|"")
 
     sysctl -w net.ipv4.ip_forward=1
     #iptables -A FORWARD -i tun0 -o bond0 -j ACCEPT
     #iptables -A FORWARD -o tun0 -i bond0 -j ACCEPT
-    iptables -t nat -A POSTROUTING -o bond1 -j MASQUERADE
+    iptables -t nat -A POSTROUTING -o """ + network_interface_name + """ -j MASQUERADE
 
     ;;
   stop)
@@ -1392,7 +1396,7 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
         # using a utility script from cloudsim-client-tools
         # careful, we are running as root here?
         constellation.set_value('sim_launch_msg', 'Loading Gazebo models')
-        ssh_router.cmd("./ssh-sim.bash set_vrc_private.sh")
+        ssh_router.cmd("cloudsim/ssh-sim.bash set_vrc_private.sh")
 
     for machine_name in machine_names:
         constellation.set_value('%s_launch_msg' % machine_name, "Complete")
@@ -1458,6 +1462,13 @@ def launch(username, config, constellation_name, tags,
     """
     Called by cloudsimd when it receives a launch message
     """
+    cloud_provider = "aws"
+    if "OSRF" in constellation_name:
+        cloud_provider = "softlayer"
+
+    router_network_itf = "eth0"
+    if cloud_provider == "softlayer":
+        router_network_itf = "bond1"
 
     log("launch constellation name: %s" % constellation_name)
 
@@ -1493,10 +1504,12 @@ def launch(username, config, constellation_name, tags,
 #                            constellation_prefix,
 #                            partial_deploy,
 #                            credentials_softlayer)
-
-
     ros_master_ip = SIM_IP
-    router_script = get_router_script(ROUTER_IP, SIM_IP, drcsim_package_name)
+    router_script = get_router_script(router_network_itf,
+                                      ROUTER_IP,
+                                      SIM_IP,
+                                      drcsim_package_name)
+
     sim_script = get_drc_script(drcsim_package_name,
                                 SIM_IP,
                                 ros_master_ip,
@@ -1534,7 +1547,7 @@ def launch(username, config, constellation_name, tags,
             }
 
     cs_cfg = get_cloudsim_config()
-    if "OSRF" in constellation_name:
+    if cloud_provider == "softlayer":
         credentials_fname = cs_cfg['softlayer_path']
         if credentials_override:
             credentials_fname = credentials_override
@@ -1556,7 +1569,7 @@ def launch(username, config, constellation_name, tags,
                                     fc1_script,
                                     fc2_script)
 
-    else:
+    if cloud_provider == "aws":
         credentials_fname = cs_cfg['boto_path']
         if credentials_override:
             credentials_fname = credentials_override
