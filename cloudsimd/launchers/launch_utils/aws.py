@@ -699,7 +699,8 @@ def wait_for_multiple_machines_to_run(ec2conn,
                     constellation.set_value("%s_state" % machine_name,
                                             final_state)
                     constellation.set_value("%s_aws_id" % machine_name, aws_id)
-                    log('Done launching %s (AWS %s)' % (machine_name, aws_id))
+                    log('Done launching machine %s'
+                        '(AWS %s)' % (machine_name, aws_id))
                     done = True
                     break
     return ready_machines
