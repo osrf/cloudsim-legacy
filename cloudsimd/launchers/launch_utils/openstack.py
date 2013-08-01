@@ -11,6 +11,7 @@ import commands
 
 import novaclient.v1_1.client as nvclient
 import novaclient.exceptions
+import neutronclient.neutron.client as neclient
 
 from testing import get_test_runner, get_test_path
 from launch_db import ConstellationState
@@ -29,11 +30,11 @@ def acquire_openstack_server(constellation_name,
     constellation.set_value("security_group", security_group_name)
     constellation.set_value("keypair", keypair_name)
     constellation.set_value("instance", instance_name)
+    constellation.set_value("floating_ip", floating_ip.ip)
     return floating_ip, instance_name, keypair_name
 
 
 def terminate_openstack_server(constellation_name):
-    #get secgroups and key
     constellation = ConstellationState(constellation_name)
     secgroup = constellation.get_value("security_group")
     keypair = constellation.get_value("keypair")
@@ -42,8 +43,8 @@ def terminate_openstack_server(constellation_name):
 
 
 def launch(constellation_name, machine_name, constellation_directory):
-    creds = get_nova_creds()
-    nova = nvclient.Client(**creds)
+    nova_creds = get_nova_creds()
+    nova = nvclient.Client(**nova_creds)
     #create keypair
     keypair_name = "key_" + constellation_name
     keypair = nova.keypairs.create(name=keypair_name)
@@ -95,6 +96,22 @@ touch /home/ubuntu/new_file.txt'''  # startup script
         instance.add_floating_ip(floating_ip)
     return floating_ip, instance_name, keypair_name, security_group_name
 
+def acquire_openstack_constellation(constellation_name, credentials): 
+    #, machines, tags):
+    constellation = ConstellationState(constellation_name)
+    credentials = get_neutron_creds()
+    import pdb
+    pdb.set_trace()
+    neutron = neclient.Client('2.0', **credentials)
+    net1 = neutron.create_network({'network': {'name': 'net1',
+                                    'admin_state_up': True} })
+    net1_id = net1['network']['id']
+    subnet = neutron.create_subnet({'subnet': {'name': 'sub2',
+                                    'network_id': net1_id,
+                                    'ip_version': 4,
+                                    'cidr': '10.0.0.50/30'} })
+    print(subnet)
+
 
 def terminate(instance_name, keypair_name, secgroup_name):
     creds = get_nova_creds()
@@ -135,14 +152,18 @@ def get_nova_creds():
     return creds
 
 
+def get_neutron_creds():
+    creds = {}
+    creds['username'] = os.environ['OS_USERNAME']
+    creds['password'] = os.environ['OS_PASSWORD']
+    creds['auth_url'] = os.environ['OS_AUTH_URL']
+    creds['tenant_name'] = os.environ['OS_TENANT_NAME']
+    creds['endpoint_url'] = os.environ['OS_ENDPOINT_URL']
+    return creds
+
+
 class TestOpenstack(unittest.TestCase):
-    def test1(self):
-        self.constellation_name = get_unique_short_name("x")
-        p = os.path.join(get_test_path("openstack"), self.constellation_name)
-        self.constellation_directory = os.path.abspath(p)
-        print(self.constellation_directory)
-        os.makedirs(self.constellation_directory)
-        print(self.constellation_directory)
+    def test_acquire_server(self):
         creds = get_nova_creds()
         machine_name = "cloudsim_server"
         floating_ip, instance_name, keypair_name = acquire_openstack_server(
@@ -153,9 +174,9 @@ class TestOpenstack(unittest.TestCase):
         uname = 'ubuntu'
         ssh = SshClient(self.constellation_directory, keypair_name,
                 uname, floating_ip.ip)
-        cmd = 'pwd'
+        cmd = 'ls /home/ubuntu/new_file.txt'
         #expected_output = '/home/cirros'
-        expected_output = '/home/ubuntu'
+        expected_output = '/home/ubuntu/new_file.txt'
         ssh_command = get_ssh_cmd_generator(ssh, cmd, expected_output,
                 constellation, "can_ssh", 1, max_retries=100)
         ctr = 30
@@ -172,13 +193,40 @@ class TestOpenstack(unittest.TestCase):
                 done = True
         empty_ssh_queue([ssh_command], 2)
         self.assertEqual(pingable, 0, ping_str)
+    
+    #def test_acquire_constellation(self):
+    #    credentials = get_neutron_creds()
+    #    acquire_openstack_constellation(self.constellation_name,
+    #                                    credentials)#, machines, tags)
+    #    
 
     def setUp(self):
-        pass
+        self.constellation_name = get_unique_short_name("x")
+        p = os.path.join(get_test_path("openstack"), self.constellation_name)
+        self.constellation_directory = os.path.abspath(p)
+        print(self.constellation_directory)
+        os.makedirs(self.constellation_directory)
+        print(self.constellation_directory)
 
     def tearDown(self):
-        #terminate_openstack_server(self.constellation_name)
-        pass
+        terminate_openstack_server(self.constellation_name)
+        constellation = ConstellationState(self.constellation_name)
+        floating_ip = constellation.get_value("floating_ip")
+        pingable, ping_str = commands.getstatusoutput(
+            "ping -c3 %s" % floating_ip)
+        self.assertNotEqual(pingable, 0)
+        creds = get_nova_creds()
+        nova = nvclient.Client(**creds)
+        instance = constellation.get_value("instance")
+        self.assertRaises(novaclient.exceptions.NotFound,
+                          nova.servers.find, name=instance)
+        security_group = constellation.get_value("security_group")
+        self.assertRaises(novaclient.exceptions.NotFound, 
+                          nova.security_groups.find,name=security_group)
+        keypair = constellation.get_value("keypair")
+        self.assertRaises(novaclient.exceptions.NotFound, 
+                          nova.keypairs.find,name=keypair)
+ 
 
 if __name__ == "__main__":
     xmlTestRunner = get_test_runner()
