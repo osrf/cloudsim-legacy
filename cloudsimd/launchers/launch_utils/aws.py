@@ -481,21 +481,26 @@ def _acquire_vpc_security_group(constellation_name,
     sg = None
     try:
         sg_name = '%s-sg-%s' % (machine_prefix, constellation_name)
-        dsc = '%s security group for %s vpc %s' % (machine_prefix,
-                                                           constellation_name,
-                                                           vpc_id)
+        dsc = 'machine %s CloudSim constellation %s' % (machine_prefix,
+                                            constellation_name,
+                                            )
         sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
 
+        max_try = 10
         i = 0
-        while i < 5:
+        while i < max_try:
             log("adding tag to %s/%s security group" % (constellation_name,
                                                 machine_prefix))
-        try:
-            sg.add_tag('vpc', vpc_id)
-            sg.add_tag('constellation', constellation_name)
-            i = 5
-        except:
-            time.sleep(i * 2)
+            try:
+                sg.add_tag('constellation', constellation_name)
+                log("tag added")
+                i = max_try
+            except Exception, e:
+                log("%s / %s: error: %s" % (i, max_try, e))
+                i += 1
+                time.sleep(i * 2)
+                if i == max_try:
+                    raise
 
         if machine_prefix == "router":
             sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
