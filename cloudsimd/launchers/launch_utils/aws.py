@@ -481,19 +481,29 @@ def _acquire_vpc_security_group(constellation_name,
     sg = None
     try:
         sg_name = '%s-sg-%s' % (machine_prefix, constellation_name)
+        dsc = '%s security group for %s vpc %s' % (machine_prefix,
+                                                           constellation_name,
+                                                           vpc_id)
+        sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
+
+        i = 0
+        while i < 5:
+            log("adding tag to %s/%s security group" % (constellation_name,
+                                                machine_prefix))
+        try:
+            sg.add_tag('vpc', vpc_id)
+            sg.add_tag('constellation', constellation_name)
+            i = 5
+        except:
+            time.sleep(i * 2)
+
         if machine_prefix == "router":
-            dsc = 'router security group for %s' % (constellation_name)
-            sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
             sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
             sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
             sg.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
             sg.authorize('udp', 0, 65535, vpn_subnet)
             sg.authorize('tcp', 0, 65535, vpn_subnet)
         else:
-            dsc = '%s security group for %s vpc %s' % (machine_prefix,
-                                                           constellation_name,
-                                                           vpc_id)
-            sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
             sg.authorize('icmp', -1, -1, vpn_subnet)
             sg.authorize('tcp',  0, 65535, vpn_subnet)
             sg.authorize('udp', 0, 65535, vpn_subnet)
@@ -509,16 +519,6 @@ def _acquire_vpc_security_group(constellation_name,
         constellation.set_value('error',  "security group error: %s" % e)
         raise
 
-    i = 0
-    while i < 5:
-        log("adding tag to %s/%s security group" % (constellation_name,
-                                                machine_prefix))
-        try:
-            sg.add_tag('vpc', vpc_id)
-            sg.add_tag('constellation', constellation_name)
-            i = 5
-        except:
-            time.sleep(i * 2)
     return security_group_id
 
 
