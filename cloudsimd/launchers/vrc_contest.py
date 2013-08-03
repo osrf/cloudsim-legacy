@@ -192,6 +192,7 @@ def monitor_simulator_proc(constellation_name):
 def monitor(constellation_name, counter):
     time.sleep(1)
     if constellation_is_terminated(constellation_name):
+        log("monitor done for %s" % (constellation_name))
         return True
 
     constellation = ConstellationState(constellation_name)
@@ -1140,7 +1141,7 @@ chmod +x /home/ubuntu/cloudsim/stop_sim.bash
 cat <<DELIM > /home/ubuntu/cloudsim/ping_gazebo.bash
 #!/bin/bash
 
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  ". /usr/share/drcsim/setup.sh; timeout -k 1 5 gztopic list"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem -n ubuntu@""" + SIM_IP + """  ". /usr/share/drcsim/setup.sh; timeout -k 1 5 gztopic list"
 
 
 DELIM
@@ -1287,6 +1288,26 @@ sudo service openvpn restart
 sudo ifconfig
 
 """
+
+# import apt
+#
+# cache = apt.Cache()
+# p = cache['drcsim']
+# v = p.installed.version
+# d = p.description
+
+# pkg = cache['python-apt'] # Access the Package object for python-apt
+# print 'python-apt is trusted:', pkg.candidate.origins[0].trusted
+# 
+# # Mark python-apt for install
+# pkg.mark_install()
+# 
+# print 'python-apt is marked for install:', pkg.marked_install
+# 
+# print 'python-apt is (summary):', pkg.candidate.summary
+# 
+# # Now, really install it
+# cache.commit()
 
     # constellation = ConstellationState(constellation_name)
     deploy_dir = os.path.join(constellation_directory, "deploy")
@@ -1472,6 +1493,9 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
                        "running")
 
     constellation = ConstellationState(constellation_name)
+    for machine_name in machine_names:
+        constellation.set_value('%s_aws_state' % machine_name, "running")
+
     if "sim" in machine_names:
         constellation.set_value('sim_launch_msg', 'Testing X and OpenGL')
         router_ip = constellation.get_value("router_public_ip")
@@ -1496,6 +1520,7 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
                     constellation.set_value('error',
                                             "OpenGL diagnostic failed: %s" % e)
                     raise
+
         # Install gazebo models locally
         # using a utility script from cloudsim-client-tools
         # careful, we are running as root here?
@@ -1588,13 +1613,6 @@ def launch(username, config, constellation_name, tags,
                        'nvidia-settings',
                        'nvidia-current-dev',
                        'nvidia-cg-toolkit']
-    # if true, the machines are reloaded. This is done in the case
-    # of partial reload because the terminate button would wipe out
-    # all machines
-
-#     partial_deploy = False
-#     if config.find("partial") > 0:
-#         partial_deploy = True
 
     if config.find("nightly") >= 0:
         drcsim_package_name = "drcsim-nightly"
@@ -2134,11 +2152,28 @@ class SumCase(unittest.TestCase):
                                  machines)
         self.assertTrue(os.path.exists(zip_fname), "not there")
 
-    def test_deploy(self):
+    def xtest_deploy(self):
         constellation_name = 'cx11fc02b4'
         deploy_constellation(constellation_name)
 
 
+class MoniCase(unittest.TestCase):
+
+
+
+    def atest_monitorsim(self):
+        constellation_name = 'cx593c6f5e'
+        x = monitor_simulator_proc(constellation_name)
+        print("monitor_simulator_proc %s" % x)
+
+    def ztest_ping(self):
+        constellation_name = 'cx593c6f5e'
+        latency_key = 'sim_latency'
+        ssh_ping_proc(constellation_name, '10.0.0.51', latency_key)
+
 if __name__ == "__main__":
-    xmlTestRunner = get_test_runner()
-    unittest.main(testRunner=xmlTestRunner)
+#    xmlTestRunner = get_test_runner()
+#    unittest.main(testRunner=xmlTestRunner)
+    n = 'cx593c6f5e'
+    i = 0
+    monitor(n, i)
