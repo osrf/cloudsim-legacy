@@ -272,7 +272,7 @@ def get_plugin(configuration):
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
 
-    elif configuration == 'AWS DRC':
+    elif configuration.startswith('AWS DRC'):
         #from launchers import amazon_trio as c
         from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
@@ -302,6 +302,7 @@ def _load_cloudsim_configurations_list():
     boto_path = config['boto_path']
     if os.path.exists(boto_path):
         configs['AWS DRC'] = {'description': "DRC competition: a router and a GPU simulator, using gazebo and drcsim packages"}
+        configs['AWS DRC with FC'] = {'description': "DRC competition: a router and 2 GPU machines: a simulator and a Field computer, using gazebo and drcsim packages"}
         #configs['AWS simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
         configs['AWS CloudSim'] = {'description': "1 machine for starting a CloudSim on the cloud: A micro instance web app clone"}
 

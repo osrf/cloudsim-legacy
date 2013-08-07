@@ -151,32 +151,6 @@ def terminate_aws_server(constellation_name):
         log("error cleaning up security group %s: %s" % (security_group_id, e))
 
 
-# def get_aws_sources_list(credentials_ec2):
-#     """
-#     Returns the package sources for the region
-#     """
-#     boto.config = BotoConfig(credentials_ec2)
-#     # ec2conn = boto.connect_ec2()
-#     availability_zone = boto.config.get('Boto', 'ec2_region_name')
-# 
-# #
-# # Dublin 
-# #
-# deb http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted universe multiverse
-# deb http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted universe multiverse
-# deb http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-security main restricted universe multiverse
-# 
-# deb-src http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted universe multiverse
-# deb-src http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted universe multiverse
-# deb-src http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-security main restricted universe multiverse
-#
-# East coast
-# 
-# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted universe multiverse
-# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted universe multiverse
-# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-security main restricted universe multiverse
-
-
 def acquire_aws_constellation(constellation_name,
                               credentials_ec2,
                               machines,
@@ -335,16 +309,16 @@ def _acquire_vpc_elastic_ip(constellation_name,
         # <Errors><Error><Code>InvalidAllocationID.NotFound</Code>
         #
         time.sleep(5)
-        max = 20
+        max_ = 20
         i = 0
-        while i < max:
+        while i < max_:
             try:
                 time.sleep(i * 2)
                 ec2conn.associate_address(aws_id, allocation_id=allocation_id)
-                i = max  # leave the loop
+                i = max_  # leave the loop
             except:
                 i += 1
-                if i == max:
+                if i == max_:
                     raise
 
         clean_local_ssh_key_entry(public_ip)
@@ -359,6 +333,10 @@ def _release_vpc_elastic_ip(constellation_name, machine_name_prefix, ec2conn):
     try:
         allocation_id_key = __get_allocation_id_key(machine_name_prefix)
         eip_allocation_id = constellation.get_value(allocation_id_key)
+        log("_release_vpc_elastic_ip %s machine %s id: %s" % (
+                                    constellation_name,
+                                    machine_name_prefix,
+                                    eip_allocation_id))
         ec2conn.release_address(allocation_id=eip_allocation_id)
     except Exception, e:
         error_msg = constellation.get_value('error')
@@ -461,6 +439,7 @@ def _release_vpc(constellation_name, vpcconn):
         log("error cleaning up subnet: %s" % e)
 
     try:
+        log("delete_vpc %s constellation %s" % (vpc_id, constellation_name))
         vpcconn.delete_vpc(vpc_id)
     except Exception, e:
         error_msg += "<b>VPC</b>: %s<br>" % e

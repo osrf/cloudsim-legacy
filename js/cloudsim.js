@@ -27,17 +27,22 @@ function create_constellation(div_name, configuration, constellation, machine_da
     		
     		var machine_div = create_machine(machines_div, machine_name);
     		var ip_key = machine_name + "_ip";
-    		var aws_key = machine_name + "_aws_id";
+    		var cloud_id_key = machine_name + "_aws_id";
     		var gmt_key = "gmt";
     		var zip_ready_key = machine_name + "_zip_file";
     		var username = machine_data.username;
-    		create_hostname_widget (machine_div, constellation, machine_name, ip_key, aws_key, username, gmt_key, zip_ready_key, disable_key_download);
+    		create_hostname_widget (machine_div, constellation, machine_name, ip_key, cloud_id_key, username, gmt_key, zip_ready_key, disable_key_download);
     		
     		var launch_msg_key = machine_name + "_launch_msg";
     		var state_key = machine_name + "_state";
     		var latency_msg = "what is my latency?";
     		var latency_key = machine_name + "_latency";
     		create_machine_launch_monitor_widget(machine_div, constellation, machine_name, launch_msg_key, state_key);
+    		
+    		var cloud_state_key = machine_name + "_aws_state";
+    		var machine_state_key = machine_name + "_state";
+    		create_machine_state_widget(machine_div, constellation, machine_name, cloud_state_key, machine_state_key);
+    		
     		if(has_simulator)
     		{
     			create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
@@ -53,7 +58,6 @@ function create_constellation(div_name, configuration, constellation, machine_da
         var machine_name = "CloudSim";
         
         // create_task_list_widget(constellation_div, constellation);
-        
         var machine_div = create_machine(machines_div, machine_name);
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file", false );
         create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "simulation_launch_msg", "simulation_state");

@@ -197,8 +197,7 @@ def monitor(constellation_name, counter):
 
     constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
-    if launch_sequence.index(launch_stage) >= launch_sequence.index(
-                                                                'launch'):
+    if launch_sequence.index(launch_stage) >= launch_sequence.index('launch'):
         constellation_directory = constellation.get_value(
                                                     'constellation_directory')
         router_ip = constellation.get_value("router_public_ip")
@@ -209,45 +208,44 @@ def monitor(constellation_name, counter):
                                router_ip)
 
         router_state = constellation.get_value('router_state')
-        sim_state = constellation.get_value('sim_state')
-        fc1_state = constellation.get_value('fc1_state')
-        fc2_state = constellation.get_value('fc2_state')
-
-        log("monitor sim_state %s router_state %s" % (sim_state, router_state))
-
-        monitor_launch_state(constellation_name, ssh_router, sim_state,
-                             "cloudsim/dpkg_log_sim.bash", 'sim_launch_msg')
-
         monitor_launch_state(constellation_name, ssh_router, router_state,
                           "tail -1 /var/log/dpkg.log", 'router_launch_msg')
 
-        monitor_launch_state(constellation_name, ssh_router, fc1_state,
-                            "cloudsim/dpkg_log_fc1.bash", 'fc1_launch_msg')
+        procs = []
+        if constellation.has_value('sim_state'):
+            sim_state = constellation.get_value('sim_state')
+            monitor_launch_state(constellation_name, ssh_router, sim_state,
+                                 "cloudsim/dpkg_log_sim.bash",
+                                 'sim_launch_msg')
+            p = multiprocessing.Process(target=ssh_ping_proc,
+                        args=(constellation_name, SIM_IP, 'sim_latency'))
+            procs.append(p)
+            p = multiprocessing.Process(target=monitor_simulator_proc,
+                            args=(constellation_name,))
+            procs.append(p)
 
-        monitor_launch_state(constellation_name, ssh_router, fc2_state,
+        if constellation.has_value('fc1_state'):
+            fc1_state = constellation.get_value('fc1_state')
+            monitor_launch_state(constellation_name, ssh_router, fc1_state,
+                                "cloudsim/dpkg_log_fc1.bash", 'fc1_launch_msg')
+            p = multiprocessing.Process(target=ssh_ping_proc,
+                        args=(constellation_name, FC1_IP, 'fc1_latency'))
+            procs.append(p)
+
+        if constellation.has_value('fc2_state'):
+            fc2_state = constellation.get_value('fc2_state')
+            monitor_launch_state(constellation_name, ssh_router, fc2_state,
                             "cloudsim/dpkg_log_fc2.bash", 'fc2_launch_msg')
 
-        procs = []
-        p = multiprocessing.Process(target=ssh_ping_proc,
-                        args=(constellation_name, FC1_IP, 'fc1_latency'))
-        procs.append(p)
-
-        p = multiprocessing.Process(target=ssh_ping_proc,
+            p = multiprocessing.Process(target=ssh_ping_proc,
                         args=(constellation_name, FC2_IP, 'fc2_latency'))
-        procs.append(p)
-
-        p = multiprocessing.Process(target=ssh_ping_proc,
-                        args=(constellation_name, SIM_IP, 'sim_latency'))
-        procs.append(p)
+            procs.append(p)
 
         p = multiprocessing.Process(target=ssh_ping_proc,
             args=(constellation_name, OPENVPN_CLIENT_IP, 'router_latency'))
         procs.append(p)
 
         p = multiprocessing.Process(target=monitor_task_proc,
-                                    args=(constellation_name,))
-        procs.append(p)
-        p = multiprocessing.Process(target=monitor_simulator_proc,
                                     args=(constellation_name,))
         procs.append(p)
 
@@ -260,7 +258,7 @@ def monitor(constellation_name, counter):
     return False
 
 
-def _init_computer_data(constellation_name):
+def _init_computer_data(constellation_name, machines):
 
     constellation = ConstellationState(constellation_name)
 
@@ -283,7 +281,10 @@ def _init_computer_data(constellation_name):
     constellation.set_value('fc2_launch_msg', 'nothing')
     constellation.set_value('sim_launch_msg', 'nothing')
 
-    for prefix in ['router', 'sim', 'fc2', 'fc1']:
+    for prefix in machines:
+        machine = machines[prefix]
+        ip = machine['ip']
+        constellation.set_value("%s_ip" % prefix, ip)
         constellation.set_value('%s_ip_address' % prefix, "nothing")
         constellation.set_value('%s_state' % prefix, "nothing")
         constellation.set_value('%s_aws_state' % prefix, 'pending')
@@ -1593,15 +1594,19 @@ def launch(username, config, constellation_name, tags,
     Called by cloudsimd when it receives a launch message
     """
     cloud_provider = "aws"
-    if "OSRF" in constellation_name:
+    has_fc1 = False
+    has_fc2 = False
+
+    if "OSRF" in config:
         cloud_provider = "softlayer"
+    if "FC" in config:
+        has_fc1 = True
 
     router_public_network_itf = "eth0"
     router_private_network_itf = None
     if cloud_provider == "softlayer":
         router_public_network_itf = "bond1"
         router_private_network_itf = "bond0"
-
     log("launch constellation name: %s" % constellation_name)
 
     constellation = ConstellationState(constellation_name)
@@ -1624,13 +1629,39 @@ def launch(username, config, constellation_name, tags,
     log("ppas: %s" % ppa_list)
     log("gpu packages %s" % gpu_driver_list)
 
-    _init_computer_data(constellation_name)
-#         terminate_softlayer_constellation(constellation_name,
-#                            constellation_prefix,
-#                            partial_deploy,
-#                            credentials_softlayer)
+    #
+    # lets build a list of machines for our constellation
+    #
+    machines = {}
+    machines['router'] = {'hardware': 'm1.large',    # 't1.micro',
+                      'software': 'ubuntu_1204_x64',
+                      'ip': ROUTER_IP,   # 'startup_script': router_script,
+                      'public_network_itf': router_public_network_itf,
+                      'private_network_itf': router_private_network_itf,
+                      }
+
+    machines['sim'] = {'hardware': 'cg1.4xlarge',
+                  'software': 'ubuntu_1204_x64_cluster',
+                  'ip': SIM_IP,
+                    }
+
+    if has_fc1:
+        machines['fc1'] = {'hardware': 'cg1.4xlarge',
+                  'software': 'ubuntu_1204_x64_cluster',
+                  'ip': FC1_IP,
+                    }
+    if has_fc2:
+        machines['fc2'] = {'hardware': 'cg1.4xlarge',
+                  'software': 'ubuntu_1204_x64_cluster',
+                  'ip': FC2_IP,
+                    }
+
+    _init_computer_data(constellation_name, machines)
+
     ros_master_ip = SIM_IP
-    router_script = get_router_script(router_public_network_itf,
+
+    scripts = {}
+    scripts['router'] = get_router_script(router_public_network_itf,
                                       router_private_network_itf,
                                       ROUTER_IP,
                                       SIM_IP,
@@ -1638,7 +1669,7 @@ def launch(username, config, constellation_name, tags,
                                       OPENVPN_SERVER_IP,
                                       OPENVPN_CLIENT_IP)
 
-    sim_script = get_drc_script(drcsim_package_name,
+    scripts['sim'] = get_drc_script(drcsim_package_name,
                                 SIM_IP,
                                 ros_master_ip,
                                 gpu_driver_list,
@@ -1656,29 +1687,12 @@ def launch(username, config, constellation_name, tags,
                                     gpu_driver_list,
                                     ppa_list)
 
-    scripts = {'router': router_script,
-               'sim': sim_script}
+    if has_fc1:
+        scripts['fc1'] = fc1_script
 
-    machines = {'router': {'hardware': 'm1.large',    # 't1.micro',
-                      'software': 'ubuntu_1204_x64',
-                      'ip': ROUTER_IP,   # 'startup_script': router_script,
-                      'public_network_itf': router_public_network_itf,
-                      'private_network_itf': router_private_network_itf,
-                      },
-            'sim': {'hardware': 'cg1.4xlarge',
-                  'software': 'ubuntu_1204_x64_cluster',
-                  'ip': SIM_IP,
-                    },
-               }
-#             'startup_script': sim_script},
-#             'fc1': {'hardware': 'cg1.4xlarge',
-#                   'software': 'ubuntu_1204_x64_cluster',
-#                   'ip': FC1_IP,
-#                   'startup_script': fc1_script},
-#             'fc2': {'hardware': 'cg1.4xlarge',
-#                   'software': 'ubuntu_1204_x64_cluster',
-#                   'ip': FC2_IP,
-#                   'startup_script': fc2_script}
+    if has_fc2:
+        scripts['fc2'] = fc2_script
+
     cs_cfg = get_cloudsim_config()
     if cloud_provider == "softlayer":
         credentials_fname = cs_cfg['softlayer_path']
@@ -1691,14 +1705,15 @@ def launch(username, config, constellation_name, tags,
         if config.find("partial") > 0:
             partial_deploy = True
         log("partial deploy: %s (only sim and router)" % partial_deploy)
+
         acquire_softlayer_constellation(constellation_name,
                                     constellation_directory,
                                     partial_deploy,
                                     constellation_prefix,
                                     credentials_fname,
                                     tags,
-                                    router_script,
-                                    sim_script,
+                                    scripts['router'],
+                                    scripts['sim'],
                                     fc1_script,
                                     fc2_script)
 
@@ -2050,7 +2065,7 @@ class VrcCase(object):  # (unittest.TestCase):
         unittest.TestCase.tearDown(self)
 
 
-class AwsCase(object):  # (unittest.TestCase):
+class AwsCase(unittest.TestCase):
 
     def setUp(self):
         print("setup")
@@ -2058,7 +2073,7 @@ class AwsCase(object):  # (unittest.TestCase):
         self.constellation_name = "test_xxx"
         print(self.constellation_name)
 
-        self.config = "AWS DRC"
+        self.config = 'AWS DRC with FC'  # "AWS DRC"
         self.username = "test@osrfoundation.org"
 
         print("%s %s" % (self.config, self.constellation_name))
@@ -2069,6 +2084,7 @@ class AwsCase(object):  # (unittest.TestCase):
 
         if os.path.exists(self.constellation_directory):
             bk_name = self.constellation_directory + get_unique_short_name('_')
+            print("backup: %s" % bk_name)
             os.rename(self.constellation_directory, bk_name)
         os.makedirs(self.constellation_directory)
 
@@ -2087,7 +2103,7 @@ class AwsCase(object):  # (unittest.TestCase):
         constellation.set_value('current_task', "")
         constellation.set_value('tasks', [])
 
-    def test_it(self):
+    def test_launch(self):
         print("test_launch")
         tags = {}
         p = get_boto_path()
@@ -2132,6 +2148,7 @@ class AwsCase(object):  # (unittest.TestCase):
 
     def tearDown(self):
         print("teardown")
+
         terminate(self.constellation_name,
                   credentials_override=get_boto_path())
         constellation = ConstellationState(self.constellation_name)
@@ -2162,8 +2179,6 @@ class SumCase(unittest.TestCase):
 
 class MoniCase(unittest.TestCase):
 
-
-
     def atest_monitorsim(self):
         constellation_name = 'cx8db055c6'
         x = monitor_simulator_proc(constellation_name)
@@ -2175,8 +2190,8 @@ class MoniCase(unittest.TestCase):
         ssh_ping_proc(constellation_name, '10.0.0.51', latency_key)
 
 if __name__ == "__main__":
-#    xmlTestRunner = get_test_runner()
-#    unittest.main(testRunner=xmlTestRunner)
-    n = 'cx8db055c6'
-    i = 0
-    monitor(n, i)
+    xmlTestRunner = get_test_runner()
+    unittest.main(testRunner=xmlTestRunner)
+#     n = 'cx8db055c6'
+#     i = 0
+#     monitor(n, i)

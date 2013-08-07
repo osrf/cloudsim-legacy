@@ -3,6 +3,11 @@ reset
 BAK=$(cat VERSION)
 BAKLOG="/tmp/cloudsimd_$BAK.log"
 
+# write the new VERSION name
+cat << DELIM > VERSION
+$1
+DELIM
+
 
 sudo mv /tmp/cloudsimd.log $BAKLOG
 . ~/code/cloudsim/deploy.sh
