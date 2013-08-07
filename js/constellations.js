@@ -28,7 +28,7 @@ function create_constellations_widget(div_name)
             var constellation_div =  div.querySelector("#"+constellation);
             if( constellation_div == null)
             {
-            	create_constellation(div_name, configuration, constellation, username, gmt);
+            	create_constellation(div_name, configuration, constellation, data);
             }
         }
     });

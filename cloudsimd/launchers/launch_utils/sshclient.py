@@ -30,7 +30,7 @@ class SshClientException(Exception):
 
 
 class SshClient(object):
-    def __init__(self, constellation_directory, key_name, username, ip, ):
+    def __init__(self, constellation_directory, key_name, username, ip):
 
         clean_local_ssh_key_entry(ip)
 
