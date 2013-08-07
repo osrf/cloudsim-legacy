@@ -1,0 +1,23 @@
+#!/bin/bash
+reset
+BAK=$(cat VERSION)
+BAKLOG="/tmp/cloudsimd_$BAK.log"
+
+
+sudo mv /tmp/cloudsimd.log $BAKLOG
+. ~/code/cloudsim/deploy.sh
+
+echo "*"
+echo "*"
+echo "CloudSim [$1] deployed"
+echo "The backup log is: $BAKLOG"
+echo ". ~/code/cloudsim/deploy.sh"
+echo "tail -f /tmp/cloudsimd.log" 
+echo "*"
+echo "*"
+
+#sleep 1
+touch /tmp/cloudsimd.log
+tail -f /tmp/cloudsimd.log
+
+
