@@ -180,6 +180,7 @@ def terminate_aws_server(constellation_name):
 def acquire_aws_constellation(constellation_name,
                               credentials_ec2,
                               machines,
+                              scripts,
                               tags):
     """
     Creates a virtual network with machines inside. Each machine has
@@ -210,10 +211,12 @@ def acquire_aws_constellation(constellation_name,
                                     VPN_PRIVATE_SUBNET,
                                     vpc_id,
                                     ec2conn)
+        startup_srcript = scripts[machine_name]
         reservation_id = _acquire_vpc_server(constellation_name,
                                              machine_name,
                                              aws_key_name,
                                              machine_data,
+                                             startup_srcript,
                                              subnet_id,
                                              security_group_id,
                                              availability_zone,
@@ -579,6 +582,7 @@ def _acquire_vpc_server(constellation_name,
                         machine_prefix,
                         key_pair_name,
                         machine_data,
+                        startup_script,
                         subnet_id,
                         security_group_id,
                         availability_zone,
@@ -591,8 +595,6 @@ def _acquire_vpc_server(constellation_name,
         aws_image = amis[soft]
         aws_instance = machine_data['hardware']
         ip = machine_data['ip']
-        startup_script = machine_data['startup_script']
-
         res = ec2conn.run_instances(aws_image,
                          instance_type=aws_instance,
                          subnet_id=subnet_id,

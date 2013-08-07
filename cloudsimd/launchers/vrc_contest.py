@@ -1563,7 +1563,7 @@ def deploy_constellation(constellation_name, cloud_provider, machines):
                          constellation_directory,
                          ["router"],
                          "launch_stdout_stderr.log",
-                         "running")
+                         "packages_setup")
 
     constellation.set_value('router_launch_msg',
                             "waiting for base packages to be installed")
@@ -1571,7 +1571,7 @@ def deploy_constellation(constellation_name, cloud_provider, machines):
                          constellation_directory,
                          ["router"],
                          "cloudsim/setup/deploy_ready",
-                         "running")
+                         "packages_setup")
 
     constellation.set_value('router_launch_msg', "deploying keys")
     ssh_router.upload_file(deploy_fname, "cloudsim/deploy.zip")
@@ -1656,17 +1656,21 @@ def launch(username, config, constellation_name, tags,
                                     gpu_driver_list,
                                     ppa_list)
 
+    scripts = {'router': router_script,
+               'sim': sim_script}
+
     machines = {'router': {'hardware': 'm1.large',    # 't1.micro',
                       'software': 'ubuntu_1204_x64',
-                      'ip': ROUTER_IP,
-                      'startup_script': router_script,
+                      'ip': ROUTER_IP,   # 'startup_script': router_script,
                       'public_network_itf': router_public_network_itf,
                       'private_network_itf': router_private_network_itf,
                       },
             'sim': {'hardware': 'cg1.4xlarge',
                   'software': 'ubuntu_1204_x64_cluster',
                   'ip': SIM_IP,
-                  'startup_script': sim_script},
+                    },
+               }
+#             'startup_script': sim_script},
 #             'fc1': {'hardware': 'cg1.4xlarge',
 #                   'software': 'ubuntu_1204_x64_cluster',
 #                   'ip': FC1_IP,
@@ -1675,8 +1679,6 @@ def launch(username, config, constellation_name, tags,
 #                   'software': 'ubuntu_1204_x64_cluster',
 #                   'ip': FC2_IP,
 #                   'startup_script': fc2_script}
-            }
-
     cs_cfg = get_cloudsim_config()
     if cloud_provider == "softlayer":
         credentials_fname = cs_cfg['softlayer_path']
@@ -1708,6 +1710,7 @@ def launch(username, config, constellation_name, tags,
         acquire_aws_constellation(constellation_name,
                                   credentials_fname,
                                   machines,
+                                  scripts,
                                   tags)
 
     deploy_constellation(constellation_name, cloud_provider, machines,)
@@ -1779,7 +1782,7 @@ def __wait_for_find_file(constellation_name,
                     ls_cmd,
                     constellation,
                     "%s_state" % machine_name,
-                    "running",
+                    end_state,
                     max_retries=500))
     empty_ssh_queue(q, sleep=2)
 
@@ -2055,7 +2058,7 @@ class AwsCase(object):  # (unittest.TestCase):
         self.constellation_name = "test_xxx"
         print(self.constellation_name)
 
-        self.config = "AWS trio"
+        self.config = "AWS DRC"
         self.username = "test@osrfoundation.org"
 
         print("%s %s" % (self.config, self.constellation_name))
@@ -2162,7 +2165,7 @@ class MoniCase(unittest.TestCase):
 
 
     def atest_monitorsim(self):
-        constellation_name = 'cx593c6f5e'
+        constellation_name = 'cx8db055c6'
         x = monitor_simulator_proc(constellation_name)
         print("monitor_simulator_proc %s" % x)
 
@@ -2174,6 +2177,6 @@ class MoniCase(unittest.TestCase):
 if __name__ == "__main__":
 #    xmlTestRunner = get_test_runner()
 #    unittest.main(testRunner=xmlTestRunner)
-    n = 'cx593c6f5e'
+    n = 'cx8db055c6'
     i = 0
     monitor(n, i)

@@ -272,14 +272,9 @@ def get_plugin(configuration):
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
 
-    elif configuration == 'AWS trio':
+    elif configuration == 'AWS DRC':
         #from launchers import amazon_trio as c
         from launchers import vrc_contest as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-                                     c.start_task, c.stop_task)
-
-    elif configuration == 'AWS micro trio':
-        from launchers import amazon_micro_trio as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
 
@@ -306,8 +301,8 @@ def _load_cloudsim_configurations_list():
     
     boto_path = config['boto_path']
     if os.path.exists(boto_path):
-        configs['AWS trio'] = {'description': "3 machines for the VRC competition: a GPU field computer, a router and a GPU simulator, using gazebo and drcsim packages"}
-        configs['AWS simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
+        configs['AWS DRC'] = {'description': "DRC competition: a router and a GPU simulator, using gazebo and drcsim packages"}
+        #configs['AWS simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
         configs['AWS CloudSim'] = {'description': "1 machine for starting a CloudSim on the cloud: A micro instance web app clone"}
 
     cloudsim_prefixes = []
