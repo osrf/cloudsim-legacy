@@ -737,7 +737,12 @@ export ROS_IP=""" + machine_ip + """
 export GAZEBO_IP=""" + machine_ip + """
 export DISPLAY=:0
 ulimit -c unlimited
-export GAZEBO_IP_WHITE_LIST=127.0.0.1
+
+#
+# By default
+# Allow anyone to connect to Gazebo on the network
+#
+# export GAZEBO_IP_WHITE_LIST=127.0.0.1
 
 # Kill a pending simulation
 bash /home/ubuntu/cloudsim/stop_sim.bash

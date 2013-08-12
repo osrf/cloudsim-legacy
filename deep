@@ -1,6 +1,6 @@
 #!/bin/bash
 reset
-BAK=$(cat VERSION)
+BAK=$(cat ../VERSION)
 BAKLOG="/tmp/cloudsimd_$BAK.log"
 
 # write the new VERSION name
