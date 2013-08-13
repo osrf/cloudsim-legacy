@@ -312,16 +312,16 @@ def _acquire_vpc_elastic_ip(constellation_name,
         # <Errors><Error><Code>InvalidAllocationID.NotFound</Code>
         #
         time.sleep(5)
-        max = 20
+        max_ = 20
         i = 0
-        while i < max:
+        while i < max_:
             try:
                 time.sleep(i * 2)
                 ec2conn.associate_address(aws_id, allocation_id=allocation_id)
-                i = max  # leave the loop
+                i = max_  # leave the loop
             except:
                 i += 1
-                if i == max:
+                if i == max_:
                     raise
 
         clean_local_ssh_key_entry(public_ip)
@@ -588,25 +588,39 @@ def _acquire_vpc_server(constellation_name,
 
 def aws_connect():
     config = get_cloudsim_config()
+    # log("config: %s" % config)
     credentials_ec2 = config['boto_path']
     boto.config = BotoConfig(credentials_ec2)
 
-    ec2_zone = boto.config.get('Boto', 'ec2_region_name')
+    ec2_region_name = boto.config.get('Boto', 'ec2_region_name')
 
     aws_access_key_id = boto.config.get('Credentials', 'aws_access_key_id')
-    aws_secret_access_key = boto.config.get('Credentials', 'aws_secret_access_key')
-
-    if ec2_zone == 'nova':
+    aws_secret_access_key = boto.config.get('Credentials',
+                                            'aws_secret_access_key')
+    region_endpoint = boto.config.get('Boto', 'ec2_region_endpoint')
+    if ec2_region_name == 'nova':
         # TODO: remove hardcoded OpenStack endpoint
         region = RegionInfo(None, 'cloudsim', '172.16.0.201')
-        ec2conn = EC2Connection(aws_access_key_id, aws_secret_access_key, is_secure=False,
-            region=region, port=8773, path='/services/Cloud')
-
-        vpcconn = VPCConnection(aws_access_key_id, aws_secret_access_key, is_secure=False,
-            region=region, port=8773, path='/services/Cloud')
+        ec2conn = EC2Connection(aws_access_key_id,
+                                aws_secret_access_key,
+                                is_secure=False,
+                                region=region,
+                                port=8773,
+                                path='/services/Cloud')
+        vpcconn = VPCConnection(aws_access_key_id,
+                                aws_secret_access_key,
+                                is_secure=False,
+                                region=region,
+                                port=8773,
+                                path='/services/Cloud')
     else:
-        ec2conn = boto.connect_ec2()
-        vpcconn = boto.connect_vpc()
+        region = RegionInfo(None, ec2_region_name, region_endpoint)
+        ec2conn = boto.connect_ec2(aws_access_key_id,
+                                   aws_secret_access_key,
+                                   region=region)
+        vpcconn = boto.connect_vpc(aws_access_key_id,
+                                   aws_secret_access_key,
+                                   region=region)
     return ec2conn, vpcconn
 
 

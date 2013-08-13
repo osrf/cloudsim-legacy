@@ -510,7 +510,8 @@ def terminate(constellation_name):
     constellation.set_value('constellation_state', 'terminated')
 
 
-def cloudsim_bootstrap(username, credentials_ec2, initial_constellation, config):
+def cloudsim_bootstrap(username, credentials_ec2,
+                       initial_constellation, config):
 
     set_cloudsim_config(config)
 
