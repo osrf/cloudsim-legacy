@@ -2,6 +2,9 @@ from __future__ import print_function
 
 import time
 import boto
+from boto.ec2.regioninfo import RegionInfo
+from boto.ec2.connection import EC2Connection
+from boto.vpc import VPCConnection
 from boto.pyami.config import Config as BotoConfig
 
 from launch_db import get_cloudsim_config
@@ -33,9 +36,7 @@ def acquire_aws_server(constellation_name,
 
     sim_machine_name = "%s_%s" % (machine_prefix, constellation_name)
     sim_key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
-    #ec2conn = aws_connect()[0]
-    boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
+    ec2conn = aws_connect()[0]
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
     constellation = ConstellationState(constellation_name)
 
@@ -48,7 +49,7 @@ def acquire_aws_server(constellation_name,
     sim_security_group.authorize('tcp', 80, 80, '0.0.0.0/0')   # web
     sim_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
     sim_security_group.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
-    sim_security_group_id = sim_security_group.id
+    sim_security_group_id = sim_security_group.name
     log("Security group created")
     constellation.set_value('sim_security_group_id', sim_security_group_id)
 
@@ -60,13 +61,18 @@ def acquire_aws_server(constellation_name,
     aws_image = amis['ubuntu_1204_x64']
 
     roles_to_reservations = {}
+
+    if availability_zone.startswith('nova'):
+        instance_type = 'cloudsim-basic'
+    else:
+        instance_type = 't1.micro'
     try:
         constellation.set_value('simulation_launch_msg', "requesting machine")
         res = ec2conn.run_instances(image_id=aws_image,
-            instance_type='t1.micro',
+            instance_type=instance_type,
             #subnet_id      = subnet_id,
             #private_ip_address=SIM_IP,
-            security_group_ids=[sim_security_group_id],
+            security_groups=[sim_security_group_id],
             key_name=sim_key_pair_name,
             user_data=startup_script)
         roles_to_reservations['simulation_state'] = res.id
@@ -166,9 +172,7 @@ def acquire_aws_constellation(constellation_name,
 
     constellation.set_value('machines', machines)
 
-    boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn = boto.connect_vpc()
+    ec2conn, vpcconn = aws_connect()
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
 
     vpc_id, subnet_id = _acquire_vpc(constellation_name,
@@ -223,8 +227,7 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
     Releases a private network, machines and all its resources
     """
     boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn = boto.connect_vpc()
+    ec2conn, vpcconn = aws_connect()
     constellation = ConstellationState(constellation_name)
 
     machines = constellation.get_value('machines')
@@ -567,6 +570,7 @@ def _acquire_vpc_server(constellation_name,
                         availability_zone,
                         ec2conn):
     amis = _get_amazon_amis(availability_zone)
+
     constellation = ConstellationState(constellation_name)
     try:
         constellation.set_value('%s_launch_msg' % machine_prefix, "booting")
@@ -591,8 +595,23 @@ def aws_connect():
     config = get_cloudsim_config()
     credentials_ec2 = config['boto_path']
     boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn = boto.connect_vpc()
+
+    ec2_zone = boto.config.get('Boto', 'ec2_region_name')
+
+    aws_access_key_id = boto.config.get('Credentials', 'aws_access_key_id')
+    aws_secret_access_key = boto.config.get('Credentials', 'aws_secret_access_key')
+
+    if ec2_zone == 'nova':
+        # TODO: remove hardcoded OpenStack endpoint
+        region = RegionInfo(None, 'cloudsim', '172.16.0.201')
+        ec2conn = EC2Connection(aws_access_key_id, aws_secret_access_key, is_secure=False,
+            region=region, port=8773, path='/services/Cloud')
+
+        vpcconn = VPCConnection(aws_access_key_id, aws_secret_access_key, is_secure=False,
+            region=region, port=8773, path='/services/Cloud')
+    else:
+        ec2conn = boto.connect_ec2()
+        vpcconn = boto.connect_vpc()
     return ec2conn, vpcconn
 
 
@@ -611,9 +630,19 @@ def _get_amazon_amis(availability_zone):
         amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
         amis['ubuntu_1204_x64'] = 'ami-f2191786'
 
-    if availability_zone.startswith('us-east'):
+    elif availability_zone.startswith('us-east'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
         amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
+
+    elif availability_zone.startswith('nova'):
+        # TODO: we might want to move image ids to a configuration file
+        ec2conn, _ = aws_connect()
+        images = ec2conn.get_all_images(
+            filters={'name': ['ubuntu-12.04.2-server-cloudimg-amd64-disk1']})
+        for image in images:
+            if image.name == 'ubuntu-12.04.2-server-cloudimg-amd64-disk1':
+                amis['ubuntu_1204_x64_cluster'] = image.id
+                amis['ubuntu_1204_x64'] = image.id
 
     return amis
 

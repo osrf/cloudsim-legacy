@@ -1,0 +1,36 @@
+#DATABASE_PASSWORD=cloudsim
+#RABBIT_PASSWORD=cloudsim
+#SERVICE_TOKEN=cloudsim
+#SERVICE_PASSWORD=cloudsim
+#ADMIN_PASSWORD=cloudsim
+#FLAT_INTERFACE=br100
+#PUBLIC_INTERFACE=eth1
+#HOST_IP=172.16.0.1
+#HOST_IP_IFACE=eth1
+
+ADMIN_PASSWORD=cloudsim
+MYSQL_PASSWORD=cloudsim
+RABBIT_PASSWORD=cloudsim
+SERVICE_PASSWORD=cloudsim
+SERVICE_TOKEN=cloudsimcloudsimcloudsimcloudsim
+
+# IP of vagrant box
+HOST_IP=172.16.0.201
+
+# Networks
+VLAN_INTERFACE=eth1
+FLAT_INTERFACE=eth1
+GUEST_INTERFACE=eth1
+PUBLIC_INTERFACE=eth2
+FIXED_RANGE=172.16.1.0/24
+FIXED_NETWORK_SIZE=256
+FLOATING_RANGE=10.10.1.0/24
+
+# Log the screens output (Devstack output logs only on the screens by default)
+SCREEN_LOGDIR=/opt/stack/logs/screen
+
+#OFFLINE=True
+
+IMAGE_URLS="http://cloud-images.ubuntu.com/releases/12.04.2/release-20130624/ubuntu-12.04.2-server-cloudimg-i386-disk1.img,http://cloud-images.ubuntu.com/releases/12.04.2/release-20130624/ubuntu-12.04.2-server-cloudimg-amd64-disk1.img"
+
+EXTRA_OPTS=(auto_assign_floating_ip=True)
