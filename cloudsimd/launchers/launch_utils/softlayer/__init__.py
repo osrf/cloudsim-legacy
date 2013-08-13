@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import time
 import SoftLayer.API
@@ -401,7 +403,7 @@ class aTestSofty(unittest.TestCase):
     def atest_get_constellation_prefixes(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
         prefixes = get_constellation_prefixes(osrf_creds)
-        print prefixes
+        print(prefixes)
 
     def atest_shutdown_public_ip(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
@@ -762,7 +764,7 @@ class sTestSoftLayer(unittest.TestCase):
         try:
             reload_servers(osrf_creds, servers)
         except Exception, e:
-            print e
+            print(e)
 
     def stest_shutdown_public_ip(self):
         osrf_creds = load_osrf_creds(get_softlayer_path())
@@ -799,7 +801,7 @@ class sTestSoftLayer(unittest.TestCase):
         try:
             reboot_servers(osrf_creds, servers)
         except Exception, e:
-            print e
+            print(e)
 
 
 if __name__ == "__main__":

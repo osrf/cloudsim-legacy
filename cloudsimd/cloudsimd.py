@@ -28,9 +28,9 @@ import traceback
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import set_constellation_data
-from launchers.launch_utils.launch import aws_connect
+from launchers.launch_utils import aws_connect
 from launchers.launch_utils.softlayer import get_constellation_prefixes
-from launchers.launch_utils.launch import LaunchException
+from launchers.launch_utils import LaunchException
 
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch_db import log_msg
@@ -153,7 +153,6 @@ def terminate_all_constellations():
 
     for x in get_constellation_names():
         d = {}
-        d['username'] = 'hugo@osrfoundation.org'
         d['command'] = 'terminate'
         d['constellation'] = x
         s = json.dumps(d)
@@ -253,7 +252,7 @@ def get_plugin(configuration):
     #log("get_plugin '%s'" % configuration)
 
 
-    if configuration.startswith("OSRF CloudSim "):
+    if configuration.startswith("OSRF CloudSim ") or configuration == "AWS CloudSim":
         from launchers import cloudsim as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                               None, None)
@@ -262,19 +261,20 @@ def get_plugin(configuration):
         from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
-    elif configuration == 'AWS CloudSim':
-        #return make_plugin(launchers.amazon_cloudsim)
-        from launchers import amazon_cloudsim as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-                                     c.start_task, c.stop_task)
-        
+
+#     elif configuration == 'AWS CloudSim':
+#         #return make_plugin(launchers.amazon_cloudsim)
+#          from launchers import amazon_cloudsim as c
+#          plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
+#                                       c.start_task, c.stop_task)
     elif configuration == 'AWS simulator':
         from launchers import simulator as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
 
     elif configuration == 'AWS trio':
-        from launchers import amazon_trio as c
+        #from launchers import amazon_trio as c
+        from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
 
@@ -430,7 +430,6 @@ def update_constellation(constellation_name):
 
         constellation_plugin = get_plugin(config)
         constellation_plugin.update(constellation_name)
-
     except Exception, e:
         log("cloudsimd.py update error: %s" % e)
         tb = traceback.format_exc()
@@ -450,19 +449,17 @@ def terminate(constellation_name):
     log("terminate '%s' from proc '%s'" % (constellation_name,  proc))
 
     try:
-
         data = get_constellation_data(constellation_name)
         config = data['configuration']
         log("    configuration is '%s'" % (config))
-
         constellation_plugin = get_plugin(config)
         constellation_plugin.terminate(constellation_name)
-
     except Exception, e:
         log("cloudsimd.py terminate error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
-        log("LAUNCH ERROR %s traceback:  %s" % (constellation_name, tb), "launch_errors")
+        log("LAUNCH ERROR %s traceback:  %s" % (constellation_name, tb),
+            "launch_errors")
             
     constellation = ConstellationState(constellation_name)
     constellation.set_value('constellation_state', 'terminated')
@@ -504,7 +501,7 @@ def create_task(constellation_name, data):
     except Exception, e:
         log("update_task error %s" % e)
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb)
+        log("traceback: %s" % tb)
 
 
 def update_task(constellation_name, data):
@@ -646,7 +643,7 @@ def monitor(config, constellation_name):
     
     """
     proc = multiprocessing.current_process().name
-    log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))
+    #log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))
     try:
         done = False
         constellation_plugin = get_plugin(config)
@@ -670,7 +667,7 @@ def monitor(config, constellation_name):
         log("traceback:  %s" % tb)
 
 
-def async_monitor( config, constellation_name):
+def async_monitor(config, constellation_name):
 
     log("cloudsimd async_monitor [config %s] %s" % (config,  constellation_name))
     try:
