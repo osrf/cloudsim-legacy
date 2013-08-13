@@ -50,7 +50,7 @@ FC2_IP = '10.0.0.53'
 OPENVPN_SERVER_IP = '11.8.0.1'
 OPENVPN_CLIENT_IP = '11.8.0.2'
 
-launch_sequence = ["nothing", "launch", "os_reload", "init_router",
+launch_sequence = ["nothing", "os_reload", "launch", "init_router",
                    "init_privates", "zip", "change_ip", "startup",
                    "block_public_ips", "reboot", "running"]
 
@@ -192,12 +192,13 @@ def monitor_simulator_proc(constellation_name):
 def monitor(constellation_name, counter):
     time.sleep(1)
     if constellation_is_terminated(constellation_name):
+        log("monitor done for %s" % (constellation_name))
         return True
 
     constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= launch_sequence.index(
-                                                                'init_router'):
+                                                                'launch'):
         constellation_directory = constellation.get_value(
                                                     'constellation_directory')
         router_ip = constellation.get_value("router_public_ip")
@@ -208,18 +209,23 @@ def monitor(constellation_name, counter):
                                router_ip)
 
         router_state = constellation.get_value('router_state')
+        sim_state = constellation.get_value('sim_state')
         fc1_state = constellation.get_value('fc1_state')
         fc2_state = constellation.get_value('fc2_state')
-        sim_state = constellation.get_value('sim_state')
+
+        log("monitor sim_state %s router_state %s" % (sim_state, router_state))
+
+        monitor_launch_state(constellation_name, ssh_router, sim_state,
+                             "cloudsim/dpkg_log_sim.bash", 'sim_launch_msg')
 
         monitor_launch_state(constellation_name, ssh_router, router_state,
                           "tail -1 /var/log/dpkg.log", 'router_launch_msg')
+
         monitor_launch_state(constellation_name, ssh_router, fc1_state,
                             "cloudsim/dpkg_log_fc1.bash", 'fc1_launch_msg')
+
         monitor_launch_state(constellation_name, ssh_router, fc2_state,
                             "cloudsim/dpkg_log_fc2.bash", 'fc2_launch_msg')
-        monitor_launch_state(constellation_name, ssh_router, sim_state,
-                             "cloudsim/dpkg_log_sim.bash", 'sim_launch_msg')
 
         procs = []
         p = multiprocessing.Process(target=ssh_ping_proc,
@@ -289,7 +295,25 @@ def _init_computer_data(constellation_name):
         constellation.set_value('%s_key_name' % prefix, None)
 
 
-def get_router_script(machine_private_ip, ros_master_ip, drc_package_name):
+def get_router_script(public_network_interface_name,
+                      private_network_interface_name,
+                      machine_private_ip,
+                      ros_master_ip,
+                      drc_package_name,
+                      vpn_server_ip,
+                      vpn_client_ip,
+                      ):
+    bytecounter_cmd = ""
+    vrc_controller_private = ""
+    if private_network_interface_name:
+        bytecounter_cmd = """
+        exec vrc_bytecounter """ + private_network_interface_name + """ > /var/log/vrc_bytecounter.log 2>&1
+"""
+        vrc_controller_private += """
+exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d """ + private_network_interface_name + """  > /var/log/vrc_controller_private.log 2>&1
+
+"""
+    
 
     s = """#!/bin/bash
 # Exit on error
@@ -344,6 +368,13 @@ apt-get install -y openvpn
 # Signal we are ready to send the keys to the router. We need:
 # * unzip, and unzip needs update
 # * openvpn
+
+cat <<DELIM > /etc/openvpn/openvpn.conf
+dev tun
+ifconfig """ + vpn_server_ip + " " + vpn_client_ip + """
+secret static.key
+DELIM
+
 touch /home/ubuntu/cloudsim/setup/deploy_ready
 
 apt-get install -y ntp
@@ -366,33 +397,16 @@ DELIM
 
 sudo service ssh restart
 
-cat <<DELIM > /etc/openvpn/openvpn.conf
-dev tun
-ifconfig """ + OPENVPN_SERVER_IP + " " + OPENVPN_CLIENT_IP + """
-secret static.key
-DELIM
-
-
-# The openvpn key is generated
-#openvpn --genkey --secret /home/ubuntu/cloudsim/openvpn.key
-#cp /home/ubuntu/cloudsim/openvpn.key /etc/openvpn/static.key
-#chmod 644 /etc/openvpn/static.key
-#service openvpn restart
-
 
 cat <<DELIM > /etc/init.d/iptables_cloudsim
 #! /bin/sh
-
-
 
 
 case "\$1" in
   start|"")
 
     sysctl -w net.ipv4.ip_forward=1
-    #iptables -A FORWARD -i tun0 -o bond0 -j ACCEPT
-    #iptables -A FORWARD -o tun0 -i bond0 -j ACCEPT
-    iptables -t nat -A POSTROUTING -o bond1 -j MASQUERADE
+    iptables -t nat -A POSTROUTING -o """ + public_network_interface_name + """ -j MASQUERADE
 
     ;;
   stop)
@@ -473,7 +487,7 @@ author  "Carlos Aguero <caguero@osrfoundation.org>"
 start on runlevel [234]
 stop on runlevel [0156]
 
-exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d bond0 > /var/log/vrc_controller_private.log 2>&1
+""" + vrc_controller_private + """
 
 respawn
 DELIM
@@ -488,7 +502,7 @@ author  "Carlos Aguero <caguero@osrfoundation.org>"
 start on runlevel [234]
 stop on runlevel [0156]
 
-exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d bond1 > /var/log/vrc_controller_public.log 2>&1
+exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d """ + public_network_interface_name + """ > /var/log/vrc_controller_public.log 2>&1
 
 respawn
 DELIM
@@ -503,7 +517,7 @@ author  "Carlos Aguero<caguero@osrfoundation.org>"
 start on runlevel [234]
 stop on runlevel [0156]
 
-exec vrc_bytecounter bond0 > /var/log/vrc_bytecounter.log 2>&1
+""" + bytecounter_cmd + """
 
 respawn
 DELIM
@@ -620,11 +634,25 @@ mkdir -p /home/ubuntu/cloudsim/setup
 
 
 #
-# Packages for X
+# Install drc sim and related packages
 #
 
-#apt-get upgrade -y
-#apt-get update
+
+echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
+# Answer the postfix questions
+sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
+sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+apt-get install -y cloudsim-client-tools
+
+echo "install """ + drc_package_name + """ ">> /home/ubuntu/setup.log
+apt-get install -y """ + drc_package_name + """
+
+
+
+
+#
+# Packages for X
+#
 
 echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
 apt-get install -y linux-headers-`uname -r`
@@ -668,20 +696,7 @@ user-session=gnome-fallback
 initctl stop lightdm || true
 initctl start lightdm
 
-#
-# Install drc sim and related packages
-#
 
-echo "install """ + drc_package_name + """ ">> /home/ubuntu/setup.log
-apt-get install -y """ + drc_package_name + """
-
-
-
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-# Answer the postfix questions
-sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
-sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
-apt-get install -y cloudsim-client-tools
 
 
 #cat <<DELIM > /etc/rc.local
@@ -815,7 +830,7 @@ cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
 DISPLAY=localhost:0 timeout 10 glxinfo
 
 DELIM
-
+chmod +x /home/ubuntu/cloudsim/ping_gl.bash
 
 #
 # Automatic sourcing of drcsim/setup
@@ -873,6 +888,66 @@ then
 fi
 DELIM
 
+
+# ----------------------------------------------------------
+
+
+cat <<DELIM > /home/ubuntu/cloudsim/load_gazebo_models.bash
+
+#!/bin/bash
+
+# Set the private environment for testing the VRC contest
+
+USAGE="Usage: load_gazebo_models.sh"
+
+
+# Constants
+GAZEBO_MODELS_NAME=gazebo_models
+GAZEBO_INSTALL_DIR=/home/\$USER/.gazebo
+VRC_ARENAS_NAME=vrc_arenas
+VRC_ARENA_INSTALL_DIR=/home/\$USER/local
+DRCSIM_SETUP=/usr/local/share/drcsim/setup.sh
+
+# arg1: Name of the repository to install
+# arg2: Destination directory
+install ()
+{
+    # Temporal directory for the repository
+    TMP_DIR=`mktemp -d`
+    cd \$TMP_DIR
+   
+    echo -n "Downloading \$1..."
+    hg clone https://bitbucket.org/osrf/\$1
+
+    echo "Done"
+    cd \$1
+    mkdir build
+    cd build
+    echo -n "Installing \$1..."
+    cmake .. -DCMAKE_INSTALL_PREFIX=\$2
+    make install > /dev/null 2>&1
+    echo "Done"
+
+    # Remove temp dir
+    rm -rf \$TMP_DIR
+}
+
+
+KEY=\$1
+
+# gazebo_models
+install \$GAZEBO_MODELS_NAME \$GAZEBO_INSTALL_DIR
+
+# vrc_arenas
+if [ -n "\$KEY" ]; then
+  install \$VRC_ARENAS_NAME \$VRC_ARENA_INSTALL_DIR \$KEY
+fi
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/load_gazebo_models.bash
+
+
+# ----------------------------------------------------------
 
 cat <<DELIM > /etc/init.d/vpcroute
 #! /bin/sh
@@ -955,15 +1030,33 @@ def _create_deploy_zip_files(constellation_name,
                      machines,
                      files=[]):
 
+    private_network_interface_name = machines['router']['public_network_itf']
+    public_network_interface_name = machines['router']['private_network_itf']
+
+    restore_default_tc_rules = ""
+
+    if public_network_interface_name:
+        restore_default_tc_rules += """
+    # Restore the default tc rules
+    sudo vrc_init_tc.py """ + public_network_interface_name + """
+
+    """
+
+    if private_network_interface_name:
+        restore_default_tc_rules += """
+    sudo vrc_init_tc.py """ + private_network_interface_name + """
+"""
+
     ssh_scripts = ""
 
     for machine_name, data in machines.iteritems():
         ip = data['ip']
         ssh_scripts += """
+
 #
 # interactive ssh script
 #
-cat <<DELIM > /home/ubuntu/cloudsim/ssh-""" + machine_name+ """.bash
+cat <<DELIM > /home/ubuntu/cloudsim/ssh-""" + machine_name + """.bash
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name+ """.pem ubuntu@""" + ip + """ \$1 \$2 \$3 \$4 \$5 \$6
 DELIM
 chmod +x /home/ubuntu/cloudsim/ssh-""" + machine_name + """.bash
@@ -1003,6 +1096,11 @@ chmod +x /home/ubuntu/cloudsim/reboot_""" + machine_name+ """.bash
 
     # now create a script that contains all the scripts together
     deploy_script = """#!/bin/bash
+# Exit on error
+set -ex
+# Redirect everybody's output to a file
+logfile=/home/ubuntu/cloudsim/deploy.log
+exec > $logfile 2>&1
 
 # copy keys to cloudsim directory
 cp /home/ubuntu/cloudsim/deploy/*.pem /home/ubuntu/cloudsim
@@ -1032,12 +1130,22 @@ sudo iptables -F FORWARD
 sudo stop vrc_controller_private
 sudo stop vrc_controller_public
 
-# Restore the default tc rules
-sudo vrc_init_tc.py bond0
-sudo vrc_init_tc.py bond1
+""" + restore_default_tc_rules + """
+
 DELIM
 chmod +x /home/ubuntu/cloudsim/stop_sim.bash
 
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/ping_gazebo.bash
+#!/bin/bash
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem -n ubuntu@""" + SIM_IP + """  ". /usr/share/drcsim/setup.sh; timeout -k 1 5 gztopic list"
+
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/ping_gazebo.bash
 # --------------------------------------------
 
 cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
@@ -1050,9 +1158,7 @@ sudo mv /tmp/vrc_netwatcher_usage.log /tmp/vrc_netwatcher_usage_\`date | tr -d '
 sudo stop vrc_controller_private
 sudo stop vrc_controller_public
 
-# Restore the default tc rules
-sudo vrc_init_tc.py bond0
-sudo vrc_init_tc.py bond1
+""" + restore_default_tc_rules + """
 
 sudo iptables -F FORWARD
 sudo stop vrc_netwatcher
@@ -1178,7 +1284,30 @@ sudo cp /home/ubuntu/cloudsim/deploy/openvpn.key /etc/openvpn/static.key
 sudo chmod 644 /etc/openvpn/static.key
 sudo service openvpn restart
 
+# chechck that the tunnel interface is up
+sudo ifconfig
+
 """
+
+# import apt
+#
+# cache = apt.Cache()
+# p = cache['drcsim']
+# v = p.installed.version
+# d = p.description
+
+# pkg = cache['python-apt'] # Access the Package object for python-apt
+# print 'python-apt is trusted:', pkg.candidate.origins[0].trusted
+# 
+# # Mark python-apt for install
+# pkg.mark_install()
+# 
+# print 'python-apt is marked for install:', pkg.marked_install
+# 
+# print 'python-apt is (summary):', pkg.candidate.summary
+# 
+# # Now, really install it
+# cache.commit()
 
     # constellation = ConstellationState(constellation_name)
     deploy_dir = os.path.join(constellation_directory, "deploy")
@@ -1364,6 +1493,9 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
                        "running")
 
     constellation = ConstellationState(constellation_name)
+    for machine_name in machine_names:
+        constellation.set_value('%s_aws_state' % machine_name, "running")
+
     if "sim" in machine_names:
         constellation.set_value('sim_launch_msg', 'Testing X and OpenGL')
         router_ip = constellation.get_value("router_public_ip")
@@ -1388,11 +1520,13 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
                     constellation.set_value('error',
                                             "OpenGL diagnostic failed: %s" % e)
                     raise
+
         # Install gazebo models locally
         # using a utility script from cloudsim-client-tools
         # careful, we are running as root here?
         constellation.set_value('sim_launch_msg', 'Loading Gazebo models')
-        ssh_router.cmd("./ssh-sim.bash set_vrc_private.sh")
+        ssh_router.cmd("cloudsim/ssh-sim.bash "
+                       "cloudsim/load_gazebo_models.bash")
 
     for machine_name in machine_names:
         constellation.set_value('%s_launch_msg' % machine_name, "Complete")
@@ -1401,11 +1535,11 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
     constellation.set_value("launch_stage", "running")
 
 
-def deploy_constellation(constellation_name):
+def deploy_constellation(constellation_name, cloud_provider, machines):
 
     constellation = ConstellationState(constellation_name)
 
-    machines = constellation.get_value('machines')
+    #machines = constellation.get_value('machines')
     constellation_directory = constellation.get_value(
                                                     'constellation_directory')
     router_ip = constellation.get_value('router_public_ip')
@@ -1418,7 +1552,7 @@ def deploy_constellation(constellation_name):
 
     _create_zip_files(constellation_name, constellation_directory, machines)
 
-    deploy_fname = _create_deploy_zip_files(constellation_name, 
+    deploy_fname = _create_deploy_zip_files(constellation_name,
         constellation_directory,
         machines,
         [openvpn_fname])
@@ -1429,7 +1563,7 @@ def deploy_constellation(constellation_name):
                          constellation_directory,
                          ["router"],
                          "launch_stdout_stderr.log",
-                         "running")
+                         "packages_setup")
 
     constellation.set_value('router_launch_msg',
                             "waiting for base packages to be installed")
@@ -1437,7 +1571,7 @@ def deploy_constellation(constellation_name):
                          constellation_directory,
                          ["router"],
                          "cloudsim/setup/deploy_ready",
-                         "running")
+                         "packages_setup")
 
     constellation.set_value('router_launch_msg', "deploying keys")
     ssh_router.upload_file(deploy_fname, "cloudsim/deploy.zip")
@@ -1458,6 +1592,15 @@ def launch(username, config, constellation_name, tags,
     """
     Called by cloudsimd when it receives a launch message
     """
+    cloud_provider = "aws"
+    if "OSRF" in constellation_name:
+        cloud_provider = "softlayer"
+
+    router_public_network_itf = "eth0"
+    router_private_network_itf = None
+    if cloud_provider == "softlayer":
+        router_public_network_itf = "bond1"
+        router_private_network_itf = "bond0"
 
     log("launch constellation name: %s" % constellation_name)
 
@@ -1470,13 +1613,6 @@ def launch(username, config, constellation_name, tags,
                        'nvidia-settings',
                        'nvidia-current-dev',
                        'nvidia-cg-toolkit']
-    # if true, the machines are reloaded. This is done in the case
-    # of partial reload because the terminate button would wipe out
-    # all machines
-
-#     partial_deploy = False
-#     if config.find("partial") > 0:
-#         partial_deploy = True
 
     if config.find("nightly") >= 0:
         drcsim_package_name = "drcsim-nightly"
@@ -1493,10 +1629,15 @@ def launch(username, config, constellation_name, tags,
 #                            constellation_prefix,
 #                            partial_deploy,
 #                            credentials_softlayer)
-
-
     ros_master_ip = SIM_IP
-    router_script = get_router_script(ROUTER_IP, SIM_IP, drcsim_package_name)
+    router_script = get_router_script(router_public_network_itf,
+                                      router_private_network_itf,
+                                      ROUTER_IP,
+                                      SIM_IP,
+                                      drcsim_package_name,
+                                      OPENVPN_SERVER_IP,
+                                      OPENVPN_CLIENT_IP)
+
     sim_script = get_drc_script(drcsim_package_name,
                                 SIM_IP,
                                 ros_master_ip,
@@ -1515,14 +1656,21 @@ def launch(username, config, constellation_name, tags,
                                     gpu_driver_list,
                                     ppa_list)
 
+    scripts = {'router': router_script,
+               'sim': sim_script}
+
     machines = {'router': {'hardware': 'm1.large',    # 't1.micro',
                       'software': 'ubuntu_1204_x64',
-                      'ip': ROUTER_IP,
-                      'startup_script': router_script},
+                      'ip': ROUTER_IP,   # 'startup_script': router_script,
+                      'public_network_itf': router_public_network_itf,
+                      'private_network_itf': router_private_network_itf,
+                      },
             'sim': {'hardware': 'cg1.4xlarge',
                   'software': 'ubuntu_1204_x64_cluster',
                   'ip': SIM_IP,
-                  'startup_script': sim_script},
+                    },
+               }
+#             'startup_script': sim_script},
 #             'fc1': {'hardware': 'cg1.4xlarge',
 #                   'software': 'ubuntu_1204_x64_cluster',
 #                   'ip': FC1_IP,
@@ -1531,10 +1679,8 @@ def launch(username, config, constellation_name, tags,
 #                   'software': 'ubuntu_1204_x64_cluster',
 #                   'ip': FC2_IP,
 #                   'startup_script': fc2_script}
-            }
-
     cs_cfg = get_cloudsim_config()
-    if "OSRF" in constellation_name:
+    if cloud_provider == "softlayer":
         credentials_fname = cs_cfg['softlayer_path']
         if credentials_override:
             credentials_fname = credentials_override
@@ -1556,7 +1702,7 @@ def launch(username, config, constellation_name, tags,
                                     fc1_script,
                                     fc2_script)
 
-    else:
+    if cloud_provider == "aws":
         credentials_fname = cs_cfg['boto_path']
         if credentials_override:
             credentials_fname = credentials_override
@@ -1564,9 +1710,10 @@ def launch(username, config, constellation_name, tags,
         acquire_aws_constellation(constellation_name,
                                   credentials_fname,
                                   machines,
+                                  scripts,
                                   tags)
 
-    deploy_constellation(constellation_name)
+    deploy_constellation(constellation_name, cloud_provider, machines,)
 
 
 def terminate(constellation_name, credentials_override=None):
@@ -1635,7 +1782,7 @@ def __wait_for_find_file(constellation_name,
                     ls_cmd,
                     constellation,
                     "%s_state" % machine_name,
-                    "running",
+                    end_state,
                     max_retries=500))
     empty_ssh_queue(q, sleep=2)
 
@@ -1911,7 +2058,7 @@ class AwsCase(object):  # (unittest.TestCase):
         self.constellation_name = "test_xxx"
         print(self.constellation_name)
 
-        self.config = "AWS trio"
+        self.config = "AWS DRC"
         self.username = "test@osrfoundation.org"
 
         print("%s %s" % (self.config, self.constellation_name))
@@ -2008,11 +2155,28 @@ class SumCase(unittest.TestCase):
                                  machines)
         self.assertTrue(os.path.exists(zip_fname), "not there")
 
-    def test_deploy(self):
+    def xtest_deploy(self):
         constellation_name = 'cx11fc02b4'
         deploy_constellation(constellation_name)
 
 
+class MoniCase(unittest.TestCase):
+
+
+
+    def atest_monitorsim(self):
+        constellation_name = 'cx8db055c6'
+        x = monitor_simulator_proc(constellation_name)
+        print("monitor_simulator_proc %s" % x)
+
+    def ztest_ping(self):
+        constellation_name = 'cx593c6f5e'
+        latency_key = 'sim_latency'
+        ssh_ping_proc(constellation_name, '10.0.0.51', latency_key)
+
 if __name__ == "__main__":
-    xmlTestRunner = get_test_runner()
-    unittest.main(testRunner=xmlTestRunner)
+#    xmlTestRunner = get_test_runner()
+#    unittest.main(testRunner=xmlTestRunner)
+    n = 'cx8db055c6'
+    i = 0
+    monitor(n, i)

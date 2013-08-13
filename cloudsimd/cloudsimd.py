@@ -268,14 +268,9 @@ def get_plugin(configuration):
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
 
-    elif configuration == 'AWS trio':
+    elif configuration == 'AWS DRC':
         #from launchers import amazon_trio as c
         from launchers import vrc_contest as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-                                     c.start_task, c.stop_task)
-
-    elif configuration == 'AWS micro trio':
-        from launchers import amazon_micro_trio as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
 
@@ -302,8 +297,8 @@ def _load_cloudsim_configurations_list():
     
     boto_path = config['boto_path']
     if os.path.exists(boto_path):
-        configs['AWS trio'] = {'description': "3 machines for the VRC competition: a GPU field computer, a router and a GPU simulator, using gazebo and drcsim packages"}
-        configs['AWS simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
+        configs['AWS DRC'] = {'description': "DRC competition: a router and a GPU simulator, using gazebo and drcsim packages"}
+        #configs['AWS simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
         configs['AWS CloudSim'] = {'description': "1 machine for starting a CloudSim on the cloud: A micro instance web app clone"}
 
     cloudsim_prefixes = []
@@ -636,17 +631,24 @@ def stop_task(constellation_name):
 
 def monitor(config, constellation_name):
     """
-    
+    Loop that monitors the execution of a constellation
     """
     proc = multiprocessing.current_process().name
+<<<<<<< local
     #log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))
+=======
+
+    log("monitoring [%s] %s from proc '%s'" % (config,
+                                               constellation_name,
+                                               proc))
+>>>>>>> other
     try:
         done = False
         constellation_plugin = get_plugin(config)
         counter = 0
         while not done:
             try:
-                #log("monitor %s (%s)" % (constellation_name, counter) )
+                log("monitor %s (%s)" % (constellation_name, counter) )
                 done = constellation_plugin.monitor(constellation_name, counter)
                 #log("monitor return value %s" % ( done) )
                 counter += 1
@@ -661,13 +663,16 @@ def monitor(config, constellation_name):
         log("cloudsimd.py monitor error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
+        
+    log("END OF MONITOR %s" % constellation_name)
 
 
 def async_monitor(config, constellation_name):
 
     log("cloudsimd async_monitor [config %s] %s" % (config,  constellation_name))
     try:
-        p = multiprocessing.Process(target=monitor, args=( config, constellation_name))
+        p = multiprocessing.Process(target=monitor, 
+                                    args=(config, constellation_name))
         p.start()
     except Exception, e:
         log("cloudsimd async_monitor Error %s" % e)

@@ -158,6 +158,7 @@ def terminate_aws_server(constellation_name):
 
 
 <<<<<<< local
+<<<<<<< local
 # def get_aws_sources_list(credentials_ec2):
 #     """
 #     Returns the package sources for the region
@@ -186,9 +187,12 @@ def terminate_aws_server(constellation_name):
 
 =======
 >>>>>>> other
+=======
+>>>>>>> other
 def acquire_aws_constellation(constellation_name,
                               credentials_ec2,
                               machines,
+                              scripts,
                               tags):
     """
     Creates a virtual network with machines inside. Each machine has
@@ -217,10 +221,12 @@ def acquire_aws_constellation(constellation_name,
                                     VPN_PRIVATE_SUBNET,
                                     vpc_id,
                                     ec2conn)
+        startup_srcript = scripts[machine_name]
         reservation_id = _acquire_vpc_server(constellation_name,
                                              machine_name,
                                              aws_key_name,
                                              machine_data,
+                                             startup_srcript,
                                              subnet_id,
                                              security_group_id,
                                              availability_zone,
@@ -242,7 +248,7 @@ def acquire_aws_constellation(constellation_name,
                                 aws_id,
                                 ec2conn)
         if machine_name == "router":
-            router_instance =  get_ec2_instance(ec2conn, aws_id)
+            router_instance = get_ec2_instance(ec2conn, aws_id)
             router_instance.modify_attribute('sourceDestCheck', False)
 
     log("running machines %s" % machines_to_awsid)
@@ -487,19 +493,34 @@ def _acquire_vpc_security_group(constellation_name,
     sg = None
     try:
         sg_name = '%s-sg-%s' % (machine_prefix, constellation_name)
+        dsc = 'machine %s CloudSim constellation %s' % (machine_prefix,
+                                            constellation_name,
+                                            )
+        sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
+
+        max_try = 10
+        i = 0
+        while i < max_try:
+            log("adding tag to %s/%s security group" % (constellation_name,
+                                                machine_prefix))
+            try:
+                sg.add_tag('constellation', constellation_name)
+                log("tag added")
+                i = max_try
+            except Exception, e:
+                log("%s / %s: error: %s" % (i, max_try, e))
+                i += 1
+                time.sleep(i * 2)
+                if i == max_try:
+                    raise
+
         if machine_prefix == "router":
-            dsc = 'router security group for %s' % (constellation_name)
-            sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
             sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
             sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
             sg.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
             sg.authorize('udp', 0, 65535, vpn_subnet)
             sg.authorize('tcp', 0, 65535, vpn_subnet)
         else:
-            dsc = '%s security group for %s vpc %s' % (machine_prefix,
-                                                           constellation_name,
-                                                           vpc_id)
-            sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
             sg.authorize('icmp', -1, -1, vpn_subnet)
             sg.authorize('tcp',  0, 65535, vpn_subnet)
             sg.authorize('udp', 0, 65535, vpn_subnet)
@@ -515,16 +536,6 @@ def _acquire_vpc_security_group(constellation_name,
         constellation.set_value('error',  "security group error: %s" % e)
         raise
 
-    i = 0
-    while i < 5:
-        log("adding tag to %s/%s security group" % (constellation_name,
-                                                machine_prefix))
-        try:
-            sg.add_tag('vpc', vpc_id)
-            sg.add_tag('constellation', constellation_name)
-            i = 5
-        except:
-            time.sleep(i * 2)
     return security_group_id
 
 
@@ -580,6 +591,7 @@ def _acquire_vpc_server(constellation_name,
                         machine_prefix,
                         key_pair_name,
                         machine_data,
+                        startup_script,
                         subnet_id,
                         security_group_id,
                         availability_zone,
@@ -593,8 +605,6 @@ def _acquire_vpc_server(constellation_name,
         aws_image = amis[soft]
         aws_instance = machine_data['hardware']
         ip = machine_data['ip']
-        startup_script = machine_data['startup_script']
-
         res = ec2conn.run_instances(aws_image,
                          instance_type=aws_instance,
                          subnet_id=subnet_id,
@@ -731,7 +741,8 @@ def wait_for_multiple_machines_to_run(ec2conn,
                     constellation.set_value("%s_state" % machine_name,
                                             final_state)
                     constellation.set_value("%s_aws_id" % machine_name, aws_id)
-                    log('Done launching %s (AWS %s)' % (machine_name, aws_id))
+                    log('Done launching machine %s'
+                        '(AWS %s)' % (machine_name, aws_id))
                     done = True
                     break
     return ready_machines
