@@ -157,6 +157,7 @@ def terminate_aws_server(constellation_name):
         log("error cleaning up security group %s: %s" % (security_group_id, e))
 
 
+<<<<<<< local
 # def get_aws_sources_list(credentials_ec2):
 #     """
 #     Returns the package sources for the region
@@ -183,6 +184,8 @@ def terminate_aws_server(constellation_name):
 # deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-security main restricted universe multiverse
 
 
+=======
+>>>>>>> other
 def acquire_aws_constellation(constellation_name,
                               credentials_ec2,
                               machines,

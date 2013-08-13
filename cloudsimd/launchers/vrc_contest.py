@@ -1188,7 +1188,7 @@ sudo service openvpn restart
     with open(deploy_script_fname, 'w') as f:
         f.write(deploy_script)
 
-    files_to_zip = [f for f in files]
+    files_to_zip = [fi for fi in files]
     files_to_zip.append(deploy_script_fname)
     for machine_name in machines:
         short_fname = "key-%s.pem" % machine_name
