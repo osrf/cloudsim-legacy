@@ -20,11 +20,10 @@ function create_constellation(div_name, configuration, constellation, machine_da
     	for(var machine_name in machine_data.machines)
     	{
     		var has_simulator = false;
-    		var latency_msg = "N/A";
+    		var latency_msg = "";
 
     		if (machine_name == "sim")
     		{
-    			latency_msg = "Latency between the router and simualator";
     			has_simulator = true;
     		}
 
@@ -32,7 +31,11 @@ function create_constellation(div_name, configuration, constellation, machine_da
     		{
     			latency_msg = "Latency between the router and OCU over the VPN";
     		}
-    			
+    		else
+    		{
+    			latency_msg = "Latency between the router and " + machine_name;
+    		}
+    		
     		var machine_div = create_machine(machines_div, machine_name);
     		var ip_key = machine_name + "_ip";
     		var cloud_id_key = machine_name + "_aws_id";
