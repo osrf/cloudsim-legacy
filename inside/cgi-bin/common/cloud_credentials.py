@@ -1,7 +1,6 @@
 import unittest
 import os
 import json
-import redis
 from common.constants import update_cloudsim_configuration_list
 import SoftLayer.API
 
