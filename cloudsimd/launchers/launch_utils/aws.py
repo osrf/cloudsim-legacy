@@ -157,38 +157,6 @@ def terminate_aws_server(constellation_name):
         log("error cleaning up security group %s: %s" % (security_group_id, e))
 
 
-<<<<<<< local
-<<<<<<< local
-# def get_aws_sources_list(credentials_ec2):
-#     """
-#     Returns the package sources for the region
-#     """
-#     boto.config = BotoConfig(credentials_ec2)
-#     # ec2conn = boto.connect_ec2()
-#     availability_zone = boto.config.get('Boto', 'ec2_region_name')
-# 
-# #
-# # Dublin 
-# #
-# deb http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted universe multiverse
-# deb http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted universe multiverse
-# deb http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-security main restricted universe multiverse
-# 
-# deb-src http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted universe multiverse
-# deb-src http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted universe multiverse
-# deb-src http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/ precise-security main restricted universe multiverse
-#
-# East coast
-# 
-# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted universe multiverse
-# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted universe multiverse
-# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-security main restricted universe multiverse
-
-
-=======
->>>>>>> other
-=======
->>>>>>> other
 def acquire_aws_constellation(constellation_name,
                               credentials_ec2,
                               machines,

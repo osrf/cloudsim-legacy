@@ -634,14 +634,10 @@ def monitor(config, constellation_name):
     Loop that monitors the execution of a constellation
     """
     proc = multiprocessing.current_process().name
-<<<<<<< local
-    #log("monitoring [%s] %s/%s from proc '%s'" % (config, username, constellation_name, proc))
-=======
 
     log("monitoring [%s] %s from proc '%s'" % (config,
                                                constellation_name,
                                                proc))
->>>>>>> other
     try:
         done = False
         constellation_plugin = get_plugin(config)
