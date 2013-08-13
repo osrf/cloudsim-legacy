@@ -2,13 +2,13 @@ from __future__ import print_function
 import time
 import unittest
 from launch_db import ConstellationState
-from launch import aws_connect
 from sshclient import SshClient
 import commands
 import traceback
 from launch_db import log_msg
 import redis
 import json
+from aws import aws_connect
 
 machine_states = ['terminated', 'terminating', 'stopped' 'stopping',
                   'nothing', 'starting', 'booting',
@@ -162,24 +162,22 @@ def monitor_launch_state(constellation_name, ssh_client,
 
     if ssh_client == None:  # too early to verify
         return
-
-    constellation = ConstellationState(constellation_name)
-    constellation_state = constellation.get_value("constellation_state")
-    if constellation_states.index(constellation_state) >= \
-                            constellation_states.index("launching"):
-        if machine_state == "running":
-            constellation.set_value(launch_msg_key, "complete")
-
-        if machine_state == 'packages_setup':
-            try:
+    try:
+        constellation = ConstellationState(constellation_name)
+        constellation_state = constellation.get_value("constellation_state")
+        if constellation_states.index(constellation_state) >= \
+                                constellation_states.index("launching"):
+            if machine_state == "running":
+                constellation.set_value(launch_msg_key, "complete")
+            if machine_state == 'packages_setup':
                 dpkg_line = ssh_client.cmd(dpkg_cmd)
                 package_msg = parse_dpkg_line(dpkg_line)
                 current_value = constellation.get_value(launch_msg_key)
                 if current_value != package_msg:
                     constellation.set_value(launch_msg_key, package_msg)
-            except:
-                tb = traceback.format_exc()
-                log("monitor_launch_state traceback:  %s" % tb)
+    except:
+        tb = traceback.format_exc()
+        log("monitor_launch_state traceback:  %s" % tb)
 
 
 def monitor_simulator(constellation_name,
