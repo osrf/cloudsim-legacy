@@ -3,14 +3,9 @@
 
 function create_constellation(div_name, configuration, constellation, machine_data)
 {
-	var disable_key_download  = false; 
-	if(get_user_info()['role'] == 'user')
-	{
-		disable_key_download = true;
-	}
 	
 	var constellation_div = insert_constellation_div(div_name, configuration, constellation, username, machine_data.gmt);
-    
+   
     var machines_div =  constellation_div.querySelector("#machines" );
     
     if(configuration.indexOf ("OSRF VRC Constellation") == 0 || configuration.indexOf("AWS DRC") ==0)
@@ -21,15 +16,19 @@ function create_constellation(div_name, configuration, constellation, machine_da
     	{
     		var has_simulator = false;
     		var latency_msg = "";
-
+    		var disable_key_download  = false;
+    		
     		if (machine_name == "sim")
     		{
     			has_simulator = true;
+    	    	if(get_user_info()['role'] == 'user')
+    	    	{
+    	    		disable_key_download = true;
+    	    	}
     		}
-
-    		if (machine_name == "router")
+    		else if (machine_name == "router")
     		{
-    			latency_msg = "Latency between the router and OCU over the VPN";
+    			latency_msg = "Latency between the router and the OCU over the VPN";
     		}
     		else
     		{
@@ -65,7 +64,12 @@ function create_constellation(div_name, configuration, constellation, machine_da
     	 
     if( (configuration == "AWS CloudSim") || (configuration.indexOf("OSRF CloudSim") ==0) )
     {
-        var machine_name = "CloudSim";
+    	var disable_key_download  = false; 
+    	if(get_user_info()['role'] == 'user')
+    	{
+    		disable_key_download = true;
+    	}
+    	var machine_name = "CloudSim";
         
         // create_task_list_widget(constellation_div, constellation);
         var machine_div = create_machine(machines_div, machine_name);
@@ -78,55 +82,6 @@ function create_constellation(div_name, configuration, constellation, machine_da
         create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to its parent CloudSim", 550);
     }
 
-    // if(configuration.indexOf("AWS trio") ==0 || configuration.indexOf("AWS micro trio") ==0  )
-    if (false)
-    {
-    	create_task_list_widget(constellation_div, constellation);
-    	// field computer
-        { 
-            var div =  constellation_div.querySelector("#machines" );
-            
-
-            var machine_name = "field_computer_" + constellation;
-			var machine_div = create_machine(machines_div, machine_name);
-
-            create_hostname_widget(machine_div, constellation, machine_name, "robot_ip", "robot_aws_id", "username", "gmt", "robot_zip_file", false);
-
-            create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "robot_launch_msg", "robot_state");
-            create_machine_state_widget(machine_div,constellation, machine_name, "robot_aws_state");
-            // create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
-            
-            create_latency_widget(machine_div, constellation, machine_name, "robot_latency", "RTT latency to the Router", 1.1); 
-    	}
-        // router computer
-        {
-            var machine_name = "router_" + constellation;
-            var machine_div = create_machine(machines_div, machine_name);
-            
-
-            create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "router_launch_msg", "router_state");
-            create_machine_state_widget(machine_div,constellation, machine_name, "router_aws_state");
-            //create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
-            create_hostname_widget(machine_div, constellation, machine_name, "router_public_ip", "router_aws_id", "username", "gmt", "router_zip_file", false);
-            
-            create_latency_widget(machine_div, constellation, machine_name, "router_latency", "RTT latency to CloudSim", 1.1); 
-        }
-        
-        // simulator computer
-        {            
-            var machine_name = "simulator_" + constellation;
-            var machine_div = create_machine(machines_div, machine_name);
-            
-            create_hostname_widget (machine_div, constellation, machine_name, "sim_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file", disable_key_download);	
-            create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "simulation_launch_msg", "simulation_state");
-            create_machine_state_widget(machine_div, constellation, machine_name,"simulation_aws_state");
-            // create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
-            //create_glx_state_widget(machine_div, constellation, machine_name, "simulation_glx_state");
-            
-            create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
-            create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to the Router", 1.1);
-        }
-    }
     
     if((configuration == "AWS simulator") || (configuration.indexOf("bitcoin") ==0))
     {

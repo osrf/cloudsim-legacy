@@ -71,4 +71,6 @@ config['ec2_zone'] = args.ec2_zone
 # Launch a cloudsim instance
 machine = cloudsim.cloudsim_bootstrap(username, tmp_fname.name, auto_launch_constellation, config)
 
+print("removing temporary files...")
 os.remove(tmp_fname.name)
+print("temporary files removed")

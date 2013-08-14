@@ -96,7 +96,7 @@ function change_osrf_credentials(nuser, napi_key)
     return jmsg;	
 }
 
-function change_credentials(access_key, secret_access_key, availability_zone)
+function change_aws_credentials(access_key, secret_access_key, availability_zone)
 {
     var key = encodeURIComponent(access_key);
     var secret = encodeURIComponent(secret_access_key);
