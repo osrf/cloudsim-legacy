@@ -81,13 +81,17 @@ h2 {
 }
 
 
+.task_line:nth-child(odd)
+{
+    background-color: white; //#a7a6a6;
+}
 
 .task_line
 {
-    border: 1px solid black; 
+   // border: 1px solid black; 
     border-top-left-radius: 8px; 
     border-top-right-radius: 8px; 
     border-bottom-right-radius: 8px; 
     border-bottom-left-radius: 8px; 
-    margin: 5px;
+    margin: 3px;
 }

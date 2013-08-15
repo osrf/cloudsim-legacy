@@ -123,8 +123,11 @@ def reset_tasks(name=None):
         for task in tasks:
             task_id = task['task_id']
             state = task['task_state']
-            if state not in ['ready', 'stopped']:
-                cs.update_task_value(task_id, 'task_state', 'stopped')
+            if state not in ['ready']:
+                cs.update_task_value(task_id, 'task_state', 'ready')
+                cs.update_task_value(task_id, 'task_message', 'Ready to run')
+#            if state not in ['ready', 'stopped']:
+#                cs.update_task_value(task_id, 'task_state', 'stopped')
 
 
 def launch_constellation(username, configuration, args=None):
@@ -560,7 +563,7 @@ def start_task(constellation_name, task_id):
             if task_state == 'ready':
                 cs.set_value('current_task', task_id)
                 log('task_state starting')
-                cs.update_task_value(task_id, 'task_message', 'Starting task')
+                cs.update_task_value(task_id, 'task_message', '')
                 cs.update_task_value(task_id, 'task_state', 'starting')
                 cs.update_task_value(task_id, 'start_time', datetime.datetime.utcnow().isoformat())
                 # no other task running, and task is ready
@@ -587,7 +590,7 @@ def start_task(constellation_name, task_id):
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
 
-
+    
 def stop_task(constellation_name):
     """
     Stops the current running tasks on a constellation. If no simulation task
@@ -810,6 +813,10 @@ def async_stop_task(constellation_name):
                                 args=(constellation_name,))
     p.start()
 
+def async_reset_tasks(constellation_name):
+    p = multiprocessing.Process(target=reset_tasks,
+                                args=(constellation_name,))
+    p.start()
 
 def async_update_cloudsim_configuration_list():
     p = multiprocessing.Process(target=_load_cloudsim_configurations_list,
@@ -956,6 +963,10 @@ def run(root_dir, tick_interval):
             elif cmd == 'stop_task':
                 constellation = data['constellation']
                 async_stop_task(constellation)
+            
+            elif cmd == 'reset_tasks':
+                constellation = data['constellation']
+                async_reset_tasks(constellation)
 
         except Exception:
             log("Error processing message [%s]" % msg)

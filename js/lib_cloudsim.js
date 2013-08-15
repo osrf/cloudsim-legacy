@@ -357,6 +357,17 @@ function stop_task(constellation_name)
     return msg;    
 }
 
+function reset_tasks(constellation_name)
+{
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=reset_tasks';
+    url += '&constellation=' + constellation_name;
+
+    console.log(url);
+    msg = httpGet(url);
+    console.log(msg);
+    return msg; 
+}
+
 function async_get_constellations(callback)
 {
 	var url = '/cloudsim/inside/cgi-bin/constellations/';

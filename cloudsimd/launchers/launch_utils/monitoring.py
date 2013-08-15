@@ -335,10 +335,10 @@ def monitor_task(constellation_name, ssh_router):
             constellation.update_task_value(task['task_id'],
                                             'task_message',
                                             final_score)
-        else:
-            constellation.update_task_value(task['task_id'],
-                                            'task_message',
-                                            "No score available")
+#         else:
+#             constellation.update_task_value(task['task_id'],
+#                                             'task_message',
+#                                             "No score available")
         if sim_time > timeout:
             task = constellation.get_task(task_id)
             timeout_msg = ' [Timeout]'
