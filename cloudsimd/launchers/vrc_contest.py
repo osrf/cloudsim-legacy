@@ -314,8 +314,6 @@ def get_router_script(public_network_interface_name,
 exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d """ + private_network_interface_name + """  > /var/log/vrc_controller_private.log 2>&1
 
 """
-    
-
     s = """#!/bin/bash
 # Exit on error
 set -ex
@@ -1487,45 +1485,61 @@ def _reboot_machines(constellation_name,
 
     for machine_name in machine_names:
         ssh_router.cmd("cloudsim/reboot_%s.bash" % machine_name)
+    log("waiting before connecting after reboot")
+    time.sleep(20)
     constellation.set_value("launch_stage", "reboot")
 
 
+def _check_opengl_and_x(constellation, ssh_router):
+    constellation.set_value('sim_launch_msg', 'Testing X and OpenGL')
+    constellation.set_value('simulation_glx_state', "pending")
+    gl_retries = 0
+    while True:
+        time.sleep(gl_retries * 2)
+        gl_retries += 1
+        try:
+            ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
+            log("bash cloudsim/ping_gl.bash = %s" % ping_gl)
+            constellation.set_value('simulation_glx_state', "running")
+            return
+        except Exception as e:
+            if gl_retries > 10:
+                constellation.set_value('simulation_glx_state', "not running")
+                constellation.set_value('error', "OpenGL diagnostic failed:"
+                                        " %s" % e)
+                raise
+    # this code should never happen
+    return
+
+
 def _run_machines(constellation_name, machine_names, constellation_directory):
+    log("_run_machines wait for machines %s : %s" % (constellation_name,
+                                                     machine_names))
 
     __wait_for_find_file(constellation_name,
                        constellation_directory,
                        machine_names,
                        "cloudsim/setup/done",
-                       "running")
+                       "running",
+                       True)
+    log("_run_machines machines %s : %s rebooted!" % (constellation_name,
+                                                     machine_names))
+
+    # make sure the monitoring of package setup is complete
+    time.sleep(10)
 
     constellation = ConstellationState(constellation_name)
     for machine_name in machine_names:
         constellation.set_value('%s_aws_state' % machine_name, "running")
 
+    router_ip = constellation.get_value("router_public_ip")
+    ssh_router = SshClient(constellation_directory,
+                           "key-router",
+                           'ubuntu',
+                           router_ip)
+    log("_run_machines %s: simulator check" % (constellation_name))
     if "sim" in machine_names:
-        constellation.set_value('sim_launch_msg', 'Testing X and OpenGL')
-        router_ip = constellation.get_value("router_public_ip")
-        ssh_router = SshClient(constellation_directory,
-                               "key-router",
-                               'ubuntu',
-                               router_ip)
-        constellation.set_value('simulation_glx_state', "pending")
-        gl_retries = 0
-        while True:
-            gl_retries += 1
-            time.sleep(10)
-            try:
-                ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
-                log("bash cloudsim/ping_gl.bash = %s" % ping_gl)
-                constellation.set_value('simulation_glx_state', "running")
-                break
-            except Exception, e:
-                if gl_retries > 30:
-                    constellation.set_value('simulation_glx_state',
-                                            "not running")
-                    constellation.set_value('error',
-                                            "OpenGL diagnostic failed: %s" % e)
-                    raise
+        _check_opengl_and_x(constellation, ssh_router)
 
         # Install gazebo models locally
         # using a utility script from cloudsim-client-tools
@@ -1534,8 +1548,11 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
         ssh_router.cmd("cloudsim/ssh-sim.bash "
                        "cloudsim/load_gazebo_models.bash")
 
+    log("_run_machines %s: wrap up" % (constellation_name))
+
+    constellation.set_value('router_launch_msg', "complete")
     for machine_name in machine_names:
-        constellation.set_value('%s_launch_msg' % machine_name, "Complete")
+        constellation.set_value('%s_launch_msg' % machine_name, "complete")
         constellation.set_value('%s_aws_state' % machine_name, "running")
         constellation.set_value('%s_launch_state' % machine_name, "running")
     constellation.set_value("launch_stage", "running")
@@ -1578,18 +1595,24 @@ def deploy_constellation(constellation_name, cloud_provider, machines):
                          ["router"],
                          "cloudsim/setup/deploy_ready",
                          "packages_setup")
-
     constellation.set_value('router_launch_msg', "deploying keys")
     ssh_router.upload_file(deploy_fname, "cloudsim/deploy.zip")
     ssh_router.cmd('cd cloudsim; unzip deploy.zip')
     ssh_router.cmd('bash cloudsim/deploy/deploy.bash')
+
+    __wait_for_find_file(constellation_name,
+                         constellation_directory,
+                         ["router"],
+                         "cloudsim/setup/done",
+                         "running")
+
     # reboot fc1, fc2 and sim (but not router)
     machines_to_reboot = machines.keys()
     machines_to_reboot.remove('router')
 
     _reboot_machines(constellation_name, ssh_router,
                      machines_to_reboot, constellation_directory)
-    # wait for all machines to be ready
+
     _run_machines(constellation_name, machines.keys(), constellation_directory)
 
 
@@ -1783,7 +1806,8 @@ def __wait_for_find_file(constellation_name,
                        constellation_directory,
                        machine_names,
                        ls_cmd,
-                       end_state):
+                       end_state,
+                       set_cloud_state=False):
 
     constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
@@ -1797,11 +1821,14 @@ def __wait_for_find_file(constellation_name,
                            router_ip)
     q = []
     for machine_name in machine_names:
-        q.append(get_ssh_cmd_generator(ssh_router,
+        key_name = "%s_state" % machine_name
+        if set_cloud_state:
+            key_name = "%s_aws_state" % machine_name
+        q.append(get_ssh_cmd_generator(ssh_router, "timeout -k 1 10 "
                     "cloudsim/find_file_%s.bash %s" % (machine_name, ls_cmd),
                     ls_cmd,
                     constellation,
-                    "%s_state" % machine_name,
+                    key_name,
                     end_state,
                     max_retries=500))
     empty_ssh_queue(q, sleep=2)
@@ -2120,7 +2147,7 @@ class AwsCase(unittest.TestCase):
                credentials_override=p)
         print("launched")
 
-        for i in range(20):
+        for i in range(50):
             print('monitor %s' % i)
             monitor(self.constellation_name, i)
             time.sleep(5)

@@ -167,8 +167,8 @@ def monitor_launch_state(constellation_name, ssh_client,
         constellation_state = constellation.get_value("constellation_state")
         if constellation_states.index(constellation_state) >= \
                                 constellation_states.index("launching"):
-            if machine_state == "running":
-                constellation.set_value(launch_msg_key, "complete")
+            #if machine_state == "running":
+            #    constellation.set_value(launch_msg_key, "complete")
             if machine_state == 'packages_setup':
                 dpkg_line = ssh_client.cmd(dpkg_cmd)
                 package_msg = parse_dpkg_line(dpkg_line)
@@ -335,7 +335,10 @@ def monitor_task(constellation_name, ssh_router):
             constellation.update_task_value(task['task_id'],
                                             'task_message',
                                             final_score)
-
+        else:
+            constellation.update_task_value(task['task_id'],
+                                            'task_message',
+                                            "No score available")
         if sim_time > timeout:
             task = constellation.get_task(task_id)
             timeout_msg = ' [Timeout]'

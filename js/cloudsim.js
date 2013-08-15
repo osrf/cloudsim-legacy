@@ -17,6 +17,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
     		var has_simulator = false;
     		var latency_msg = "";
     		var disable_key_download  = false;
+    		var latency_msg = "Latency between the router and " + machine_name;
     		
     		if (machine_name == "sim")
     		{
@@ -32,7 +33,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
     		}
     		else
     		{
-    			latency_msg = "Latency between the router and " + machine_name;
+    			
     		}
     		
     		var machine_div = create_machine(machines_div, machine_name);
@@ -57,9 +58,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
     			create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
     		}
     		create_latency_widget(machine_div, constellation, machine_name, latency_key, latency_msg, 550);
-    		
     	}
-
     }
     	 
     if( (configuration == "AWS CloudSim") || (configuration.indexOf("OSRF CloudSim") ==0) )
