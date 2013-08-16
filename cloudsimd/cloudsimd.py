@@ -24,7 +24,7 @@ from launchers.launch_utils.launch_db import get_cloudsim_config,\
 
 
 import traceback
-
+import datetime
 
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
@@ -37,8 +37,7 @@ from launchers.launch_utils.launch_db import log_msg
 
 # for interactive use
 from launchers.launch_utils.softlayer import load_osrf_creds
-
-import datetime
+from launchers.launch_utils.aws import read_boto_file
 
 try:
     logging.basicConfig(filename='/tmp/cloudsimd.log',
@@ -295,16 +294,57 @@ def _load_cloudsim_configurations_list():
     """
 
     configs = {}
-    
-    
     config = get_cloudsim_config()
-    
-    boto_path = config['boto_path']
-    if os.path.exists(boto_path):
-        configs['AWS DRC'] = {'description': "DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages"}
-        configs['AWS DRC with FC'] = {'description': "DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages"}
+    credentials_ec2 = config['boto_path']
+    if os.path.exists(credentials_ec2):
+        # configs['AWS DRC'] = {'description': "DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages"}
+        ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint = read_boto_file(credentials_ec2)
+        desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
+<ol>
+  <li>Cloud provider: Amazon Web Services</li>
+  <li>Location: """+ ec2_region_name + """</li>
+  <li>Hardware:
+      <ol>
+          <li>Router: large server</li>
+          <li>Simulator: GPU cluster instance</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Fuerte</li>
+  <li>Simulator: Gazebo (latest)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+        configs['AWS DRC'] = {'description': desc}
+        desc = """DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages
+<ol>
+  <li>Cloud provider: Amazon Web Services</li>
+  <li>Location: """+ ec2_region_name + """</li>
+    <li>Hardware:
+      <ol>
+          <li>Router: large server</li>
+          <li>Simulator: GPU cluster instance</li>
+          <li>Field computer: GPU cluster instance</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Fuerte</li>
+  <li>Simulator: Gazebo (latest)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+        configs['AWS DRC with FC'] = {'description': desc}
         #configs['AWS simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
-        configs['AWS CloudSim'] = {'description': "1 machine for starting a CloudSim on the cloud: A micro instance web app clone"}
+        desc = """The CloudSim Web App running in the Cloud
+<ol>
+  <li>Cloud provider: Amazon Web Services</li>
+  <li>Location: """+ ec2_region_name + """</li>
+  <li>Hardware: micro</li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>Web server: Apache</li>
+</ol>
+"""     
+        configs['AWS CloudSim'] = {'description': desc}
 
     cloudsim_prefixes = []
     const_prefixes = []

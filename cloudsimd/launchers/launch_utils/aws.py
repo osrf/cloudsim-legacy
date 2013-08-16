@@ -591,21 +591,24 @@ def _acquire_vpc_server(constellation_name,
         raise
 
 
+def read_boto_file(credentials_ec2):
+    boto.config = BotoConfig(credentials_ec2)
+    ec2_region_name = boto.config.get('Boto', 'ec2_region_name')
+    key_id = boto.config.get('Credentials', 'aws_access_key_id')
+    aws_secret_access_key = boto.config.get('Credentials',
+        'aws_secret_access_key')
+    region_endpoint = boto.config.get('Boto', 'ec2_region_endpoint')
+    return  ec2_region_name, key_id, aws_secret_access_key, region_endpoint
+
+
 def aws_connect():
     config = get_cloudsim_config()
     # log("config: %s" % config)
     credentials_ec2 = config['boto_path']
-    boto.config = BotoConfig(credentials_ec2)
-
-    ec2_region_name = boto.config.get('Boto', 'ec2_region_name')
-
-    aws_access_key_id = boto.config.get('Credentials', 'aws_access_key_id')
-    aws_secret_access_key = boto.config.get('Credentials',
-                                            'aws_secret_access_key')
-    region_endpoint = boto.config.get('Boto', 'ec2_region_endpoint')
+    ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint = read_boto_file(credentials_ec2)
     if ec2_region_name == 'nova':
         # TODO: remove hardcoded OpenStack endpoint
-        region = RegionInfo(None, 'cloudsim', '172.16.0.201')
+        region = RegionInfo(None, 'cloudsim', region_endpoint)  # 172.16.0.201
         ec2conn = EC2Connection(aws_access_key_id,
                                 aws_secret_access_key,
                                 is_secure=False,

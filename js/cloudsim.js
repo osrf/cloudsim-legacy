@@ -18,7 +18,8 @@ function create_constellation(div_name, configuration, constellation, machine_da
     		var latency_msg = "";
     		var disable_key_download  = false;
     		var latency_msg = "Latency between the router and " + machine_name;
-    		
+    		var max_latency = 550;
+
     		if (machine_name == "sim")
     		{
     			has_simulator = true;
@@ -57,7 +58,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
     		{
     			create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
     		}
-    		create_latency_widget(machine_div, constellation, machine_name, latency_key, latency_msg, 550);
+    		create_latency_widget(machine_div, constellation, machine_name, latency_key, latency_msg, max_latency);
     	}
     }
     	 
