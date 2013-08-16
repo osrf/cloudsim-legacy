@@ -269,6 +269,10 @@ function create_task_list_widget(const_div, constellation_name)
     	console.log("onclick reset_tasks_button!")
     	reset_tasks(constellation_name);
     }
+    if(get_user_info().role == "user")
+    {
+    	reset_tasks_button.style.display='none';
+    }
     
     // add the buttons
     var widgets_div = tasks_div.querySelector("#widgets");
@@ -279,11 +283,7 @@ function create_task_list_widget(const_div, constellation_name)
     buttons_div.appendChild(add_task_button);
     buttons_div.appendChild(stop_current_task_button);
     buttons_div.appendChild(reset_tasks_button);
-    /*
-    p.insertBefore(add_task_button, widgets_div);
-    p.insertBefore(stop_current_task_button, widgets_div);
-    p.insertBefore(reset_tasks_button, widgets_div);
-     */
+
     var form_div = _create_task_form(form_id);
     p.insertBefore(form_div, widgets_div);
     
@@ -305,8 +305,7 @@ function create_task_list_widget(const_div, constellation_name)
             	}
             }
             stop_current_task_button.disabled = disable_stop;
-            
-            
+             
             var new_tasks = [];
             var tasks = data.tasks;
             var divs_to_update = [];
@@ -461,9 +460,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         
         var dlg = document.querySelector( "#" + form_id);
         var inputs = dlg.querySelectorAll("input");
-        
 
-        
         var task_title_input = inputs[0];
         var ros_package = inputs[1];
         var launch_file = inputs[2];
@@ -491,6 +488,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         {
             readOnly = true;
         }
+
         if(task.task_state != "ready")
         {
             readOnly = true;
