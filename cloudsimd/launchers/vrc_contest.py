@@ -304,13 +304,13 @@ def get_router_script(public_network_interface_name,
                       vpn_server_ip,
                       vpn_client_ip,
                       ):
-    bytecounter_cmd = ""
-    vrc_controller_private = ""
-    if private_network_interface_name:
-        bytecounter_cmd = """
+    if not private_network_interface_name:
+        private_network_interface_name = public_network_interface_name
+
+    bytecounter_cmd = """
         exec vrc_bytecounter """ + private_network_interface_name + """ > /var/log/vrc_bytecounter.log 2>&1
 """
-        vrc_controller_private += """
+    vrc_controller_private = """
 exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d """ + private_network_interface_name + """  > /var/log/vrc_controller_private.log 2>&1
 
 """
@@ -405,7 +405,7 @@ case "\$1" in
   start|"")
 
     sysctl -w net.ipv4.ip_forward=1
-    iptables -t nat -A POSTROUTING -o """ + public_network_interface_name + """ -j MASQUERADE
+    iptables -t nat -A POSTROUTING -s 10.0.0.0/24 -o """ + public_network_interface_name + """ -j MASQUERADE
 
     ;;
   stop)
@@ -456,7 +456,8 @@ sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Intern
 
 sudo apt-get install -y cloudsim-client-tools
 
-sudo start vrc_monitor || true
+# VRC specific.. sends emails when machines are down
+# sudo start vrc_monitor || true
 
 
 ##############################################################
@@ -1764,13 +1765,13 @@ def terminate(constellation_name, credentials_override=None):
     constellation.set_value('constellation_state', 'terminating')
     constellation.set_value('router_state', 'terminating')
     constellation.set_value('sim_state', 'terminating')
-    constellation.set_value('field1_state', 'terminating')
-    constellation.set_value('field2_state', 'terminating')
+    constellation.set_value('fc1_state', 'terminating')
+    constellation.set_value('fc2_state', 'terminating')
     constellation.set_value('sim_glx_state', "not running")
     constellation.set_value('sim_launch_msg', "terminating")
     constellation.set_value('router_launch_msg', "terminating")
-    constellation.set_value('field1_launch_msg', "terminating")
-    constellation.set_value('field2_launch_msg', "terminating")
+    constellation.set_value('fc1_launch_msg', "terminating")
+    constellation.set_value('fc2_launch_msg', "terminating")
 
     cs_cfg = get_cloudsim_config()
     constellation.set_value("launch_stage", "nothing")
@@ -1795,10 +1796,10 @@ def terminate(constellation_name, credentials_override=None):
     constellation.set_value('sim_launch_msg', "terminated")
     constellation.set_value('router_state', 'terminated')
     constellation.set_value('router_launch_msg', "terminated")
-    constellation.set_value('field1_state', 'terminated')
-    constellation.set_value('field1_launch_msg', "terminated")
-    constellation.set_value('field2_state', 'terminated')
-    constellation.set_value('field2_launch_msg', "terminated")
+    constellation.set_value('fc1_state', 'terminated')
+    constellation.set_value('fc1_launch_msg', "terminated")
+    constellation.set_value('fc2_state', 'terminated')
+    constellation.set_value('fc2_launch_msg', "terminated")
     constellation.set_value('constellation_state', 'terminated')
 
 

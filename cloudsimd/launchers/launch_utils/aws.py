@@ -560,6 +560,19 @@ def _release_key_pair(constellation_name, machine_prefix, ec2conn):
         log("error cleaning up simulation key %s: %s" % (key_pair_name, e))
 
 
+def __get_block_device_mapping(aws_instance):
+    """
+    Resize the available disk space to 50 gig on certain instance types
+    """
+    bdm = None
+    if aws_instance == 'cg1.4xlarge':
+        dev_sda1 = boto.ec2.blockdevicemapping.EBSBlockDeviceType()
+        dev_sda1.size = 50  # size in Gigabytes
+        bdm = boto.ec2.blockdevicemapping.BlockDeviceMapping()
+        bdm['/dev/sda1'] = dev_sda1
+    return bdm
+
+
 def _acquire_vpc_server(constellation_name,
                         machine_prefix,
                         key_pair_name,
@@ -578,13 +591,17 @@ def _acquire_vpc_server(constellation_name,
         aws_image = amis[soft]
         aws_instance = machine_data['hardware']
         ip = machine_data['ip']
+
+        bdm = __get_block_device_mapping(aws_instance)
+
         res = ec2conn.run_instances(aws_image,
                          instance_type=aws_instance,
                          subnet_id=subnet_id,
                          private_ip_address=ip,
                          security_group_ids=[security_group_id],
                          key_name=key_pair_name,
-                         user_data=startup_script)
+                         user_data=startup_script,
+                         block_device_map=bdm)
         return res.id
     except Exception, e:
         constellation.set_value('error', "%s" % e)
