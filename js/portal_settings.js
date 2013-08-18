@@ -22,7 +22,7 @@ function add_portal_settings_widget(place_holder_div_name)
     str += place_holder_div_name;
 
     str += '\');">Override</button><br><br>Set portal information.';
-    str += 'Leave blank to skip the log generation process';
+    // str += 'Leave blank to skip the log generation process';
 
     the_div.innerHTML = str;
     console.log('add_portal_settings_widget:' +  place_holder_div_name);

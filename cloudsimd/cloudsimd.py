@@ -19,11 +19,12 @@ from launchers.launch_utils import SshClient
 
 from launchers.launch_utils import get_unique_short_name
 from launchers.launch_utils.launch_db import ConstellationState
-from launchers.launch_utils.launch_db import get_cloudsim_config, set_cloudsim_config
+from launchers.launch_utils.launch_db import get_cloudsim_config,\
+    set_cloudsim_config
 
 
 import traceback
-
+import datetime
 
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
@@ -36,17 +37,16 @@ from launchers.launch_utils.launch_db import log_msg
 
 # for interactive use
 from launchers.launch_utils.softlayer import load_osrf_creds
-
-import datetime
+from launchers.launch_utils.aws import read_boto_file
 
 try:
     logging.basicConfig(filename='/tmp/cloudsimd.log',
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                    level=logging.DEBUG)
+                format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                level=logging.DEBUG)
 except:
     logging.basicConfig(filename='/tmp/cloudsimd_no_root.log',
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                    level=logging.DEBUG)
+                format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                level=logging.DEBUG)
 
 def log(msg, channel=__name__, severity="info"):
     log_msg(msg, channel, severity)
@@ -122,8 +122,11 @@ def reset_tasks(name=None):
         for task in tasks:
             task_id = task['task_id']
             state = task['task_state']
-            if state not in ['ready', 'stopped']:
-                cs.update_task_value(task_id, 'task_state', 'stopped')
+            if state not in ['ready']:
+                cs.update_task_value(task_id, 'task_state', 'ready')
+                cs.update_task_value(task_id, 'task_message', 'Ready to run')
+#            if state not in ['ready', 'stopped']:
+#                cs.update_task_value(task_id, 'task_state', 'stopped')
 
 
 def launch_constellation(username, configuration, args=None):
@@ -268,7 +271,7 @@ def get_plugin(configuration):
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                                      c.start_task, c.stop_task)
 
-    elif configuration == 'AWS DRC':
+    elif configuration.startswith('AWS DRC'):
         #from launchers import amazon_trio as c
         from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
@@ -291,15 +294,57 @@ def _load_cloudsim_configurations_list():
     """
 
     configs = {}
-    
-    
     config = get_cloudsim_config()
-    
-    boto_path = config['boto_path']
-    if os.path.exists(boto_path):
-        configs['AWS DRC'] = {'description': "DRC competition: a router and a GPU simulator, using gazebo and drcsim packages"}
+    credentials_ec2 = config['boto_path']
+    if os.path.exists(credentials_ec2):
+        # configs['AWS DRC'] = {'description': "DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages"}
+        ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint = read_boto_file(credentials_ec2)
+        desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
+<ol>
+  <li>Cloud provider: Amazon Web Services</li>
+  <li>Location: """+ ec2_region_name + """</li>
+  <li>Hardware:
+      <ol>
+          <li>Router: large server</li>
+          <li>Simulator: GPU cluster instance</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Fuerte</li>
+  <li>Simulator: Gazebo (latest)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+        configs['AWS DRC'] = {'description': desc}
+        desc = """DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages
+<ol>
+  <li>Cloud provider: Amazon Web Services</li>
+  <li>Location: """+ ec2_region_name + """</li>
+    <li>Hardware:
+      <ol>
+          <li>Router: large server</li>
+          <li>Simulator: GPU cluster instance</li>
+          <li>Field computer: GPU cluster instance</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Fuerte</li>
+  <li>Simulator: Gazebo (latest)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+        configs['AWS DRC with FC'] = {'description': desc}
         #configs['AWS simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
-        configs['AWS CloudSim'] = {'description': "1 machine for starting a CloudSim on the cloud: A micro instance web app clone"}
+        desc = """The CloudSim Web App running in the Cloud
+<ol>
+  <li>Cloud provider: Amazon Web Services</li>
+  <li>Location: """+ ec2_region_name + """</li>
+  <li>Hardware: micro</li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>Web server: Apache</li>
+</ol>
+"""     
+        configs['AWS CloudSim'] = {'description': desc}
 
     cloudsim_prefixes = []
     const_prefixes = []
@@ -558,7 +603,7 @@ def start_task(constellation_name, task_id):
             if task_state == 'ready':
                 cs.set_value('current_task', task_id)
                 log('task_state starting')
-                cs.update_task_value(task_id, 'task_message', 'Starting task')
+                cs.update_task_value(task_id, 'task_message', '')
                 cs.update_task_value(task_id, 'task_state', 'starting')
                 cs.update_task_value(task_id, 'start_time', datetime.datetime.utcnow().isoformat())
                 # no other task running, and task is ready
@@ -585,7 +630,7 @@ def start_task(constellation_name, task_id):
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
 
-
+    
 def stop_task(constellation_name):
     """
     Stops the current running tasks on a constellation. If no simulation task
@@ -808,6 +853,10 @@ def async_stop_task(constellation_name):
                                 args=(constellation_name,))
     p.start()
 
+def async_reset_tasks(constellation_name):
+    p = multiprocessing.Process(target=reset_tasks,
+                                args=(constellation_name,))
+    p.start()
 
 def async_update_cloudsim_configuration_list():
     p = multiprocessing.Process(target=_load_cloudsim_configurations_list,
@@ -954,6 +1003,10 @@ def run(root_dir, tick_interval):
             elif cmd == 'stop_task':
                 constellation = data['constellation']
                 async_stop_task(constellation)
+            
+            elif cmd == 'reset_tasks':
+                constellation = data['constellation']
+                async_reset_tasks(constellation)
 
         except Exception:
             log("Error processing message [%s]" % msg)

@@ -5,6 +5,8 @@ function create_machine_state_widget(machine_div, constellation_name, machine_na
     // default behaviour
     _update_machine_state(widget_div, "gray", "[waiting for update]");
     
+    var current_color = "";
+    var current_text = "";
     // reaction
     $.subscribe("/constellation", function(event, msg)
     {
@@ -39,9 +41,12 @@ function create_machine_state_widget(machine_div, constellation_name, machine_na
         {
             color = "blue";
         }
-        
-        _update_machine_state(widget_div, color, machine_state);
-        
+        if( (current_color != color)  || (current_text != machine_state) )
+        {
+        	_update_machine_state(widget_div, color, machine_state);
+        }
+        current_color = color;
+        current_text = machine_state;
     });
 }
 
@@ -52,6 +57,6 @@ function _update_machine_state(widget_div, color, text)
     str += status;
     str += "<b>Machine state:</b> " 
     str += text;
+    if(widget_div.innerHTML != str)
     widget_div.innerHTML = str;
-    
 }

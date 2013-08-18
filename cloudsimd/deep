@@ -1,0 +1,32 @@
+#!/bin/bash
+reset
+
+# DIR="/home/ubuntu/cloudsim/cloudsimd"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+BAK=$(cat $DIR/../VERSION)
+BAKLOG="/tmp/cloudsimd_$BAK.log"
+
+# write the new VERSION name
+cat << DELIM > $DIR/../VERSION
+$1
+DELIM
+
+
+sudo mv /tmp/cloudsimd.log $BAKLOG
+. $DIR/../deploy.sh
+
+echo "*"
+echo "*"
+echo "CloudSim [$1] deployed"
+echo "The backup log is: $BAKLOG"
+echo ". ~/code/cloudsim/deploy.sh"
+echo "tail -f /tmp/cloudsimd.log" 
+echo "*"
+echo "*"
+
+#sleep 1
+touch /tmp/cloudsimd.log
+tail -f /tmp/cloudsimd.log
+
+

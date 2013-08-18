@@ -96,7 +96,7 @@ function change_osrf_credentials(nuser, napi_key)
     return jmsg;	
 }
 
-function change_credentials(access_key, secret_access_key, availability_zone)
+function change_aws_credentials(access_key, secret_access_key, availability_zone)
 {
     var key = encodeURIComponent(access_key);
     var secret = encodeURIComponent(secret_access_key);
@@ -355,6 +355,17 @@ function stop_task(constellation_name)
     msg = httpGet(url);
     console.log(msg);
     return msg;    
+}
+
+function reset_tasks(constellation_name)
+{
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=reset_tasks';
+    url += '&constellation=' + constellation_name;
+
+    console.log(url);
+    msg = httpGet(url);
+    console.log(msg);
+    return msg; 
 }
 
 function async_get_constellations(callback)

@@ -336,6 +336,10 @@ def _release_vpc_elastic_ip(constellation_name, machine_name_prefix, ec2conn):
     try:
         allocation_id_key = __get_allocation_id_key(machine_name_prefix)
         eip_allocation_id = constellation.get_value(allocation_id_key)
+        log("_release_vpc_elastic_ip %s machine %s id: %s" % (
+                                    constellation_name,
+                                    machine_name_prefix,
+                                    eip_allocation_id))
         ec2conn.release_address(allocation_id=eip_allocation_id)
     except Exception, e:
         error_msg = constellation.get_value('error')
@@ -438,6 +442,7 @@ def _release_vpc(constellation_name, vpcconn):
         log("error cleaning up subnet: %s" % e)
 
     try:
+        log("delete_vpc %s constellation %s" % (vpc_id, constellation_name))
         vpcconn.delete_vpc(vpc_id)
     except Exception, e:
         error_msg += "<b>VPC</b>: %s<br>" % e
@@ -555,6 +560,19 @@ def _release_key_pair(constellation_name, machine_prefix, ec2conn):
         log("error cleaning up simulation key %s: %s" % (key_pair_name, e))
 
 
+def __get_block_device_mapping(aws_instance):
+    """
+    Resize the available disk space to 50 gig on certain instance types
+    """
+    bdm = None
+    if aws_instance == 'cg1.4xlarge':
+        dev_sda1 = boto.ec2.blockdevicemapping.EBSBlockDeviceType()
+        dev_sda1.size = 50  # size in Gigabytes
+        bdm = boto.ec2.blockdevicemapping.BlockDeviceMapping()
+        bdm['/dev/sda1'] = dev_sda1
+    return bdm
+
+
 def _acquire_vpc_server(constellation_name,
                         machine_prefix,
                         key_pair_name,
@@ -573,34 +591,41 @@ def _acquire_vpc_server(constellation_name,
         aws_image = amis[soft]
         aws_instance = machine_data['hardware']
         ip = machine_data['ip']
+
+        bdm = __get_block_device_mapping(aws_instance)
+
         res = ec2conn.run_instances(aws_image,
                          instance_type=aws_instance,
                          subnet_id=subnet_id,
                          private_ip_address=ip,
                          security_group_ids=[security_group_id],
                          key_name=key_pair_name,
-                         user_data=startup_script)
+                         user_data=startup_script,
+                         block_device_map=bdm)
         return res.id
     except Exception, e:
         constellation.set_value('error', "%s" % e)
         raise
 
 
+def read_boto_file(credentials_ec2):
+    boto.config = BotoConfig(credentials_ec2)
+    ec2_region_name = boto.config.get('Boto', 'ec2_region_name')
+    key_id = boto.config.get('Credentials', 'aws_access_key_id')
+    aws_secret_access_key = boto.config.get('Credentials',
+        'aws_secret_access_key')
+    region_endpoint = boto.config.get('Boto', 'ec2_region_endpoint')
+    return  ec2_region_name, key_id, aws_secret_access_key, region_endpoint
+
+
 def aws_connect():
     config = get_cloudsim_config()
     # log("config: %s" % config)
     credentials_ec2 = config['boto_path']
-    boto.config = BotoConfig(credentials_ec2)
-
-    ec2_region_name = boto.config.get('Boto', 'ec2_region_name')
-
-    aws_access_key_id = boto.config.get('Credentials', 'aws_access_key_id')
-    aws_secret_access_key = boto.config.get('Credentials',
-                                            'aws_secret_access_key')
-    region_endpoint = boto.config.get('Boto', 'ec2_region_endpoint')
+    ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint = read_boto_file(credentials_ec2)
     if ec2_region_name == 'nova':
         # TODO: remove hardcoded OpenStack endpoint
-        region = RegionInfo(None, 'cloudsim', '172.16.0.201')
+        region = RegionInfo(None, 'cloudsim', region_endpoint)  # 172.16.0.201
         ec2conn = EC2Connection(aws_access_key_id,
                                 aws_secret_access_key,
                                 is_secure=False,
@@ -723,6 +748,8 @@ def wait_for_multiple_machines_to_run(ec2conn,
                     constellation.set_value("%s_state" % machine_name,
                                             final_state)
                     constellation.set_value("%s_aws_id" % machine_name, aws_id)
+                    constellation.set_value('%s_aws_state' % machine_name, 
+                                            'running')
                     log('Done launching machine %s'
                         '(AWS %s)' % (machine_name, aws_id))
                     done = True

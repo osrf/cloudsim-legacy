@@ -70,7 +70,8 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     var title_div = document.createElement("div");
     title_div.className = "second_level_title";
     const_div.appendChild(title_div);
-    title_div.appendChild(document.createTextNode(constellation_name));
+    var title_txt = configuration_name + ": " +constellation_name  
+    title_div.appendChild(document.createTextNode(title_txt));
     
     
     var top_div = document.createElement("div");
