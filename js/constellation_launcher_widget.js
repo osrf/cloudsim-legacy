@@ -10,6 +10,33 @@ function create_constellation_launcher_widget(div_name)
     var title = document.createTextNode("Constellation provisioning");
     title_div.appendChild(title);
 
+	// cloud service provider selection
+	var cloud_provider_title = document.createElement('b');
+	cloud_provider_title.innerHTML = "Cloud service provider:";
+	widget.appendChild(cloud_provider_title);
+	var cloud_service_select = document.createElement('select');
+    widget.appendChild(cloud_service_select);
+
+    var cloud_providers = { "Amazon Web Services" : ["us-east-1a", "us-east-1b", "us-east-1c", " eu-west-1b"], 
+    						"SoftLayer" : ["eu-west-1b"],
+    						"OpenStack" : ["OSRF"]};
+
+    for(var provider_name in cloud_providers)
+    {   
+    	var provider =  cloud_providers[provider_name];
+    	for (var i=0; i < provider.length; i++)
+    	{     
+    		var region = provider[i];
+        	var option = document.createElement("option");
+        	option.text = provider_name + " [" + region + "]";
+        	cloud_service_select.add(option,null);
+        }
+	}
+    
+
+	widget.appendChild(document.createElement('br'));
+	// widget.innerHTML = "Cloud service provider:";
+	
 	var machine_configurations = [];
     try
     {
@@ -28,7 +55,7 @@ function create_constellation_launcher_widget(div_name)
         option.text=configuration;
         configs_select.add(option,null);
 	}
-	
+
 	var desc = document.createElement("div");
     configs_select.onchange = function()
     {
@@ -43,7 +70,7 @@ function create_constellation_launcher_widget(div_name)
     widget.appendChild(launch_button);
     launch_button.setAttribute('type','button');
     launch_button.setAttribute('value','Deploy');
-	
+
 	widget.appendChild(desc);
 
     launch_button.onclick =  function() {
