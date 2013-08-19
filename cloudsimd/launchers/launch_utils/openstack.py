@@ -6,7 +6,6 @@ import sys
 import uuid
 import unittest
 import redis
-import paramiko
 import commands
 
 import novaclient.v1_1.client as nvclient
@@ -69,6 +68,7 @@ def launch(constellation_name, machine_name, constellation_directory):
     flavor = nova.flavors.find(name="ubuntu")
     user_data = '''#!/bin/bash
 touch /home/ubuntu/new_file.txt'''  # startup script
+
     instance = nova.servers.create(name=instance_name,
                                    image=image,
                                    flavor=flavor,
