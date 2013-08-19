@@ -2,12 +2,17 @@ from __future__ import print_function
 
 import time
 import boto
+from boto.ec2.regioninfo import RegionInfo
+from boto.ec2.connection import EC2Connection
+from boto.vpc import VPCConnection
 from boto.pyami.config import Config as BotoConfig
 
 from launch_db import get_cloudsim_config
 from launch_db import log_msg
 from launch_db import ConstellationState
 from sshclient import clean_local_ssh_key_entry
+import shutil
+import os
 
 
 VPN_PRIVATE_SUBNET = '10.0.0.0/24'
@@ -31,9 +36,7 @@ def acquire_aws_server(constellation_name,
 
     sim_machine_name = "%s_%s" % (machine_prefix, constellation_name)
     sim_key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
-    #ec2conn = aws_connect()[0]
-    boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
+    ec2conn = aws_connect()[0]
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
     constellation = ConstellationState(constellation_name)
 
@@ -46,7 +49,7 @@ def acquire_aws_server(constellation_name,
     sim_security_group.authorize('tcp', 80, 80, '0.0.0.0/0')   # web
     sim_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
     sim_security_group.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
-    sim_security_group_id = sim_security_group.id
+    sim_security_group_id = sim_security_group.name
     log("Security group created")
     constellation.set_value('sim_security_group_id', sim_security_group_id)
 
@@ -58,13 +61,18 @@ def acquire_aws_server(constellation_name,
     aws_image = amis['ubuntu_1204_x64']
 
     roles_to_reservations = {}
+
+    if availability_zone.startswith('nova'):
+        instance_type = 'cloudsim-basic'
+    else:
+        instance_type = 't1.micro'
     try:
         constellation.set_value('simulation_launch_msg', "requesting machine")
         res = ec2conn.run_instances(image_id=aws_image,
-            instance_type='t1.micro',
+            instance_type=instance_type,
             #subnet_id      = subnet_id,
             #private_ip_address=SIM_IP,
-            security_group_ids=[sim_security_group_id],
+            security_groups=[sim_security_group_id],
             key_name=sim_key_pair_name,
             user_data=startup_script)
         roles_to_reservations['simulation_state'] = res.id
@@ -152,6 +160,7 @@ def terminate_aws_server(constellation_name):
 def acquire_aws_constellation(constellation_name,
                               credentials_ec2,
                               machines,
+                              scripts,
                               tags):
     """
     Creates a virtual network with machines inside. Each machine has
@@ -163,9 +172,7 @@ def acquire_aws_constellation(constellation_name,
 
     constellation.set_value('machines', machines)
 
-    boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn = boto.connect_vpc()
+    ec2conn, vpcconn = aws_connect()
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
 
     vpc_id, subnet_id = _acquire_vpc(constellation_name,
@@ -174,7 +181,7 @@ def acquire_aws_constellation(constellation_name,
     log("VPC %s" % vpc_id)
     roles_to_reservations = {}
     for machine_name, machine_data in machines.iteritems():
-        key_pair_name = _acquire_key_pair(constellation_name,
+        aws_key_name = _acquire_key_pair(constellation_name,
                           machine_name, ec2conn)
 
         security_group_id = _acquire_vpc_security_group(constellation_name,
@@ -182,10 +189,12 @@ def acquire_aws_constellation(constellation_name,
                                     VPN_PRIVATE_SUBNET,
                                     vpc_id,
                                     ec2conn)
+        startup_srcript = scripts[machine_name]
         reservation_id = _acquire_vpc_server(constellation_name,
                                              machine_name,
-                                             key_pair_name,
+                                             aws_key_name,
                                              machine_data,
+                                             startup_srcript,
                                              subnet_id,
                                              security_group_id,
                                              availability_zone,
@@ -197,13 +206,18 @@ def acquire_aws_constellation(constellation_name,
                                             tags,
                                             constellation,
                                             max_retries=500,
-                                            final_state='network_setup')
+                                            final_state='packages_setup')
 
     for machine_name, aws_id in machines_to_awsid.iteritems():
+        m = "acquiring public Internet IP"
+        constellation.set_value("%s_launch_msg" % machine_name, m)
         _acquire_vpc_elastic_ip(constellation_name,
                                 machine_name,
                                 aws_id,
                                 ec2conn)
+        if machine_name == "router":
+            router_instance = get_ec2_instance(ec2conn, aws_id)
+            router_instance.modify_attribute('sourceDestCheck', False)
 
     log("running machines %s" % machines_to_awsid)
 
@@ -213,8 +227,7 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
     Releases a private network, machines and all its resources
     """
     boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn = boto.connect_vpc()
+    ec2conn, vpcconn = aws_connect()
     constellation = ConstellationState(constellation_name)
 
     machines = constellation.get_value('machines')
@@ -295,8 +308,22 @@ def _acquire_vpc_elastic_ip(constellation_name,
                                   aws_elastic_ip.public_ip))
         ip_key = '%s_public_ip' % machine_name_prefix
         constellation.set_value(ip_key, public_ip)
+        #
+        # <Errors><Error><Code>InvalidAllocationID.NotFound</Code>
+        #
+        time.sleep(5)
+        max_ = 20
+        i = 0
+        while i < max_:
+            try:
+                time.sleep(i * 2)
+                ec2conn.associate_address(aws_id, allocation_id=allocation_id)
+                i = max_  # leave the loop
+            except:
+                i += 1
+                if i == max_:
+                    raise
 
-        ec2conn.associate_address(aws_id,  allocation_id=allocation_id)
         clean_local_ssh_key_entry(public_ip)
         return public_ip
     except Exception, e:
@@ -309,6 +336,10 @@ def _release_vpc_elastic_ip(constellation_name, machine_name_prefix, ec2conn):
     try:
         allocation_id_key = __get_allocation_id_key(machine_name_prefix)
         eip_allocation_id = constellation.get_value(allocation_id_key)
+        log("_release_vpc_elastic_ip %s machine %s id: %s" % (
+                                    constellation_name,
+                                    machine_name_prefix,
+                                    eip_allocation_id))
         ec2conn.release_address(allocation_id=eip_allocation_id)
     except Exception, e:
         error_msg = constellation.get_value('error')
@@ -351,8 +382,16 @@ def _acquire_vpc(constellation_name, vpcconn, availability_zone):
         constellation.set_value('route_table_association_id',
                                 route_table_association_id)
 
-        # add a tag to the vpc so we can identify it
-        aws_vpc.add_tag('constellation', constellation_name)
+        i = 0
+        while i < 5:
+            # add a tag to the vpc so we can identify it
+            try:
+                log('adding tag to VPC %s' % i)
+                aws_vpc.add_tag('constellation', constellation_name)
+                i = 10
+            except:
+                i += 1
+                time.sleep(i * 2)
     except Exception as e:
         constellation.set_value('error', "%s" % e)
         raise
@@ -403,6 +442,7 @@ def _release_vpc(constellation_name, vpcconn):
         log("error cleaning up subnet: %s" % e)
 
     try:
+        log("delete_vpc %s constellation %s" % (vpc_id, constellation_name))
         vpcconn.delete_vpc(vpc_id)
     except Exception, e:
         error_msg += "<b>VPC</b>: %s<br>" % e
@@ -423,23 +463,37 @@ def _acquire_vpc_security_group(constellation_name,
                                 vpc_id,
                                 ec2conn):
     constellation = ConstellationState(constellation_name)
+    sg = None
     try:
         sg_name = '%s-sg-%s' % (machine_prefix, constellation_name)
-        sg = None
+        dsc = 'machine %s CloudSim constellation %s' % (machine_prefix,
+                                            constellation_name,
+                                            )
+        sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
+
+        max_try = 10
+        i = 0
+        while i < max_try:
+            log("adding tag to %s/%s security group" % (constellation_name,
+                                                machine_prefix))
+            try:
+                sg.add_tag('constellation', constellation_name)
+                log("tag added")
+                i = max_try
+            except Exception, e:
+                log("%s / %s: error: %s" % (i, max_try, e))
+                i += 1
+                time.sleep(i * 2)
+                if i == max_try:
+                    raise
+
         if machine_prefix == "router":
-            dsc = 'router security group for %s vpc %s' % (constellation_name,
-                                                           vpc_id)
-            sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
             sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
             sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
             sg.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
             sg.authorize('udp', 0, 65535, vpn_subnet)
             sg.authorize('tcp', 0, 65535, vpn_subnet)
         else:
-            dsc = '%s security group for %s vpc %s' % (machine_prefix,
-                                                           constellation_name,
-                                                           vpc_id)
-            sg = ec2conn.create_security_group(sg_name, dsc, vpc_id)
             sg.authorize('icmp', -1, -1, vpn_subnet)
             sg.authorize('tcp',  0, 65535, vpn_subnet)
             sg.authorize('udp', 0, 65535, vpn_subnet)
@@ -454,6 +508,7 @@ def _acquire_vpc_security_group(constellation_name,
     except Exception, e:
         constellation.set_value('error',  "security group error: %s" % e)
         raise
+
     return security_group_id
 
 
@@ -480,10 +535,12 @@ def _acquire_key_pair(constellation_name, machine_prefix, ec2conn):
         constellation_directory = constellation.get_value(
                                                     'constellation_directory')
         key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
-        key_key = '%s_key_pair_name' % machine_prefix
-        constellation.set_value(key_key, key_pair_name)
         key_pair = ec2conn.create_key_pair(key_pair_name)
         key_pair.save(constellation_directory)
+        src = os.path.join(constellation_directory, '%s.pem' % key_pair_name)
+        dst = os.path.join(constellation_directory,
+                                    'key-%s.pem' % machine_prefix)
+        shutil.copy(src, dst)
         return key_pair_name
     except Exception, e:
         constellation.set_value('error', "key error: %s" % e)
@@ -494,8 +551,7 @@ def _release_key_pair(constellation_name, machine_prefix, ec2conn):
     constellation = ConstellationState(constellation_name)
     key_pair_name = None
     try:
-        key_key = '%s_key_pair_name' % machine_prefix
-        key_pair_name = constellation.get_value(key_key)
+        key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
         ec2conn.delete_key_pair(key_pair_name)
     except Exception, e:
         error_msg = constellation.get_value('error')
@@ -504,15 +560,30 @@ def _release_key_pair(constellation_name, machine_prefix, ec2conn):
         log("error cleaning up simulation key %s: %s" % (key_pair_name, e))
 
 
+def __get_block_device_mapping(aws_instance):
+    """
+    Resize the available disk space to 50 gig on certain instance types
+    """
+    bdm = None
+    if aws_instance == 'cg1.4xlarge':
+        dev_sda1 = boto.ec2.blockdevicemapping.EBSBlockDeviceType()
+        dev_sda1.size = 50  # size in Gigabytes
+        bdm = boto.ec2.blockdevicemapping.BlockDeviceMapping()
+        bdm['/dev/sda1'] = dev_sda1
+    return bdm
+
+
 def _acquire_vpc_server(constellation_name,
                         machine_prefix,
                         key_pair_name,
                         machine_data,
+                        startup_script,
                         subnet_id,
                         security_group_id,
                         availability_zone,
                         ec2conn):
     amis = _get_amazon_amis(availability_zone)
+
     constellation = ConstellationState(constellation_name)
     try:
         constellation.set_value('%s_launch_msg' % machine_prefix, "booting")
@@ -520,7 +591,8 @@ def _acquire_vpc_server(constellation_name,
         aws_image = amis[soft]
         aws_instance = machine_data['hardware']
         ip = machine_data['ip']
-        startup_script = machine_data['startup_script']
+
+        bdm = __get_block_device_mapping(aws_instance)
 
         res = ec2conn.run_instances(aws_image,
                          instance_type=aws_instance,
@@ -528,19 +600,52 @@ def _acquire_vpc_server(constellation_name,
                          private_ip_address=ip,
                          security_group_ids=[security_group_id],
                          key_name=key_pair_name,
-                         user_data=startup_script)
+                         user_data=startup_script,
+                         block_device_map=bdm)
         return res.id
     except Exception, e:
         constellation.set_value('error', "%s" % e)
         raise
 
 
+def read_boto_file(credentials_ec2):
+    boto.config = BotoConfig(credentials_ec2)
+    ec2_region_name = boto.config.get('Boto', 'ec2_region_name')
+    key_id = boto.config.get('Credentials', 'aws_access_key_id')
+    aws_secret_access_key = boto.config.get('Credentials',
+        'aws_secret_access_key')
+    region_endpoint = boto.config.get('Boto', 'ec2_region_endpoint')
+    return  ec2_region_name, key_id, aws_secret_access_key, region_endpoint
+
+
 def aws_connect():
     config = get_cloudsim_config()
+    # log("config: %s" % config)
     credentials_ec2 = config['boto_path']
-    boto.config = BotoConfig(credentials_ec2)
-    ec2conn = boto.connect_ec2()
-    vpcconn = boto.connect_vpc()
+    ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint = read_boto_file(credentials_ec2)
+    if ec2_region_name == 'nova':
+        # TODO: remove hardcoded OpenStack endpoint
+        region = RegionInfo(None, 'cloudsim', region_endpoint)  # 172.16.0.201
+        ec2conn = EC2Connection(aws_access_key_id,
+                                aws_secret_access_key,
+                                is_secure=False,
+                                region=region,
+                                port=8773,
+                                path='/services/Cloud')
+        vpcconn = VPCConnection(aws_access_key_id,
+                                aws_secret_access_key,
+                                is_secure=False,
+                                region=region,
+                                port=8773,
+                                path='/services/Cloud')
+    else:
+        region = RegionInfo(None, ec2_region_name, region_endpoint)
+        ec2conn = boto.connect_ec2(aws_access_key_id,
+                                   aws_secret_access_key,
+                                   region=region)
+        vpcconn = boto.connect_vpc(aws_access_key_id,
+                                   aws_secret_access_key,
+                                   region=region)
     return ec2conn, vpcconn
 
 
@@ -559,9 +664,19 @@ def _get_amazon_amis(availability_zone):
         amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
         amis['ubuntu_1204_x64'] = 'ami-f2191786'
 
-    if availability_zone.startswith('us-east'):
+    elif availability_zone.startswith('us-east'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
         amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
+
+    elif availability_zone.startswith('nova'):
+        # TODO: we might want to move image ids to a configuration file
+        ec2conn, _ = aws_connect()
+        images = ec2conn.get_all_images(
+            filters={'name': ['ubuntu-12.04.2-server-cloudimg-amd64-disk1']})
+        for image in images:
+            if image.name == 'ubuntu-12.04.2-server-cloudimg-amd64-disk1':
+                amis['ubuntu_1204_x64_cluster'] = image.id
+                amis['ubuntu_1204_x64'] = image.id
 
     return amis
 
@@ -633,7 +748,10 @@ def wait_for_multiple_machines_to_run(ec2conn,
                     constellation.set_value("%s_state" % machine_name,
                                             final_state)
                     constellation.set_value("%s_aws_id" % machine_name, aws_id)
-                    log('Done launching %s (AWS %s)' % (machine_name, aws_id))
+                    constellation.set_value('%s_aws_state' % machine_name, 
+                                            'running')
+                    log('Done launching machine %s'
+                        '(AWS %s)' % (machine_name, aws_id))
                     done = True
                     break
     return ready_machines

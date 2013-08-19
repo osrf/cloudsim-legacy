@@ -162,24 +162,22 @@ def monitor_launch_state(constellation_name, ssh_client,
 
     if ssh_client == None:  # too early to verify
         return
-
-    constellation = ConstellationState(constellation_name)
-    constellation_state = constellation.get_value("constellation_state")
-    if constellation_states.index(constellation_state) >= \
-                            constellation_states.index("launching"):
-        if machine_state == "running":
-            constellation.set_value(launch_msg_key, "complete")
-
-        if machine_state == 'packages_setup':
-            try:
+    try:
+        constellation = ConstellationState(constellation_name)
+        constellation_state = constellation.get_value("constellation_state")
+        if constellation_states.index(constellation_state) >= \
+                                constellation_states.index("launching"):
+            #if machine_state == "running":
+            #    constellation.set_value(launch_msg_key, "complete")
+            if machine_state == 'packages_setup':
                 dpkg_line = ssh_client.cmd(dpkg_cmd)
                 package_msg = parse_dpkg_line(dpkg_line)
                 current_value = constellation.get_value(launch_msg_key)
                 if current_value != package_msg:
                     constellation.set_value(launch_msg_key, package_msg)
-            except:
-                tb = traceback.format_exc()
-                log("monitor_launch_state traceback:  %s" % tb)
+    except:
+        tb = traceback.format_exc()
+        log("monitor_launch_state traceback:  %s" % tb)
 
 
 def monitor_simulator(constellation_name,
@@ -200,7 +198,7 @@ def monitor_simulator(constellation_name,
         gl_state = constellation.get_value("simulation_glx_state")
         if gl_state == "running":
             try:
-                _ = ssh_client.cmd("bash cloudsim/ping_gazebo.bash")
+                ssh_client.cmd("bash cloudsim/ping_gazebo.bash")
                 constellation.set_value("gazebo", "running")
             except Exception, e:
                 log("monitor: cloudsim/ping_gazebo.bash error: %s" % e)
@@ -337,7 +335,10 @@ def monitor_task(constellation_name, ssh_router):
             constellation.update_task_value(task['task_id'],
                                             'task_message',
                                             final_score)
-
+#         else:
+#             constellation.update_task_value(task['task_id'],
+#                                             'task_message',
+#                                             "No score available")
         if sim_time > timeout:
             task = constellation.get_task(task_id)
             timeout_msg = ' [Timeout]'

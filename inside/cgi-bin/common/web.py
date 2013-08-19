@@ -217,8 +217,7 @@ class AdminDbTest(unittest.TestCase):
             os.remove(db_fname)
         
         db = UserDatabase(db_fname)
-        users = db.get_users()
-        
+
         # If test failed previously, the db may not be empty
         
         db.add_user('toto@popo.com', 'admin')

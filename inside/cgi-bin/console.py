@@ -132,7 +132,7 @@ page =  """<!DOCTYPE html>
             <div  id="server_monitor_div">
         </td>
         <td align='right'>
-            Welcome, """ + role + " " + email + """<br>
+            <span id="head_span">Welcome, """ + role + " " + email + """</span><br>
             <div id="officer_only" style="display:none; padding:  0px 0px 0px 0px;" >
                 <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
             </div>
@@ -166,7 +166,7 @@ page =  """<!DOCTYPE html>
 <table width='100%'>
     <tr>
         <td align='left'>
-           CloudSim Version [""" + version + """] 
+           CloudSim Version <b>""" + version + """</b>
         </td>
         <td align='right'>
            <img src="/js/images/osrf-pos-horz-cmyk.png" height="30px"/> 
@@ -176,35 +176,6 @@ page =  """<!DOCTYPE html>
 
 
 
-
-
-<!--
-<div id="footer" style="width:100%;">
-    <span style="display: inline-block; text-align:left; margin-top:5px;">
-         CloudSim Version [""" + version + """]
-    </span>
-
-    <span style="display: inline-block; text-align: right; margin-top:5px;">
-         <img src="/js/images/osrf-pos-horz-cmyk.png" height="30px"/>
-    </span>
-</div>
-
-
-<div id="footer" style="width:100%; float:left; ">
-
-    <br>
-    <hr>
-
-    <div style="width:50%; float:left; margin-top:5px;">
-            CloudSim version """ + version + """
-    </div>
-
-    <div style="width:50%; float:right; " align="right">
-     <img src="/js/images/osrf-pos-horz-cmyk.png" height="30px"/>
-    </div>
-</div>
--->
-    
 </body>
 </html>
 

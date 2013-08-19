@@ -22,7 +22,7 @@ import re
 # We need to import from part of ourself
 daemon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'cloudsimd'))
 sys.path.insert(0, daemon_path)
-from launchers.launch_utils.softlayer import load_osrf_creds, enable_public_ips, reload_servers, shutdown_public_ips
+from launchers.launch_utils.softlayer import load_osrf_creds, enable_public_ips, reload_servers
 
 class Reloader:
 

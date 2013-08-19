@@ -7,7 +7,6 @@ Update Redis with a new set of VRC tasks for a simulator
 import argparse
 import redis
 import json
-import os
 import time
 import sys
 

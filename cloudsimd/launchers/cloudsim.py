@@ -22,7 +22,7 @@ from launch_utils.monitoring import monitor_cloudsim_ping
 from launch_utils.monitoring import monitor_launch_state
 
 from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
-from launch_utils.launch_db import get_cloudsim_config, log_msg
+from launch_utils.launch_db import get_cloudsim_config, log_msg, set_cloudsim_config
 
 
 from vrc_contest import create_private_machine_zip
@@ -510,7 +510,10 @@ def terminate(constellation_name):
     constellation.set_value('constellation_state', 'terminated')
 
 
-def cloudsim_bootstrap(username, credentials_ec2, initial_constellation):
+def cloudsim_bootstrap(username, credentials_ec2,
+                       initial_constellation, config):
+
+    set_cloudsim_config(config)
 
     constellation_name = get_unique_short_name('c')
 
@@ -531,7 +534,7 @@ def cloudsim_bootstrap(username, credentials_ec2, initial_constellation):
     constellation.set_value('constellation_state', 'launching')
     constellation.set_value('error', '')
 
-    return launch(username, constellation_name, tags,  credentials_ec2,
+    return launch(username, 'CloudSim', constellation_name, tags,
                   constellation_directory, website_distribution)
 
 

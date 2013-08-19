@@ -14,6 +14,10 @@ function create_machine_launch_monitor_widget(machine_div,
         
     var count = 0;
     
+    var current_color = "";
+    var current_error = "";
+    var current_msg = "";
+    
     $.subscribe("/constellation", function(event, data){
         
         if(data.constellation_name != constellation_name)
@@ -29,7 +33,7 @@ function create_machine_launch_monitor_widget(machine_div,
             color = 'red';
         }
         
-        
+
         var machine_state = data[state_key];
         var colors = ["gray"];
         
@@ -47,8 +51,16 @@ function create_machine_launch_monitor_widget(machine_div,
             color = "blue";
         if(data[state_key] == "terminated")
             color = "red";
+        var msg = data[message_key];
         
-        widget_div.innerHTML =  status_img(color) + error_txt +  "<b>Launch:</b>  " + data[message_key];
+        // update if necessary
+        if ((color != current_color) || (error_txt != current_error) || (msg != current_msg))
+        {
+        	widget_div.innerHTML =  status_img(color) + error_txt +  "<b>Launch:</b>  " + msg;
+        }
         
+        current_color = color;
+        current_error = error_txt;
+        current_msg = msg;
     });
 }

@@ -711,7 +711,7 @@ def create_ssh_connect_file(key_file, ip):
 # from any directory
 #
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i "$DIR"/""" + key_file + " ubuntu@" + ip + """
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i "$DIR"/""" + key_file + " ubuntu@" + ip + """ $1 $2 $3 $4 $5
     """
     return s
 

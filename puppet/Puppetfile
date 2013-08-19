@@ -1,0 +1,22 @@
+# Configuration for librarian-puppet. For example:
+# 
+forge "http://forge.puppetlabs.com"
+# 
+mod "puppetlabs/vcsrepo"
+
+mod "python",
+    :git => "git://github.com/stankevich/puppet-python.git"
+
+# Force version 0.0.4 of the firewall Puppet module to avoid
+# https://github.com/puppetlabs/puppetlabs-firewall/issues/141
+mod "firewall",
+   :git => "git://github.com/puppetlabs/puppetlabs-firewall.git",
+   :ref => "v0.0.4"
+
+# mod "puppetlabs/ntp", "0.0.3"
+# 
+# mod "apt",
+#   :git => "git://github.com/puppetlabs/puppetlabs-apt.git"
+# 
+# mod "stdlib",
+#   :git => "git://github.com/puppetlabs/puppetlabs-stdlib.git"

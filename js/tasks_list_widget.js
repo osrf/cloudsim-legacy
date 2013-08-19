@@ -94,7 +94,7 @@ function _add_form_textinput(form_div, title)
     return input_field;
 }
 
-function _add_form_separator(form_div, title)
+function _begin_form_fieldset(form_div, title)
 {
     form_div.appendChild(document.createElement("br"));
     form_div.appendChild(document.createElement("br"));
@@ -103,6 +103,10 @@ function _add_form_separator(form_div, title)
     form_div.appendChild(section);	
 }
 
+function _end_form_fieldset(form_div)
+{
+
+}
                              
 function _create_task_form(form_id)
 {
@@ -113,26 +117,26 @@ function _create_task_form(form_id)
     form_div.title = "Task properties";
     var task_title_input = _add_form_textinput(form_div, "Task title");
     
-    _add_form_separator(form_div, "Simulation parameters");
-    
+    _begin_form_fieldset(form_div, "Simulation parameters");
     var ros_package =  _add_form_textinput(form_div, "ROS package" );
     var launch_file =  _add_form_textinput(form_div, "Launch file" );
     var timeout =  _add_form_textinput(form_div, "Maximum time (sec)" );
     var launch_arguments =  _add_form_textinput(form_div, "Arguments" );
-
-    _add_form_separator(form_div, "Network parameters");
-
+    _end_form_fieldset(form_div);
+    
+    _begin_form_fieldset(form_div, "Network parameters");
     var latency =  _add_form_textinput(form_div, "Minimum latency (ms, round trip)");
     var uplink_data_cap=  _add_form_textinput(form_div, "Uplink data cap (bits, 0 for unlimited)");
     var downlink_data_cap = _add_form_textinput(form_div, "Downlink data cap (bits, 0 for unlimited)");
-
-    _add_form_separator(form_div, "VRC parameters");
-
+    _end_form_fieldset(form_div);
+    
+    _begin_form_fieldset(form_div, "VRC parameters");
     var local_start = _add_form_textinput(form_div, "Valid from (UTC)");
     var local_stop = _add_form_textinput(form_div, "Valid until (UTC)");
     var vrc_id = _add_form_textinput(form_div, "Run (1, 2, 3, 4 or 5)");
     var vrc_num = _add_form_textinput(form_div, "Task (1, 2 or 3)");
-
+    _end_form_fieldset(form_div);
+    
     // default values
     ros_package.value = "atlas_utils";
     launch_file.value = "vrc_task_1.launch";
@@ -246,12 +250,39 @@ function create_task_list_widget(const_div, constellation_name)
         stop_task(constellation_name);
         page_refresh();
     }
-
+    
+    var reset_tasks_button = document.createElement('input');
+    reset_tasks_button.setAttribute('type','button');
+    reset_tasks_button.setAttribute('value','reset tasks');
+    reset_tasks_button.onclick = function()
+    {
+    	var txt  = "This clear the current task and will make all finished tasks ready to run again.";
+    	txt += "\n";
+    	txt += "This operation will not stop the simulator if its currently running.";
+    	txt += "\n\n";
+    	txt += 'Are you sure?';
+    	var r=confirm(txt);
+        if (r==false)
+        {
+            return;
+        }
+    	console.log("onclick reset_tasks_button!")
+    	reset_tasks(constellation_name);
+    }
+    if(get_user_info().role == "user")
+    {
+    	reset_tasks_button.style.display='none';
+    }
+    
+    // add the buttons
     var widgets_div = tasks_div.querySelector("#widgets");
     var p = widgets_div.parentElement;
-    p.insertBefore(add_task_button, widgets_div);
-    p.insertBefore(stop_current_task_button, widgets_div);
-
+    var buttons_div = document.createElement("div");
+    buttons_div.setAttribute("align", "right");
+    p.insertBefore(buttons_div, widgets_div);
+    buttons_div.appendChild(add_task_button);
+    buttons_div.appendChild(stop_current_task_button);
+    buttons_div.appendChild(reset_tasks_button);
 
     var form_div = _create_task_form(form_id);
     p.insertBefore(form_div, widgets_div);
@@ -274,8 +305,7 @@ function create_task_list_widget(const_div, constellation_name)
             	}
             }
             stop_current_task_button.disabled = disable_stop;
-            
-            
+             
             var new_tasks = [];
             var tasks = data.tasks;
             var divs_to_update = [];
@@ -430,9 +460,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         
         var dlg = document.querySelector( "#" + form_id);
         var inputs = dlg.querySelectorAll("input");
-        
 
-        
         var task_title_input = inputs[0];
         var ros_package = inputs[1];
         var launch_file = inputs[2];
@@ -460,6 +488,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         {
             readOnly = true;
         }
+
         if(task.task_state != "ready")
         {
             readOnly = true;
@@ -564,12 +593,14 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
             state_widget.src = "/js/images/gray_status.png";
             if (task.task_state == "running" || task.task_state == "starting")
             {
-            	colors =  ["/js/images/gray_status.png", "/js/images/blue_status.png"];
-                
+            	// colors =  ["/js/images/gray_status.png", "/js/images/blue_status.png"];
+            	colors =  ["/js/images/blue_status.png", "/js/images/blue_status.png"];
+
             	// starting up color
             	if(data.gazebo == "not running")
             	{
-            		colors[1] =  "/js/images/yellow_status.png";	
+            		// colors[1] =  "/js/images/yellow_status.png";
+            		colors[1] =  "/js/images/gray_status.png";
             	}
             		
             	var color = colors[count % colors.length];

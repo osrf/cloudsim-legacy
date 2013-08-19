@@ -105,6 +105,7 @@ function create_latency_widget(machine_div,
     		'plot_options' : plot_options,
     		'last_update' : null};
     
+    var current_title = "";
     $.subscribe("/constellation", function(event, data){
     	if(data.constellation_name != constellation_name)
     		return;
@@ -119,7 +120,13 @@ function create_latency_widget(machine_div,
     	{
         	var avg_latency = values[0][2];
         	var str = avg_latency.toFixed(3) + " ms"; 
-        	title_div.innerHTML = "<b>" + title  +" [" + str + "]"+ "</b>";
+        	var txt = "<b>" + title  +" [" + str + "]"+ "</b>";
+        	
+        	if(current_title != txt)
+        	{
+        		title_div.innerHTML = txt;
+        	}
+        	current_title = txt;
     	}
     	catch(err)
     	{
