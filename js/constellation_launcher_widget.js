@@ -17,26 +17,26 @@ function create_constellation_launcher_widget(div_name)
 	var cloud_service_select = document.createElement('select');
     widget.appendChild(cloud_service_select);
 
-    var cloud_providers = { "Amazon Web Services" : ["us-east-1a", "us-east-1b", "us-east-1c", " eu-west-1b"], 
+    var cloud_providers = { "Amazon Web Services" : ["us-east-1a", "us-east-1b", "us-east-1c", " eu-west-1b"],
     						"SoftLayer" : ["eu-west-1b"],
     						"OpenStack" : ["OSRF"]};
 
     for(var provider_name in cloud_providers)
-    {   
+    {
     	var provider =  cloud_providers[provider_name];
     	for (var i=0; i < provider.length; i++)
-    	{     
+    	{
     		var region = provider[i];
         	var option = document.createElement("option");
         	option.text = provider_name + " [" + region + "]";
         	cloud_service_select.add(option,null);
         }
 	}
-    
+
 
 	widget.appendChild(document.createElement('br'));
 	// widget.innerHTML = "Cloud service provider:";
-	
+
 	var machine_configurations = [];
     try
     {
@@ -50,7 +50,7 @@ function create_constellation_launcher_widget(div_name)
     var configs_select = document.createElement('select');
     widget.appendChild(configs_select);
     for(var configuration in machine_configurations)
-    {        
+    {
         var option=document.createElement("option");
         option.text=configuration;
         configs_select.add(option,null);
@@ -62,7 +62,7 @@ function create_constellation_launcher_widget(div_name)
     	var i = configs_select.selectedIndex;
         var config = configs_select.options[i].text;
         var description = machine_configurations[config].description;
-        
+
         desc.innerHTML = "<br>"+description;
     }
 
@@ -76,7 +76,9 @@ function create_constellation_launcher_widget(div_name)
     launch_button.onclick =  function() {
             var i = configs_select.selectedIndex;
             var config = configs_select.options[i].text;
-            
+            var j = cloud_service_select.selectedIndex;
+            var cloud_provider = cloud_service_select.options[j].text;
+
             var msg = 'Deploy a new "' + config + '" constellation?';
             msg += "\n\n";
             msg += "This operation may incur charges";
@@ -90,7 +92,7 @@ function create_constellation_launcher_widget(div_name)
             setTimeout( function(){
                 launch_button.disabled = false;
                 }, 3000); // setTimeOut
-             launch_constellation(config);
+             launch_constellation(cloud_provider, config);
               // add everything to the page
           };
     div.appendChild(widget);

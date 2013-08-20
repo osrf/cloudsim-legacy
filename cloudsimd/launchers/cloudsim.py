@@ -215,6 +215,7 @@ def launch(username, configuration, constellation_name, tags,
     cfg = get_cloudsim_config()
 
     log('launch!!! tags = %s' % tags)
+    cloud_provider = tags['cloud_provider']
     constellation = ConstellationState(constellation_name)
     constellation.set_value("simulation_launch_msg", "launching")
     constellation.set_value('simulation_state', 'starting')
@@ -271,7 +272,7 @@ def launch(username, configuration, constellation_name, tags,
 
     pub_ip = None
     key_prefix = None
-    if not "OSRF" in  constellation_name:
+    if "Amazon" in  cloud_provider:
         aws_creds_fname = cfg['boto_path']
         script = get_cloudsim_startup_script()
         pub_ip, aws_id, key_prefix = acquire_aws_server(constellation_name,
@@ -282,7 +283,9 @@ def launch(username, configuration, constellation_name, tags,
                                     tags)
         # (constellation_name, credentials_ec2, constellation_directory, tags)
         constellation.set_value("aws_id", aws_id)
-    else:
+    elif "OpenStack" in cloud_provider:
+        #ip address, instance id, key prefix (no .pem)
+    elif "SoftLayer" in cloud_provider:
         osrf_creds_fname = cfg['softlayer_path']
         pub_ip, _, _ = acquire_dedicated_sl_server(constellation_name,
                            osrf_creds_fname,
@@ -291,6 +294,9 @@ def launch(username, configuration, constellation_name, tags,
         constellation.set_value('simulation_state', 'packages_setup')
         constellation.set_value("simulation_launch_msg", "install packages")
         startup_script(constellation_name)
+    else:
+        raise Exception("Unsupported cloud provider: %s" % (cloud_provider))
+
     constellation.set_value("simulation_ip", pub_ip)
 
     constellation.set_value("simulation_launch_msg", "create zip file")
