@@ -126,11 +126,16 @@ def terminate(instance_name, keypair_name, secgroup_name):
 
 def get_nova_creds():
     creds = {}
-    creds['username'] = os.environ['OS_USERNAME']
-    creds['api_key'] = os.environ['OS_PASSWORD']
-    creds['auth_url'] = os.environ['OS_AUTH_URL']
-    creds['project_id'] = os.environ['OS_TENANT_NAME']
+    creds['username'] = 'admin'
+    creds['api_key'] = 'cloudsim'
+    creds['auth_url'] = 'http://172.16.0.201:5000/v2.0'
+    creds['project_id'] = 'admin'
     creds['service_type'] = 'compute'
+    #creds['username'] = os.environ['OS_USERNAME']
+    #creds['api_key'] = os.environ['OS_PASSWORD']
+    #creds['auth_url'] = os.environ['OS_AUTH_URL']
+    #creds['project_id'] = os.environ['OS_TENANT_NAME']
+    #creds['service_type'] = 'compute'
     return creds
 
 
