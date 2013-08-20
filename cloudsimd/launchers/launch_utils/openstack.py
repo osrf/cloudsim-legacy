@@ -14,8 +14,13 @@ import novaclient.exceptions
 from testing import get_test_runner, get_test_path
 from launch_db import ConstellationState
 from launch_db import get_unique_short_name
+from launch_db import log_msg
 from sshclient import SshClient
 from ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
+
+
+def log(msg, channel=__name__, severity="info"):
+    log_msg(msg, channel, severity)
 
 
 def acquire_openstack_server(constellation_name,
@@ -23,17 +28,25 @@ def acquire_openstack_server(constellation_name,
                              constellation_directory,
                              machine_name,
                              script):
+    '''
+    Calls the launch function.
+    Stores the returned values in a redis database
+    '''
     floating_ip, instance_name, keypair_name, security_group_name = \
         launch(constellation_name, machine_name, constellation_directory, script)
     constellation = ConstellationState(constellation_name)
     constellation.set_value("security_group", security_group_name)
     constellation.set_value("keypair", keypair_name)
     constellation.set_value("instance", instance_name)
-    constellation.set_value("floating_ip", floating_ip.ip)
+    constellation.set_value("floating_ip", floating_ip)
     return floating_ip, instance_name, keypair_name
 
 
 def terminate_openstack_server(constellation_name):
+    '''
+    Retrieves necessary information from the redis database.
+    Uses that information to call terminate.
+    '''
     constellation = ConstellationState(constellation_name)
     secgroup = constellation.get_value("security_group")
     keypair = constellation.get_value("keypair")
@@ -42,6 +55,11 @@ def terminate_openstack_server(constellation_name):
 
 
 def launch(constellation_name, machine_name, constellation_directory, user_data):
+    '''
+    Launches an openstack instance.
+    Creates a unique keypair, security group, and floating ip 
+    and assigns them to the instance
+    '''
     nova_creds = get_nova_creds()
     nova = nvclient.Client(**nova_creds)
     #create keypair
@@ -59,6 +77,8 @@ def launch(constellation_name, machine_name, constellation_directory, user_data)
         description="Security group for " + constellation_name)
     nova.security_group_rules.create(
         security_group.id, "TCP", 22, 22, "0.0.0.0/0")
+    nova.security_group_rules.create(
+        security_group.id, "TCP", 80, 80, "0.0.0.0/0")
     nova.security_group_rules.create(
         security_group.id, "ICMP", -1, -1, "0.0.0.0/0")
     #create instance
@@ -92,10 +112,15 @@ def launch(constellation_name, machine_name, constellation_directory, user_data)
     if not flag:
         floating_ip = nova.floating_ips.create()
         instance.add_floating_ip(floating_ip)
-    return floating_ip, instance_name, keypair_name, security_group_name
+    log("floating ip %s" % floating_ip)
+    return floating_ip.ip, instance_name, keypair_name, security_group_name
 
 
 def terminate(instance_name, keypair_name, secgroup_name):
+    '''
+    Terminates an openstack instance.
+    Destroys the associated security group, keypair, and floating ip
+    '''
     creds = get_nova_creds()
     nova = nvclient.Client(**creds)
     instance = nova.servers.find(name=instance_name)
@@ -125,6 +150,7 @@ def terminate(instance_name, keypair_name, secgroup_name):
 
 
 def get_nova_creds():
+    '''Get the credentials needed for nova, the OpenStack compute service'''
     creds = {}
     creds['username'] = 'admin'
     creds['api_key'] = 'cloudsim'
@@ -141,6 +167,11 @@ def get_nova_creds():
 
 class TestOpenstack(unittest.TestCase):
     def test_acquire_server(self):
+        '''
+        Tests than an openstack server can be launched.
+        Checks ping and ssh abilities
+        as well as checking to make sure the startup script was run.
+        '''
         creds = get_nova_creds()
         machine_name = "cloudsim_server"
         script = '''#!/bin/bash
@@ -174,6 +205,9 @@ touch /home/ubuntu/new_file.txt'''  # startup script
         self.assertEqual(pingable, 0, ping_str)
 
     def setUp(self):
+        '''
+        Get name and directory for instances and constellations
+        '''
         self.constellation_name = get_unique_short_name("x")
         p = os.path.join(get_test_path("openstack"), self.constellation_name)
         self.constellation_directory = os.path.abspath(p)
@@ -182,6 +216,11 @@ touch /home/ubuntu/new_file.txt'''  # startup script
         print(self.constellation_directory)
 
     def tearDown(self):
+        '''
+        Call the terminate function and 
+        make sure that all resources (floating ip, security group, keypair)
+        are destroyed.
+        '''
         terminate_openstack_server(self.constellation_name)
         constellation = ConstellationState(self.constellation_name)
         floating_ip = constellation.get_value("floating_ip")

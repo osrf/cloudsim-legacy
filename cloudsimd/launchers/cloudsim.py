@@ -129,6 +129,7 @@ def create_zip(constellation_name, key_prefix):
 
     log("constellation name %s" % constellation_name)
     constellation = ConstellationState(constellation_name)
+    log("%s" % constellation.get_values())
     ip = constellation.get_value("simulation_ip")
 
     constellation_directory = constellation.get_value(
@@ -287,12 +288,14 @@ def launch(username, configuration, constellation_name, tags,
     elif "OpenStack" in cloud_provider:
         openstack_creds = get_nova_creds()
         script = get_cloudsim_startup_script()
-        pub_id, instance_id, key_prefix = acquire_openstack_server(
+        pub_ip, instance_id, key_prefix = acquire_openstack_server(
                                     constellation_name,
                                     openstack_creds,
                                     constellation_directory,
                                     machine_prefix,
                                     script)
+        log("KEY PREFIX---------%s" % key_prefix)
+        log("IP ADDR---------%s" % pub_ip)
         constellation.set_value("aws_id", instance_id)
         #ip address, instance id, key prefix (no .pem)
     elif "SoftLayer" in cloud_provider:
@@ -306,9 +309,10 @@ def launch(username, configuration, constellation_name, tags,
         startup_script(constellation_name)
     else:
         raise Exception("Unsupported cloud provider: %s" % (cloud_provider))
-
+    log("SIMULATION IP ---- %s" % pub_ip)
     constellation.set_value("simulation_ip", pub_ip)
-
+    log("%s" % constellation.get_value("simulation_ip"))
+    
     constellation.set_value("simulation_launch_msg", "create zip file")
     log("create zip")
     fname_zip = create_zip(constellation_name, key_prefix)

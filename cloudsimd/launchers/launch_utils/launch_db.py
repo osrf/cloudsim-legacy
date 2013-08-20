@@ -224,6 +224,7 @@ def set_constellation_data(constellation, value, expiration=None):
             red.expire(redis_key, expiration)
     except Exception, e:
         log("can't set constellation data: %s" % e)
+        raise
 
 
 def get_constellation_names():
