@@ -9,7 +9,8 @@ function create_constellation_launcher_widget(div_name)
     title_div.className = "top_level_title";
     var title = document.createTextNode("Constellation provisioning");
     title_div.appendChild(title);
-
+    
+    widget.appendChild(document.createElement('br'));
 	// cloud service provider selection
 	var cloud_provider_title = document.createElement('b');
 	cloud_provider_title.innerHTML = "Cloud service provider:";
@@ -35,7 +36,6 @@ function create_constellation_launcher_widget(div_name)
 
 
 	widget.appendChild(document.createElement('br'));
-	// widget.innerHTML = "Cloud service provider:";
 
 	var machine_configurations = [];
     try
@@ -47,6 +47,9 @@ function create_constellation_launcher_widget(div_name)
     {
         console.log(err);
     }
+    var config_title = document.createElement('b');
+	config_title.innerHTML = "Configuration:";
+	widget.appendChild(config_title);
     var configs_select = document.createElement('select');
     widget.appendChild(configs_select);
     for(var configuration in machine_configurations)
