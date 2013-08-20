@@ -24,7 +24,7 @@ def acquire_openstack_server(constellation_name,
                              machine_name,
                              script):
     floating_ip, instance_name, keypair_name, security_group_name = \
-        launch(constellation_name, machine_name, constellation_directory)
+        launch(constellation_name, machine_name, constellation_directory, script)
     constellation = ConstellationState(constellation_name)
     constellation.set_value("security_group", security_group_name)
     constellation.set_value("keypair", keypair_name)
@@ -41,7 +41,7 @@ def terminate_openstack_server(constellation_name):
     terminate(instance_name, keypair, secgroup)
 
 
-def launch(constellation_name, machine_name, constellation_directory):
+def launch(constellation_name, machine_name, constellation_directory, user_data):
     nova_creds = get_nova_creds()
     nova = nvclient.Client(**nova_creds)
     #create keypair
@@ -67,8 +67,6 @@ def launch(constellation_name, machine_name, constellation_directory):
     #flavor = nova.flavors.find(name="m1.tiny")
     image = nova.images.find(name="ubuntu12.04")
     flavor = nova.flavors.find(name="ubuntu")
-    user_data = '''#!/bin/bash
-touch /home/ubuntu/new_file.txt'''  # startup script
 
     instance = nova.servers.create(name=instance_name,
                                    image=image,
@@ -140,9 +138,11 @@ class TestOpenstack(unittest.TestCase):
     def test_acquire_server(self):
         creds = get_nova_creds()
         machine_name = "cloudsim_server"
+        script = '''#!/bin/bash
+touch /home/ubuntu/new_file.txt'''  # startup script
         floating_ip, instance_name, keypair_name = acquire_openstack_server(
-            self.constellation_name, creds, machine_name,
-            self.constellation_directory)
+            self.constellation_name, creds, self.constellation_directory, 
+            machine_name, script)
         constellation = ConstellationState(self.constellation_name)
         #uname = 'cirros'
         uname = 'ubuntu'
