@@ -124,7 +124,6 @@ def acquire_aws_server(constellation_name,
     sim_instance = get_ec2_instance(ec2conn, simulation_aws_id)
     sim_ip = sim_instance.ip_address
     clean_local_ssh_key_entry(sim_ip)
-    constellation.set_value('simulation_ip', sim_ip)
     return sim_ip, simulation_aws_id, sim_key_pair_name
 
 
