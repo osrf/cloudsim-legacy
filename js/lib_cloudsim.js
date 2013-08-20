@@ -7,10 +7,13 @@ function get_configurations()
     return machine_configurations;
 }
 
-function launch_constellation(configuration)
+function launch_constellation(cloud_provider, configuration)
 {
-    var url = '/cloudsim/inside/cgi-bin/constellations?configuration=' + configuration;
-    
+
+    var p = encodeURIComponent(cloud_provider);
+    var c = encodeURIComponent(configuration);
+    var url = '/cloudsim/inside/cgi-bin/constellations?cloud_provider=' + p + '&configuration=' + c;
+
     console.log("[POST]" + url);
     msg = httpPost(url);
     console.log(msg);
@@ -46,7 +49,7 @@ function add_user(user_name, role)
     console.log("[POST] " + url);
     var x = httpPost(url);
     console.log(x);
-	
+
 }
 
 function remove_user(user_name)
@@ -90,10 +93,10 @@ function change_osrf_credentials(nuser, napi_key)
     url += user+'&api_key=' +api_key;
     console.log("[PUT] " + url);
     var msg = httpPut(url);
-    
+
     var jmsg = eval('(' + msg + ')');
     console.log("change_credentials: " + msg);
-    return jmsg;	
+    return jmsg;
 }
 
 function change_aws_credentials(access_key, secret_access_key, availability_zone)
@@ -105,7 +108,7 @@ function change_aws_credentials(access_key, secret_access_key, availability_zone
     url += "&availability_zone="+availability_zone;
     console.log("[PUT] " + url);
     var msg = httpPut(url);
-    
+
     var jmsg = eval('(' + msg + ')');
     console.log("change_credentials: " + msg);
     return jmsg;
@@ -133,11 +136,11 @@ function start_simulator(constellation_name, machine_name, package_name, launch_
 
 function stop_simulator(constellation_name, machine_name)
 {
-    
-    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=stop_simulator'; 
+
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=stop_simulator';
     url += '&constellation=' + constellation_name;
     url += '&machine=' + machine_name;
-    
+
     console.log(url);
     msg = httpGet(url);
     console.log(msg);
@@ -146,11 +149,11 @@ function stop_simulator(constellation_name, machine_name)
 
 function update_traffic_shaper(_constellationName, _machineName, _targetPacketLatency)
 {
-    var url = '/cloudsim/inside/cgi-bin/tc_cmd.py?command=update_tc'; 
+    var url = '/cloudsim/inside/cgi-bin/tc_cmd.py?command=update_tc';
     url += '&constellation=' + _constellationName;
     url += '&machine=' + _machineName;
     url += '&targetPacketLatency=' + _targetPacketLatency;
-    
+
     console.log(url);
     msg = httpGet(url);
     console.log(msg);
@@ -178,15 +181,15 @@ function get_constellation(constellation)
     return msg;
 }
 
-function _get_task_url(constellation, 
+function _get_task_url(constellation,
                         task_id,
-                        task_title, 
-                        ros_package, 
-                        launch_file, 
-                        timeout, 
+                        task_title,
+                        ros_package,
+                        launch_file,
+                        timeout,
                         launch_args,
                         latency,
-                        uplink_data_cap, 
+                        uplink_data_cap,
                         downlink_data_cap,
                         local_start,
                         local_stop,
@@ -208,7 +211,7 @@ function _get_task_url(constellation,
     console.log("vrc_num " + vrc_num)
 
     var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + "?";
-    
+
     if(task_id)
         url += 'task_id=' + encodeURIComponent(task_id);
         url += '&'
@@ -227,7 +230,7 @@ function _get_task_url(constellation,
     if(uplink_data_cap != "")
         url += '&uplink_data_cap=' + encodeURIComponent(uplink_data_cap);
     if(downlink_data_cap != "")
-        url += '&downlink_data_cap=' + encodeURIComponent(downlink_data_cap);   
+        url += '&downlink_data_cap=' + encodeURIComponent(downlink_data_cap);
     if( local_start != "")
         url += '&local_start=' + encodeURIComponent(local_start);
     if( local_stop != "")
@@ -241,30 +244,30 @@ function _get_task_url(constellation,
 }
 
 function create_task(constellation,
-					task_title, 
-                  ros_package, 
-                  launch_file, 
-                  timeout, 
+					task_title,
+                  ros_package,
+                  launch_file,
+                  timeout,
                   launch_args,
                   latency,
-                  uplink_data_cap, 
+                  uplink_data_cap,
                   downlink_data_cap,
                   local_start,
                   local_stop,
                   vrc_id,
                   vrc_num)
 {
-    
-    
-    var url = _get_task_url(constellation, 
+
+
+    var url = _get_task_url(constellation,
     			  null,
-    			  task_title, 
-                  ros_package, 
-                  launch_file, 
-                  timeout, 
+    			  task_title,
+                  ros_package,
+                  launch_file,
+                  timeout,
                   launch_args,
                   latency,
-                  uplink_data_cap, 
+                  uplink_data_cap,
                   downlink_data_cap,
                   local_start,
                   local_stop,
@@ -287,15 +290,15 @@ function read_task(constellation, task_id)
     return jmsg;
 }
 
-function update_task(constellation, 
+function update_task(constellation,
                      task_id,
-                     task_title, 
-                    ros_package, 
-                    launch_file, 
-                    timeout, 
+                     task_title,
+                    ros_package,
+                    launch_file,
+                    timeout,
                     launch_args,
                     latency,
-                    uplink_data_cap, 
+                    uplink_data_cap,
                     downlink_data_cap,
                     local_start,
                     local_stop,
@@ -303,22 +306,22 @@ function update_task(constellation,
                     vrc_num)
 {
 
-    var url = _get_task_url(constellation, 
-                  task_id, 
-                  task_title, 
-                  ros_package, 
-                  launch_file, 
-                  timeout, 
+    var url = _get_task_url(constellation,
+                  task_id,
+                  task_title,
+                  ros_package,
+                  launch_file,
+                  timeout,
                   launch_args,
                   latency,
-                  uplink_data_cap, 
+                  uplink_data_cap,
                   downlink_data_cap,
                   local_start,
                   local_stop,
                   vrc_id,
                   vrc_num)
 
-    
+
     console.log("[PUT (update)]" + url);
     msg = httpPut(url);
     console.log(msg);
@@ -354,7 +357,7 @@ function stop_task(constellation_name)
     console.log(url);
     msg = httpGet(url);
     console.log(msg);
-    return msg;    
+    return msg;
 }
 
 function reset_tasks(constellation_name)
@@ -365,13 +368,13 @@ function reset_tasks(constellation_name)
     console.log(url);
     msg = httpGet(url);
     console.log(msg);
-    return msg; 
+    return msg;
 }
 
 function async_get_constellations(callback)
 {
 	var url = '/cloudsim/inside/cgi-bin/constellations/';
-	
+
 	$.ajax({
 		url: url,
 		cache: false,
@@ -386,7 +389,7 @@ function async_get_constellation(constellation, callback)
 {
 	var url = '/cloudsim/inside/cgi-bin/constellations/';
 	url += constellation;
-	
+
 	$.ajax({
 		url: url,
 		cache: false,
@@ -453,17 +456,17 @@ function httpDelete(theUrl)
 
 function log_to_div(div_name, message)
 {
-   document.getElementById(div_name).innerHTML += message +"<br>"; 
+   document.getElementById(div_name).innerHTML += message +"<br>";
 }
 
 function clear_div(div_name)
 {
-   document.getElementById(div_name).innerHTML = "";  
+   document.getElementById(div_name).innerHTML = "";
 }
 
 
 
-///////////////// pub sub 
+///////////////// pub sub
 
 
 /* jQuery Tiny Pub/Sub - v0.7 - 10/27/2011

@@ -20,8 +20,9 @@ from ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
 
 def acquire_openstack_server(constellation_name,
                              creds,
+                             constellation_directory,
                              machine_name,
-                             constellation_directory):
+                             script):
     floating_ip, instance_name, keypair_name, security_group_name = \
         launch(constellation_name, machine_name, constellation_directory)
     constellation = ConstellationState(constellation_name)
@@ -44,7 +45,7 @@ def launch(constellation_name, machine_name, constellation_directory):
     nova_creds = get_nova_creds()
     nova = nvclient.Client(**nova_creds)
     #create keypair
-    keypair_name = "key_" + constellation_name
+    keypair_name = "key-%s-%s" % (machine_name, constellation_name)
     keypair = nova.keypairs.create(name=keypair_name)
     private_key = keypair.private_key
     path = os.path.join(constellation_directory, "%s.pem" % keypair_name)
@@ -61,7 +62,7 @@ def launch(constellation_name, machine_name, constellation_directory):
     nova.security_group_rules.create(
         security_group.id, "ICMP", -1, -1, "0.0.0.0/0")
     #create instance
-    instance_name = machine_name + "_" + constellation_name
+    instance_name = machine_name + "-" + constellation_name
     #image = nova.images.find(name="cirros-0.3.1-x86_64-uec")
     #flavor = nova.flavors.find(name="m1.tiny")
     image = nova.images.find(name="ubuntu12.04")

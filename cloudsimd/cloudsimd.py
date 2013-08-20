@@ -251,27 +251,27 @@ def get_plugin(configuration):
     #log("get_plugin '%s'" % configuration)
 
 
-    if configuration.startswith("OSRF CloudSim ") or configuration == "AWS CloudSim":
+    if configuration.startswith("CloudSim"):
         from launchers import cloudsim as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
                               None, None)
 
-    elif configuration.startswith("OSRF VRC Constellation "):
-        from launchers import vrc_contest as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-                                     c.start_task, c.stop_task)
+#    elif configuration.startswith("OSRF VRC Constellation "):
+#        from launchers import vrc_contest as c
+#        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
+#                                     c.start_task, c.stop_task)
 
 #     elif configuration == 'AWS CloudSim':
 #         #return make_plugin(launchers.amazon_cloudsim)
 #          from launchers import amazon_cloudsim as c
 #          plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
 #                                       c.start_task, c.stop_task)
-    elif configuration == 'AWS simulator':
-        from launchers import simulator as c
-        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-                                     c.start_task, c.stop_task)
+#    elif configuration == 'AWS simulator':
+#        from launchers import simulator as c
+#        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
+#                                     c.start_task, c.stop_task)
 
-    elif configuration.startswith('AWS DRC'):
+    elif configuration.startswith('DRC'):
         #from launchers import amazon_trio as c
         from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
@@ -296,13 +296,10 @@ def _load_cloudsim_configurations_list():
     configs = {}
     config = get_cloudsim_config()
     credentials_ec2 = config['boto_path']
-    if os.path.exists(credentials_ec2):
-        # configs['AWS DRC'] = {'description': "DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages"}
-        ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint = read_boto_file(credentials_ec2)
-        desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
+    # configs['AWS DRC'] = {'description': "DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages"}
+    # ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint = read_boto_file(credentials_ec2)
+    desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
 <ol>
-  <li>Cloud provider: Amazon Web Services</li>
-  <li>Location: """+ ec2_region_name + """</li>
   <li>Hardware:
       <ol>
           <li>Router: large server</li>
@@ -315,11 +312,9 @@ def _load_cloudsim_configurations_list():
   <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
 </ol>
 """
-        configs['AWS DRC'] = {'description': desc}
-        desc = """DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages
+    configs['DRC'] = {'description': desc}
+    desc = """DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages
 <ol>
-  <li>Cloud provider: Amazon Web Services</li>
-  <li>Location: """+ ec2_region_name + """</li>
     <li>Hardware:
       <ol>
           <li>Router: large server</li>
@@ -333,50 +328,49 @@ def _load_cloudsim_configurations_list():
   <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
 </ol>
 """
-        configs['AWS DRC with FC'] = {'description': desc}
-        #configs['AWS simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
-        desc = """The CloudSim Web App running in the Cloud
+    configs['DRC with FC'] = {'description': desc}
+    #configs['AWS simulator'] = {'description': "1 machine for using gzserver on the cloud: GPU computer with the latest ros-fuerte, gazebo and drcsim packages installed"}
+    desc = """The CloudSim Web App running in the Cloud
 <ol>
-  <li>Cloud provider: Amazon Web Services</li>
-  <li>Location: """+ ec2_region_name + """</li>
   <li>Hardware: micro</li>
   <li>OS: Ubuntu 12.04 (Precise)</li>
   <li>Web server: Apache</li>
 </ol>
 """     
-        configs['AWS CloudSim'] = {'description': desc}
+    configs['CloudSim'] = {'description': desc}
 
-    cloudsim_prefixes = []
-    const_prefixes = []
-    
-    osrf_creds_path = config['softlayer_path']
-    try:
-        try:
-            osrf_creds = load_osrf_creds(osrf_creds_path)
-        except Exception, e:
-            log("SoftLayer credentials loading error: %s" % e)
+    #cloudsim_prefixes = []
+    #const_prefixes = []
+    #
+    #osrf_creds_path = config['softlayer_path']
+    #try:
+    #    try:
+    #        osrf_creds = load_osrf_creds(osrf_creds_path)
+    #    except Exception, e:
+    #        log("SoftLayer credentials loading error: %s" % e)
 
-        cloudsim_prefixes, const_prefixes = get_constellation_prefixes(osrf_creds)
-        log("softlayer constellations: %s" % const_prefixes)
-        log("softlayer cloudsims: %s" % cloudsim_prefixes)
-    except Exception, e:
-        log("Error enumerating machines %s" % e)
-        pass
-    
-    for prefix in cloudsim_prefixes:
-        configs['OSRF CloudSim %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim server complete install"}
-        #configs['OSRF CloudSim update %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim update only"}
-        
-    for prefix in const_prefixes:
-        configs['OSRF VRC Constellation %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
-        configs['OSRF VRC Constellation nightly build %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
-        configs['OSRF VRC Constellation nvidia latest %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
-        configs['OSRF VRC Constellation partial %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
+    #    cloudsim_prefixes, const_prefixes = get_constellation_prefixes(osrf_creds)
+    #    log("softlayer constellations: %s" % const_prefixes)
+    #    log("softlayer cloudsims: %s" % cloudsim_prefixes)
+    #except Exception, e:
+    #    log("Error enumerating machines %s" % e)
+    #    pass
+    #
+    #for prefix in cloudsim_prefixes:
+    #    configs['OSRF CloudSim %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim server complete install"}
+    #    #configs['OSRF CloudSim update %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim update only"}
+    #    
+    #for prefix in const_prefixes:
+    #    configs['OSRF VRC Constellation %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
+    #    configs['OSRF VRC Constellation nightly build %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
+    #    configs['OSRF VRC Constellation nvidia latest %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
+    #    configs['OSRF VRC Constellation partial %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
     set_cloudsim_configuration_list(configs)
     #log("cloudsim configurations list updated: %s" % configs)
 
 
 def launch(username,
+           cloud_provider,
            config,
            constellation_name,
            args,
@@ -388,6 +382,7 @@ def launch(username,
     """
 
     log("launch username %s" % username)
+    log("launch cloud provider %s" % cloud_provider)
     log("launch config %s" % config)
     log("launch constellation_name %s" % constellation_name)
     log("launch args %s" % args)
@@ -408,6 +403,7 @@ def launch(username,
         gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
 
         tags = {'username': username,
+                'cloud_provider': cloud_provider,
                 'constellation_name': constellation_name,
                 'CloudSim': version,
                 'GMT': gmt}
@@ -719,11 +715,11 @@ def async_monitor(config, constellation_name):
         log("cloudsimd async_monitor Error %s" % e)
 
 
-def async_launch(username, config, constellation_name, args,  constellation_directory):
+def async_launch(username, cloud_provider, config, constellation_name, args,  constellation_directory):
 
     log("cloudsimd async_launch '%s' [config '%s' for user '%s']" % (constellation_name, config, username))
     try:
-        p = multiprocessing.Process(target=launch, args=(username, config, constellation_name, args, constellation_directory))
+        p = multiprocessing.Process(target=launch, args=(username, cloud_provider, config, constellation_name, args, constellation_directory))
         p.start()
     except Exception, e:
         log("cloudsimd async_launch Error %s" % e)
@@ -868,69 +864,70 @@ def launch_cmd(root_dir, data):
 
     username = data['username']
     config = data['configuration']
+    cloud_provider = data['cloud_provider']
     # extra arguments to the launch methd
     args = None
     if data.has_key('args'):
         args = data['args']
 
-    if config.startswith("AWS"):
-        # number of constellations to create
-        count = 1
-        if data.has_key('count'):
-            count = int(data['count'])
-        # log("CLOUDSIM Launch %s" % config)
-        for i in range(count):
-            constellation_name = "c" + get_unique_short_name()
-            constellation_path = os.path.join(root_dir, constellation_name)
-            os.makedirs(constellation_path)
-            cs = ConstellationState(constellation_name)
-            cs.set_value('constellation_state', 'launching')
-            async_launch(username, config, constellation_name, args,
-                         constellation_path)
-            async_monitor(config, constellation_name)
+    #if config.startswith("AWS"):
+    # number of constellations to create
+    count = 1
+    if data.has_key('count'):
+        count = int(data['count'])
+    # log("CLOUDSIM Launch %s" % config)
+    for i in range(count):
+        constellation_name = "c" + get_unique_short_name()
+        constellation_path = os.path.join(root_dir, constellation_name)
+        os.makedirs(constellation_path)
+        cs = ConstellationState(constellation_name)
+        cs.set_value('constellation_state', 'launching')
+        async_launch(username, cloud_provider, config, constellation_name, args,
+                     constellation_path)
+        async_monitor(config, constellation_name)
 
 
         
-    elif config.startswith("OSRF"):
-        partial_upgrade = False
-        if config.find('partial') > 0:
-            partial_upgrade = True
-
-        constellation_name = config.replace(" ", "_")
-        constellation_name = constellation_name.replace("_partial", "")
-        constellation_name = constellation_name.replace("_nvidia_latest", "")
-        constellation_name = constellation_name.replace("_nightly_build", "")
-        constellation_path = os.path.join(root_dir, constellation_name)
-
-        if os.path.exists(constellation_path):
-            constellation_backup = "%s-%s" % (get_unique_short_name(),
-                                              constellation_name, )
-
-            backup_path = os.path.join(root_dir, constellation_backup)
-            log("move %s to %s" % (constellation_path, backup_path))
-            shutil.move(constellation_path, backup_path)
-
-            # create the directory
-            os.makedirs(constellation_path)
-            
-            # move exiting zip keys to new direcory
-            if partial_upgrade:
-                for fname in ['key-fc1.pem','key-fc1.pem.pub',
-                              'key-fc2.pem','key-fc2.pem.pub']:
-                    src = os.path.join(backup_path, fname)
-                    log("move %s to %s" % (src, constellation_path))
-                    shutil.copy(src, constellation_path)
-                    dst = os.path.join(constellation_path, fname)
-                    assert(os.path.exists(dst))
-        else:
-            os.makedirs(constellation_path)
-
-        async_launch(username, config,
-                     constellation_name, args,
-                     constellation_path)
-
-        async_monitor(config, constellation_name)
-
+#    elif config.startswith("OSRF"):
+#        partial_upgrade = False
+#        if config.find('partial') > 0:
+#            partial_upgrade = True
+#
+#        constellation_name = config.replace(" ", "_")
+#        constellation_name = constellation_name.replace("_partial", "")
+#        constellation_name = constellation_name.replace("_nvidia_latest", "")
+#        constellation_name = constellation_name.replace("_nightly_build", "")
+#        constellation_path = os.path.join(root_dir, constellation_name)
+#
+#        if os.path.exists(constellation_path):
+#            constellation_backup = "%s-%s" % (get_unique_short_name(),
+#                                              constellation_name, )
+#
+#            backup_path = os.path.join(root_dir, constellation_backup)
+#            log("move %s to %s" % (constellation_path, backup_path))
+#            shutil.move(constellation_path, backup_path)
+#
+#            # create the directory
+#            os.makedirs(constellation_path)
+#            
+#            # move exiting zip keys to new direcory
+#            if partial_upgrade:
+#                for fname in ['key-fc1.pem','key-fc1.pem.pub',
+#                              'key-fc2.pem','key-fc2.pem.pub']:
+#                    src = os.path.join(backup_path, fname)
+#                    log("move %s to %s" % (src, constellation_path))
+#                    shutil.copy(src, constellation_path)
+#                    dst = os.path.join(constellation_path, fname)
+#                    assert(os.path.exists(dst))
+#        else:
+#            os.makedirs(constellation_path)
+#
+#        async_launch(username, config,
+#                     constellation_name, args,
+#                     constellation_path)
+#
+#        async_monitor(config, constellation_name)
+#
 
 def run(root_dir, tick_interval):
 

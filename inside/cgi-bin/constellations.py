@@ -180,8 +180,9 @@ if method == 'POST':
     d = {}
     d['username'] = email
     d['command'] = 'launch'
+    d['cloud_provider'] = get_query_param('cloud_provider') 
     d['configuration'] = get_query_param('configuration')
-
+    
 
 s = json.dumps(d)
 r.publish('cloudsim_cmds', s)
