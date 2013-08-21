@@ -33,7 +33,8 @@ def acquire_openstack_server(constellation_name,
     Stores the returned values in a redis database
     '''
     floating_ip, instance_name, keypair_name, security_group_name = \
-        launch(constellation_name, machine_name, constellation_directory, script)
+        openstack_launch(constellation_name, machine_name, 
+                constellation_directory, script, creds)
     constellation = ConstellationState(constellation_name)
     constellation.set_value("security_group", security_group_name)
     constellation.set_value("keypair", keypair_name)
@@ -54,13 +55,14 @@ def terminate_openstack_server(constellation_name):
     terminate(instance_name, keypair, secgroup)
 
 
-def launch(constellation_name, machine_name, constellation_directory, user_data):
+def openstack_launch(constellation_name, machine_name, 
+        constellation_directory, user_data, nova_creds):
     '''
     Launches an openstack instance.
     Creates a unique keypair, security group, and floating ip 
     and assigns them to the instance
     '''
-    nova_creds = get_nova_creds()
+    #nova_creds = get_nova_creds()
     nova = nvclient.Client(**nova_creds)
     #create keypair
     keypair_name = "key-%s-%s" % (machine_name, constellation_name)
