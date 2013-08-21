@@ -312,7 +312,7 @@ def launch(username, configuration, constellation_name, tags,
     log("SIMULATION IP ---- %s" % pub_ip)
     constellation.set_value("simulation_ip", pub_ip)
     log("%s" % constellation.get_value("simulation_ip"))
-    
+
     constellation.set_value("simulation_launch_msg", "create zip file")
     log("create zip")
     fname_zip = create_zip(constellation_name, key_prefix)

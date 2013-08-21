@@ -432,7 +432,6 @@ def launch(username,
 
             #time.sleep(10)
             #terminate(constellation_name, constellation_directory)
-
             #constellation.expire(10)
 
         else:
@@ -777,18 +776,18 @@ def resume_monitoring(root_dir):
     constellation_names = get_constellation_names()
     log("existing constellations %s" % constellation_names)
     for constellation_name in constellation_names:
+        constellation = ConstellationState(constellation_name)
         try:
-            log("   constellation %s " % (constellation_name))
-            constellation = get_constellation_data(constellation_name)
-            state = constellation['constellation_state']
-            config = constellation['configuration']
+            state = constellation.get_value('constellation_state')
+            config = constellation.get_value('configuration')
             log("      resume_monitoring config %s" % config)
             log("      resume_monitoring state %s" % state)
             async_monitor(config, constellation_name)
         except Exception, e:
-            print ("MONITOR ERROR %s in constellation : %s" % (e, constellation_name))
+            log ("MONITOR ERROR %s in constellation : %s" % (e, constellation_name))
             tb = traceback.format_exc()
-            log("traceback:  %s" % tb)
+            log("traceback:  %s" % tb)            
+            log("deleting %s from redis database" % constellation_name)
 
 
 def run_tc_command(_username, _constellationName, _targetPacketLatency):
@@ -886,48 +885,6 @@ def launch_cmd(root_dir, data):
                      constellation_path)
         async_monitor(config, constellation_name)
 
-
-        
-#    elif config.startswith("OSRF"):
-#        partial_upgrade = False
-#        if config.find('partial') > 0:
-#            partial_upgrade = True
-#
-#        constellation_name = config.replace(" ", "_")
-#        constellation_name = constellation_name.replace("_partial", "")
-#        constellation_name = constellation_name.replace("_nvidia_latest", "")
-#        constellation_name = constellation_name.replace("_nightly_build", "")
-#        constellation_path = os.path.join(root_dir, constellation_name)
-#
-#        if os.path.exists(constellation_path):
-#            constellation_backup = "%s-%s" % (get_unique_short_name(),
-#                                              constellation_name, )
-#
-#            backup_path = os.path.join(root_dir, constellation_backup)
-#            log("move %s to %s" % (constellation_path, backup_path))
-#            shutil.move(constellation_path, backup_path)
-#
-#            # create the directory
-#            os.makedirs(constellation_path)
-#            
-#            # move exiting zip keys to new direcory
-#            if partial_upgrade:
-#                for fname in ['key-fc1.pem','key-fc1.pem.pub',
-#                              'key-fc2.pem','key-fc2.pem.pub']:
-#                    src = os.path.join(backup_path, fname)
-#                    log("move %s to %s" % (src, constellation_path))
-#                    shutil.copy(src, constellation_path)
-#                    dst = os.path.join(constellation_path, fname)
-#                    assert(os.path.exists(dst))
-#        else:
-#            os.makedirs(constellation_path)
-#
-#        async_launch(username, config,
-#                     constellation_name, args,
-#                     constellation_path)
-#
-#        async_monitor(config, constellation_name)
-#
 
 def run(root_dir, tick_interval):
 

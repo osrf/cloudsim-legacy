@@ -19,7 +19,7 @@ function create_constellation_launcher_widget(div_name)
     widget.appendChild(cloud_service_select);
 
     var cloud_providers = { "Amazon Web Services" : ["us-east-1a", "us-east-1b", "us-east-1c", " eu-west-1b"],
-    						"SoftLayer" : ["eu-west-1b"],
+    						"SoftLayer" : ["Dallas"],
     						"OpenStack" : ["OSRF"]};
 
     for(var provider_name in cloud_providers)
