@@ -185,7 +185,7 @@ touch /home/ubuntu/new_file.txt'''  # startup script
         #uname = 'cirros'
         uname = 'ubuntu'
         ssh = SshClient(self.constellation_directory, keypair_name,
-                uname, floating_ip.ip)
+                uname, floating_ip)
         cmd = 'ls /home/ubuntu/new_file.txt'
         #expected_output = '/home/cirros'
         expected_output = '/home/ubuntu/new_file.txt'
@@ -200,7 +200,7 @@ touch /home/ubuntu/new_file.txt'''  # startup script
                 msg = ("timeout while waiting for floating ip for %s"
                     % sim_machine_name)
             pingable, ping_str = commands.getstatusoutput(
-                "ping -c3 %s" % floating_ip.ip)
+                "ping -c3 %s" % floating_ip)
             if pingable == 0:
                 done = True
         empty_ssh_queue([ssh_command], 2)
