@@ -30,7 +30,7 @@ from launch_utils.testing import get_test_runner, get_test_path,\
 from launch_utils import get_unique_short_name
 from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
     create_vpc_vpn_connect_file, create_ros_connect_file,\
-    create_ssh_connect_file
+    create_ssh_connect_file, get_drc_script, get_router_script
 
 from launch_utils.sshclient import SshClient
 from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
@@ -72,15 +72,15 @@ def update(constellation_name):
     router_ip = constellation.get_value("router_public_ip")
     ssh_router = SshClient(constellation_directory, "key-router", 'ubuntu',
                            router_ip)
-    for state in ["sim_state", "router_state", "fc1_state", "fc2_state", ]:
-        constellation.set_value(state, "packages_setup")
+    for machine in ["sim", "router", "fc1", "fc2", ]:
+        constellation.set_value("%s_state" % machine, "packages_setup")
     try:
-        pass
         o = ssh_router.cmd("cloudsim/update_constellation.bash")
         log("UPDATE: %s" % o, "toto")
     finally:
-        for state in ["sim_state", "router_state", "fc1_state", "fc2_state", ]:
-            constellation.set_value("sim_state", "running")
+        for machine in ["sim", "router", "fc1", "fc2", ]:
+            constellation.set_value("%s_state" % machine, "running")
+            constellation.set_value("%s_launch_msg" % machine, "complete")
         log("UPDATE DONE", "toto")
 
 
@@ -220,6 +220,7 @@ def monitor(constellation_name, counter):
             p = multiprocessing.Process(target=ssh_ping_proc,
                         args=(constellation_name, SIM_IP, 'sim_latency'))
             procs.append(p)
+
             p = multiprocessing.Process(target=monitor_simulator_proc,
                             args=(constellation_name,))
             procs.append(p)
@@ -272,15 +273,6 @@ def _init_computer_data(constellation_name, machines):
     constellation.set_value("gazebo", "not running")
     constellation.set_value("simulation_glx_state", "not running")
 
-    constellation.set_value("fc1_ip", FC1_IP)
-    constellation.set_value("fc2_ip", FC2_IP)
-    constellation.set_value("sim_ip", SIM_IP)
-    constellation.set_value("router_ip", ROUTER_IP)
-
-    constellation.set_value('fc1_launch_msg', 'nothing')
-    constellation.set_value('fc2_launch_msg', 'nothing')
-    constellation.set_value('sim_launch_msg', 'nothing')
-
     for prefix in machines:
         machine = machines[prefix]
         ip = machine['ip']
@@ -294,699 +286,6 @@ def _init_computer_data(constellation_name, machines):
         constellation.set_value('%s_machine_name' % prefix,
                                 '%s_%s' % (prefix, constellation_name))
         constellation.set_value('%s_key_name' % prefix, None)
-
-
-def get_router_script(public_network_interface_name,
-                      private_network_interface_name,
-                      machine_private_ip,
-                      ros_master_ip,
-                      drc_package_name,
-                      vpn_server_ip,
-                      vpn_client_ip,
-                      ):
-    if not private_network_interface_name:
-        private_network_interface_name = public_network_interface_name
-
-    bytecounter_cmd = """
-        exec vrc_bytecounter """ + private_network_interface_name + """ > /var/log/vrc_bytecounter.log 2>&1
-"""
-    vrc_controller_private = """
-exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d """ + private_network_interface_name + """  > /var/log/vrc_controller_private.log 2>&1
-
-"""
-    s = """#!/bin/bash
-# Exit on error
-set -ex
-exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
-
-
-cat <<DELIM > /etc/apt/sources.list
-
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-updates main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-backports main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-security main restricted universe multiverse
-
-DELIM
-
-
-# Add OSRF repositories
-echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
-wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
-
-# ROS setup
-sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
-wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
-
-# we need to tell apt about the new repos
-apt-get update
-
-
-# this is where we store all data for this part
-mkdir -p /home/ubuntu/cloudsim
-mkdir -p /home/ubuntu/cloudsim/setup
-
-# this is a bootstrap script that we use to detect the presence of a file
-# on the machine. It is used by CloudSim and therefore must be present
-# on the machine soon after boot
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_router.bash
-#!/bin/bash
-ls \$1
-DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_router.bash
-# --------------------------------------------
-
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
-
-
-#
-# Install minimum to deploy cloudsim scripts
-#
-apt-get install -y unzip
-apt-get install -y openvpn
-# Signal we are ready to send the keys to the router. We need:
-# * unzip, and unzip needs update
-# * openvpn
-
-cat <<DELIM > /etc/openvpn/openvpn.conf
-dev tun
-ifconfig """ + vpn_server_ip + " " + vpn_client_ip + """
-secret static.key
-DELIM
-
-touch /home/ubuntu/cloudsim/setup/deploy_ready
-
-apt-get install -y ntp
-apt-get install -y vim ipython
-
-# SSH HPN
-sudo apt-get install -y python-software-properties
-sudo add-apt-repository -y ppa:w-rouesnel/openssh-hpn
-sudo apt-get update
-sudo apt-get install -y openssh-server
-
-cat <<DELIM >>/etc/ssh/sshd_config
-
-# SSH HPN
-HPNDisabled no
-TcpRcvBufPoll yes
-HPNBufferSize 8192
-NoneEnabled yes
-DELIM
-
-sudo service ssh restart
-
-
-cat <<DELIM > /etc/init.d/iptables_cloudsim
-#! /bin/sh
-
-
-case "\$1" in
-  start|"")
-
-    sysctl -w net.ipv4.ip_forward=1
-    iptables -t nat -A POSTROUTING -s 10.0.0.0/24 -o """ + public_network_interface_name + """ -j MASQUERADE
-
-    ;;
-  stop)
-
-       echo "N/A"
-    ;;
-  *)
-    echo "Usage: iptables_cloudsim start|stop" >&2
-    exit 3
-    ;;
-esac
-
-:
-
-DELIM
-
-chmod +x  /etc/init.d/iptables_cloudsim
-ln -sf /etc/init.d/iptables_cloudsim /etc/rc2.d/S99iptables_cloudsim
-
-#invoke it
-/etc/init.d/iptables_cloudsim start
-
-
-##############################################################
-#
-# ROBOTICS software install
-#
-#
-
-
-# At least in some cases, we need to explicitly install graphviz before ROS to avoid apt-get dependency problems.
-sudo apt-get install -y graphviz
-# That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
-sudo apt-get install -y ros-fuerte-ros-comm
-# We need atlas_msgs, which is in drcsim
-sudo apt-get install -y """ + drc_package_name + """
-
-# roscore is in simulator's machine
-cat <<DELIM >> /etc/environment
-export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
-export ROS_IP=""" + machine_private_ip + """
-source /usr/share/drcsim/setup.sh
-DELIM
-
-# Answer the postfix questions
-sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
-sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
-
-sudo apt-get install -y cloudsim-client-tools
-
-# VRC specific.. sends emails when machines are down
-# sudo start vrc_monitor || true
-
-
-##############################################################
-
-# Create upstart vrc_sniffer job
-cat <<DELIM > /etc/init/vrc_sniffer.conf
-# /etc/init/vrc_sniffer.conf
-
-description "OSRF cloud simulation platform"
-author  "Carlos Aguero <caguero@osrfoundation.org>"
-
-start on runlevel [234]
-stop on runlevel [0156]
-
-exec vrc_sniffer.py -t 11.8.0.2 -l vrc_current_outbound_latency > /var/log/vrc_sniffer.log 2>&1
-
-respawn
-DELIM
-
-# Create upstart vrc_controller job for the private interface
-cat <<DELIM > /etc/init/vrc_controller_private.conf
-# /etc/init/vrc_controller_private.conf
-
-description "OSRF cloud simulation platform"
-author  "Carlos Aguero <caguero@osrfoundation.org>"
-
-start on runlevel [234]
-stop on runlevel [0156]
-
-""" + vrc_controller_private + """
-
-respawn
-DELIM
-
-# Create upstart vrc_controller job for the public interface
-cat <<DELIM > /etc/init/vrc_controller_public.conf
-# /etc/init/vrc_controller_public.conf
-
-description "OSRF cloud simulation platform"
-author  "Carlos Aguero <caguero@osrfoundation.org>"
-
-start on runlevel [234]
-stop on runlevel [0156]
-
-exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d """ + public_network_interface_name + """ > /var/log/vrc_controller_public.log 2>&1
-
-respawn
-DELIM
-
-# Create upstart vrc_bytecounter job
-cat <<DELIM > /etc/init/vrc_bytecounter.conf
-# /etc/init/vrc_bytecounter.conf
-
-description "OSRF cloud simulation platform"
-author  "Carlos Aguero<caguero@osrfoundation.org>"
-
-start on runlevel [234]
-stop on runlevel [0156]
-
-""" + bytecounter_cmd + """
-
-respawn
-DELIM
-
-# Create upstart vrc_netwatcher job
-cat <<DELIM > /etc/init/vrc_netwatcher.conf
-# /etc/init/vrc_netwatcher.conf
-
-description "OSRF cloud simulation platform"
-author  "Carlos Aguero<caguero@osrfoundation.org>"
-
-start on runlevel [234]
-stop on runlevel [0156]
-
-exec vrc_wrapper.sh vrc_netwatcher.py -o -m replace -d /tmp -p vrc_netwatcher_usage > /var/log/vrc_netwatcher.log 2>&1
-
-DELIM
-
-# start vrc_sniffer and vrc_controllers
-sudo start vrc_sniffer || true
-sudo start vrc_controller_private || true
-sudo start vrc_controller_public || true
-
-# Don't start the bytecounter here; netwatcher will start it as needed
-#start vrc_bytecounter
-
-
-touch /home/ubuntu/cloudsim/setup/done
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
-
-"""
-    return s
-
-
-def get_drc_script(drc_package_name, machine_ip, ros_master_ip,
-                   gpu_driver_list, ppa_list):
-    gpu_driver_packages_string = ""
-    for driver in gpu_driver_list:
-        gpu_driver_packages_string += "apt-get install -y %s\n" % driver
-
-    ppa_string = ""
-    for ppa in ppa_list:
-        ppa_string += "apt-add-repository -y ppa:%s\n" % ppa
-
-    s = """#!/bin/bash
-# Exit on error
-set -ex
-# Redirect everybody's output to a file
-logfile=/home/ubuntu/launch_stdout_stderr.log
-exec > $logfile 2>&1
-
-
-cat <<DELIM > /etc/apt/sources.list
-
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-updates main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-backports main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-security main restricted universe multiverse
-
-
-DELIM
-
-
-
-# Add ROS and OSRF repositories
-echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
-echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
-
-date >> /home/ubuntu/setup.log
-echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
-wget http://packages.ros.org/ros.key -O - | apt-key add -
-wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
-
-
-""" + ppa_string + """
-
-
-#
-# we need python-software-properties for ad-apt-repository
-# it requires apt-get update for some reason
-#
-
-echo "update packages" >> /home/ubuntu/setup.log
-
-
-apt-get update
-
-
-# apt-get remove -y unattended-upgrades
-apt-get install -y python-software-properties zip
-
-apt-get install -y vim ipython
-apt-get install -y ntp
-
-add-apt-repository -y ppa:w-rouesnel/openssh-hpn
-apt-get update
-
-apt-get install -y openssh-server
-
-cat <<EOF >>/etc/ssh/sshd_config
-
-# SSH HPN
-HPNDisabled no
-TcpRcvBufPoll yes
-HPNBufferSize 8192
-NoneEnabled yes
-EOF
-
-echo "restart ssh" >> /home/ubuntu/setup.log
-sudo service ssh restart
-
-mkdir -p /home/ubuntu/cloudsim
-mkdir -p /home/ubuntu/cloudsim/setup
-
-
-#
-# Install drc sim and related packages
-#
-
-
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-# Answer the postfix questions
-sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
-sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
-apt-get install -y cloudsim-client-tools
-
-echo "install """ + drc_package_name + """ ">> /home/ubuntu/setup.log
-apt-get install -y """ + drc_package_name + """
-
-
-
-
-#
-# Packages for X
-#
-
-echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
-apt-get install -y linux-headers-`uname -r`
-apt-get install -y pciutils
-apt-get install -y lsof
-
-
-
-apt-get install -y gnome-session
-apt-get install -y gnome-session-fallback
-apt-get install -y xserver-xorg-core
-
-
-apt-get install -y xserver-xorg
-apt-get install -y mesa-utils
-apt-get install -y lightdm
-apt-get install -y x11-xserver-utils
-
-
-# apt-get install -y linux-source
-
-""" + gpu_driver_packages_string + """
-
-# Have the NVIDIA tools create the xorg configuration file for us, retrieiving the PCI BusID for the current system.
-# The BusID can vary from machine to machine.  The || true at the end is to allow this line to succeed on fc2, which doesn't have a GPU.
-if ! nvidia-xconfig --busid `nvidia-xconfig --query-gpu-info | grep BusID | head -n 1 | sed 's/PCI BusID : PCI:/PCI:/'`; then
-  echo "nvidia-xconfig failed; probably no GPU installed.  Proceeding." >> /home/ubuntu/setup.log
-else
-  echo "nvidia-xconfig succeeded." >> /home/ubuntu/setup.log
-fi
-
-echo "setup auto xsession login" >> /home/ubuntu/setup.log
-
-echo "
-[SeatDefaults]
-greeter-session=unity-greeter
-autologin-user=ubuntu
-autologin-user-timeout=0
-user-session=gnome-fallback
-" > /etc/lightdm/lightdm.conf
-initctl stop lightdm || true
-initctl start lightdm
-
-
-
-
-#cat <<DELIM > /etc/rc.local
-#!/bin/sh -e
-#
-# rc.local
-#
-# This script is executed at the end of each multiuser runlevel.
-# Make sure that the script will "exit 0" on success or any other
-# value on error.
-#
-# In order to enable or disable this script just change the execution
-# bits.
-#
-# By default this script does nothing.
-# insmod /lib/modules/\`uname -r\`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
-#exit 0
-#DELIM
-
-
-cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
-#!/bin/bash
-
-MAX_TIME=30
-
-# Remove the old logs
-DIR=\`echo \$2 | cut -d'.' -f 1\`
-rm -rf /tmp/\$DIR
-
-echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
-
-. /usr/share/drcsim/setup.sh
-if [ -f /home/ubuntu/local/share/vrc_arenas/setup.sh ]; then
- . /home/ubuntu/local/share/vrc_arenas/setup.sh
-fi
-export ROS_IP=""" + machine_ip + """
-export GAZEBO_IP=""" + machine_ip + """
-export DISPLAY=:0
-ulimit -c unlimited
-
-#
-# By default
-# Allow anyone to connect to Gazebo on the network
-#
-# export GAZEBO_IP_WHITE_LIST=127.0.0.1
-
-# Kill a pending simulation
-bash /home/ubuntu/cloudsim/stop_sim.bash
-
-roslaunch \$1 \$2 \$3 gzname:=gzserver  &
-
-tstart=\$(date +%s)
-timeout -k 1 5 gztopic list
-while [[ \$? -ne 0 ]]; do
-    tnow=\$(date +%s)
-    if ((tnow-tstart>MAX_TIME)) ;then
-        echo "[simulator start_sim.bash] Timed out waiting for simulation to start"
-        exit 1
-    fi
-
-    sleep 1
-    timeout -k 1 5 gztopic list
-done
-
-echo \`date\` "$1 $2 $3 - End" >> /home/ubuntu/cloudsim/start_sim.log
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/start_sim.bash
-
-cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
-#!/bin/bash
-
-MAX_TIME=30
-echo \`date\` "Stop sim - Begin" >> /home/ubuntu/cloudsim/stop_sim.log
-. /usr/share/drcsim/setup.sh
-
-if timeout -k 1 2 gztopic list; then
-  LOG_PATH=\`ps aux | grep gzserver | grep -m 1 record_path | cut -d = -f 3 | cut -d ' ' -f 1\`/state.log
-  echo "  Log file: \$LOG_PATH" >> /home/ubuntu/cloudsim/stop_sim.log 
-  gzlog stop
-  # Let cleanup start, which pauses the world
-  sleep 5
-  while [ "\`timeout -k 1 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1\`" != " F" ]; do
-    sleep 1
-    if [ "\`ps aux | grep gzserver | wc -l\`" == "1" ]; then
-        echo "  gzserver died, force exit" >> /home/ubuntu/cloudsim/stop_sim.log
-        break
-    fi
-    # look for the name of the Log file
-    if [ "\`tail -n 1 \$LOG_PATH\`" = "</gazebo_log>" ] ; then 
-        echo "  Log end tag detected" >> /home/ubuntu/cloudsim/stop_sim.log
-        break
-    fi
-  done
-fi
-killall -INT roslaunch || true
-
-tstart=\$(date +%s)
-# Block until all ros process are killed
-while [ "\`ps aux | grep ros | wc -l\`" != "1" ]; do
-
-    tnow=\$(date +%s)
-    if ((tnow-tstart>MAX_TIME)) ;then
-        break
-    fi
-
-    sleep 1
-done
-
-# Kill all remaining ros processes
-kill -9 \$(ps aux | grep ros | awk '{print \$2}') || true
-killall -9 gzserver || true
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/stop_sim.bash
-
-cat <<DELIM > /home/ubuntu/cloudsim/ros.bash
-
-# To connect via ROS:
-
-# ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path
-oldrpp=$ROS_PACKAGE_PATH
-
-. /usr/share/drcsim/setup.sh
-eval export ROS_PACKAGE_PATH=\$oldrpp:\\$ROS_PACKAGE_PATH
-export ROS_IP=""" + machine_ip + """
-export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
-
-export GAZEBO_IP=""" + machine_ip + """
-export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
-
-DELIM
-
-cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
-
-DISPLAY=localhost:0 timeout 10 glxinfo
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/ping_gl.bash
-
-#
-# Automatic sourcing of drcsim/setup
-#
-
-echo "Updating bashrc file">> /home/ubuntu/setup.log
-cat <<DELIM >> /home/ubuntu/.bashrc
-# CloudSim
-. /usr/share/drcsim/setup.sh
-export DISPLAY=:0
-export ROS_IP="""    + machine_ip + """
-export GAZEBO_IP=""" + machine_ip + """
-
-DELIM
-
-
-cat <<DELIM > /home/ubuntu/cloudsim/send_to_portal.bash
-#!/bin/bash
-
-# Create a zip file with the JSON task file, network usage and the sim log
-# Then, the zip file is sent to the VRC portal
-
-USAGE="Usage: send_to_portal <task_dirname> <zipname> <portal_key> <portal_url>"
-
-if [ \$# -ne 4 ]; then
-  echo \$USAGE
-  exit 1
-fi
-
-TASK_DIRNAME=\$1
-ZIPNAME=\$2
-PORTAL_KEY=\$3
-PORTAL_URL=\$4
-LOG_DIR=/home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
-SIM_LOG_DIR=/tmp/\$TASK_DIRNAME
-PORTAL_LOG_DIR=/home/ubuntu/cloudsim/logs/portal/\$TASK_DIRNAME
-
-if [ ! -f $PORTAL_KEY ];
-then
-    echo VRC Portal key not found \$PORTAL_KEY
-    exit 0
-fi
-
-mkdir -p \$PORTAL_LOG_DIR
-
-# Create a zip file
-zip -j \$PORTAL_LOG_DIR/\$ZIPNAME \$SIM_LOG_DIR/* \$LOG_DIR/* || true
-
-if [ -f \$PORTAL_LOG_DIR/\$ZIPNAME ];
-then
-    # Send the zip file to the VRC Portal
-    scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$PORTAL_KEY \$PORTAL_LOG_DIR/*.zip ubuntu@\$PORTAL_URL:/tmp
-
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$PORTAL_KEY ubuntu@\$PORTAL_URL sudo mv /tmp/\$ZIPNAME /vrc_logs/end_incoming
-fi
-DELIM
-
-
-# ----------------------------------------------------------
-
-
-cat <<DELIM > /home/ubuntu/cloudsim/load_gazebo_models.bash
-
-#!/bin/bash
-
-# Set the private environment for testing the VRC contest
-
-USAGE="Usage: load_gazebo_models.sh"
-
-
-# Constants
-GAZEBO_MODELS_NAME=gazebo_models
-GAZEBO_INSTALL_DIR=/home/\$USER/.gazebo
-VRC_ARENAS_NAME=vrc_arenas
-VRC_ARENA_INSTALL_DIR=/home/\$USER/local
-DRCSIM_SETUP=/usr/local/share/drcsim/setup.sh
-
-# arg1: Name of the repository to install
-# arg2: Destination directory
-install ()
-{
-    # Temporal directory for the repository
-    TMP_DIR=`mktemp -d`
-    cd \$TMP_DIR
-   
-    echo -n "Downloading \$1..."
-    hg clone https://bitbucket.org/osrf/\$1
-
-    echo "Done"
-    cd \$1
-    mkdir build
-    cd build
-    echo -n "Installing \$1..."
-    cmake .. -DCMAKE_INSTALL_PREFIX=\$2
-    make install > /dev/null 2>&1
-    echo "Done"
-
-    # Remove temp dir
-    rm -rf \$TMP_DIR
-}
-
-
-KEY=\$1
-
-# gazebo_models
-install \$GAZEBO_MODELS_NAME \$GAZEBO_INSTALL_DIR
-
-# vrc_arenas
-if [ -n "\$KEY" ]; then
-  install \$VRC_ARENAS_NAME \$VRC_ARENA_INSTALL_DIR \$KEY
-fi
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/load_gazebo_models.bash
-
-
-# ----------------------------------------------------------
-
-cat <<DELIM > /etc/init.d/vpcroute
-#! /bin/sh
-
-case "\$1" in
-  start|"")
-        route del default
-        route add """ + OPENVPN_CLIENT_IP + """ gw """ + ROUTER_IP + """
-        route add default gw """ + ROUTER_IP + """
-    ;;
-  stop)
-        route del """ + OPENVPN_CLIENT_IP + """ gw """ + ROUTER_IP + """
-
-    ;;
-  *)
-    echo "Usage: vpcroute start|stop" >&2
-    exit 3
-    ;;
-esac
-
-:
-DELIM
-
-chmod +x  /etc/init.d/vpcroute
-ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
-
-# invoke it now to add route to the router
-/etc/init.d/vpcroute start || true
-
-
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
-touch /home/ubuntu/cloudsim/setup/done
-"""
-    return s
 
 
 def create_zip_file(zip_file_path, short_name, files_to_zip):
@@ -1583,6 +882,8 @@ def deploy_constellation(constellation_name, cloud_provider, machines):
 
     constellation.set_value('router_launch_msg',
                             "waiting for machine to be online")
+    constellation.set_value('sim_launch_msg',
+                            "waiting router deployment")
     __wait_for_find_file(constellation_name,
                          constellation_directory,
                          ["router"],
@@ -1702,19 +1003,25 @@ def launch(username, config, constellation_name, tags,
                                 SIM_IP,
                                 ros_master_ip,
                                 gpu_driver_list,
-                                ppa_list)
+                                ppa_list,
+                                OPENVPN_CLIENT_IP,
+                                ROUTER_IP)
 
     fc1_script = get_drc_script(drcsim_package_name,
                                     FC1_IP,
                                     ros_master_ip,
                                     gpu_driver_list,
-                                    ppa_list)
+                                    ppa_list,
+                                    OPENVPN_CLIENT_IP,
+                                    ROUTER_IP)
 
     fc2_script = get_drc_script(drcsim_package_name,
                                     FC2_IP,
                                     ros_master_ip,
                                     gpu_driver_list,
-                                    ppa_list)
+                                    ppa_list,
+                                    OPENVPN_CLIENT_IP,
+                                    ROUTER_IP)
 
     if has_fc1:
         scripts['fc1'] = fc1_script

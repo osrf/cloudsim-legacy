@@ -1,149 +1,7 @@
 from __future__ import print_function
 
 
-def get_vpc_router_script(OPENVPN_SERVER_IP,
-                          OPENVPN_CLIENT_IP,
-                          machine_ip,
-                          ros_master_ip):
-
-    return """#!/bin/bash
-# Exit on error
-set -ex
-exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
-
-
-# Add OSRF repositories
-echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
-wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
-
-# ROS setup
-sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
-wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
-
-apt-get update
-
-apt-get install -y ntp
-apt-get install -y openvpn
-
-cat <<DELIM > /etc/openvpn/openvpn.conf
-dev tun
-ifconfig """ + OPENVPN_SERVER_IP + " " + OPENVPN_CLIENT_IP + """
-secret static.key
-DELIM
-
-
-openvpn --genkey --secret /etc/openvpn/static.key
-service openvpn restart
-chmod 644 /etc/openvpn/static.key
-
-
-sysctl -w net.ipv4.ip_forward=1
-iptables -A FORWARD -i tun0 -o eth0 -j ACCEPT
-iptables -A FORWARD -o tun0 -i eth0 -j ACCEPT
-
-# That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
-sudo apt-get install -y ros-fuerte-ros-comm
-
-# roscore is in simulator's machine
-cat <<DELIM >> /etc/environment
-export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
-export ROS_IP=""" + machine_ip + """
-source /opt/ros/fuerte/setup.sh
-DELIM
-
-apt-get install -y cloudsim-client-tools
-
-# Create upstart vrc_sniffer job
-cat <<DELIM > /etc/init/vrc_sniffer.conf
-# /etc/init/vrc_sniffer.conf
-
-description "OSRF cloud simulation platform"
-author  "Carlos Aguero <caguero@osrfoundation.org>"
-
-start on runlevel [234]
-stop on runlevel [0156]
-
-exec vrc_sniffer.py -t 11.8.0.2 -l vrc_current_outbound_latency > /var/log/vrc_sniffer.log 2>&1
-
-respawn
-DELIM
-
-# Create upstart vrc_controller job
-cat <<DELIM > /etc/init/vrc_controller.conf
-# /etc/init/vrc_controller.conf
-
-description "OSRF cloud simulation platform"
-author  "Carlos Aguero <caguero@osrfoundation.org>"
-
-start on runlevel [234]
-stop on runlevel [0156]
-
-exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -s 0.5 -v -d eth0 > /var/log/vrc_controller.log 2>&1
-
-respawn
-DELIM
-
-# Create upstart vrc_bandwidth job
-cat <<DELIM > /etc/init/vrc_bandwidth.conf
-# /etc/init/vrc_bandwidth.conf
-
-description "OSRF cloud simulation platform"
-author  "Carlos Aguero<caguero@osrfoundation.org>"
-
-start on runlevel [234]
-stop on runlevel [0156]
-
-exec vrc_wrapper.sh vrc_bandwidth.py -d /tmp > /var/log/vrc_bandwidth.log 2>&1
-
-respawn
-DELIM
-
-# start vrc_sniffer and vrc_controllers
-start vrc_sniffer
-start vrc_controller_private
-start vrc_controller_public
-
-mkdir -p /home/ubuntu/cloudsim/setup
-touch /home/ubuntu/cloudsim/setup/done
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
-
-"""
-
-def get_vpc_open_vpn(OPENVPN_CLIENT_IP, TS_IP):
-    """
-    Create a service that persist out routing rules accross reboots
-    """
-    s  = """
-
-cat <<DELIM > /etc/init.d/vpcroute
-#! /bin/sh
-
-case "\$1" in
-  start|"")
-        route add """ + OPENVPN_CLIENT_IP+""" gw """ + TS_IP+"""
-    ;;
-  stop)
-        route del """ + OPENVPN_CLIENT_IP+""" gw """ + TS_IP+"""
-    ;;
-  *)
-    echo "Usage: vpcroute start|stop" >&2
-    exit 3
-    ;;
-esac
-
-:
-DELIM
-
-chmod +x  /etc/init.d/vpcroute 
-ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
-
-# invoke it now to add route to the router
-/etc/init.d/vpcroute start
-
-"""
-    return s
-
-
+'''
 def get_open_vpn_single(client_ip,
                         server_ip):
     s = """
@@ -172,7 +30,113 @@ echo "openvpn setup complete" >> /home/ubuntu/setup.log
 
 """
     return s
+'''
 
+
+
+def create_vpn_connect_file(openvpn_client_ip):
+    return """#!/bin/bash
+set -e
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [ $UID != 0 ]; then
+  echo "You're not root.  Run this script under sudo."
+  exit 1
+fi
+
+echo "Killing other openvpn connections..."
+killall openvpn || true
+openvpn --config  "$DIR"/openvpn.config >/dev/null 2>&1 &
+
+echo "VPN ready.  To kill it:"
+echo "    sudo killall openvpn"
+"""
+
+
+def create_vpc_vpn_connect_file(openvpn_client_ip):
+    return """#!/bin/bash
+set -e
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [ $UID != 0 ]; then
+  echo "You're not root.  Run this script under sudo."
+  exit 1
+fi
+
+echo "Killing other openvpn connections..."
+killall openvpn || true
+openvpn --config  "$DIR"/openvpn.config >/dev/null 2>&1 &
+
+# Wait for tun0 to come up, then add a static route to the 10.0.0.0/24 network, which is the VPC on the other side
+# of the router.
+while ! ifconfig tun0 || test -z "`ifconfig tun0 | grep 'inet addr'`" 2>/dev/null; do
+  echo "Waiting for tun0 to come up..."
+  sleep 1
+done
+
+echo "Adding route to 10.0.0.0/24 network"
+route add -net 10.0.0.0 netmask 255.255.255.0 gw """ + openvpn_client_ip + """
+
+echo "VPN ready.  To kill it:"
+echo "    sudo killall openvpn"
+"""
+
+
+def create_openvpn_client_cfg_file(hostname,
+                            client_ip,
+                            server_ip):
+    s = """
+remote """ + hostname + """
+dev tun
+ifconfig """ + client_ip + " " + server_ip + """
+secret openvpn.key
+    """
+    return s
+
+
+def create_ros_connect_file(machine_ip, master_ip ):
+
+    s = """
+# To connect via ROS:
+# 1. Connect via OpenVPN
+# 2. Download this file: [ros.sh] <- autogenerated with the right IP addresses
+# 3. In a terminal, go to the directory containing that file.
+# 4. Execute the following command:
+#    . ros.bash
+# 5. Now your environment is configured to connect to a ROS master running on this machine.
+
+# ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path
+oldrpp=$ROS_PACKAGE_PATH
+. /usr/share/drcsim/setup.sh
+eval export ROS_PACKAGE_PATH=$oldrpp:\$ROS_PACKAGE_PATH
+export ROS_IP=""" + machine_ip + """
+export ROS_MASTER_URI=http://""" + master_ip + """:11311
+
+export GAZEBO_IP=""" + machine_ip + """
+export GAZEBO_MASTER_URI=http://""" + master_ip + """:11345
+
+    """
+    return s
+
+
+def create_ssh_connect_file(key_file, ip):
+    s = """#!/bin/bash
+
+#
+# This command connects you to the simulation
+# It passes a keyfile to the ssh command and logs you in as the
+# default user on the cloud machine
+
+# ssh -i """ + key_file + " ubuntu@" + ip + """
+
+#
+# This commands is similar, but it suppresses prompts and can be invoked 
+# from any directory
+#
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i "$DIR"/""" + key_file + " ubuntu@" + ip + """ $1 $2 $3 $4 $5
+    """
+    return s
 
 def get_cloudsim_startup_script():
     s = """#!/bin/bash
@@ -347,224 +311,176 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
 
 
-def get_drc_startup_script(open_vpn_script, machine_ip, drc_package_name, ros_master_ip="10.0.0.51", pcibus_id="3", prefix = "", extra = ""):
 
+
+def get_router_script(public_network_interface_name,
+                      private_network_interface_name,
+                      machine_private_ip,
+                      ros_master_ip,
+                      drc_package_name,
+                      vpn_server_ip,
+                      vpn_client_ip,
+                      ):
+    if not private_network_interface_name:
+        private_network_interface_name = public_network_interface_name
+
+    bytecounter_cmd = """
+        exec vrc_bytecounter """ + private_network_interface_name + """ > /var/log/vrc_bytecounter.log 2>&1
+"""
+    vrc_controller_private = """
+exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d """ + private_network_interface_name + """  > /var/log/vrc_controller_private.log 2>&1
+
+"""
     s = """#!/bin/bash
 # Exit on error
 set -ex
-# Redirect everybody's output to a file
-logfile=/home/ubuntu/launch_stdout_stderr.log
-exec > $logfile 2>&1
+exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
 
 cat <<DELIM > /etc/apt/sources.list
 
-##
-## cloudsim
-##
-## Note, this file is written by cloud-init on first boot of an instance
-## modifications made here will not survive a re-bundle.
-## if you wish to make changes you can:
-## a.) add 'apt_preserve_sources_list: true' to /etc/cloud/cloud.cfg
-##     or do the same in user-data
-## b.) add sources in /etc/apt/sources.list.d
-## c.) make changes to template file /etc/cloud/templates/sources.list.tmpl
-#
-
-# See http://help.ubuntu.com/community/UpgradeNotes for how to upgrade to
-# newer versions of the distribution.
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise main restricted
-
-## Major bug fix updates produced after the final release of the
-## distribution.
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates main restricted
-
-## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
-## team. Also, please note that software in universe WILL NOT receive any
-## review or updates from the Ubuntu security team.
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
-
-## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
-## team, and may not be under a free licence. Please satisfy yourself as to
-## your rights to use the software. Also, please note that software in 
-## multiverse WILL NOT receive any review or updates from the Ubuntu
-## security team.
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
-deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
-deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
-
-## Uncomment the following two lines to add software from the 'backports'
-## repository.
-## N.B. software from this repository may not have been tested as
-## extensively as that contained in the main release, although it includes
-## newer versions of some applications which may provide useful features.
-## Also, please note that software in backports WILL NOT receive any review
-## or updates from the Ubuntu security team.
-# deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
-# deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
-
-## Uncomment the following two lines to add software from Canonical's
-## 'partner' repository.
-## This software is not part of Ubuntu, but is offered by Canonical and the
-## respective vendors as a service to Ubuntu users.
-# deb http://archive.canonical.com/ubuntu precise partner
-# deb-src http://archive.canonical.com/ubuntu precise partner
-
-deb http://security.ubuntu.com/ubuntu precise-security main restricted
-deb-src http://security.ubuntu.com/ubuntu precise-security main restricted
-deb http://security.ubuntu.com/ubuntu precise-security universe
-deb-src http://security.ubuntu.com/ubuntu precise-security universe
-deb http://security.ubuntu.com/ubuntu precise-security multiverse
-deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-updates main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-backports main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-security main restricted universe multiverse
 
 DELIM
 
-mkdir /home/ubuntu/cloudsim
-mkdir /home/ubuntu/cloudsim/setup
 
-""" + prefix + """
+# Add OSRF repositories
+echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
 
-cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
+# ROS setup
+sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
+wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
 
-echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
+# we need to tell apt about the new repos
+apt-get update
 
-. /usr/share/drcsim/setup.sh
-export ROS_IP=""" + machine_ip + """
-export GAZEBO_IP=""" + machine_ip + """
-export DISPLAY=:0
-ulimit -c unlimited
-roslaunch \$1 \$2 \$3 gzname:=gzserver  &
 
+# this is where we store all data for this part
+mkdir -p /home/ubuntu/cloudsim
+mkdir -p /home/ubuntu/cloudsim/setup
+
+# this is a bootstrap script that we use to detect the presence of a file
+# on the machine. It is used by CloudSim and therefore must be present
+# on the machine soon after boot
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_router.bash
+#!/bin/bash
+ls \$1
 DELIM
-
-cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
-
-killall -INT roslaunch
-
-DELIM
-
-cat <<DELIM > /home/ubuntu/cloudsim/ros.bash
-
-# To connect via ROS:
-
-# ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path
-oldrpp=$ROS_PACKAGE_PATH
-
-. /usr/share/drcsim/setup.sh
-eval export ROS_PACKAGE_PATH=\$oldrpp:\\$ROS_PACKAGE_PATH
-export ROS_IP=""" + machine_ip + """
-export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
-
-export GAZEBO_IP=""" + machine_ip + """
-export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:113451
-
-DELIM
-
-cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
-
-DISPLAY=localhost:0 timeout 10 glxinfo
-
-DELIM
-
+chmod +x /home/ubuntu/cloudsim/find_file_router.bash
+# --------------------------------------------
 
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
-# Add ROS and OSRF repositories
-echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
-echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
-
-date >> /home/ubuntu/setup.log
-echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
-wget http://packages.ros.org/ros.key -O - | apt-key add -
-wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
-
-echo "update packages" >> /home/ubuntu/setup.log
-apt-get update
-
-""" + open_vpn_script + """
-
-echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
-apt-get install -y xserver-xorg xserver-xorg-core lightdm x11-xserver-utils mesa-utils pciutils lsof gnome-session nvidia-cg-toolkit linux-source linux-headers-`uname -r` nvidia-current nvidia-current-dev gnome-session-fallback
 
 #
-# The BusID is given by lspci (but lspci gives it in hex, and BusID needs dec)
-# This value is required for Tesla cards
-cat <<DELIM > /etc/X11/xorg.conf
+# Install minimum to deploy cloudsim scripts
+#
+apt-get install -y unzip
+apt-get install -y openvpn
+# Signal we are ready to send the keys to the router. We need:
+# * unzip, and unzip needs update
+# * openvpn
 
-# take the hex from lspci and turn it into dec
-# root@gpu02:/home/ubuntu# lspci | grep Tesla
-
-# SOFTLAYER
-# 82:00.0 3D controller: NVIDIA Corporation Tesla M2090 (rev a1)
-# 82 hex is 130 dec
-# Amazon is 3 dec for cg1.4xLarge
-
-Section "ServerLayout"
-    Identifier     "Layout0"
-    Screen      0  "Screen0"
-EndSection
-Section "Monitor"
-    Identifier     "Monitor0"
-    VendorName     "Unknown"
-    ModelName      "Unknown"
-    HorizSync       28.0 - 33.0
-    VertRefresh     43.0 - 72.0
-    Option         "DPMS"
-EndSection
-Section "Device"
-    Identifier     "Device0"
-    Driver         "nvidia"
-    BusID          "PCI:0:""" + pcibus_id + """:0"
-    VendorName     "NVIDIA Corporation"
-EndSection
-Section "Screen"
-    Identifier     "Screen0"
-    Device         "Device0"
-    Monitor        "Monitor0"
-    DefaultDepth    24
-    SubSection     "Display"
-        Depth       24
-    EndSubSection
-EndSection
+cat <<DELIM > /etc/openvpn/openvpn.conf
+dev tun
+ifconfig """ + vpn_server_ip + " " + vpn_client_ip + """
+secret static.key
 DELIM
 
+touch /home/ubuntu/cloudsim/setup/deploy_ready
 
-echo "setup auto xsession login" >> /home/ubuntu/setup.log
+apt-get install -y ntp
+apt-get install -y vim ipython
 
-echo "
-[SeatDefaults]
-greeter-session=unity-greeter
-autologin-user=ubuntu
-autologin-user-timeout=0
-user-session=gnome-fallback
-" > /etc/lightdm/lightdm.conf
-initctl stop lightdm || true
-initctl start lightdm 
+# SSH HPN
+sudo apt-get install -y python-software-properties
+sudo add-apt-repository -y ppa:w-rouesnel/openssh-hpn
+sudo apt-get update
+sudo apt-get install -y openssh-server
 
-apt-get install -y ntp 
+cat <<DELIM >>/etc/ssh/sshd_config
 
-echo "install """ + drc_package_name + """ ">> /home/ubuntu/setup.log
-apt-get install -y """ + drc_package_name + """
+# SSH HPN
+HPNDisabled no
+TcpRcvBufPoll yes
+HPNBufferSize 8192
+NoneEnabled yes
+DELIM
 
-echo "Updating bashrc file">> /home/ubuntu/setup.log
+sudo service ssh restart
 
-cat <<DELIM >> /home/ubuntu/.bashrc
-# CloudSim
-. /usr/share/drcsim/setup.sh
-export DISPLAY=:0 
-export ROS_IP="""    + machine_ip + """
-export GAZEBO_IP=""" + machine_ip + """
+
+cat <<DELIM > /etc/init.d/iptables_cloudsim
+#! /bin/sh
+
+
+case "\$1" in
+  start|"")
+
+    sysctl -w net.ipv4.ip_forward=1
+    iptables -t nat -A POSTROUTING -s 10.0.0.0/24 -o """ + public_network_interface_name + """ -j MASQUERADE
+
+    ;;
+  stop)
+
+       echo "N/A"
+    ;;
+  *)
+    echo "Usage: iptables_cloudsim start|stop" >&2
+    exit 3
+    ;;
+esac
+
+:
 
 DELIM
 
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-apt-get install -y cloudsim-client-tools
+chmod +x  /etc/init.d/iptables_cloudsim
+ln -sf /etc/init.d/iptables_cloudsim /etc/rc2.d/S99iptables_cloudsim
+
+#invoke it
+/etc/init.d/iptables_cloudsim start
+
+
+##############################################################
+#
+# ROBOTICS software install
+#
+#
+
+
+# At least in some cases, we need to explicitly install graphviz before ROS to avoid apt-get dependency problems.
+sudo apt-get install -y graphviz
+# That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
+sudo apt-get install -y ros-fuerte-ros-comm
+# We need atlas_msgs, which is in drcsim
+sudo apt-get install -y """ + drc_package_name + """
+
+# roscore is in simulator's machine
+cat <<DELIM >> /etc/environment
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
+export ROS_IP=""" + machine_private_ip + """
+source /usr/share/drcsim/setup.sh
+DELIM
+
+# Answer the postfix questions
+sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
+sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+
+sudo apt-get install -y cloudsim-client-tools
+
+# install the web tools
+hg 
+
+# VRC specific.. sends emails when machines are down
+# sudo start vrc_monitor || true
+
+
+##############################################################
 
 # Create upstart vrc_sniffer job
 cat <<DELIM > /etc/init/vrc_sniffer.conf
@@ -581,9 +497,9 @@ exec vrc_sniffer.py -t 11.8.0.2 -l vrc_current_outbound_latency > /var/log/vrc_s
 respawn
 DELIM
 
-# Create upstart vrc_controller job
-cat <<DELIM > /etc/init/vrc_controller.conf
-# /etc/init/vrc_controller.conf
+# Create upstart vrc_controller job for the private interface
+cat <<DELIM > /etc/init/vrc_controller_private.conf
+# /etc/init/vrc_controller_private.conf
 
 description "OSRF cloud simulation platform"
 author  "Carlos Aguero <caguero@osrfoundation.org>"
@@ -591,144 +507,514 @@ author  "Carlos Aguero <caguero@osrfoundation.org>"
 start on runlevel [234]
 stop on runlevel [0156]
 
-exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -v -d eth0 > /var/log/vrc_controller.log 2>&1
+""" + vrc_controller_private + """
 
 respawn
 DELIM
 
+# Create upstart vrc_controller job for the public interface
+cat <<DELIM > /etc/init/vrc_controller_public.conf
+# /etc/init/vrc_controller_public.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero <caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d """ + public_network_interface_name + """ > /var/log/vrc_controller_public.log 2>&1
+
+respawn
+DELIM
+
+# Create upstart vrc_bytecounter job
+cat <<DELIM > /etc/init/vrc_bytecounter.conf
+# /etc/init/vrc_bytecounter.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero<caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+""" + bytecounter_cmd + """
+
+respawn
+DELIM
+
+# Create upstart vrc_netwatcher job
+cat <<DELIM > /etc/init/vrc_netwatcher.conf
+# /etc/init/vrc_netwatcher.conf
+
+description "OSRF cloud simulation platform"
+author  "Carlos Aguero<caguero@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec vrc_wrapper.sh vrc_netwatcher.py -o -m replace -d /tmp -p vrc_netwatcher_usage > /var/log/vrc_netwatcher.log 2>&1
+
+DELIM
+
 # start vrc_sniffer and vrc_controllers
-#start vrc_sniffer
-#start vrc_controller_private
-#start vrc_controller_public
+sudo start vrc_sniffer || true
+sudo start vrc_controller_private || true
+sudo start vrc_controller_public || true
 
-#rm `which vrc_bandwidth.py`
+# Don't start the bytecounter here; netwatcher will start it as needed
+#start vrc_bytecounter
 
-""" + extra + """
- 
+
 touch /home/ubuntu/cloudsim/setup/done
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
 """
     return s
 
 
-def create_vpn_connect_file(openvpn_client_ip):
-    return """#!/bin/bash
-set -e
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+def get_drc_script(drc_package_name,
+                   machine_ip,
+                   ros_master_ip,
+                   gpu_driver_list,
+                   ppa_list,
+                   OPENVPN_CLIENT_IP,
+                   ROUTER_IP):
 
-if [ $UID != 0 ]; then
-  echo "You're not root.  Run this script under sudo."
-  exit 1
+    gpu_driver_packages_string = ""
+    for driver in gpu_driver_list:
+        gpu_driver_packages_string += "apt-get install -y %s\n" % driver
+
+    ppa_string = ""
+    for ppa in ppa_list:
+        ppa_string += "apt-add-repository -y ppa:%s\n" % ppa
+
+    s = """#!/bin/bash
+# Exit on error
+set -ex
+# Redirect everybody's output to a file
+logfile=/home/ubuntu/launch_stdout_stderr.log
+exec > $logfile 2>&1
+
+
+cat <<DELIM > /etc/apt/sources.list
+
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-updates main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-backports main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt precise-security main restricted universe multiverse
+
+
+DELIM
+
+
+
+# Add ROS and OSRF repositories
+echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
+echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
+
+date >> /home/ubuntu/setup.log
+echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
+wget http://packages.ros.org/ros.key -O - | apt-key add -
+wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
+
+
+""" + ppa_string + """
+
+
+#
+# we need python-software-properties for ad-apt-repository
+# it requires apt-get update for some reason
+#
+
+echo "update packages" >> /home/ubuntu/setup.log
+
+
+apt-get update
+
+
+# apt-get remove -y unattended-upgrades
+apt-get install -y python-software-properties zip
+
+apt-get install -y vim ipython
+apt-get install -y ntp
+
+add-apt-repository -y ppa:w-rouesnel/openssh-hpn
+apt-get update
+
+apt-get install -y openssh-server
+
+cat <<EOF >>/etc/ssh/sshd_config
+
+# SSH HPN
+HPNDisabled no
+TcpRcvBufPoll yes
+HPNBufferSize 8192
+NoneEnabled yes
+EOF
+
+echo "restart ssh" >> /home/ubuntu/setup.log
+sudo service ssh restart
+
+mkdir -p /home/ubuntu/cloudsim
+mkdir -p /home/ubuntu/cloudsim/setup
+
+
+#
+# Install drc sim and related packages
+#
+
+
+echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
+# Answer the postfix questions
+sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
+sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+apt-get install -y cloudsim-client-tools
+
+echo "install """ + drc_package_name + """ ">> /home/ubuntu/setup.log
+apt-get install -y """ + drc_package_name + """
+
+
+
+
+#
+# Packages for X
+#
+
+echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
+apt-get install -y linux-headers-`uname -r`
+apt-get install -y pciutils
+apt-get install -y lsof
+
+
+
+apt-get install -y gnome-session
+apt-get install -y gnome-session-fallback
+apt-get install -y xserver-xorg-core
+
+
+apt-get install -y xserver-xorg
+apt-get install -y mesa-utils
+apt-get install -y lightdm
+apt-get install -y x11-xserver-utils
+
+
+# apt-get install -y linux-source
+
+""" + gpu_driver_packages_string + """
+
+# Have the NVIDIA tools create the xorg configuration file for us, retrieiving the PCI BusID for the current system.
+# The BusID can vary from machine to machine.  The || true at the end is to allow this line to succeed on fc2, which doesn't have a GPU.
+if ! nvidia-xconfig --busid `nvidia-xconfig --query-gpu-info | grep BusID | head -n 1 | sed 's/PCI BusID : PCI:/PCI:/'`; then
+  echo "nvidia-xconfig failed; probably no GPU installed.  Proceeding." >> /home/ubuntu/setup.log
+else
+  echo "nvidia-xconfig succeeded." >> /home/ubuntu/setup.log
 fi
 
-echo "Killing other openvpn connections..."
-killall openvpn || true
-openvpn --config  "$DIR"/openvpn.config >/dev/null 2>&1 &
+echo "setup auto xsession login" >> /home/ubuntu/setup.log
 
-echo "VPN ready.  To kill it:"
-echo "    sudo killall openvpn"
-"""
+echo "
+[SeatDefaults]
+greeter-session=unity-greeter
+autologin-user=ubuntu
+autologin-user-timeout=0
+user-session=gnome-fallback
+" > /etc/lightdm/lightdm.conf
+initctl stop lightdm || true
+initctl start lightdm
 
 
-def create_vpc_vpn_connect_file(openvpn_client_ip):
-    return """#!/bin/bash
-set -e
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [ $UID != 0 ]; then
-  echo "You're not root.  Run this script under sudo."
-  exit 1
+
+#cat <<DELIM > /etc/rc.local
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+# insmod /lib/modules/\`uname -r\`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
+#exit 0
+#DELIM
+
+
+cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
+#!/bin/bash
+
+MAX_TIME=30
+
+# Remove the old logs
+DIR=\`echo \$2 | cut -d'.' -f 1\`
+rm -rf /tmp/\$DIR
+
+echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
+
+. /usr/share/drcsim/setup.sh
+if [ -f /home/ubuntu/local/share/vrc_arenas/setup.sh ]; then
+ . /home/ubuntu/local/share/vrc_arenas/setup.sh
 fi
+export ROS_IP=""" + machine_ip + """
+export GAZEBO_IP=""" + machine_ip + """
+export DISPLAY=:0
+ulimit -c unlimited
 
-echo "Killing other openvpn connections..."
-killall openvpn || true
-openvpn --config  "$DIR"/openvpn.config >/dev/null 2>&1 &
+#
+# By default
+# Allow anyone to connect to Gazebo on the network
+#
+# export GAZEBO_IP_WHITE_LIST=127.0.0.1
 
-# Wait for tun0 to come up, then add a static route to the 10.0.0.0/24 network, which is the VPC on the other side
-# of the router.
-while ! ifconfig tun0 || test -z "`ifconfig tun0 | grep 'inet addr'`" 2>/dev/null; do
-  echo "Waiting for tun0 to come up..."
-  sleep 1
+# Kill a pending simulation
+bash /home/ubuntu/cloudsim/stop_sim.bash
+
+roslaunch \$1 \$2 \$3 gzname:=gzserver  &
+
+tstart=\$(date +%s)
+timeout -k 1 5 gztopic list
+while [[ \$? -ne 0 ]]; do
+    tnow=\$(date +%s)
+    if ((tnow-tstart>MAX_TIME)) ;then
+        echo "[simulator start_sim.bash] Timed out waiting for simulation to start"
+        exit 1
+    fi
+
+    sleep 1
+    timeout -k 1 5 gztopic list
 done
 
-echo "Adding route to 10.0.0.0/24 network"
-route add -net 10.0.0.0 netmask 255.255.255.0 gw """ + openvpn_client_ip + """
+echo \`date\` "$1 $2 $3 - End" >> /home/ubuntu/cloudsim/start_sim.log
 
-echo "VPN ready.  To kill it:"
-echo "    sudo killall openvpn"
-"""
+DELIM
+chmod +x /home/ubuntu/cloudsim/start_sim.bash
 
+cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
+#!/bin/bash
 
-def create_openvpn_client_cfg_file(hostname,
-                            client_ip,
-                            server_ip):
-    s = """
-remote """ + hostname + """
-dev tun
-ifconfig """ + client_ip + " " + server_ip + """
-secret openvpn.key
-    """
-    return s
+MAX_TIME=30
+echo \`date\` "Stop sim - Begin" >> /home/ubuntu/cloudsim/stop_sim.log
+. /usr/share/drcsim/setup.sh
 
+if timeout -k 1 2 gztopic list; then
+  LOG_PATH=\`ps aux | grep gzserver | grep -m 1 record_path | cut -d = -f 3 | cut -d ' ' -f 1\`/state.log
+  echo "  Log file: \$LOG_PATH" >> /home/ubuntu/cloudsim/stop_sim.log 
+  gzlog stop
+  # Let cleanup start, which pauses the world
+  sleep 5
+  while [ "\`timeout -k 1 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1\`" != " F" ]; do
+    sleep 1
+    if [ "\`ps aux | grep gzserver | wc -l\`" == "1" ]; then
+        echo "  gzserver died, force exit" >> /home/ubuntu/cloudsim/stop_sim.log
+        break
+    fi
+    # look for the name of the Log file
+    if [ "\`tail -n 1 \$LOG_PATH\`" = "</gazebo_log>" ] ; then 
+        echo "  Log end tag detected" >> /home/ubuntu/cloudsim/stop_sim.log
+        break
+    fi
+  done
+fi
+killall -INT roslaunch || true
 
-def create_ros_connect_file(machine_ip, master_ip ):
+tstart=\$(date +%s)
+# Block until all ros process are killed
+while [ "\`ps aux | grep ros | wc -l\`" != "1" ]; do
 
-    s = """
+    tnow=\$(date +%s)
+    if ((tnow-tstart>MAX_TIME)) ;then
+        break
+    fi
+
+    sleep 1
+done
+
+# Kill all remaining ros processes
+kill -9 \$(ps aux | grep ros | awk '{print \$2}') || true
+killall -9 gzserver || true
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/stop_sim.bash
+
+cat <<DELIM > /home/ubuntu/cloudsim/ros.bash
+
 # To connect via ROS:
-# 1. Connect via OpenVPN
-# 2. Download this file: [ros.sh] <- autogenerated with the right IP addresses
-# 3. In a terminal, go to the directory containing that file.
-# 4. Execute the following command:
-#    . ros.bash
-# 5. Now your environment is configured to connect to a ROS master running on this machine.
 
 # ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path
 oldrpp=$ROS_PACKAGE_PATH
+
 . /usr/share/drcsim/setup.sh
-eval export ROS_PACKAGE_PATH=$oldrpp:\$ROS_PACKAGE_PATH
+eval export ROS_PACKAGE_PATH=\$oldrpp:\\$ROS_PACKAGE_PATH
 export ROS_IP=""" + machine_ip + """
-export ROS_MASTER_URI=http://""" + master_ip + """:11311
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
 
 export GAZEBO_IP=""" + machine_ip + """
-export GAZEBO_MASTER_URI=http://""" + master_ip + """:11345
+export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
 
-    """
+DELIM
+
+cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
+
+DISPLAY=localhost:0 timeout 10 glxinfo
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/ping_gl.bash
+
+#
+# Automatic sourcing of drcsim/setup
+#
+
+echo "Updating bashrc file">> /home/ubuntu/setup.log
+cat <<DELIM >> /home/ubuntu/.bashrc
+# CloudSim
+. /usr/share/drcsim/setup.sh
+export DISPLAY=:0
+export ROS_IP="""    + machine_ip + """
+export GAZEBO_IP=""" + machine_ip + """
+
+DELIM
+
+
+cat <<DELIM > /home/ubuntu/cloudsim/send_to_portal.bash
+#!/bin/bash
+
+# Create a zip file with the JSON task file, network usage and the sim log
+# Then, the zip file is sent to the VRC portal
+
+USAGE="Usage: send_to_portal <task_dirname> <zipname> <portal_key> <portal_url>"
+
+if [ \$# -ne 4 ]; then
+  echo \$USAGE
+  exit 1
+fi
+
+TASK_DIRNAME=\$1
+ZIPNAME=\$2
+PORTAL_KEY=\$3
+PORTAL_URL=\$4
+LOG_DIR=/home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
+SIM_LOG_DIR=/tmp/\$TASK_DIRNAME
+PORTAL_LOG_DIR=/home/ubuntu/cloudsim/logs/portal/\$TASK_DIRNAME
+
+if [ ! -f $PORTAL_KEY ];
+then
+    echo VRC Portal key not found \$PORTAL_KEY
+    exit 0
+fi
+
+mkdir -p \$PORTAL_LOG_DIR
+
+# Create a zip file
+zip -j \$PORTAL_LOG_DIR/\$ZIPNAME \$SIM_LOG_DIR/* \$LOG_DIR/* || true
+
+if [ -f \$PORTAL_LOG_DIR/\$ZIPNAME ];
+then
+    # Send the zip file to the VRC Portal
+    scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$PORTAL_KEY \$PORTAL_LOG_DIR/*.zip ubuntu@\$PORTAL_URL:/tmp
+
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$PORTAL_KEY ubuntu@\$PORTAL_URL sudo mv /tmp/\$ZIPNAME /vrc_logs/end_incoming
+fi
+DELIM
+
+
+# ----------------------------------------------------------
+
+
+cat <<DELIM > /home/ubuntu/cloudsim/load_gazebo_models.bash
+
+#!/bin/bash
+
+# Set the private environment for testing the VRC contest
+
+USAGE="Usage: load_gazebo_models.sh"
+
+
+# Constants
+GAZEBO_MODELS_NAME=gazebo_models
+GAZEBO_INSTALL_DIR=/home/\$USER/.gazebo
+VRC_ARENAS_NAME=vrc_arenas
+VRC_ARENA_INSTALL_DIR=/home/\$USER/local
+DRCSIM_SETUP=/usr/local/share/drcsim/setup.sh
+
+# arg1: Name of the repository to install
+# arg2: Destination directory
+install ()
+{
+    # Temporal directory for the repository
+    TMP_DIR=`mktemp -d`
+    cd \$TMP_DIR
+   
+    echo -n "Downloading \$1..."
+    hg clone https://bitbucket.org/osrf/\$1
+
+    echo "Done"
+    cd \$1
+    mkdir build
+    cd build
+    echo -n "Installing \$1..."
+    cmake .. -DCMAKE_INSTALL_PREFIX=\$2
+    make install > /dev/null 2>&1
+    echo "Done"
+
+    # Remove temp dir
+    rm -rf \$TMP_DIR
+}
+
+
+KEY=\$1
+
+# gazebo_models
+install \$GAZEBO_MODELS_NAME \$GAZEBO_INSTALL_DIR
+
+# vrc_arenas
+if [ -n "\$KEY" ]; then
+  install \$VRC_ARENAS_NAME \$VRC_ARENA_INSTALL_DIR \$KEY
+fi
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/load_gazebo_models.bash
+
+
+# ----------------------------------------------------------
+
+cat <<DELIM > /etc/init.d/vpcroute
+#! /bin/sh
+
+case "\$1" in
+  start|"")
+        route del default
+        route add """ + OPENVPN_CLIENT_IP + """ gw """ + ROUTER_IP + """
+        route add default gw """ + ROUTER_IP + """
+    ;;
+  stop)
+        route del """ + OPENVPN_CLIENT_IP + """ gw """ + ROUTER_IP + """
+
+    ;;
+  *)
+    echo "Usage: vpcroute start|stop" >&2
+    exit 3
+    ;;
+esac
+
+:
+DELIM
+
+chmod +x  /etc/init.d/vpcroute
+ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
+
+# invoke it now to add route to the router
+/etc/init.d/vpcroute start || true
+
+
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+touch /home/ubuntu/cloudsim/setup/done
+"""
     return s
-
-
-def create_ssh_connect_file(key_file, ip):
-    s = """#!/bin/bash
-
-#
-# This command connects you to the simulation
-# It passes a keyfile to the ssh command and logs you in as the
-# default user on the cloud machine
-
-# ssh -i """ + key_file + " ubuntu@" + ip + """
-
-#
-# This commands is similar, but it suppresses prompts and can be invoked 
-# from any directory
-#
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i "$DIR"/""" + key_file + " ubuntu@" + ip + """ $1 $2 $3 $4 $5
-    """
-    return s
-
 
 if __name__ == "__main__":
+    print("MAIN in %s" % __file__)
 
-    print("MAIN")
-
-    OPENVPN_SERVER_IP = '11.8.0.1'
-    OPENVPN_CLIENT_IP = '11.8.0.2'
-    drc_package_name = 'drcsim'
-    open_vpn_script = get_open_vpn_single(OPENVPN_CLIENT_IP, OPENVPN_SERVER_IP)
-    SIM_SCRIPT = get_drc_startup_script(open_vpn_script,
-                                        OPENVPN_SERVER_IP,
-                                        drc_package_name,
-                                        ros_master_ip="10.0.0.51",
-                                        pcibus_id="130")
-
-    print(SIM_SCRIPT)
 

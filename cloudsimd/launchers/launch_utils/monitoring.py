@@ -198,12 +198,16 @@ def monitor_simulator(constellation_name,
         gl_state = constellation.get_value("simulation_glx_state")
         if gl_state == "running":
             try:
-                ssh_client.cmd("bash cloudsim/ping_gazebo.bash")
-                constellation.set_value("gazebo", "running")
+                out = ssh_client.cmd("bash cloudsim/ping_gazebo.bash")
+                log("ping_gazebo returned [%s]" % out)
+                if out.find("An active gzserver is probably not present.") > -1:
+                    constellation.set_value("gazebo", "not running")
+                    return False
             except Exception, e:
                 log("monitor: cloudsim/ping_gazebo.bash error: %s" % e)
                 constellation.set_value("gazebo", "not running")
                 return False
+    constellation.set_value("gazebo", "running")
     return True
 
 

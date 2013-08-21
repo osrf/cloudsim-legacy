@@ -1,7 +1,8 @@
 from __future__ import print_function
 
 import time
-import boto
+
+import boto.ec2
 from boto.ec2.regioninfo import RegionInfo
 from boto.ec2.connection import EC2Connection
 from boto.vpc import VPCConnection

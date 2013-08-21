@@ -52,11 +52,12 @@ class SshClient(object):
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE)
         out, err = po.communicate()
-        log(out)
+        #log("    CMD out: %s" % out)
+        #log("    CMD err: %s" % err)
         if po.returncode != 0:
             raise SshClientException(out + err)
         else:
-            return out
+            return out + err
 
     def upload_file(self, local_fname, remote_fname, extra_scp_args=[]):
         scp_cmd = ['scp',
