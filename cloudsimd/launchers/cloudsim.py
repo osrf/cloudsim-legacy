@@ -219,6 +219,7 @@ def launch(username, configuration, constellation_name, tags,
     log('launch!!! tags = %s' % tags)
     cloud_provider = tags['cloud_provider']
     constellation = ConstellationState(constellation_name)
+    constellation.set_value("cloud_provider", cloud_provider)
     constellation.set_value("simulation_launch_msg", "launching")
     constellation.set_value('simulation_state', 'starting')
     constellation.set_value("launch_stage", "nothing")
@@ -515,9 +516,13 @@ def terminate(constellation_name):
     softlayer_path = cs_cfg['softlayer_path']
 
     constellation.set_value("launch_stage", "nothing")
-    if not "OSRF" in  constellation_name:
+
+    cloud_provider = constellation.get_value("cloud_provider")
+    if "Amazon" in  cloud_provider:
         terminate_aws_server(constellation_name)
-    else:
+    elif "OpenStack" in cloud_provider:
+        terminate_openstack_server(constellation_name)
+    elif "SoftLayer" in cloud_provider:
         constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
         machine_name = "cs-%s" % constellation_prefix
         terminate_dedicated_sl_server(constellation_name,
