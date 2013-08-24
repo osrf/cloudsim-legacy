@@ -570,7 +570,8 @@ def __get_block_device_mapping(aws_instance):
         dev_sda1.size = 50  # size in Gigabytes
         bdm = boto.ec2.blockdevicemapping.BlockDeviceMapping()
         bdm['/dev/sda1'] = dev_sda1
-    return bdm
+    #return bdm
+    return None
 
 
 def _acquire_vpc_server(constellation_name,

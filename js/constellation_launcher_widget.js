@@ -18,9 +18,9 @@ function create_constellation_launcher_widget(div_name)
 	var cloud_service_select = document.createElement('select');
     widget.appendChild(cloud_service_select);
 
-    var cloud_providers = { "Amazon Web Services" : ["a, b, c or d"],
+    var cloud_providers = { "Amazon Web Services" : ["current"],
     						"SoftLayer" : ["Dallas"],
-    						"OpenStack" : ["OSRF"]};
+    						"OpenStack" : ["default"]};
 
     for(var provider_name in cloud_providers)
     {

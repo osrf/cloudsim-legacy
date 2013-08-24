@@ -182,7 +182,7 @@ def monitor_launch_state(constellation_name, ssh_client,
 
 def monitor_simulator(constellation_name,
                       ssh_client,
-                      sim_state_key='simulation_state'):
+                      sim_state_key='sim_state'):
     """
     Detects if the simulator is running and writes the
     result into the "gazebo" dictionary key
@@ -199,8 +199,8 @@ def monitor_simulator(constellation_name,
         if gl_state == "running":
             try:
                 out = ssh_client.cmd("bash cloudsim/ping_gazebo.bash")
-                log("ping_gazebo returned [%s]" % out)
-                if out.find("An active gzserver is probably not present.") > -1:
+                #log("ping_gazebo returned [%s]" % out)
+                if out == "":
                     constellation.set_value("gazebo", "not running")
                     return False
             except Exception, e:
@@ -209,6 +209,37 @@ def monitor_simulator(constellation_name,
                 return False
     constellation.set_value("gazebo", "running")
     return True
+
+
+def monitor_gzweb(constellation_name, ssh_client, sim_state):
+    """
+    Detects if the gzweb is running and writes the
+    url into the "gzweb" dictionary key
+    """
+    gzweb_key = "gzweb"
+    constellation = ConstellationState(constellation_name)
+    simulation_state = constellation.get_value('sim_state')
+    if machine_states.index(simulation_state) >= \
+                            machine_states.index('running'):
+        gl_state = constellation.get_value("gazebo")
+        if gl_state == "running":
+            try:
+                out = ssh_client.cmd("bash cloudsim/ping_gzweb.bash")
+                log("ping_gzweb returned [%s]" % out)
+                if out == "":
+                    constellation.set_value(gzweb_key, "")
+                    return False
+                else:
+                    router_pulic_ip = constellation.get_value(
+                                                            "router_public_ip")
+                    gzweb_url = "http://%s" % router_pulic_ip
+                    constellation.set_value(gzweb_key, gzweb_url)
+                    return True
+            except Exception, e:
+                log("monitor: cloudsim/ping_gzweb.bash error: %s" % e)
+                constellation.set_value(gzweb_key, "")
+                return False
+    return False
 
 
 def _monitor_ping(constellation_name, ping_data_key, ping_str):

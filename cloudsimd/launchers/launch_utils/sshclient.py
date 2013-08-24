@@ -57,7 +57,7 @@ class SshClient(object):
         if po.returncode != 0:
             raise SshClientException(out + err)
         else:
-            return out + err
+            return out # + err
 
     def upload_file(self, local_fname, remote_fname, extra_scp_args=[]):
         scp_cmd = ['scp',

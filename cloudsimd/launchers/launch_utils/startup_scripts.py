@@ -311,16 +311,14 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
 
 
-
-
 def get_router_script(public_network_interface_name,
                       private_network_interface_name,
                       machine_private_ip,
                       ros_master_ip,
                       drc_package_name,
                       vpn_server_ip,
-                      vpn_client_ip,
-                      ):
+                      vpn_client_ip,):
+    gazebo_master_ip = ros_master_ip
     if not private_network_interface_name:
         private_network_interface_name = public_network_interface_name
 
@@ -391,6 +389,7 @@ ifconfig """ + vpn_server_ip + " " + vpn_client_ip + """
 secret static.key
 DELIM
 
+
 touch /home/ubuntu/cloudsim/setup/deploy_ready
 
 apt-get install -y ntp
@@ -456,14 +455,15 @@ ln -sf /etc/init.d/iptables_cloudsim /etc/rc2.d/S99iptables_cloudsim
 # At least in some cases, we need to explicitly install graphviz before ROS to avoid apt-get dependency problems.
 sudo apt-get install -y graphviz
 # That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
-sudo apt-get install -y ros-fuerte-ros-comm
+apt-get install -y ros-fuerte-ros-comm
 # We need atlas_msgs, which is in drcsim
-sudo apt-get install -y """ + drc_package_name + """
+apt-get install -y """ + drc_package_name + """
 
 # roscore is in simulator's machine
 cat <<DELIM >> /etc/environment
 export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
 export ROS_IP=""" + machine_private_ip + """
+export GAZEBO_MASTER_URI=http://""" + gazebo_master_ip + """:11345
 source /usr/share/drcsim/setup.sh
 DELIM
 
@@ -473,8 +473,6 @@ sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Intern
 
 sudo apt-get install -y cloudsim-client-tools
 
-# install the web tools
-hg 
 
 # VRC specific.. sends emails when machines are down
 # sudo start vrc_monitor || true
@@ -543,6 +541,7 @@ respawn
 DELIM
 
 # Create upstart vrc_netwatcher job
+# ----------------------------------------------------------------------------
 cat <<DELIM > /etc/init/vrc_netwatcher.conf
 # /etc/init/vrc_netwatcher.conf
 
@@ -555,6 +554,7 @@ stop on runlevel [0156]
 exec vrc_wrapper.sh vrc_netwatcher.py -o -m replace -d /tmp -p vrc_netwatcher_usage > /var/log/vrc_netwatcher.log 2>&1
 
 DELIM
+# ----------------------------------------------------------------------------
 
 # start vrc_sniffer and vrc_controllers
 sudo start vrc_sniffer || true
@@ -564,6 +564,17 @@ sudo start vrc_controller_public || true
 # Don't start the bytecounter here; netwatcher will start it as needed
 #start vrc_bytecounter
 
+
+#
+# gzweb (gazebo web tools)
+#
+apt-get install -y mercurial
+apt-get install -y libjansson-dev
+apt-get install -y nodejs npm
+npm install http-server -g
+ 
+cd /home/ubuntu/cloudsim; hg clone https://bitbucket.org/osrf/gzweb
+. /home/ubuntu/cloudsim/gzweb/deploy.sh
 
 touch /home/ubuntu/cloudsim/setup/done
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
@@ -946,7 +957,7 @@ install ()
     # Temporal directory for the repository
     TMP_DIR=`mktemp -d`
     cd \$TMP_DIR
-   
+
     echo -n "Downloading \$1..."
     hg clone https://bitbucket.org/osrf/\$1
 

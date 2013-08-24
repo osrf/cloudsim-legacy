@@ -224,15 +224,22 @@ class ConstellationPlugin(object):
     The plugins contains the function pointers for each type of constellation
     Don't forget to register new constellations
     """
-    def __init__(self, launch, terminate, update, monitor, 
+    def __init__(self, launch, 
+                 terminate, 
+                 update, 
+                 monitor, 
                  start_task,
-                 stop_task):
+                 stop_task,
+                 sart_gzweb_server,
+                 stop_gzweb_server):
         self.launch = launch
         self.terminate = terminate
         self.update = update
         self.monitor = monitor
         self.start_task = start_task
         self.stop_task = stop_task
+        self.start_gzweb = sart_gzweb_server
+        self.stop_gzweb = stop_gzweb_server
 
 
 def get_plugin(configuration):
@@ -241,41 +248,18 @@ def get_plugin(configuration):
     launch-terminate and start-stop simulation.
     This is the switch.
     """
-#     def make_plugin(module):
-#         ConstellationPlugin(module.launch, module.terminate, module.update,
-#                             module.monitor,
-#                             module.start_task,
-#                             module.stop_task)
-        
     plugin = None
     #log("get_plugin '%s'" % configuration)
-
-
     if configuration.startswith("CloudSim"):
         from launchers import cloudsim as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-                              None, None)
-
-#    elif configuration.startswith("OSRF VRC Constellation "):
-#        from launchers import vrc_contest as c
-#        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-#                                     c.start_task, c.stop_task)
-
-#     elif configuration == 'AWS CloudSim':
-#         #return make_plugin(launchers.amazon_cloudsim)
-#          from launchers import amazon_cloudsim as c
-#          plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-#                                       c.start_task, c.stop_task)
-#    elif configuration == 'AWS simulator':
-#        from launchers import simulator as c
-#        plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-#                                     c.start_task, c.stop_task)
-
+                              None, None, None, None)
     elif configuration.startswith('DRC'):
         #from launchers import amazon_trio as c
         from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch, c.terminate, c.update, c.monitor,
-                                     c.start_task, c.stop_task)
+                                     c.start_task, c.stop_task,
+                                     c.start_gzweb, c.stop_gzweb)
 
     else:
         raise UnknownConfig('Invalid configuration "%s"' % (configuration,))
@@ -339,32 +323,6 @@ def _load_cloudsim_configurations_list():
 """     
     configs['CloudSim'] = {'description': desc}
 
-    #cloudsim_prefixes = []
-    #const_prefixes = []
-    #
-    #osrf_creds_path = config['softlayer_path']
-    #try:
-    #    try:
-    #        osrf_creds = load_osrf_creds(osrf_creds_path)
-    #    except Exception, e:
-    #        log("SoftLayer credentials loading error: %s" % e)
-
-    #    cloudsim_prefixes, const_prefixes = get_constellation_prefixes(osrf_creds)
-    #    log("softlayer constellations: %s" % const_prefixes)
-    #    log("softlayer cloudsims: %s" % cloudsim_prefixes)
-    #except Exception, e:
-    #    log("Error enumerating machines %s" % e)
-    #    pass
-    #
-    #for prefix in cloudsim_prefixes:
-    #    configs['OSRF CloudSim %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim server complete install"}
-    #    #configs['OSRF CloudSim update %s' % prefix] = {'description': "DARPA VRC Challenge CloudSim update only"}
-    #    
-    #for prefix in const_prefixes:
-    #    configs['OSRF VRC Constellation %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
-    #    configs['OSRF VRC Constellation nightly build %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
-    #    configs['OSRF VRC Constellation nvidia latest %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
-    #    configs['OSRF VRC Constellation partial %s' % prefix] = {'description': "DARPA VRC Challenge constellation: 1 simulator, 2 field computers and a router"}
     set_cloudsim_configuration_list(configs)
     #log("cloudsim configurations list updated: %s" % configs)
 
@@ -428,7 +386,6 @@ def launch(username,
             constellation.set_value('error', '%s' % e)
             tb = traceback.format_exc()
             log("LAUNCH ERROR traceback:  %s" % tb)
-            log("LAUNCH ERROR %s traceback:  %s" % (constellation_name, tb), "launch_errors")
 
             #time.sleep(10)
             #terminate(constellation_name, constellation_directory)
@@ -468,7 +425,40 @@ def update_constellation(constellation_name):
         log("UPDATE ERROR %s traceback:  %s" % (constellation_name, tb), "launch_errors")
 
 
+def start_gzweb(constellation_name):
+    """
+    Starts the gzweb server
+    """
+    proc = multiprocessing.current_process().name
+    log("start_gzweb '%s' from proc '%s'" % (constellation_name,  proc))
+    try:
+        constellation = ConstellationState(constellation_name)
+        config = constellation.get_value('configuration')
+        constellation_plugin = get_plugin(config)
+        constellation_plugin.start_gzweb(constellation_name)
+    except Exception, e:
+        log("cloudsimd.py start_gzweb error: %s" % e)
+        tb = traceback.format_exc()
+        log("traceback:  %s" % tb)
 
+
+def stop_gzweb(constellation_name):
+    """
+    Stops the gzweb server 
+    """
+    proc = multiprocessing.current_process().name
+    log("stop_gzweb '%s' from proc '%s'" % (constellation_name,  proc))
+    try:
+        constellation = ConstellationState(constellation_name)
+        config = constellation.get_value('configuration')
+        constellation_plugin = get_plugin(config)
+        constellation_plugin.stop_gzweb(constellation_name)
+    except Exception, e:
+        log("cloudsimd.py stop_gzweb error: %s" % e)
+        tb = traceback.format_exc()
+        log("traceback:  %s" % tb)
+
+             
 def terminate(constellation_name):
     """
     Terminates the constellation via the cloud interface.
@@ -488,9 +478,7 @@ def terminate(constellation_name):
     except Exception, e:
         log("cloudsimd.py terminate error: %s" % e)
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb)
-        log("LAUNCH ERROR %s traceback:  %s" % (constellation_name, tb),
-            "launch_errors")
+        log("TERMINATE ERROR %s traceback:  %s" % (constellation_name, tb))
             
     constellation = ConstellationState(constellation_name)
     constellation.set_value('constellation_state', 'terminated')
@@ -858,7 +846,16 @@ def async_update_cloudsim_configuration_list():
                                 args=())
     p.start()
 
-
+def async_start_gzweb(constellation_name):
+    p = multiprocessing.Process(target=start_gzweb,
+                                args=(constellation_name,))
+    p.start()
+    
+def async_stop_gzweb(constellation_name):
+    p = multiprocessing.Process(target=start_gzweb,
+                                args=(constellation_name,))
+    p.start()
+    
 def launch_cmd(root_dir, data):
 
     username = data['username']
@@ -961,6 +958,14 @@ def run(root_dir, tick_interval):
             elif cmd == 'reset_tasks':
                 constellation = data['constellation']
                 async_reset_tasks(constellation)
+            
+            elif cmd == 'start_gzweb':
+                constellation = data['constellation']
+                async_start_gzweb(constellation)
+
+            elif cmd == 'stop_gzweb':
+                constellation = data['constellation']
+                async_stop_gzweb(constellation)
 
         except Exception:
             log("Error processing message [%s]" % msg)

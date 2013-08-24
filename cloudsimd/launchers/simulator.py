@@ -67,7 +67,7 @@ def start_task(constellation, task):
     run_tc_command(constellation, 'sim_machine_name', 'sim_key_pair_name', 'simulation_ip', latency, up, down)
     
     log("** START SIMULATOR ***")
-    start_simulator(constellation, task['ros_package'], task['ros_launch'], task['ros_args'], task['timeout'])
+    _start_simulator(constellation, task['ros_package'], task['ros_launch'], task['ros_args'], task['timeout'])
     
     
 
@@ -84,9 +84,9 @@ def stop_task(constellation):
     run_tc_command(constellation, 'sim_machine_name', 'sim_key_pair_name', 'simulation_ip', latency, up, down)
     
     log("** stop simulator ***")
-    stop_simulator(constellation)
+    _stop_simulator(constellation)
     
-def start_simulator(constellation, package_name, launch_file_name, launch_args, task_timeout):
+def _start_simulator(constellation, package_name, launch_file_name, launch_args, task_timeout):
 
     log("1")
     constellation_dict = get_constellation_data(  constellation)
@@ -101,10 +101,10 @@ def start_simulator(constellation, package_name, launch_file_name, launch_args, 
     ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
     log("3")
     r = ssh_sim.cmd(cmd)
-    log('start_simulator %s' % r)
+    log('_start_simulator %s' % r)
 
 
-def stop_simulator(constellation):
+def _stop_simulator(constellation):
     constellation_dict = get_constellation_data( constellation)
     constellation_directory = constellation_dict['constellation_directory']
     sim_key_pair_name    = constellation_dict['sim_key_pair_name']
@@ -114,7 +114,7 @@ def stop_simulator(constellation):
     cmd = "bash cloudsim/stop_sim.bash"
     ssh_sim = SshClient(sim_machine_dir, sim_key_pair_name, 'ubuntu', sim_ip)
     r = ssh_sim.cmd(cmd)
-    log('stop_simulator %s' % r)
+    log('_stop_simulator %s' % r)
 
 
 
