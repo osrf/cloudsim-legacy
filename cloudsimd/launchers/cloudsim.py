@@ -27,6 +27,7 @@ from launch_utils.launch_db import get_cloudsim_config, log_msg, set_cloudsim_co
 
 from vrc_contest import create_private_machine_zip
 from launch_utils import acquire_aws_server, terminate_aws_server
+from launch_utils.openstack import acquire_openstack_server, terminate_openstack_server
 from launch_utils.sl_cloud import acquire_dedicated_sl_server,\
     terminate_dedicated_sl_server
 
@@ -128,6 +129,7 @@ def create_zip(constellation_name, key_prefix):
 
     log("constellation name %s" % constellation_name)
     constellation = ConstellationState(constellation_name)
+    log("%s" % constellation.get_values())
     ip = constellation.get_value("simulation_ip")
 
     constellation_directory = constellation.get_value(
@@ -215,7 +217,9 @@ def launch(username, configuration, constellation_name, tags,
     cfg = get_cloudsim_config()
 
     log('launch!!! tags = %s' % tags)
+    cloud_provider = tags['cloud_provider']
     constellation = ConstellationState(constellation_name)
+    constellation.set_value("cloud_provider", cloud_provider)
     constellation.set_value("simulation_launch_msg", "launching")
     constellation.set_value('simulation_state', 'starting')
     constellation.set_value("launch_stage", "nothing")
@@ -271,7 +275,7 @@ def launch(username, configuration, constellation_name, tags,
 
     pub_ip = None
     key_prefix = None
-    if not "OSRF" in  constellation_name:
+    if "Amazon" in  cloud_provider:
         aws_creds_fname = cfg['boto_path']
         script = get_cloudsim_startup_script()
         pub_ip, aws_id, key_prefix = acquire_aws_server(constellation_name,
@@ -282,7 +286,20 @@ def launch(username, configuration, constellation_name, tags,
                                     tags)
         # (constellation_name, credentials_ec2, constellation_directory, tags)
         constellation.set_value("aws_id", aws_id)
-    else:
+    elif "OpenStack" in cloud_provider:
+        openstack_creds = cfg['openstack']
+        script = get_cloudsim_startup_script()
+        pub_ip, instance_id, key_prefix = acquire_openstack_server(
+                                    constellation_name,
+                                    openstack_creds,
+                                    constellation_directory,
+                                    machine_prefix,
+                                    script)
+        log("KEY PREFIX---------%s" % key_prefix)
+        log("IP ADDR---------%s" % pub_ip)
+        constellation.set_value("aws_id", instance_id)
+        #ip address, instance id, key prefix (no .pem)
+    elif "SoftLayer" in cloud_provider:
         osrf_creds_fname = cfg['softlayer_path']
         pub_ip, _, _ = acquire_dedicated_sl_server(constellation_name,
                            osrf_creds_fname,
@@ -291,8 +308,12 @@ def launch(username, configuration, constellation_name, tags,
         constellation.set_value('simulation_state', 'packages_setup')
         constellation.set_value("simulation_launch_msg", "install packages")
         startup_script(constellation_name)
+    else:
+        raise Exception("Unsupported cloud provider: %s" % (cloud_provider))
+    log("SIMULATION IP ---- %s" % pub_ip)
     constellation.set_value("simulation_ip", pub_ip)
-
+    log("%s" % constellation.get_value("simulation_ip"))
+    
     constellation.set_value("simulation_launch_msg", "create zip file")
     log("create zip")
     fname_zip = create_zip(constellation_name, key_prefix)
@@ -495,9 +516,13 @@ def terminate(constellation_name):
     softlayer_path = cs_cfg['softlayer_path']
 
     constellation.set_value("launch_stage", "nothing")
-    if not "OSRF" in  constellation_name:
+
+    cloud_provider = constellation.get_value("cloud_provider")
+    if "Amazon" in  cloud_provider:
         terminate_aws_server(constellation_name)
-    else:
+    elif "OpenStack" in cloud_provider:
+        terminate_openstack_server(constellation_name)
+    elif "SoftLayer" in cloud_provider:
         constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
         machine_name = "cs-%s" % constellation_prefix
         terminate_dedicated_sl_server(constellation_name,
