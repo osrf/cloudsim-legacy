@@ -230,7 +230,7 @@ class ConstellationPlugin(object):
                  monitor, 
                  start_task,
                  stop_task,
-                 sart_gzweb_server,
+                 start_gzweb_server,
                  stop_gzweb_server):
         self.launch = launch
         self.terminate = terminate
@@ -238,7 +238,7 @@ class ConstellationPlugin(object):
         self.monitor = monitor
         self.start_task = start_task
         self.stop_task = stop_task
-        self.start_gzweb = sart_gzweb_server
+        self.start_gzweb = start_gzweb_server
         self.stop_gzweb = stop_gzweb_server
 
 
@@ -852,7 +852,7 @@ def async_start_gzweb(constellation_name):
     p.start()
     
 def async_stop_gzweb(constellation_name):
-    p = multiprocessing.Process(target=start_gzweb,
+    p = multiprocessing.Process(target=stop_gzweb,
                                 args=(constellation_name,))
     p.start()
     

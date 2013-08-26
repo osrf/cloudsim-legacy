@@ -183,10 +183,10 @@ def acquire_aws_constellation(constellation_name,
     for machine_name, machine_data in machines.iteritems():
         aws_key_name = _acquire_key_pair(constellation_name,
                           machine_name, ec2conn)
-
+        security_group_data = machines[machine_name]['security_group']
         security_group_id = _acquire_vpc_security_group(constellation_name,
                                     machine_name,
-                                    VPN_PRIVATE_SUBNET,
+                                    security_group_data,
                                     vpc_id,
                                     ec2conn)
         startup_srcript = scripts[machine_name]
@@ -459,7 +459,7 @@ def _get_security_group_key(machine_prefix):
 
 def _acquire_vpc_security_group(constellation_name,
                                 machine_prefix,
-                                vpn_subnet,
+                                security_group_data,
                                 vpc_id,
                                 ec2conn):
     constellation = ConstellationState(constellation_name)
@@ -486,22 +486,29 @@ def _acquire_vpc_security_group(constellation_name,
                 time.sleep(i * 2)
                 if i == max_try:
                     raise
+        for rule in security_group_data:
+            log("authorize %s" % (rule))
+            sg.authorize(rule['protocol'],
+                         rule['from_port'],
+                         rule['to_port'],
+                         rule['cidr'])
 
-        if machine_prefix == "router":
-            sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
-            sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
-            sg.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
-            sg.authorize('udp', 0, 65535, vpn_subnet)
-            sg.authorize('tcp', 0, 65535, vpn_subnet)
-        else:
-            sg.authorize('icmp', -1, -1, vpn_subnet)
-            sg.authorize('tcp',  0, 65535, vpn_subnet)
-            sg.authorize('udp', 0, 65535, vpn_subnet)
-            # Also allow all traffic from the OpenVPN client
-            openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)
-            sg.authorize('icmp', -1, -1, openvpn_client_addr)
-            sg.authorize('tcp', 0, 65535, openvpn_client_addr)
-            sg.authorize('udp', 0, 65535, openvpn_client_addr)
+#         if machine_prefix == "router":
+#             sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
+#             sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
+#             sg.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
+#             sg.authorize('udp', 0, 65535, vpn_subnet)
+#             sg.authorize('tcp', 0, 65535, vpn_subnet)
+#         else:
+#             sg.authorize('icmp', -1, -1, vpn_subnet)
+#             sg.authorize('tcp',  0, 65535, vpn_subnet)
+#             sg.authorize('udp', 0, 65535, vpn_subnet)
+#             # Also allow all traffic from the OpenVPN client
+#             openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)
+#             sg.authorize('icmp', -1, -1, openvpn_client_addr)
+#             sg.authorize('tcp', 0, 65535, openvpn_client_addr)
+#             sg.authorize('udp', 0, 65535, openvpn_client_addr)
+
         security_group_id = sg.id
         sg_key = _get_security_group_key(machine_prefix)
         constellation.set_value(sg_key, security_group_id)

@@ -496,6 +496,7 @@ cat <<DELIM > /home/ubuntu/cloudsim/stop_gzweb.bash
 #!/bin/bash
 
 sudo killall gzbridge
+sudo killall node
 
 DELIM
 
@@ -1067,7 +1068,7 @@ def launch(username, config, constellation_name, tags,
     # lets build a list of machines for our constellation
     #
     openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
-    vpn_subnet = '10.0.0.0/24'
+    private_subnet = '10.0.0.0/24'
 
     machines = {}
     machines['router'] = {'hardware': 'm1.large',    # 't1.micro',
@@ -1090,11 +1091,19 @@ def launch(username, config, constellation_name, tags,
                                           {'protocol': 'udp',
                                           'from_port': 0,
                                           'to_port': 65535,
-                                          'cidr': vpn_subnet, },
+                                          'cidr': private_subnet, },
                                           {'protocol': 'tcp',
                                           'from_port': 0,
                                           'to_port': 65535,
-                                          'cidr': vpn_subnet, },]
+                                          'cidr': private_subnet, },
+                                         {'protocol': 'tcp',
+                                          'from_port': 8080,
+                                          'to_port': 8080,
+                                          'cidr': '0.0.0.0/0', },
+                                         {'protocol': 'tcp',
+                                          'from_port': 7681,
+                                          'to_port': 7681,
+                                          'cidr': '0.0.0.0/0', },]
                           }
 # VPN_PRIVATE_SUBNET = '10.0.0.0/24'
 #
@@ -1113,24 +1122,19 @@ def launch(username, config, constellation_name, tags,
                                          {'protocol': 'udp',
                                           'from_port': 0,
                                           'to_port': 65535,
-                                          'cidr': vpn_subnet, },
-                                          {'protocol': 'tcp',
+                                          'cidr': private_subnet, },
+                                         {'protocol': 'tcp',
                                           'from_port': 0,
                                           'to_port': 65535,
-                                          'cidr': vpn_subnet, },
-                                          {'protocol': 'icmp',
-                                          'from_port': -1,
-                                          'to_port': -1,
-                                          'cidr': vpn_subnet, },
-                                          {'protocol': 'udp',
+                                          'cidr': private_subnet, },
+                                         {'protocol': 'tcp',
                                           'from_port': 0,
                                           'to_port': 65535,
-                                          'cidr': '10.0.0.0/24', },
-                                          {'protocol': 'tcp',
+                                          'cidr': openvpn_client_addr, },
+                                         {'protocol': 'udp',
                                           'from_port': 0,
                                           'to_port': 65535,
-                                          'cidr': '10.0.0.0/24', },]
-
+                                          'cidr': openvpn_client_addr, }]
                     }
 
     if has_fc1:

@@ -30,7 +30,7 @@ function create_gzweb_widget(machine_div, constellation_name, machine_name, glx_
     widget_div.appendChild(stop_button);
  
     var link = document.createElement('span');
-    link.innerHTML = "hello";
+    //link.innerHTML = "hello";
     widget_div.appendChild(link);
     
     $.subscribe("/constellation", function(event, data){

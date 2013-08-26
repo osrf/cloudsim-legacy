@@ -955,7 +955,7 @@ DRCSIM_SETUP=/usr/local/share/drcsim/setup.sh
 install ()
 {
     # Temporal directory for the repository
-    TMP_DIR=`mktemp -d`
+    TMP_DIR=\`mktemp -d\`
     cd \$TMP_DIR
 
     echo -n "Downloading \$1..."
