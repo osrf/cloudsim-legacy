@@ -195,7 +195,7 @@ def monitor_simulator(constellation_name,
     simulation_state = constellation.get_value(sim_state_key)
     if machine_states.index(simulation_state) >= \
                             machine_states.index('running'):
-        gl_state = constellation.get_value("simulation_glx_state")
+        gl_state = constellation.get_value("sim_glx_state")
         if gl_state == "running":
             try:
                 out = ssh_client.cmd("bash cloudsim/ping_gazebo.bash")

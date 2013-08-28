@@ -24,7 +24,7 @@ from launch_utils.softlayer import load_osrf_creds,\
 from launch_utils.launch_db import get_constellation_data, ConstellationState,\
     get_cloudsim_config, log_msg
 
-from launch_utils.testing import get_test_runner, get_test_path,\
+from launch_utils.testing import get_test_path,\
     get_boto_path, get_test_dir
 
 from launch_utils import get_unique_short_name
@@ -264,81 +264,17 @@ def monitor(constellation_name, counter):
     return False
 
 
-#     if launch_sequence.index(launch_stage) >= launch_sequence.index('launch'):
-#         machines = constellation.get_value('machines')
-#
-#         router_state = constellation.get_value('router_state')
-#         monitor_launch_state(constellation_name, ssh_router, router_state,
-#                           "tail -1 /var/log/dpkg.log", 'router_launch_msg')
-#
-#         procs = []
-#         for machine_name in machines:
-#             machine_state = constellation.get_value('%s_state' % machine_name)
-#             if machine_name == "sim":
-#                 p = multiprocessing.Process(target=ssh_ping_proc,
-#                         args=(constellation_name, SIM_IP, 'sim_latency'))
-#
-#         if constellation.has_value('sim_state'):
-#             sim_state = constellation.get_value('sim_state')
-#             monitor_launch_state(constellation_name, ssh_router, sim_state,
-#                                  "cloudsim/dpkg_log_sim.bash",
-#                                  'sim_launch_msg')
-#             p = multiprocessing.Process(target=ssh_ping_proc,
-#                         args=(constellation_name, SIM_IP, 'sim_latency'))
-#             procs.append(p)
-#
-#             p = multiprocessing.Process(target=monitor_simulator_proc,
-#                             args=(constellation_name,))
-#             procs.append(p)
-#
-#         if constellation.has_value('fc1_state'):
-#             fc1_state = constellation.get_value('fc1_state')
-#             monitor_launch_state(constellation_name, ssh_router, fc1_state,
-#                                 "cloudsim/dpkg_log_fc1.bash", 'fc1_launch_msg')
-#             p = multiprocessing.Process(target=ssh_ping_proc,
-#                         args=(constellation_name, FC1_IP, 'fc1_latency'))
-#             procs.append(p)
-#
-#         if constellation.has_value('fc2_state'):
-#             fc2_state = constellation.get_value('fc2_state')
-#             monitor_launch_state(constellation_name, ssh_router, fc2_state,
-#                             "cloudsim/dpkg_log_fc2.bash", 'fc2_launch_msg')
-#
-#             p = multiprocessing.Process(target=ssh_ping_proc,
-#                         args=(constellation_name, FC2_IP, 'fc2_latency'))
-#             procs.append(p)
-#
-#         p = multiprocessing.Process(target=ssh_ping_proc,
-#             args=(constellation_name, OPENVPN_CLIENT_IP, 'router_latency'))
-#         procs.append(p)
-#
-#         p = multiprocessing.Process(target=monitor_task_proc,
-#                                     args=(constellation_name,))
-#         procs.append(p)
-#
-#         for p in procs:
-#             p.start()
-#
-#         for p in procs:
-#             p.join()
-#
-#     return False
-
-
 def _init_computer_data(constellation_name, machines):
 
     constellation = ConstellationState(constellation_name)
 
     # init the redis db info
     constellation.set_value("gazebo", "not running")
-    constellation.set_value("simulation_glx_state", "not running")
+    constellation.set_value("sim_glx_state", "not running")
     constellation.set_value("constellation_state", "launching")
     constellation.set_value("error", "")
-
-    constellation.set_value("simulation_glx_state", "not running")
     constellation.set_value("gazebo", "not running")
     constellation.set_value("gzweb", "")
-
 
     for prefix in machines:
         machine = machines[prefix]
@@ -484,9 +420,16 @@ chmod +x /home/ubuntu/cloudsim/update_constellation.bash
 # ----------------------------------------------------------------------------
 cat <<DELIM > /home/ubuntu/cloudsim/start_gzweb.bash
 #!/bin/bash
+logfile=/home/ubuntu/cloudsim/start_gzweb.log
+exec >> \$logfile 2>&1
 
-/home/ubuntu/cloudsim/gzweb/build/gzbridge/gzbridge &
-http-server /home/ubuntu/cloudsim/gzweb/build/http/client &
+echo "#"
+echo "#"
+date
+
+sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8080
+
+/home/ubuntu/cloudsim/gzweb/start_gzweb.sh
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/start_gzweb.bash
@@ -494,9 +437,14 @@ chmod +x /home/ubuntu/cloudsim/start_gzweb.bash
 # ----------------------------------------------------------------------------
 cat <<DELIM > /home/ubuntu/cloudsim/stop_gzweb.bash
 #!/bin/bash
+logfile=/home/ubuntu/cloudsim/stop_gzweb.log.log
+exec >> \$logfile 2>&1
 
-sudo killall gzbridge
-sudo killall node
+echo "#"
+echo "#"
+date
+
+/home/ubuntu/cloudsim/gzweb/stop_gzweb.sh
 
 DELIM
 
@@ -507,8 +455,7 @@ cat <<DELIM > /home/ubuntu/cloudsim/ping_gzweb.bash
 #!/bin/bash
 
 # Fails if gzbridge is not running, returns 0 otherwize
-ps aux | grep gzbridge | grep -v ping_gzbridge | grep -v grep
-
+ps aux | grep ws_server  | grep -v grep
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/ping_gzweb.bash
@@ -740,11 +687,12 @@ sudo ifconfig
 
 def create_router_zip(router_ip, constellation_name, key_prefix,
                       constellation_directory):
-    # create router zip file with keys
-    # This file is kept on the server and provides the user with:
-    #  - key file for ssh access to the router
-    #  - openvpn key
-    #  - scripts to connect with ssh, openvpn, ROS setup
+    """ create router zip file with keys
+     This file is kept on the server and provides the user with:
+      - key file for ssh access to the router
+      - openvpn key
+      - scripts to connect with ssh, openvpn, ROS setup
+    """
 
     router_machine_dir = os.path.join(constellation_directory, "router")
     os.makedirs(router_machine_dir)
@@ -894,7 +842,7 @@ def _reboot_machines(constellation_name,
 
 def _check_opengl_and_x(constellation, ssh_router):
     constellation.set_value('sim_launch_msg', 'Testing X and OpenGL')
-    constellation.set_value('simulation_glx_state', "pending")
+    constellation.set_value('sim_glx_state', "pending")
     gl_retries = 0
     while True:
         time.sleep(gl_retries * 2)
@@ -902,11 +850,11 @@ def _check_opengl_and_x(constellation, ssh_router):
         try:
             ping_gl = ssh_router.cmd("bash cloudsim/ping_gl.bash")
             log("bash cloudsim/ping_gl.bash = %s" % ping_gl)
-            constellation.set_value('simulation_glx_state', "running")
+            constellation.set_value('sim_glx_state', "running")
             return
         except Exception as e:
             if gl_retries > 10:
-                constellation.set_value('simulation_glx_state', "not running")
+                constellation.set_value('sim_glx_state', "not running")
                 constellation.set_value('error', "OpenGL diagnostic failed:"
                                         " %s" % e)
                 raise
@@ -1097,10 +1045,10 @@ def launch(username, config, constellation_name, tags,
                                           'to_port': 65535,
                                           'cidr': private_subnet, },
                                          {'protocol': 'tcp',
-                                          'from_port': 8080,
-                                          'to_port': 8080,
+                                          'from_port': 80,
+                                          'to_port': 80,
                                           'cidr': '0.0.0.0/0', },
-                                         {'protocol': 'tcp',
+                                         {'protocol': 'tcp',  # websocket
                                           'from_port': 7681,
                                           'to_port': 7681,
                                           'cidr': '0.0.0.0/0', },]
@@ -1231,16 +1179,17 @@ def launch(username, config, constellation_name, tags,
 
 def terminate(constellation_name, credentials_override=None):
     constellation = ConstellationState(constellation_name)
+    machines = constellation.get_value('machines')
+
     constellation.set_value('constellation_state', 'terminating')
-    constellation.set_value('router_state', 'terminating')
-    constellation.set_value('sim_state', 'terminating')
-    constellation.set_value('fc1_state', 'terminating')
-    constellation.set_value('fc2_state', 'terminating')
     constellation.set_value('sim_glx_state', "not running")
-    constellation.set_value('sim_launch_msg', "terminating")
-    constellation.set_value('router_launch_msg', "terminating")
-    constellation.set_value('fc1_launch_msg', "terminating")
-    constellation.set_value('fc2_launch_msg', "terminating")
+    constellation.set_value('gazebo', "not running")
+    constellation.set_value('gz_web', "")
+
+    for machine_name in machines:
+        constellation.set_value("%s_state" % machine_name, 'terminating')
+        constellation.set_value("%s_launch_msg" % machine_name, 'terminating')
+        constellation.set_value("%s_aws_state" % machine_name, 'terminating')
 
     cs_cfg = get_cloudsim_config()
     constellation.set_value("launch_stage", "nothing")
@@ -1251,7 +1200,7 @@ def terminate(constellation_name, credentials_override=None):
             credentials_fname = credentials_override
         terminate_aws_constellation(constellation_name, credentials_fname)
     else:
-        credentials_fname = cs_cfg['boto_path']
+        credentials_fname = cs_cfg['softlayer_path']
         if credentials_override:
             credentials_fname = credentials_override
         partial = False
@@ -1261,14 +1210,11 @@ def terminate(constellation_name, credentials_override=None):
                        partial,
                        credentials_fname)
 
-    constellation.set_value('sim_state', 'terminated')
-    constellation.set_value('sim_launch_msg', "terminated")
-    constellation.set_value('router_state', 'terminated')
-    constellation.set_value('router_launch_msg', "terminated")
-    constellation.set_value('fc1_state', 'terminated')
-    constellation.set_value('fc1_launch_msg', "terminated")
-    constellation.set_value('fc2_state', 'terminated')
-    constellation.set_value('fc2_launch_msg', "terminated")
+    for machine_name in machines:
+        constellation.set_value("%s_state" % machine_name, 'terminated')
+        constellation.set_value("%s_launch_msg" % machine_name, 'terminated')
+        constellation.set_value("%s_aws_state" % machine_name, 'terminated')
+
     constellation.set_value('constellation_state', 'terminated')
 
 

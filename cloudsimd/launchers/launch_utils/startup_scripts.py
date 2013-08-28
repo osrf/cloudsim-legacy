@@ -571,7 +571,9 @@ sudo start vrc_controller_public || true
 apt-get install -y mercurial
 apt-get install -y libjansson-dev
 apt-get install -y nodejs npm
-npm install http-server -g
+npm install -g http-server
+npm install -g node-gyp
+npm install websocket
  
 cd /home/ubuntu/cloudsim; hg clone https://bitbucket.org/osrf/gzweb
 . /home/ubuntu/cloudsim/gzweb/deploy.sh

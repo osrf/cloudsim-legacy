@@ -236,11 +236,10 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
     running_machines = {}
     for machine_prefix in machines.keys():
         try:
-            state_key = '%s_aws_state' % machine_prefix
             aws_id_key = '%s_aws_id' % machine_prefix
             aws_id = constellation.get_value(aws_id_key)
             log("%s aws id: %s" % (machine_prefix, aws_id))
-            running_machines[state_key] = aws_id
+            running_machines[machine_prefix] = aws_id
             m = "terminate machine instance"
             constellation.set_value("%s_launch_msg" % machine_prefix, m)
         except Exception, e:
@@ -492,22 +491,6 @@ def _acquire_vpc_security_group(constellation_name,
                          rule['from_port'],
                          rule['to_port'],
                          rule['cidr'])
-
-#         if machine_prefix == "router":
-#             sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
-#             sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
-#             sg.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
-#             sg.authorize('udp', 0, 65535, vpn_subnet)
-#             sg.authorize('tcp', 0, 65535, vpn_subnet)
-#         else:
-#             sg.authorize('icmp', -1, -1, vpn_subnet)
-#             sg.authorize('tcp',  0, 65535, vpn_subnet)
-#             sg.authorize('udp', 0, 65535, vpn_subnet)
-#             # Also allow all traffic from the OpenVPN client
-#             openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)
-#             sg.authorize('icmp', -1, -1, openvpn_client_addr)
-#             sg.authorize('tcp', 0, 65535, openvpn_client_addr)
-#             sg.authorize('udp', 0, 65535, openvpn_client_addr)
 
         security_group_id = sg.id
         sg_key = _get_security_group_key(machine_prefix)
@@ -803,7 +786,8 @@ def wait_for_multiple_machines_to_terminate(ec2conn,
             for instance in instances:
                 aws_id = instance.id
                 if aws_id in aws_ids_to_roles:
-                    constellation.set_value(role, instance.state)
+                    state = instance.state
+                    constellation.set_value("%s_aws_state" % role, state)
                     if instance.state == 'terminated':
                         role = aws_ids_to_roles[aws_id]
                         aws_ids_to_roles.pop(aws_id)

@@ -234,7 +234,7 @@ def launch(username, configuration, constellation_name, tags,
     constellation.set_value("error", "")
 
     constellation.set_value("gazebo", "not running")
-    constellation.set_value('simulation_glx_state', "not running")
+    constellation.set_value('sim_glx_state', "not running")
 
     auto_launch_configuration = None
     jr_softlayer_path = cfg['softlayer_path']

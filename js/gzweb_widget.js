@@ -91,6 +91,5 @@ function create_gzweb_widget(machine_div, constellation_name, machine_name, glx_
             start_button.disabled = false;
             return;
         }
-
     });
 }
