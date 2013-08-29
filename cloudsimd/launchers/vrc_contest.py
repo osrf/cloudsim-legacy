@@ -427,9 +427,11 @@ echo "#"
 echo "#"
 date
 
-sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8080
+# sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8080
 
-/home/ubuntu/cloudsim/gzweb/start_gzweb.sh
+/home/ubuntu/cloudsim/gzweb/start_gzweb.sh &
+
+sudo start cloudsim_notebook
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/start_gzweb.bash
@@ -445,6 +447,8 @@ echo "#"
 date
 
 /home/ubuntu/cloudsim/gzweb/stop_gzweb.sh
+
+sudo stop cloudsim_notebook
 
 DELIM
 
@@ -1024,34 +1028,52 @@ def launch(username, config, constellation_name, tags,
                       'ip': ROUTER_IP,   # 'startup_script': router_script,
                       'public_network_itf': router_public_network_itf,
                       'private_network_itf': router_private_network_itf,
-                      'security_group': [{'protocol': 'udp',
-                                          'from_port': 1194,   # openvpn
+                      'security_group': [{'name': 'openvpn',
+                                          'protocol': 'udp',
+                                          'from_port': 1194,
                                           'to_port': 1194,
                                           'cidr': '0.0.0.0/0', },
-                                          {'protocol': 'icmp',  # ping
+                                          {'name': 'ping',
+                                           'protocol': 'icmp',
                                           'from_port': -1,
                                           'to_port': -1,
                                           'cidr': '0.0.0.0/0', },
-                                          {'protocol': 'tcp',
+                                          {'name': 'ssh',
+                                           'protocol': 'tcp',
                                           'from_port': 22,   # ssh
                                           'to_port': 22,
                                           'cidr': '0.0.0.0/0', },
-                                          {'protocol': 'udp',
+                                          {'name': 'all udp on private sub',
+                                           'protocol': 'udp',
                                           'from_port': 0,
                                           'to_port': 65535,
                                           'cidr': private_subnet, },
-                                          {'protocol': 'tcp',
+                                          {'name': 'all tcp on private sub',
+                                          'protocol': 'tcp',
                                           'from_port': 0,
                                           'to_port': 65535,
                                           'cidr': private_subnet, },
-                                         {'protocol': 'tcp',
-                                          'from_port': 80,
-                                          'to_port': 80,
+                                         {'name': 'gzweb',
+                                          'protocol': 'tcp',
+                                          'from_port': 8080,
+                                          'to_port': 8080,
                                           'cidr': '0.0.0.0/0', },
-                                         {'protocol': 'tcp',  # websocket
+                                         {'name': 'gzweb websocket',
+                                          'protocol': 'tcp',
                                           'from_port': 7681,
                                           'to_port': 7681,
-                                          'cidr': '0.0.0.0/0', },]
+                                          'cidr': '0.0.0.0/0', },
+                                         {'name': 'python notebook',
+                                          'protocol': 'tcp',
+                                          'from_port': 8888,
+                                          'to_port': 8888,
+                                          'cidr': '0.0.0.0/0', },
+                                         {'name': 'robot web tools',
+                                          'protocol': 'tcp',
+                                          'from_port': 9090,
+                                          'to_port': 9090,
+                                          'cidr': '0.0.0.0/0', },
+                                         ]
                           }
 # VPN_PRIVATE_SUBNET = '10.0.0.0/24'
 #

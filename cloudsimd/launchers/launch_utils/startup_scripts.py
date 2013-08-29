@@ -393,7 +393,7 @@ DELIM
 touch /home/ubuntu/cloudsim/setup/deploy_ready
 
 apt-get install -y ntp
-apt-get install -y vim ipython
+apt-get install -y vim
 
 # SSH HPN
 sudo apt-get install -y python-software-properties
@@ -576,8 +576,49 @@ npm install -g node-gyp
 npm install websocket
  
 cd /home/ubuntu/cloudsim; hg clone https://bitbucket.org/osrf/gzweb
-. /home/ubuntu/cloudsim/gzweb/deploy.sh
+. /usr/share/drcsim/setup.sh
+. /home/ubuntu/cloudsim/gzweb/deploy.sh -m  # build a model db
 
+
+
+######################################################
+#
+# ipython Notebook server
+#
+apt-get install -y ipython
+apt-get install -y ipython-notebook
+
+mkdir /home/ubuntu/cloudsim/notebook
+
+# Create upstart notebook job
+# ----------------------------------------------------------------------------
+cat <<DELIM > /etc/init/cloudsim_notebook.conf
+# /etc/init/cloudsim_notebook.conf
+
+description "OSRF cloud simulation platform"
+author  "Hugo Boyer<hugo@osrfoundation.org>"
+
+start on runlevel [234]
+stop on runlevel [0156]
+
+exec sudo -u ubuntu /home/ubuntu/cloudsim_notebook.bash> /var/log/cloudsim_notebook.log 2>&1
+
+DELIM
+# ----------------------------------------------------------------------------
+
+cat <<DELIM > /home/ubuntu/clousim/cloudsim_notebook.bash
+#!/bin/bash
+. /usr/share/drcsim/setup.sh 
+
+cd /home/hugo/code
+ipython notebook --pylab=inline --port=5555 --ip=*
+DELIM
+# ----------------------------------------------------------------------------
+chmod +x /home/ubuntu/clousim/notebook.bash
+
+
+
+#######################################################
 touch /home/ubuntu/cloudsim/setup/done
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
@@ -949,7 +990,7 @@ USAGE="Usage: load_gazebo_models.sh"
 GAZEBO_MODELS_NAME=gazebo_models
 GAZEBO_INSTALL_DIR=/home/\$USER/.gazebo
 VRC_ARENAS_NAME=vrc_arenas
-VRC_ARENA_INSTALL_DIR=/home/\$USER/local
+VRC_ARENA_INSTALL_DIR=/home/\$USER/local # /home/ubuntu/cloudsim/gzweb/http/client/assets
 DRCSIM_SETUP=/usr/local/share/drcsim/setup.sh
 
 # arg1: Name of the repository to install

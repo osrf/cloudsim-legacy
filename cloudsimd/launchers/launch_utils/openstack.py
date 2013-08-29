@@ -2,10 +2,7 @@ from __future__ import print_function
 
 import os
 import time
-import sys
-import uuid
 import unittest
-import redis
 import commands
 
 import novaclient.v1_1.client as nvclient
@@ -33,7 +30,8 @@ def acquire_openstack_server(constellation_name,
     Stores the returned values in a redis database
     '''
     floating_ip, instance_name, keypair_name, security_group_name = \
-        launch(constellation_name, machine_name, constellation_directory, script)
+        launch(constellation_name, machine_name, constellation_directory,
+               script)
     constellation = ConstellationState(constellation_name)
     constellation.set_value("security_group", security_group_name)
     constellation.set_value("keypair", keypair_name)
@@ -54,10 +52,13 @@ def terminate_openstack_server(constellation_name):
     terminate(instance_name, keypair, secgroup)
 
 
-def launch(constellation_name, machine_name, constellation_directory, user_data):
+def launch(constellation_name,
+           machine_name,
+           constellation_directory,
+           user_data):
     '''
     Launches an openstack instance.
-    Creates a unique keypair, security group, and floating ip 
+    Creates a unique keypair, security group, and floating ip
     and assigns them to the instance
     '''
     nova_creds = get_nova_creds()
@@ -103,7 +104,7 @@ def launch(constellation_name, machine_name, constellation_directory, user_data)
     #assign_floating_ip
     instance = nova.servers.get(instance.id)
     flag = 0
-    instance_ip = None
+
     for floating_ip in nova.floating_ips.list():
         if floating_ip.instance_id is None:
             instance.add_floating_ip(floating_ip)
@@ -177,7 +178,7 @@ class TestOpenstack(unittest.TestCase):
         script = '''#!/bin/bash
 touch /home/ubuntu/new_file.txt'''  # startup script
         floating_ip, instance_name, keypair_name = acquire_openstack_server(
-            self.constellation_name, creds, self.constellation_directory, 
+            self.constellation_name, creds, self.constellation_directory,
             machine_name, script)
         constellation = ConstellationState(self.constellation_name)
         #uname = 'cirros'
@@ -196,7 +197,8 @@ touch /home/ubuntu/new_file.txt'''  # startup script
             ctr -= 1
             if ctr < 0:
                 msg = ("timeout while waiting for floating ip for %s"
-                    % sim_machine_name)
+                    % machine_name)
+                raise Exception(msg)
             pingable, ping_str = commands.getstatusoutput(
                 "ping -c3 %s" % floating_ip.ip)
             if pingable == 0:
@@ -217,7 +219,7 @@ touch /home/ubuntu/new_file.txt'''  # startup script
 
     def tearDown(self):
         '''
-        Call the terminate function and 
+        Call the terminate function and
         make sure that all resources (floating ip, security group, keypair)
         are destroyed.
         '''

@@ -232,8 +232,8 @@ def monitor_gzweb(constellation_name, ssh_client, sim_state):
                 else:
                     router_pulic_ip = constellation.get_value(
                                                             "router_public_ip")
-                    gzweb_url = "http://%s" % router_pulic_ip
-                    constellation.set_value(gzweb_key, gzweb_url)
+                    gzweb_url = "http://%s:8080" % router_pulic_ip
+                    constellation.set_value(gzweb_key, "gzweb_url")
                     return True
             except Exception, e:
                 log("monitor: cloudsim/ping_gzweb.bash error: %s" % e)
