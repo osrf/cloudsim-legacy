@@ -39,7 +39,7 @@ import multiprocessing
 from launch_utils.sl_cloud import acquire_softlayer_constellation,\
  terminate_softlayer_constellation
 
-from launch_utils.aws import acquire_aws_constellation
+from launch_utils.aws import acquire_aws_constellation, LaunchException
 from launch_utils.aws import terminate_aws_constellation
 
 
@@ -398,7 +398,6 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/reboot_""" + machine_name+ """.bash
-
 
 
 #
@@ -956,7 +955,12 @@ def deploy_constellation(constellation_name, cloud_provider, machines):
     constellation.set_value('router_launch_msg', "deploying keys")
     ssh_router.upload_file(deploy_fname, "cloudsim/deploy.zip")
     ssh_router.cmd('cd cloudsim; unzip deploy.zip')
+
     ssh_router.cmd('bash cloudsim/deploy/deploy.bash')
+
+#     cmd = ("nohup sudo bash cloudsim/deploy/deploy.bash "
+#             "> ssh_deploy.out 2> ssh_deploy.err < /dev/null &")
+#     ssh_router.cmd(cmd)
 
     __wait_for_find_file(constellation_name,
                          constellation_directory,
@@ -1248,6 +1252,7 @@ def __wait_for_find_file(constellation_name,
                        set_cloud_state=False):
 
     constellation = ConstellationState(constellation_name)
+
     launch_stage = constellation.get_value("launch_stage")
     if launch_sequence.index(launch_stage) >= 'running':
         return

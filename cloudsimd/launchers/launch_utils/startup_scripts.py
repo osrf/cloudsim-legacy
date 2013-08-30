@@ -569,12 +569,13 @@ sudo start vrc_controller_public || true
 # gzweb (gazebo web tools)
 #
 apt-get install -y mercurial
+apt-get install -y imagemagick
 apt-get install -y libjansson-dev
 apt-get install -y nodejs npm
 npm install -g http-server
 npm install -g node-gyp
 npm install websocket
- 
+
 cd /home/ubuntu/cloudsim; hg clone https://bitbucket.org/osrf/gzweb
 . /usr/share/drcsim/setup.sh
 . /home/ubuntu/cloudsim/gzweb/deploy.sh -m  # build a model db
@@ -595,26 +596,26 @@ mkdir /home/ubuntu/cloudsim/notebook
 cat <<DELIM > /etc/init/cloudsim_notebook.conf
 # /etc/init/cloudsim_notebook.conf
 
-description "OSRF cloud simulation platform"
+description "OSRF cloud simulation platform. Ipython notebook as a service"
 author  "Hugo Boyer<hugo@osrfoundation.org>"
 
 start on runlevel [234]
 stop on runlevel [0156]
 
-exec sudo -u ubuntu /home/ubuntu/cloudsim_notebook.bash> /var/log/cloudsim_notebook.log 2>&1
+exec sudo -u ubuntu /home/ubuntu/cloudsim/cloudsim_notebook.bash> /var/log/cloudsim_notebook.log 2>&1
 
 DELIM
 # ----------------------------------------------------------------------------
 
-cat <<DELIM > /home/ubuntu/clousim/cloudsim_notebook.bash
+cat <<DELIM > /home/ubuntu/cloudsim/cloudsim_notebook.bash
 #!/bin/bash
-. /usr/share/drcsim/setup.sh 
+. /usr/share/drcsim/setup.sh
 
-cd /home/hugo/code
-ipython notebook --pylab=inline --port=5555 --ip=*
+cd /home/ubuntu/cloudsim/notebook
+ipython notebook --pylab=inline --port=8888 --ip=*
 DELIM
 # ----------------------------------------------------------------------------
-chmod +x /home/ubuntu/clousim/notebook.bash
+chmod +x /home/ubuntu/cloudsim/cloudsim_notebook.bash
 
 
 
