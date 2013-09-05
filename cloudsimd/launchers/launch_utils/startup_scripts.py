@@ -138,6 +138,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i "$DIR"/""" + 
     """
     return s
 
+
 def get_cloudsim_startup_script():
     s = """#!/bin/bash
 # Exit on error
@@ -369,7 +370,19 @@ cat <<DELIM > /home/ubuntu/cloudsim/find_file_router.bash
 ls \$1
 DELIM
 chmod +x /home/ubuntu/cloudsim/find_file_router.bash
-# --------------------------------------------
+# ---------------------------------------------------------------------------
+
+# this one may be overriden but its early presence will make the installation
+# more friendly
+cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_router.bash
+#!/bin/bash
+
+tail -1 /var/log/dpkg.log
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/dpkg_log_router.bash
+# ---------------------------------------------------------------------------
+
 
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 
@@ -686,12 +699,12 @@ echo "update packages" >> /home/ubuntu/setup.log
 
 apt-get update
 
-
-# apt-get remove -y unattended-upgrades
-apt-get install -y python-software-properties zip
-
-apt-get install -y vim ipython
+apt-get install -y python-software-properties
+apt-get install -y zip
+apt-get install -y vim
+apt-get install -y ipython
 apt-get install -y ntp
+
 
 add-apt-repository -y ppa:w-rouesnel/openssh-hpn
 apt-get update
@@ -706,6 +719,7 @@ TcpRcvBufPoll yes
 HPNBufferSize 8192
 NoneEnabled yes
 EOF
+# ----------------------------------------------------------------------------
 
 echo "restart ssh" >> /home/ubuntu/setup.log
 sudo service ssh restart
@@ -728,9 +742,6 @@ apt-get install -y cloudsim-client-tools
 echo "install """ + drc_package_name + """ ">> /home/ubuntu/setup.log
 apt-get install -y """ + drc_package_name + """
 
-
-
-
 #
 # Packages for X
 #
@@ -739,21 +750,13 @@ echo "install X, with nvidia drivers" >> /home/ubuntu/setup.log
 apt-get install -y linux-headers-`uname -r`
 apt-get install -y pciutils
 apt-get install -y lsof
-
-
-
 apt-get install -y gnome-session
 apt-get install -y gnome-session-fallback
 apt-get install -y xserver-xorg-core
-
-
 apt-get install -y xserver-xorg
 apt-get install -y mesa-utils
 apt-get install -y lightdm
 apt-get install -y x11-xserver-utils
-
-
-# apt-get install -y linux-source
 
 """ + gpu_driver_packages_string + """
 
@@ -827,7 +830,11 @@ ulimit -c unlimited
 # Kill a pending simulation
 bash /home/ubuntu/cloudsim/stop_sim.bash
 
-roslaunch \$1 \$2 \$3 gzname:=gzserver  &
+# without cheats
+# roslaunch \$1 \$2 \$3 gzname:=gzserver  &
+
+# cheats enabled
+VRC_CHEATS_ENABLED=1 roslaunch \$1 \$2 \$3 gzname:=gzserver  &
 
 tstart=\$(date +%s)
 timeout -k 1 5 gztopic list
@@ -846,6 +853,8 @@ echo \`date\` "$1 $2 $3 - End" >> /home/ubuntu/cloudsim/start_sim.log
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/start_sim.bash
+# ----------------------------------------------------------------------------
+
 
 cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
 #!/bin/bash
@@ -893,6 +902,7 @@ killall -9 gzserver || true
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/stop_sim.bash
+# ----------------------------------------------------------------------------
 
 cat <<DELIM > /home/ubuntu/cloudsim/ros.bash
 
@@ -910,6 +920,7 @@ export GAZEBO_IP=""" + machine_ip + """
 export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
 
 DELIM
+# ----------------------------------------------------------------------------
 
 cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
 
@@ -917,6 +928,8 @@ DISPLAY=localhost:0 timeout 10 glxinfo
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/ping_gl.bash
+# ----------------------------------------------------------------------------
+
 
 #
 # Automatic sourcing of drcsim/setup
@@ -931,7 +944,7 @@ export ROS_IP="""    + machine_ip + """
 export GAZEBO_IP=""" + machine_ip + """
 
 DELIM
-
+# ----------------------------------------------------------------------------
 
 cat <<DELIM > /home/ubuntu/cloudsim/send_to_portal.bash
 #!/bin/bash
@@ -973,9 +986,7 @@ then
     ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i \$PORTAL_KEY ubuntu@\$PORTAL_URL sudo mv /tmp/\$ZIPNAME /vrc_logs/end_incoming
 fi
 DELIM
-
-
-# ----------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 
 cat <<DELIM > /home/ubuntu/cloudsim/load_gazebo_models.bash
@@ -1031,9 +1042,9 @@ fi
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/load_gazebo_models.bash
+# ----------------------------------------------------------------------------
 
 
-# ----------------------------------------------------------
 
 cat <<DELIM > /etc/init.d/vpcroute
 #! /bin/sh
@@ -1056,9 +1067,9 @@ esac
 
 :
 DELIM
-
 chmod +x  /etc/init.d/vpcroute
 ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
+# ----------------------------------------------------------------------------
 
 # invoke it now to add route to the router
 /etc/init.d/vpcroute start || true
@@ -1068,6 +1079,312 @@ chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 touch /home/ubuntu/cloudsim/setup/done
 """
     return s
+
+def get_router_deploy_script(private_network_interface_name,
+                             public_network_interface_name,
+                             machines_to_ip):
+    SIM_IP = machines_to_ip['sim']
+    restore_default_tc_rules = ""
+    if public_network_interface_name:
+        restore_default_tc_rules += """
+# Restore the default tc rules
+sudo vrc_init_tc.py """ + public_network_interface_name + """
+
+"""
+    if private_network_interface_name:
+        restore_default_tc_rules += """
+sudo vrc_init_tc.py """ + private_network_interface_name + """
+"""
+    ssh_scripts = ""
+    for machine_name, ip in machines_to_ip.iteritems():
+        ssh_scripts += """
+
+#
+# interactive ssh script
+#
+cat <<DELIM > /home/ubuntu/cloudsim/ssh-""" + machine_name + """.bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name + """.pem ubuntu@""" + ip + """ \$1 \$2 \$3 \$4 \$5 \$6
+DELIM
+chmod +x /home/ubuntu/cloudsim/ssh-""" + machine_name + """.bash
+# --------------------------------------------
+
+#
+# dpkg log script
+#
+cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_""" + machine_name + """.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "tail -1 /var/log/dpkg.log"
+DELIM
+chmod +x /home/ubuntu/cloudsim/dpkg_log_""" + machine_name + """.bash
+# --------------------------------------------
+
+#
+# find file script
+#
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_""" + machine_name + """.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "ls \$1"
+DELIM
+chmod +x /home/ubuntu/cloudsim/find_file_""" + machine_name + """.bash
+# --------------------------------------------
+
+#
+# reboot script
+#
+cat <<DELIM > /home/ubuntu/cloudsim/reboot_""" + machine_name + """.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name + """.pem ubuntu@""" + ip + """ "sudo reboot"
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/reboot_""" + machine_name + """.bash
+
+
+#
+# gzweb
+#
+
+# ----------------------------------------------------------------------------
+cat <<DELIM > /home/ubuntu/cloudsim/update_constellation.bash
+#!/bin/bash
+
+# update local packages on the router
+# sudo cloudsim/update_drcsim.bash
+
+. /home/ubuntu/cloudsim/gzweb/deploy.sh
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/update_constellation.bash
+
+# ----------------------------------------------------------------------------
+cat <<DELIM > /home/ubuntu/cloudsim/start_gzweb.bash
+#!/bin/bash
+logfile=/home/ubuntu/cloudsim/start_gzweb.log
+exec >> \$logfile 2>&1
+
+echo "#"
+echo "#"
+date
+
+# sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8080
+
+/home/ubuntu/cloudsim/gzweb/start_gzweb.sh &
+
+sudo start cloudsim_notebook
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/start_gzweb.bash
+
+# ----------------------------------------------------------------------------
+cat <<DELIM > /home/ubuntu/cloudsim/stop_gzweb.bash
+#!/bin/bash
+logfile=/home/ubuntu/cloudsim/stop_gzweb.log.log
+exec >> \$logfile 2>&1
+
+echo "#"
+echo "#"
+date
+
+/home/ubuntu/cloudsim/gzweb/stop_gzweb.sh
+
+sudo stop cloudsim_notebook
+
+DELIM
+
+chmod +x /home/ubuntu/cloudsim/stop_gzweb.bash
+
+# ----------------------------------------------------------------------------
+cat <<DELIM > /home/ubuntu/cloudsim/ping_gzweb.bash
+#!/bin/bash
+
+# Fails if gzbridge is not running, returns 0 otherwize
+ps aux | grep ws_server  | grep -v grep
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/ping_gzweb.bash
+
+
+
+
+"""
+    
+# now create a script that contains all the scripts together
+    deploy_script = """#!/bin/bash
+# Exit on error
+set -ex
+# Redirect everybody's output to a file
+logfile=/home/ubuntu/cloudsim/deploy.log
+exec > $logfile 2>&1
+
+# copy keys to cloudsim directory
+cp /home/ubuntu/cloudsim/deploy/*.pem /home/ubuntu/cloudsim
+
+""" + ssh_scripts + """
+
+
+cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
+#!/bin/bash
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "DISPLAY=localhost:0 timeout -k 1 5 glxinfo"
+DELIM
+chmod +x /home/ubuntu/cloudsim/ping_gl.bash
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
+#!/bin/bash
+sudo stop vrc_netwatcher
+kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
+sudo stop vrc_bytecounter
+sudo redis-cli set vrc_target_outbound_latency 0
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "bash cloudsim/stop_sim.bash"
+sudo iptables -F FORWARD
+
+# Stop the latency injection
+sudo stop vrc_controller_private
+sudo stop vrc_controller_public
+
+""" + restore_default_tc_rules + """
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/stop_sim.bash
+
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/ping_gazebo.bash
+#!/bin/bash
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
+ -i /home/ubuntu/cloudsim/key-sim.pem -n ubuntu@""" + SIM_IP + """ \
+ ". /usr/share/drcsim/setup.sh; timeout -k 1 5 gztopic list"
+
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/ping_gazebo.bash
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
+#!/bin/bash
+
+# Just rename the old network usage file
+sudo mv /tmp/vrc_netwatcher_usage.log /tmp/vrc_netwatcher_usage_\`date | tr -d ' '\`.log || true
+
+# Stop the latency injection
+sudo stop vrc_controller_private
+sudo stop vrc_controller_public
+
+""" + restore_default_tc_rules + """
+
+sudo iptables -F FORWARD
+sudo stop vrc_netwatcher
+kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
+sudo stop vrc_bytecounter
+sudo start vrc_netwatcher
+if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "nohup bash cloudsim/start_sim.bash \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"; then
+  echo "[router start_sim.bash] simulator start_sim.bash returned non-zero"
+  exit 1
+fi
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/start_sim.bash
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/copy_net_usage.bash
+#!/bin/bash
+
+# 1. Copy the directory containing the JSON task file and the network usage to the simulator
+# 2. Run a script on the simulator that zip all the log files and send them to the portal
+USAGE="Usage: copy_net_usage <task_dirname> <zipname>"
+
+if [ \$# -ne 2 ]; then
+  echo \$USAGE
+  exit 1
+fi
+
+echo --- >> copy_net_usage.log 2>&1
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  mkdir -p /home/ubuntu/cloudsim/logs >> copy_net_usage.log 2>&1
+
+TASK_DIRNAME=\$1
+if [ -f /tmp/vrc_netwatcher_usage.log ];
+then
+  cp /tmp/vrc_netwatcher_usage.log \$TASK_DIRNAME >> copy_net_usage.log 2>&1
+fi
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem -r /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME ubuntu@""" + SIM_IP + """ :/home/ubuntu/cloudsim/logs/ >> copy_net_usage.log 2>&1
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  bash /home/ubuntu/cloudsim/send_to_portal.bash \$1 \$2 /home/ubuntu/ubuntu-portal.key vrcportal-test.osrfoundation.org >> copy_net_usage.log 2>&1
+DELIM
+chmod +x /home/ubuntu/cloudsim/copy_net_usage.bash
+
+# --------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/get_sim_logs.bash
+#!/bin/bash
+
+# Get state.log and score.log from the simulator 
+
+USAGE="Usage: get_sim_logs.bash <task_dirname>"
+
+if [ \$# -ne 1 ]; then
+  echo \$USAGE
+  exit 1
+fi
+
+TASK_DIRNAME=\$1
+
+mkdir -p /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
+
+# Copy the log files
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """ :/tmp/\$TASK_DIRNAME/* /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME || true
+
+# Copy the network usage
+if [ -f /tmp/vrc_netwatcher_usage.log ];
+then
+  cp /tmp/vrc_netwatcher_usage.log /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME >> copy_net_usage.log 2>&1
+fi
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/get_sim_logs.bash
+
+# ----------------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/get_network_usage.bash
+#!/bin/bash
+
+#
+# wall or sim clock, wall or sim clock, uplink downlink
+# space is the separator
+tail -1 /tmp/vrc_netwatcher_usage.log
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/get_network_usage.bash
+
+# ----------------------------------------------------
+
+cat <<DELIM > /home/ubuntu/cloudsim/get_score.bash
+#!/bin/bash
+
+. /usr/share/drcsim/setup.sh
+# rostopic echo the last message of the score
+timeout -k 1 10 rostopic echo -p /vrc_score -n 1
+
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/get_score.bash
+
+
+# configure openvpn
+sudo cp /home/ubuntu/cloudsim/deploy/openvpn.key /etc/openvpn/static.key
+sudo chmod 644 /etc/openvpn/static.key
+sudo service openvpn restart
+
+# chechck that the tunnel interface is up
+sudo ifconfig
+
+"""
+    return deploy_script
+
 
 if __name__ == "__main__":
     print("MAIN in %s" % __file__)

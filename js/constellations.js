@@ -84,10 +84,10 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     // div.insertBefore(top_div, node);
 
 
-    var msg_div = document.createElement("div");
-    msg_div.id = "error";
-    msg_div.style.color = "red"; 
-    top_div.appendChild(msg_div);
+    var error_msg_div = document.createElement("div");
+    error_msg_div.id = "error";
+    error_msg_div.style.color = "red"; 
+    top_div.appendChild(error_msg_div);
 
 
     // do not allow simple users to terminate constellations
@@ -151,6 +151,7 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     // const_div.innerHTML = _get_constellation_div_str(div_name, configuration, constellation);
     div.insertBefore(const_div, node);
     
+
     return const_div;
 }
 
