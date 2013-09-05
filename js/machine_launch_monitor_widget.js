@@ -66,6 +66,7 @@ function create_machine_launch_monitor_widget(machine_div,
         
         if (error_txt != current_error)
         {
+        	console.log(error_txt)
         	error_div.innerHTML = error_txt;
         }
         
