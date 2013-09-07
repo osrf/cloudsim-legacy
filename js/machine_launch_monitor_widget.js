@@ -19,8 +19,8 @@ function create_machine_launch_monitor_widget(machine_div,
     var current_msg = "";
     
     //var top_div = document.getElementById("#constellations_div");
-    //var constellation_div =  top_div.querySelector("#"+constellation_name);
-    var error_div = widget_div.querySelector("#error" );
+    var constellation_div =  document.getElementById(constellation_name);
+    var error_div = constellation_div.querySelector("#error" );
     
     $.subscribe("/constellation", function(event, data){
         
@@ -29,8 +29,7 @@ function create_machine_launch_monitor_widget(machine_div,
         
         count ++;
         
-        
-        
+         
         var error_txt = "";
         if ( data.error.length)
         {

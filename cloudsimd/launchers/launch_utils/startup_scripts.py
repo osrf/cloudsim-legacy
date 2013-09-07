@@ -585,6 +585,8 @@ apt-get install -y mercurial
 apt-get install -y imagemagick
 apt-get install -y libjansson-dev
 apt-get install -y nodejs npm
+apt-get install -y python-matplotlib
+
 npm install -g http-server
 npm install -g node-gyp
 npm install websocket
