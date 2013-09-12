@@ -40,7 +40,7 @@ def acquire_openstack_server(constellation_name,
     return floating_ip, instance_name, keypair_name
 
 
-def terminate_openstack_server(constellation_name):
+def terminate_openstack_server(constellation_name, creds):
     '''
     Retrieves necessary information from the redis database.
     Uses that information to call terminate.
@@ -49,7 +49,7 @@ def terminate_openstack_server(constellation_name):
     secgroup = constellation.get_value("security_group")
     keypair = constellation.get_value("keypair")
     instance_name = constellation.get_value("instance")
-    terminate(instance_name, keypair, secgroup)
+    terminate(instance_name, keypair, secgroup, creds)
 
 
 def launch(constellation_name,
@@ -117,12 +117,11 @@ def launch(constellation_name,
     return floating_ip.ip, instance_name, keypair_name, security_group_name
 
 
-def terminate(instance_name, keypair_name, secgroup_name):
+def terminate(instance_name, keypair_name, secgroup_name, creds):
     '''
     Terminates an openstack instance.
     Destroys the associated security group, keypair, and floating ip
     '''
-    creds = get_nova_creds()
     nova = nvclient.Client(**creds)
     instance = nova.servers.find(name=instance_name)
     secgroup = nova.security_groups.find(name=secgroup_name)

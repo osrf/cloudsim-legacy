@@ -25,7 +25,7 @@ from launch_utils.launch_db import get_constellation_data, ConstellationState,\
     get_cloudsim_config, log_msg
 
 from launch_utils.testing import get_test_path,\
-    get_boto_path, get_test_dir
+    get_boto_path, get_test_dir, get_test_runner
 
 from launch_utils import get_unique_short_name
 from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
@@ -194,6 +194,13 @@ def monitor_gzweb_proc(constellation_name):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_gzweb(constellation_name, ssh_router, "sim_state")
 
+def monitor_launch(constellation_name, machine_name):
+    ssh_router = _get_ssh_router(constellation_name)
+    constellation = ConstellationState(constellation_name)
+    machine_state = constellation.get_value('%s_state' % machine_name)
+    monitor_launch_state(constellation_name, ssh_router, machine_state,
+                             "cloudsim/dpkg_log_%s.bash" % machine_name,
+                             '%s_launch_msg' % machine_name)
 
 def monitor(constellation_name, counter):
     time.sleep(1)
@@ -210,10 +217,7 @@ def monitor(constellation_name, counter):
     machines = constellation.get_value('machines')
 
     for machine_name in machines:
-        machine_state = constellation.get_value('%s_state' % machine_name)
-        monitor_launch_state(constellation_name, ssh_router, machine_state,
-                             "cloudsim/dpkg_log_%s.bash" % machine_name,
-                             '%s_launch_msg' % machine_name)
+        monitor_launch(constellation_name, machine_name)
 
     procs = []
     p = multiprocessing.Process(target=monitor_simulator_proc,
@@ -656,28 +660,38 @@ def deploy_constellation(constellation_name, cloud_provider, machines):
     constellation.set_value("launch_stage", "running")
 
 
-def launch(username, config, constellation_name, tags,
-           constellation_directory, credentials_override=None):
+#def launch(username, config, constellation_name, tags,
+#           constellation_directory, credentials_override=None):
+def launch(constellation_name, tags):
     """
     Called by cloudsimd when it receives a launch message
     """
-    cloud_provider = "aws"
+    cloud_provider = tags['cloud_provider']
+    #username = tags['username']
+    config = tags['config']
+    constellation_directory = tags['constellation_directory']
+    credentials_fname = os.path.join(constellation_directory,
+                                     'credentials.txt')
+
+    constellation = ConstellationState(constellation_name)
+
+#   if credentials_override:
+#       credentials_fname = credentials_override
+
     has_fc1 = False
     has_fc2 = False
 
-    if "OSRF" in config:
-        cloud_provider = "softlayer"
     if "FC" in config:
         has_fc1 = True
 
     router_public_network_itf = "eth0"
     router_private_network_itf = None
+
     if cloud_provider == "softlayer":
         router_public_network_itf = "bond1"
         router_private_network_itf = "bond0"
     log("launch constellation name: %s" % constellation_name)
 
-    constellation = ConstellationState(constellation_name)
     constellation.set_value("launch_stage", "launch")
 
     drcsim_package_name = "drcsim"
@@ -844,9 +858,6 @@ def launch(username, config, constellation_name, tags,
 
     cs_cfg = get_cloudsim_config()
     if cloud_provider == "softlayer":
-        credentials_fname = cs_cfg['softlayer_path']
-        if credentials_override:
-            credentials_fname = credentials_override
         log("softlayer %s" % credentials_fname)
         constellation_prefix = config.split()[-1]
         log("constellation_prefix %s" % constellation_prefix)
@@ -868,8 +879,6 @@ def launch(username, config, constellation_name, tags,
 
     if cloud_provider == "aws":
         credentials_fname = cs_cfg['boto_path']
-        if credentials_override:
-            credentials_fname = credentials_override
         log("credentials_ec2 %s" % credentials_fname)
         acquire_aws_constellation(constellation_name,
                                   credentials_fname,
@@ -880,10 +889,14 @@ def launch(username, config, constellation_name, tags,
     deploy_constellation(constellation_name, cloud_provider, machines,)
 
 
-def terminate(constellation_name, credentials_override=None):
+def terminate(constellation_name):
     constellation = ConstellationState(constellation_name)
     machines = constellation.get_value('machines')
 
+    constellation_directory = constellation.get_value(
+                                                    "constellation_directory")
+    credentials_fname = os.path.join(constellation_directory,
+                                     'credentials.txt')
     constellation.set_value('constellation_state', 'terminating')
     constellation.set_value('sim_glx_state', "not running")
     constellation.set_value('gazebo', "not running")
@@ -893,19 +906,12 @@ def terminate(constellation_name, credentials_override=None):
         constellation.set_value("%s_state" % machine_name, 'terminating')
         constellation.set_value("%s_launch_msg" % machine_name, 'terminating')
         constellation.set_value("%s_aws_state" % machine_name, 'terminating')
-
-    cs_cfg = get_cloudsim_config()
     constellation.set_value("launch_stage", "nothing")
 
-    if not "OSRF" in constellation_name:
-        credentials_fname = cs_cfg['boto_path']
-        if credentials_override:
-            credentials_fname = credentials_override
+    cloud_provider = constellation.get_value('cloud_provider')
+    if cloud_provider == "aws":
         terminate_aws_constellation(constellation_name, credentials_fname)
-    else:
-        credentials_fname = cs_cfg['softlayer_path']
-        if credentials_override:
-            credentials_fname = credentials_override
+    if cloud_provider == 'softlayer':
         partial = False
         constellation_prefix = constellation_name.split('_')[-1]
         terminate_softlayer_constellation(constellation_name,
@@ -1187,11 +1193,6 @@ class VrcCase(object):  # (unittest.TestCase):
             time.sleep(1)
 
     def stest_ubuntu_user_on_sim_from_router(self):
-
-        constellation = ConstellationState('test_vrc_contest_toto')
-
-        constellation_directory = constellation.get_value(
-                                                    "constellation_directory")
         ssh_router = _get_ssh_router('test_vrc_contest_toto')
         credentials_softlayer = get_softlayer_path()
         osrf_creds = load_osrf_creds(credentials_softlayer)
@@ -1293,8 +1294,7 @@ class AwsCase(unittest.TestCase):
     def tearDown(self):
         print("teardown")
 
-        terminate(self.constellation_name,
-                  credentials_override=get_boto_path())
+        terminate(self.constellation_name)
         constellation = ConstellationState(self.constellation_name)
         constellation.set_value('constellation_state', 'terminated')
         log("Deleting %s from the database" % self.constellation_name)
@@ -1308,8 +1308,6 @@ class SumCase(unittest.TestCase):
         p = os.path.join(os.path.expanduser('~'), 'tests', 'toto')
         constellation_directory = p
 
-        # os.makedirs(constellation_directory)
-        constellation_name 
         machines = ['router', 'sim']
         zip_fname = _create_deploy_zip_files(constellation_name,
                                  constellation_directory,
@@ -1323,10 +1321,11 @@ class SumCase(unittest.TestCase):
 
 class MoniCase(unittest.TestCase):
 
-    def atest_monitorsim(self):
-        constellation_name = 'cx8db055c6'
-        x = monitor_simulator_proc(constellation_name)
-        print("monitor_simulator_proc %s" % x)
+    def test_monitorsim(self):
+        constellation_name = 'cx423e8b84'
+        monitor_launch(constellation_name, "sim")
+        monitor_launch(constellation_name, "router")
+
 
     def ztest_ping(self):
         constellation_name = 'cx593c6f5e'
@@ -1334,9 +1333,9 @@ class MoniCase(unittest.TestCase):
         ssh_ping_proc(constellation_name, '10.0.0.51', latency_key)
 
 if __name__ == "__main__":
-#    xmlTestRunner = get_test_runner()
-#    unittest.main(testRunner=xmlTestRunner)
-    n = 'cxceaae4dc'
-    i = 0
+    xmlTestRunner = get_test_runner()
+    unittest.main(testRunner=xmlTestRunner)
+#    n = 'cxceaae4dc'
+#    i = 0
 #    monitor(n, i)
-    monitor_gzweb_proc(n)
+#    monitor_gzweb_proc(n)

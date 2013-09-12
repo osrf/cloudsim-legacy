@@ -128,15 +128,15 @@ def acquire_aws_server(constellation_name,
     return sim_ip, simulation_aws_id, sim_key_pair_name
 
 
-def terminate_aws_server(constellation_name):
+def terminate_aws_server(constellation_name, credentials_fname):
     log("terminate AWS CloudSim [constellation %s]" % (constellation_name))
     constellation = ConstellationState(constellation_name)
     ec2conn = None
     try:
         running_machines = {}
-        running_machines['simulation_aws_state'] = constellation.get_value(
+        running_machines['simulation'] = constellation.get_value(
                                                         'simulation_aws_id')
-        ec2conn = aws_connect()[0]
+        ec2conn = aws_connect(credentials_fname)[0]
         wait_for_multiple_machines_to_terminate(ec2conn, running_machines,
                                                 constellation, max_retries=150)
         constellation.set_value('simulation_state', "terminated")
@@ -609,10 +609,12 @@ def read_boto_file(credentials_ec2):
     return  ec2_region_name, key_id, aws_secret_access_key, region_endpoint
 
 
-def aws_connect():
-    config = get_cloudsim_config()
-    # log("config: %s" % config)
-    credentials_ec2 = config['boto_path']
+def aws_connect(creds_fname = None):
+    credentials_ec2 = creds_fname
+    if not credentials_ec2:
+        config = get_cloudsim_config()
+        # log("config: %s" % config)
+        credentials_ec2 = config['boto_path']
     ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint = read_boto_file(credentials_ec2)
     if ec2_region_name == 'nova':
         # TODO: remove hardcoded OpenStack endpoint

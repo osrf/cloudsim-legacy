@@ -210,16 +210,23 @@ def upload_and_deploy_cloudsim(constellation_name,
     log("\t%s" % out_s)
 
 
-def launch(username, configuration, constellation_name, tags,
-           constellation_directory, website_distribution=CLOUDSIM_ZIP_PATH):
+def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
+
+    log("cloudsim launch %s  %s zip = %s" % (constellation_name,
+                                             tags, website_distribution))
+    cloud_provider = tags['cloud_provider']
+    username = tags['username']
+    #constellation_name = tags['constellation_name']
+    constellation_directory = tags['constellation_directory']
+    credentials_fname = os.path.join(constellation_directory,
+                                     'credentials.txt')
 
     machine_prefix = "cs"
     cfg = get_cloudsim_config()
 
     log('launch!!! tags = %s' % tags)
-    cloud_provider = tags['cloud_provider']
+
     constellation = ConstellationState(constellation_name)
-    constellation.set_value("cloud_provider", cloud_provider)
     constellation.set_value("simulation_launch_msg", "launching")
     constellation.set_value('simulation_state', 'starting')
     constellation.set_value("launch_stage", "nothing")
@@ -275,16 +282,14 @@ def launch(username, configuration, constellation_name, tags,
 
     pub_ip = None
     key_prefix = None
-    if "Amazon" in  cloud_provider:
-        aws_creds_fname = cfg['boto_path']
+    if cloud_provider == "aws":
         script = get_cloudsim_startup_script()
         pub_ip, aws_id, key_prefix = acquire_aws_server(constellation_name,
-                                    aws_creds_fname,
+                                    credentials_fname,
                                     constellation_directory,
                                     machine_prefix,
                                     script,
                                     tags)
-        # (constellation_name, credentials_ec2, constellation_directory, tags)
         constellation.set_value("aws_id", aws_id)
     elif "OpenStack" in cloud_provider:
         openstack_creds = get_nova_creds()
@@ -298,11 +303,10 @@ def launch(username, configuration, constellation_name, tags,
         log("KEY PREFIX---------%s" % key_prefix)
         log("IP ADDR---------%s" % pub_ip)
         constellation.set_value("aws_id", instance_id)
-        #ip address, instance id, key prefix (no .pem)
-    elif "SoftLayer" in cloud_provider:
-        osrf_creds_fname = cfg['softlayer_path']
+
+    elif cloud_provider == "softlayer":
         pub_ip, _, _ = acquire_dedicated_sl_server(constellation_name,
-                           osrf_creds_fname,
+                           credentials_fname,
                            constellation_directory)
         key_prefix = "key-cs"
         constellation.set_value('simulation_state', 'packages_setup')
@@ -511,23 +515,24 @@ def terminate(constellation_name):
 
     log("terminate %s [constellation_name=%s]" % (CONFIGURATION,
                                                   constellation_name))
-
-    cs_cfg = get_cloudsim_config()
-    softlayer_path = cs_cfg['softlayer_path']
-
+    constellation_directory = constellation.get_value(
+                                                    "constellation_directory")
+    credentials_fname = os.path.join(constellation_directory,
+                                     'credentials.txt')
     constellation.set_value("launch_stage", "nothing")
 
     cloud_provider = constellation.get_value("cloud_provider")
-    if "Amazon" in  cloud_provider:
-        terminate_aws_server(constellation_name)
-    elif "OpenStack" in cloud_provider:
-        terminate_openstack_server(constellation_name)
-    elif "SoftLayer" in cloud_provider:
+    if cloud_provider == 'aws':
+        terminate_aws_server(constellation_name, credentials_fname)
+    elif cloud_provider == 'openstack':
+        openstack_creds = get_nova_creds()
+        terminate_openstack_server(constellation_name, openstack_creds)
+    elif cloud_provider == 'softlayer':
         constellation_prefix = constellation_name.split("OSRF_CloudSim_")[1]
         machine_name = "cs-%s" % constellation_prefix
         terminate_dedicated_sl_server(constellation_name,
                                       machine_name,
-                                      softlayer_path)
+                                      credentials_fname)
 
     constellation.set_value('simulation_aws_state', 'terminated')
     constellation.set_value('simulation_state', "terminated")

@@ -18,19 +18,20 @@ function create_constellation_launcher_widget(div_name)
 	var cloud_service_select = document.createElement('select');
     widget.appendChild(cloud_service_select);
 
-    var cloud_providers = { "Amazon Web Services" : ["current"],
-    						"SoftLayer" : ["Dallas"],
-    						"OpenStack" : ["default"]};
+    var cloud_providers = { "Amazon Web Services" : ["aws"],
+    						"SoftLayer" : ["softlayer"],
+    						"OpenStack" : ["openstack"]};
 
     for(var provider_name in cloud_providers)
     {
     	var provider =  cloud_providers[provider_name];
     	for (var i=0; i < provider.length; i++)
     	{
-    		var region = provider[i];
+    		var account = provider[i];
         	var option = document.createElement("option");
-        	option.text = provider_name + " [" + region + "]";
-        	cloud_service_select.add(option,null);
+        	option.text = provider_name;
+        	option.value = account;
+        	cloud_service_select.add(option, null);
         }
 	}
 
@@ -80,7 +81,7 @@ function create_constellation_launcher_widget(div_name)
             var i = configs_select.selectedIndex;
             var config = configs_select.options[i].text;
             var j = cloud_service_select.selectedIndex;
-            var cloud_provider = cloud_service_select.options[j].text;
+            var cloud_provider = cloud_service_select.options[j].value;
 
             var msg = 'Deploy a new "' + config + '" constellation?';
             msg += "\n\n";

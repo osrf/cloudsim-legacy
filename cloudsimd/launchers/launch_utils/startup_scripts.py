@@ -1,5 +1,9 @@
 from __future__ import print_function
 
+import unittest
+from testing import get_test_runner
+import os
+
 
 '''
 def get_open_vpn_single(client_ip,
@@ -1082,9 +1086,13 @@ touch /home/ubuntu/cloudsim/setup/done
 """
     return s
 
+
 def get_router_deploy_script(private_network_interface_name,
                              public_network_interface_name,
-                             machines_to_ip):
+                             machines_to_ip,
+                             dst_dir='/home/ubuntu/cloudsim'):
+
+    cloudsim_dir = os.path.abspath(dst_dir)
     SIM_IP = machines_to_ip['sim']
     restore_default_tc_rules = ""
     if public_network_interface_name:
@@ -1104,41 +1112,41 @@ sudo vrc_init_tc.py """ + private_network_interface_name + """
 #
 # interactive ssh script
 #
-cat <<DELIM > /home/ubuntu/cloudsim/ssh-""" + machine_name + """.bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name + """.pem ubuntu@""" + ip + """ \$1 \$2 \$3 \$4 \$5 \$6
+cat <<DELIM > """ + cloudsim_dir + """/ssh-""" + machine_name + """.bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """ \$1 \$2 \$3 \$4 \$5 \$6
 DELIM
-chmod +x /home/ubuntu/cloudsim/ssh-""" + machine_name + """.bash
+chmod +x """ + cloudsim_dir + """/ssh-""" + machine_name + """.bash
 # --------------------------------------------
 
 #
 # dpkg log script
 #
-cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_""" + machine_name + """.bash
+cat <<DELIM > """ + cloudsim_dir + """/dpkg_log_""" + machine_name + """.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "tail -1 /var/log/dpkg.log"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "tail -1 /var/log/dpkg.log"
 DELIM
-chmod +x /home/ubuntu/cloudsim/dpkg_log_""" + machine_name + """.bash
+chmod +x """ + cloudsim_dir + """/dpkg_log_""" + machine_name + """.bash
 # --------------------------------------------
 
 #
 # find file script
 #
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_""" + machine_name + """.bash
+cat <<DELIM > """ + cloudsim_dir + """/find_file_""" + machine_name + """.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "ls \$1"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "ls \$1"
 DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_""" + machine_name + """.bash
+chmod +x """ + cloudsim_dir + """/find_file_""" + machine_name + """.bash
 # --------------------------------------------
 
 #
 # reboot script
 #
-cat <<DELIM > /home/ubuntu/cloudsim/reboot_""" + machine_name + """.bash
+cat <<DELIM > """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-""" + machine_name + """.pem ubuntu@""" + ip + """ "sudo reboot"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """ "sudo reboot"
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/reboot_""" + machine_name + """.bash
+chmod +x """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash
 
 
 #
@@ -1146,21 +1154,21 @@ chmod +x /home/ubuntu/cloudsim/reboot_""" + machine_name + """.bash
 #
 
 # ----------------------------------------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/update_constellation.bash
+cat <<DELIM > """ + cloudsim_dir + """/update_constellation.bash
 #!/bin/bash
 
 # update local packages on the router
 # sudo cloudsim/update_drcsim.bash
 
-. /home/ubuntu/cloudsim/gzweb/deploy.sh
+. """ + cloudsim_dir + """/gzweb/deploy.sh
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/update_constellation.bash
+chmod +x """ + cloudsim_dir + """/update_constellation.bash
 
 # ----------------------------------------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/start_gzweb.bash
+cat <<DELIM > """ + cloudsim_dir + """/start_gzweb.bash
 #!/bin/bash
-logfile=/home/ubuntu/cloudsim/start_gzweb.log
+logfile=""" + cloudsim_dir + """/start_gzweb.log
 exec >> \$logfile 2>&1
 
 echo "#"
@@ -1169,76 +1177,73 @@ date
 
 # sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8080
 
-/home/ubuntu/cloudsim/gzweb/start_gzweb.sh &
+""" + cloudsim_dir + """/gzweb/start_gzweb.sh &
 
 sudo start cloudsim_notebook
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/start_gzweb.bash
+chmod +x """ + cloudsim_dir + """/start_gzweb.bash
 
 # ----------------------------------------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/stop_gzweb.bash
+cat <<DELIM > """ + cloudsim_dir + """/stop_gzweb.bash
 #!/bin/bash
-logfile=/home/ubuntu/cloudsim/stop_gzweb.log.log
+logfile=""" + cloudsim_dir + """/stop_gzweb.log.log
 exec >> \$logfile 2>&1
 
 echo "#"
 echo "#"
 date
 
-/home/ubuntu/cloudsim/gzweb/stop_gzweb.sh
+""" + cloudsim_dir + """/gzweb/stop_gzweb.sh
 
 sudo stop cloudsim_notebook
 
 DELIM
 
-chmod +x /home/ubuntu/cloudsim/stop_gzweb.bash
+chmod +x """ + cloudsim_dir + """/stop_gzweb.bash
 
 # ----------------------------------------------------------------------------
-cat <<DELIM > /home/ubuntu/cloudsim/ping_gzweb.bash
+cat <<DELIM > """ + cloudsim_dir + """/ping_gzweb.bash
 #!/bin/bash
 
 # Fails if gzbridge is not running, returns 0 otherwize
 ps aux | grep ws_server  | grep -v grep
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/ping_gzweb.bash
-
-
-
+chmod +x """ + cloudsim_dir + """/ping_gzweb.bash
 
 """
-    
+
 # now create a script that contains all the scripts together
     deploy_script = """#!/bin/bash
 # Exit on error
 set -ex
 # Redirect everybody's output to a file
-logfile=/home/ubuntu/cloudsim/deploy.log
+logfile=""" + cloudsim_dir + """/deploy.log
 exec > $logfile 2>&1
 
 # copy keys to cloudsim directory
-cp /home/ubuntu/cloudsim/deploy/*.pem /home/ubuntu/cloudsim
+cp """ + cloudsim_dir + """/deploy/*.pem """ + cloudsim_dir + """
 
 """ + ssh_scripts + """
 
 
-cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
+cat <<DELIM > """ + cloudsim_dir + """/ping_gl.bash
 #!/bin/bash
 
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "DISPLAY=localhost:0 timeout -k 1 5 glxinfo"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """  "DISPLAY=localhost:0 timeout -k 1 5 glxinfo"
 DELIM
-chmod +x /home/ubuntu/cloudsim/ping_gl.bash
+chmod +x """ + cloudsim_dir + """/ping_gl.bash
 
 # --------------------------------------------
 
-cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
+cat <<DELIM > """ + cloudsim_dir + """/stop_sim.bash
 #!/bin/bash
 sudo stop vrc_netwatcher
 kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
 sudo stop vrc_bytecounter
 sudo redis-cli set vrc_target_outbound_latency 0
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "bash cloudsim/stop_sim.bash"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """  "bash cloudsim/stop_sim.bash"
 sudo iptables -F FORWARD
 
 # Stop the latency injection
@@ -1248,24 +1253,24 @@ sudo stop vrc_controller_public
 """ + restore_default_tc_rules + """
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/stop_sim.bash
+chmod +x """ + cloudsim_dir + """/stop_sim.bash
 
 
 # --------------------------------------------
 
-cat <<DELIM > /home/ubuntu/cloudsim/ping_gazebo.bash
+cat <<DELIM > """ + cloudsim_dir + """/ping_gazebo.bash
 #!/bin/bash
 
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
- -i /home/ubuntu/cloudsim/key-sim.pem -n ubuntu@""" + SIM_IP + """ \
+ -i """ + cloudsim_dir + """/key-sim.pem -n ubuntu@""" + SIM_IP + """ \
  ". /usr/share/drcsim/setup.sh; timeout -k 1 5 gztopic list"
 
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/ping_gazebo.bash
+chmod +x """ + cloudsim_dir + """/ping_gazebo.bash
 # --------------------------------------------
 
-cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
+cat <<DELIM > """ + cloudsim_dir + """/start_sim.bash
 #!/bin/bash
 
 # Just rename the old network usage file
@@ -1282,17 +1287,17 @@ sudo stop vrc_netwatcher
 kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
 sudo stop vrc_bytecounter
 sudo start vrc_netwatcher
-if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  "nohup bash cloudsim/start_sim.bash \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"; then
+if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """  "nohup bash cloudsim/start_sim.bash \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"; then
   echo "[router start_sim.bash] simulator start_sim.bash returned non-zero"
   exit 1
 fi
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/start_sim.bash
+chmod +x """ + cloudsim_dir + """/start_sim.bash
 
 # --------------------------------------------
 
-cat <<DELIM > /home/ubuntu/cloudsim/copy_net_usage.bash
+cat <<DELIM > """ + cloudsim_dir + """/copy_net_usage.bash
 #!/bin/bash
 
 # 1. Copy the directory containing the JSON task file and the network usage to the simulator
@@ -1306,22 +1311,22 @@ fi
 
 echo --- >> copy_net_usage.log 2>&1
 
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  mkdir -p /home/ubuntu/cloudsim/logs >> copy_net_usage.log 2>&1
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """  mkdir -p """ + cloudsim_dir + """/logs >> copy_net_usage.log 2>&1
 
 TASK_DIRNAME=\$1
 if [ -f /tmp/vrc_netwatcher_usage.log ];
 then
   cp /tmp/vrc_netwatcher_usage.log \$TASK_DIRNAME >> copy_net_usage.log 2>&1
 fi
-scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem -r /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME ubuntu@""" + SIM_IP + """ :/home/ubuntu/cloudsim/logs/ >> copy_net_usage.log 2>&1
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem -r """ + cloudsim_dir + """/logs/\$TASK_DIRNAME ubuntu@""" + SIM_IP + """ :""" + cloudsim_dir + """/logs/ >> copy_net_usage.log 2>&1
 
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """  bash /home/ubuntu/cloudsim/send_to_portal.bash \$1 \$2 /home/ubuntu/ubuntu-portal.key vrcportal-test.osrfoundation.org >> copy_net_usage.log 2>&1
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """  bash """ + cloudsim_dir + """/send_to_portal.bash \$1 \$2 /home/ubuntu/ubuntu-portal.key vrcportal-test.osrfoundation.org >> copy_net_usage.log 2>&1
 DELIM
-chmod +x /home/ubuntu/cloudsim/copy_net_usage.bash
+chmod +x """ + cloudsim_dir + """/copy_net_usage.bash
 
 # --------------------------------------------
 
-cat <<DELIM > /home/ubuntu/cloudsim/get_sim_logs.bash
+cat <<DELIM > """ + cloudsim_dir + """/get_sim_logs.bash
 #!/bin/bash
 
 # Get state.log and score.log from the simulator 
@@ -1335,23 +1340,23 @@ fi
 
 TASK_DIRNAME=\$1
 
-mkdir -p /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME
+mkdir -p """ + cloudsim_dir + """/logs/\$TASK_DIRNAME
 
 # Copy the log files
-scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /home/ubuntu/cloudsim/key-sim.pem ubuntu@""" + SIM_IP + """ :/tmp/\$TASK_DIRNAME/* /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME || true
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """ :/tmp/\$TASK_DIRNAME/* """ + cloudsim_dir + """/logs/\$TASK_DIRNAME || true
 
 # Copy the network usage
 if [ -f /tmp/vrc_netwatcher_usage.log ];
 then
-  cp /tmp/vrc_netwatcher_usage.log /home/ubuntu/cloudsim/logs/\$TASK_DIRNAME >> copy_net_usage.log 2>&1
+  cp /tmp/vrc_netwatcher_usage.log """ + cloudsim_dir + """/logs/\$TASK_DIRNAME >> copy_net_usage.log 2>&1
 fi
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/get_sim_logs.bash
+chmod +x """ + cloudsim_dir + """/get_sim_logs.bash
 
 # ----------------------------------------------------
 
-cat <<DELIM > /home/ubuntu/cloudsim/get_network_usage.bash
+cat <<DELIM > """ + cloudsim_dir + """/get_network_usage.bash
 #!/bin/bash
 
 #
@@ -1360,11 +1365,11 @@ cat <<DELIM > /home/ubuntu/cloudsim/get_network_usage.bash
 tail -1 /tmp/vrc_netwatcher_usage.log
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/get_network_usage.bash
+chmod +x """ + cloudsim_dir + """/get_network_usage.bash
 
 # ----------------------------------------------------
 
-cat <<DELIM > /home/ubuntu/cloudsim/get_score.bash
+cat <<DELIM > """ + cloudsim_dir + """/get_score.bash
 #!/bin/bash
 
 . /usr/share/drcsim/setup.sh
@@ -1373,11 +1378,11 @@ timeout -k 1 10 rostopic echo -p /vrc_score -n 1
 
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/get_score.bash
+chmod +x """ + cloudsim_dir + """/get_score.bash
 
 
 # configure openvpn
-sudo cp /home/ubuntu/cloudsim/deploy/openvpn.key /etc/openvpn/static.key
+sudo cp """ + cloudsim_dir + """/deploy/openvpn.key /etc/openvpn/static.key
 sudo chmod 644 /etc/openvpn/static.key
 sudo service openvpn restart
 
@@ -1388,7 +1393,16 @@ sudo ifconfig
     return deploy_script
 
 
+class UpperCase(unittest.TestCase):
+    def test_one(self):
+        dst_dir = '/home/hugo/code/tests/deploy_test'
+        s = get_router_deploy_script("eth0", "eth0", {"sim": "10.51",
+                                            "router": "10.50"}, dst_dir)
+        fname = os.path.join(dst_dir, "gen.sh")
+        with open(fname, 'w') as f:
+             f.write(s)
+
 if __name__ == "__main__":
     print("MAIN in %s" % __file__)
-
-
+    xmlTestRunner = get_test_runner()
+    unittest.main(testRunner=xmlTestRunner)
