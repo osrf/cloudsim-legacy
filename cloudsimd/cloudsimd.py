@@ -1001,7 +1001,12 @@ if __name__ == "__main__":
         config ['other_users'] = []
         config ['cs_role'] = "admin"
         config ['cs_admin_users'] = []
-        
+        #openstack
+        config['openstack'] ={'username' : 'admin',
+                              'api_key' : 'cloudsim',
+                              'auth_url' : 'http://172.16.0.201:5000/v2.0',
+                              'project_id' : 'admin',
+                              'service_type' : 'compute'}
         set_cloudsim_config(config)
         _load_cloudsim_configurations_list()
 

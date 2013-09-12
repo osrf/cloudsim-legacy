@@ -27,7 +27,7 @@ from launch_utils.launch_db import get_cloudsim_config, log_msg, set_cloudsim_co
 
 from vrc_contest import create_private_machine_zip
 from launch_utils import acquire_aws_server, terminate_aws_server
-from launch_utils.openstack import acquire_openstack_server, terminate_openstack_server, get_nova_creds
+from launch_utils.openstack import acquire_openstack_server, terminate_openstack_server
 from launch_utils.sl_cloud import acquire_dedicated_sl_server,\
     terminate_dedicated_sl_server
 
@@ -292,7 +292,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
                                     tags)
         constellation.set_value("aws_id", aws_id)
     elif "OpenStack" in cloud_provider:
-        openstack_creds = get_nova_creds()
+        openstack_creds = cfg['openstack']
         script = get_cloudsim_startup_script()
         pub_ip, instance_id, key_prefix = acquire_openstack_server(
                                     constellation_name,
