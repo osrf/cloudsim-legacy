@@ -1,12 +1,18 @@
 #!/bin/bash
 
-if [ "$1" == "-f" ]; then
-  force=1
-  # Wipe out redis keys, so that we'll know later when cloudsimd is up
-  redis-cli flushdb
-else
-  force=0
-fi
+force=0
+basic_auth=0
+for arg in $*; do
+  if [ "$arg" == "-f" ]; then
+    force=1
+    # Wipe out redis keys, so that we'll know later when cloudsimd is up
+    redis-cli flushdb
+  elif [ "$arg" == "-b" ]; then
+    basic_auth=1 
+  else
+    echo "Warning: ignoring unrecognized argument: $arg"
+  fi
+done
 
 
 # DIR="/home/ubuntu/cloudsim"
@@ -17,7 +23,11 @@ echo
 echo copying data from $DIR to /var/www and /var/www-cloudsim-auth/users
 echo
 
-sudo cp $DIR/distfiles/apache2.conf /etc/apache2/apache2.conf
+if [ "$basic_auth" == "1" ]; then
+  sudo cp $DIR/distfiles/apache2-basic-auth.conf /etc/apache2/apache2.conf
+else
+  sudo cp $DIR/distfiles/apache2.conf /etc/apache2/apache2.conf
+fi
 
 sudo rm -rf /var/www
 sudo mkdir -p /var/www
@@ -77,3 +87,15 @@ sudo stop cloudsimd
 sudo start cloudsimd
 
 sudo apache2ctl restart
+
+if [ "$basic_auth" == "1" ]; then
+  echo ""
+  echo "*******************************************************************"
+  echo "Configured to use HTTP Basic Authentication.  If you haven't done so"
+  echo "already, you need to add at least one user to the htpasswd file: "
+  echo "  /var/www-cloudsim-auth/htpasswd"
+  echo "E.g.:"
+  echo "  sudo htpasswd /var/www-cloudsim-auth/htpasswd myusername"
+  echo "Users in htpasswd must match those in /var/www-cloudsim-auth/users."
+  echo "*******************************************************************"
+fi

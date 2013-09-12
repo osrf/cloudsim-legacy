@@ -12,24 +12,28 @@ cgitb.enable()
 
 EMAIL_VARNAME = 'openid.ext1.value.email'
 
-# Get form and cookie data
-form = cgi.FieldStorage()
-email = form.getfirst(EMAIL_VARNAME)
-in_cookies = Cookie.Cookie()
-in_cookies.load(os.environ[common.HTTP_COOKIE])
-openid_session = in_cookies[common.OPENID_SESSION_COOKIE_NAME].value
+# Are we using basic auth?
+auth_type, email = common.web.get_auth_type()
 
-sdb = common.SessionDatabase()
-sdb.load()
+if auth_type == 'OpenID':
+    # Get form and cookie data
+    form = cgi.FieldStorage()
+    email = form.getfirst(EMAIL_VARNAME)
+    in_cookies = Cookie.Cookie()
+    in_cookies.load(os.environ[common.HTTP_COOKIE])
+    openid_session = in_cookies[common.OPENID_SESSION_COOKIE_NAME].value
+    
+    sdb = common.SessionDatabase()
+    sdb.load()
+
+    if not email:
+        if openid_session in sdb.db:
+            email = sdb.db[openid_session]
 
 # Check email 
 udb = common.UserDatabase()
 users = udb.get_users()
 
-if not email:
-    if openid_session in sdb.db:
-        email = sdb.db[openid_session]
-        
 # Force email to lower case for comparison to users list, which we
 # lower-cased when loading.
 if email:
@@ -42,8 +46,7 @@ if email not in users:
         common.print_http_header()
         print("Access Denied ... '%s' not in users<br>" % (email))
         sys.exit(0)
-    else:
-        
+    elif auth_type == 'OpenID':
         out_cookies = Cookie.SmartCookie()
         out_cookies[common.OPENID_SESSION_COOKIE_NAME] = ''
         out_cookies[common.OPENID_SESSION_COOKIE_NAME]['path'] = '/cloudsim/inside/cgi-bin/'
@@ -59,8 +62,10 @@ if email not in users:
 
 # Save session ID and email to our own database
 
-sdb.db[openid_session] = email
-sdb.save()
+if auth_type == 'OpenID':
+    sdb.db[openid_session] = email
+    sdb.save()
+
 common.print_http_header()
 
 version_info = common.get_cloudsim_version_txt()
