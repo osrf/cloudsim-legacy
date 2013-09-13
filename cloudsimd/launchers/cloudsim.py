@@ -197,6 +197,12 @@ def upload_and_deploy_cloudsim(constellation_name,
     log("\t%s" % out_s)
     constellation_state.set_value('simulation_launch_msg', "deploying web app")
 
+    # Upload the installed apache2.conf from the papa cloudsim so that the
+    # junior cloudsim is configured the same way (e.g., uses basic auth instead
+    # of openid).
+    ssh_cli.upload_file('/etc/apache2/apache2.conf', 
+                        'cloudsim/distfiles/apache2.conf')
+
     if force:
         ssh_cli.cmd('cp cloudsim_users cloudsim/distfiles/users')
 
@@ -209,6 +215,9 @@ def upload_and_deploy_cloudsim(constellation_name,
     out_s = ssh_cli.cmd("bash " + deploy_script_fname)
     log("\t%s" % out_s)
 
+    # If applicable, copy in the htpasswd file, for use with basic auth.
+    if force and os.path.isfile('cloudsim_htpasswd'):
+        ssh_cli.cmd('sudo cp cloudsim_htpasswd /var/www-cloudsim-auth/htpasswd')
 
 def launch(username, configuration, constellation_name, tags,
            constellation_directory, website_distribution=CLOUDSIM_ZIP_PATH):
@@ -399,6 +408,14 @@ def launch(username, configuration, constellation_name, tags,
 
     log("add users to cloudsim: %s" % add_user_cmd)
     out = ssh_sim.cmd(add_user_cmd)
+    log("\t%s" % out)
+
+    # Add the currently logged-in user to the htpasswd file on the cloudsim
+    # junior.  This file will be copied into the installation location later, in 
+    # upload_and_deploy_cloudsim().
+    htpasswd_cmd = 'htpasswd -bc cloudsim_htpasswd ' + username + ' ' + constellation_name
+    log("add current user to htpasswd file: %s" % htpasswd_cmd)
+    out = ssh_sim.cmd(htpasswd_cmd)
     log("\t%s" % out)
 
     # fname_zip = os.path.join(constellation_directory, "cs","cs.zip")
