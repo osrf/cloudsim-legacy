@@ -673,7 +673,7 @@ def monitor(constellation_name):
     """
     Loop that monitors the execution of a constellation
     """
-    log("MONITOT [%s]" % (constellation_name))
+    log("MONITOR [%s]" % (constellation_name))
     try:
         proc = multiprocessing.current_process().name
         log("monitoring [%s] from proc '%s'" % (constellation_name, proc))
@@ -688,7 +688,7 @@ def monitor(constellation_name):
             try:
                 log("monitor %s (%s)" % (constellation_name, counter) )
                 done = constellation_plugin.monitor(constellation_name, counter)
-                #log("monitor return value %s" % ( done) )
+                log("monitor [%s] returned %s" % ( constellation_name, done) )
                 counter += 1
             except Exception, e:
                 done = False
@@ -710,7 +710,7 @@ def async_monitor(constellation_name):
     try:
         log("cloudsimd async_monitor %s" % (constellation_name))
         p = multiprocessing.Process(target=monitor, 
-                                    args=(constellation_name))
+                                    args=(constellation_name,))
         p.start()
     except Exception, e:
         log("cloudsimd async_monitor Error %s" % e)

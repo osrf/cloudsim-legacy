@@ -85,8 +85,8 @@ function create_gzweb_widget(machine_div,
             widget_div.querySelector("img").src = "/js/images/blue_status.png";
             var web_url = data['router_public_ip'] + ":8080";
             var notebook_url = data['router_public_ip'] + ":8888";
-            link_txt = '<a href="' + web_url + '">3D view</a> ' ;
-            link_txt += '<a href="' + notebook_url + '">Python notebook</a>' ;
+            link_txt = '<a href=http://' + web_url + '>3D view</a> ' ;
+            link_txt += '<a href=http://' + notebook_url + '>Python notebook</a>' ;
             if (link.innerHTML != link_txt)
             {
             	link.innerHTML = link_txt;
