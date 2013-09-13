@@ -121,23 +121,37 @@ def print_http_filedownload_header(fname, newline=True):
 class AuthException(Exception):
     pass
 
+# Returns (auth_type, user), where auth_type is either 'Basic' or 'OpenID'.  If
+# auth_type is 'Basic', then user will be the REMOTE_USER.  Otherwise, user will
+# be None.
+def get_auth_type():
+    if 'AUTH_TYPE' in os.environ and os.environ['AUTH_TYPE'] == 'Basic':
+        return ('Basic', os.environ['REMOTE_USER'])
+    else:
+        # Assume that we're using OpenID.
+        # TODO: a more definitive check.
+        return ('OpenID', None)
 
 def _check_auth(minimum_role):
-    # Get session ID from cookie
-    in_cookies = Cookie.Cookie()
-    in_cookies.load(os.environ[HTTP_COOKIE])
-    if OPENID_SESSION_COOKIE_NAME in in_cookies:
-        openid_session = in_cookies[OPENID_SESSION_COOKIE_NAME].value
-    else:
-        raise  AuthException("Access denied (no session ID found in cookies)")
-        sys.exit(0)
 
-    # Convert session ID to email
-    sdb = SessionDatabase()
-    if openid_session in sdb.db:
-        email = sdb.db[openid_session]
-    else:
-        raise AuthException("Access denied (session ID %s not found in db)"%(openid_session))
+    auth_type, email = get_auth_type()
+
+    if auth_type == 'OpenID':
+        # Get session ID from cookie
+        in_cookies = Cookie.Cookie()
+        in_cookies.load(os.environ[HTTP_COOKIE])
+        if OPENID_SESSION_COOKIE_NAME in in_cookies:
+            openid_session = in_cookies[OPENID_SESSION_COOKIE_NAME].value
+        else:
+            raise  AuthException("Access denied (no session ID found in cookies)")
+            sys.exit(0)
+
+        # Convert session ID to email
+        sdb = SessionDatabase()
+        if openid_session in sdb.db:
+            email = sdb.db[openid_session]
+        else:
+            raise AuthException("Access denied (session ID %s not found in db)"%(openid_session))
 
     # Compare email to user db
     udb = UserDatabase()
