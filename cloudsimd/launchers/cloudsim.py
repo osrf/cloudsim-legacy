@@ -216,8 +216,11 @@ def upload_and_deploy_cloudsim(constellation_name,
     log("\t%s" % out_s)
 
     # If applicable, copy in the htpasswd file, for use with basic auth.
-    if force and os.path.isfile('cloudsim_htpasswd'):
-        ssh_cli.cmd('sudo cp cloudsim_htpasswd /var/www-cloudsim-auth/htpasswd')
+    if force:
+        out_s = ssh_cli.cmd('sudo cp /home/ubuntu/cloudsim_htpasswd /var/www-cloudsim-auth/htpasswd')
+        log("\t%s" % out_s)
+    else:
+        log("Not installing htpasswd file")
 
 def launch(username, configuration, constellation_name, tags,
            constellation_directory, website_distribution=CLOUDSIM_ZIP_PATH):
