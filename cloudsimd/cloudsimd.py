@@ -845,19 +845,16 @@ def async_stop_gzweb(constellation_name):
 def launch_cmd(root_dir, data):
 
     username = data['username']
-    config = data['configuration']
     cloud_provider = data['cloud_provider']
     # extra arguments to the launch methd
     args = None
     if data.has_key('args'):
         args = data['args']
 
-    #if config.startswith("AWS"):
-    # number of constellations to create
     count = 1
     if data.has_key('count'):
         count = int(data['count'])
-    # log("CLOUDSIM Launch %s" % config)
+
     for i in range(count):
         constellation_name = "c" + get_unique_short_name()
         constellation_path = os.path.join(root_dir, constellation_name)
@@ -866,7 +863,7 @@ def launch_cmd(root_dir, data):
         cs.set_value('constellation_state', 'launching')
         data['constellation_directory'] = constellation_path
         async_launch(constellation_name, data)
-        async_monitor(config, constellation_name)
+        async_monitor(constellation_name)
 
 
 def run(root_dir, tick_interval):
