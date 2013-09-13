@@ -194,6 +194,7 @@ def monitor_gzweb_proc(constellation_name):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_gzweb(constellation_name, ssh_router, "sim_state")
 
+
 def monitor_launch(constellation_name, machine_name):
     ssh_router = _get_ssh_router(constellation_name)
     constellation = ConstellationState(constellation_name)
@@ -201,6 +202,7 @@ def monitor_launch(constellation_name, machine_name):
     monitor_launch_state(constellation_name, ssh_router, machine_state,
                              "cloudsim/dpkg_log_%s.bash" % machine_name,
                              '%s_launch_msg' % machine_name)
+
 
 def monitor(constellation_name, counter):
     time.sleep(1)
@@ -213,7 +215,6 @@ def monitor(constellation_name, counter):
     if launch_sequence.index(launch_stage) < launch_sequence.index('launch'):
         return False  # do it again later
 
-    ssh_router = _get_ssh_router(constellation_name)
     machines = constellation.get_value('machines')
 
     for machine_name in machines:
@@ -1325,7 +1326,6 @@ class MoniCase(unittest.TestCase):
         constellation_name = 'cx423e8b84'
         monitor_launch(constellation_name, "sim")
         monitor_launch(constellation_name, "router")
-
 
     def ztest_ping(self):
         constellation_name = 'cx593c6f5e'

@@ -27,7 +27,8 @@ from launch_utils.launch_db import get_cloudsim_config, log_msg, set_cloudsim_co
 
 from vrc_contest import create_private_machine_zip
 from launch_utils import acquire_aws_server, terminate_aws_server
-from launch_utils.openstack import acquire_openstack_server, terminate_openstack_server
+from launch_utils.openstack import acquire_openstack_server, terminate_openstack_server,\
+    get_nova_creds
 from launch_utils.sl_cloud import acquire_dedicated_sl_server,\
     terminate_dedicated_sl_server
 
