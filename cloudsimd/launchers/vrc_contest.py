@@ -1249,7 +1249,7 @@ class AwsCase(unittest.TestCase):
         constellation.set_value('current_task', "")
         constellation.set_value('tasks', [])
 
-    def test_launch(self):
+    def atest_launch(self):
         print("test_launch")
         tags = {}
         p = get_boto_path()
@@ -1323,9 +1323,10 @@ class SumCase(unittest.TestCase):
 class MoniCase(unittest.TestCase):
 
     def test_monitorsim(self):
-        constellation_name = 'cx423e8b84'
-        monitor_launch(constellation_name, "sim")
-        monitor_launch(constellation_name, "router")
+        constellation_name = 'cx9421ebe4'
+        monitor(constellation_name, 1)
+#         monitor_launch(constellation_name, "sim")
+#         monitor_launch(constellation_name, "router")
 
     def ztest_ping(self):
         constellation_name = 'cx593c6f5e'
@@ -1333,8 +1334,14 @@ class MoniCase(unittest.TestCase):
         ssh_ping_proc(constellation_name, '10.0.0.51', latency_key)
 
 if __name__ == "__main__":
-    xmlTestRunner = get_test_runner()
-    unittest.main(testRunner=xmlTestRunner)
+#    xmlTestRunner = get_test_runner()
+#    unittest.main(testRunner=xmlTestRunner)
+    constellation_name = 'cx9421ebe4'
+    c = 0
+    while True:
+        monitor(constellation_name, c)
+        c += 1
+
 #    n = 'cxceaae4dc'
 #    i = 0
 #    monitor(n, i)

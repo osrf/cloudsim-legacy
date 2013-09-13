@@ -673,6 +673,7 @@ def monitor(constellation_name):
     """
     Loop that monitors the execution of a constellation
     """
+    log("MONITOT [%s]" % (constellation_name))
     try:
         proc = multiprocessing.current_process().name
         log("monitoring [%s] from proc '%s'" % (constellation_name, proc))
@@ -964,7 +965,6 @@ if __name__ == "__main__":
         log("args: %s" % sys.argv)
 
         tick_interval = 5
-    
     
         boto_path = '/var/www-cloudsim-auth/boto-useast'
         softlayer_path = '/var/www-cloudsim-auth/softlayer.json'

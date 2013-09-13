@@ -223,6 +223,7 @@ def upload_and_deploy_cloudsim(constellation_name,
     else:
         log("Not installing htpasswd file")
 
+
 def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
 
     log("cloudsim launch %s  %s zip = %s" % (constellation_name,

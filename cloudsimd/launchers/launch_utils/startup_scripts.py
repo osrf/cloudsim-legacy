@@ -605,8 +605,11 @@ cd /home/ubuntu/cloudsim; hg clone https://bitbucket.org/osrf/gzweb
 #
 # ipython Notebook server
 #
-apt-get install -y ipython
+
+# apt-get install -y ipython
 apt-get install -y ipython-notebook
+apt-get install -y python-pip
+sudo pip install --upgrade ipython
 
 mkdir /home/ubuntu/cloudsim/notebook
 
