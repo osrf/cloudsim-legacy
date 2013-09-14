@@ -261,7 +261,7 @@ echo "redis installed" >> /home/ubuntu/setup.log
 apt-get install -y python-dateutil
 echo "python-dateutil installed" >> /home/ubuntu/setup.log
 
-sudo pip install --upgrade boto
+sudo pip install boto==2.8.0
 echo "boto installed" >> /home/ubuntu/setup.log
 
 sudo pip install SoftLayer
