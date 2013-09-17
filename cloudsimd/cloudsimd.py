@@ -889,12 +889,12 @@ def async_stop_gzweb(constellation_name):
     
 def launch_cmd(root_dir, data):
 
-    username = data['username']
+    """username = data['username']
     cloud_provider = data['cloud_provider']
     # extra arguments to the launch methd
     args = None
     if data.has_key('args'):
-        args = data['args']
+        args = data['args']"""
 
     count = 1
     if data.has_key('count'):
@@ -906,6 +906,7 @@ def launch_cmd(root_dir, data):
         os.makedirs(constellation_path)
         cs = ConstellationState(constellation_name)
         cs.set_value('constellation_state', 'launching')
+        cs.set_value('configuration', data['configuration'])
         data['constellation_directory'] = constellation_path
         async_launch(constellation_name, data)
         async_monitor(constellation_name)

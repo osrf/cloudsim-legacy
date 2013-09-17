@@ -1370,6 +1370,7 @@ sudo iptables -F FORWARD
 sudo stop vrc_netwatcher
 kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
 sudo stop vrc_bytecounter
+sudo """ + cloudsim_dir + """/stop_gzweb.bash
 sudo start vrc_netwatcher
 if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """  "nohup bash cloudsim/start_sim.bash \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"; then
   echo "[router start_sim.bash] simulator start_sim.bash returned non-zero"

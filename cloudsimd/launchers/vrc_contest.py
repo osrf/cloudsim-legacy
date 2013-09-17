@@ -175,33 +175,34 @@ def _get_ssh_router(constellation_name):
     return ssh_router
 
 
-def ssh_ping_proc(constellation_name, ip, latency_key):
+def ssh_ping_proc(constellation_name, ip, latency_key, counter):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_ssh_ping(constellation_name, ssh_router, ip, latency_key)
+    log("ssh ping_proc() ENDS %s %s" % (latency_key, counter))
 
-
-def monitor_task_proc(constellation_name):
+def monitor_task_proc(constellation_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_task(constellation_name, ssh_router)
+    log("monitor_task_proc() ENDS %s" % counter)
 
-
-def monitor_simulator_proc(constellation_name):
+def monitor_simulator_proc(constellation_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_simulator(constellation_name, ssh_router, "sim_state")
+    log("monitor_simulator_proc() ENDS %s" % counter)
 
-
-def monitor_gzweb_proc(constellation_name):
+def monitor_gzweb_proc(constellation_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_gzweb(constellation_name, ssh_router, "sim_state")
+    log("monitor_gzweb_proc() ENDS %s" % counter)
 
-
-def monitor_launch(constellation_name, machine_name):
+def monitor_launch(constellation_name, machine_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     constellation = ConstellationState(constellation_name)
     machine_state = constellation.get_value('%s_state' % machine_name)
     monitor_launch_state(constellation_name, ssh_router, machine_state,
                              "cloudsim/dpkg_log_%s.bash" % machine_name,
                              '%s_launch_msg' % machine_name)
+    log("monitor_launch() ENDS %s %s" % (machine_name, counter))
 
 
 def monitor(constellation_name, counter):
@@ -218,19 +219,19 @@ def monitor(constellation_name, counter):
     machines = constellation.get_value('machines')
 
     for machine_name in machines:
-        monitor_launch(constellation_name, machine_name)
+        monitor_launch(constellation_name, machine_name, counter)
 
     procs = []
     p = multiprocessing.Process(target=monitor_simulator_proc,
-                            args=(constellation_name,))
+                            args=(constellation_name, counter))
     procs.append(p)
 
     p = multiprocessing.Process(target=monitor_task_proc,
-                                    args=(constellation_name,))
+                                    args=(constellation_name, counter))
     procs.append(p)
 
     p = multiprocessing.Process(target=monitor_gzweb_proc,
-                            args=(constellation_name,))
+                            args=(constellation_name, counter))
     procs.append(p)
 
     for machine_name, data in machines.iteritems():
@@ -240,7 +241,7 @@ def monitor(constellation_name, counter):
         p = multiprocessing.Process(target=ssh_ping_proc,
                         args=(constellation_name,
                               ip,
-                              '%s_latency' % machine_name))
+                              '%s_latency' % machine_name, counter))
         procs.append(p)
 
     for p in procs:
