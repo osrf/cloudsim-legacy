@@ -986,25 +986,26 @@ MAX_TIME=30
 echo \`date\` "Stop sim - Begin" >> /home/ubuntu/cloudsim/stop_sim.log
 . /usr/share/drcsim/setup.sh
 
-if timeout -k 1 2 gztopic list; then
-  LOG_PATH=\`ps aux | grep gzserver | grep -m 1 record_path | cut -d = -f 3 | cut -d ' ' -f 1\`/state.log
-  echo "  Log file: \$LOG_PATH" >> /home/ubuntu/cloudsim/stop_sim.log 
-  timeout -k 1 10 gzlog stop
-  # Let cleanup start, which pauses the world
-  sleep 5
-  while [ "\`timeout -k 1 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1\`" != " F" ]; do
-    sleep 1
-    if [ "\`ps aux | grep gzserver | wc -l\`" == "1" ]; then
-        echo "  gzserver died, force exit" >> /home/ubuntu/cloudsim/stop_sim.log
-        break
-    fi
-    # look for the name of the Log file
-    if [ "\`tail -n 1 \$LOG_PATH\`" = "</gazebo_log>" ] ; then 
-        echo "  Log end tag detected" >> /home/ubuntu/cloudsim/stop_sim.log
-        break
-    fi
-  done
-fi
+# TODO: re-enable this log cleanup logic.  Waiting on Gazebo issue #842
+#if timeout -k 1 2 gztopic list; then
+#  LOG_PATH=\`ps aux | grep gzserver | grep -m 1 record_path | cut -d = -f 3 | cut -d ' ' -f 1\`/state.log
+#  echo "  Log file: \$LOG_PATH" >> /home/ubuntu/cloudsim/stop_sim.log 
+#  timeout -k 1 10 gzlog stop
+#  # Let cleanup start, which pauses the world
+#  sleep 5
+#  while [ "\`timeout -k 1 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1\`" != " F" ]; do
+#    sleep 1
+#    if [ "\`ps aux | grep gzserver | wc -l\`" == "1" ]; then
+#        echo "  gzserver died, force exit" >> /home/ubuntu/cloudsim/stop_sim.log
+#        break
+#    fi
+#    # look for the name of the Log file
+#    if [ "\`tail -n 1 \$LOG_PATH\`" = "</gazebo_log>" ] ; then 
+#        echo "  Log end tag detected" >> /home/ubuntu/cloudsim/stop_sim.log
+#        break
+#    fi
+#  done
+#fi
 killall -INT roslaunch || true
 
 tstart=\$(date +%s)
