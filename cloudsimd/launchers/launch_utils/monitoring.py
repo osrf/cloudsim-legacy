@@ -224,10 +224,11 @@ def monitor_gzweb(constellation_name, ssh_client, sim_state):
         gl_state = constellation.get_value("gazebo")
         if gl_state == "running":
             try:
+                # current_state = constellation.get_value(gzweb_key)
                 out = ssh_client.cmd("bash cloudsim/ping_gzweb.bash")
                 log("ping_gzweb returned [%s]" % out)
                 if out == "":
-                    constellation.set_value(gzweb_key, "")
+                    constellation.set_value(gzweb_key, "not running")
                     return False
                 else:
                     constellation.set_value(gzweb_key, "running")

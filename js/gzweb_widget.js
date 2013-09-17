@@ -25,7 +25,7 @@ function create_gzweb_widget(machine_div,
     	start_button.disabled = true;
         setTimeout( function(){
         	start_button.disabled = false;
-            }, 3000); // setTimeOut
+            }, 10000); // setTimeOut
     }
     widget_div.appendChild(start_button);
 
@@ -35,6 +35,10 @@ function create_gzweb_widget(machine_div,
     stop_button.onclick =  function()
     {
     	stop_web_tools(constellation_name);
+    	stop_button.disabled = true;
+        setTimeout( function(){
+        	stop_button.disabled = false;
+         }, 5000); // setTimeOut
     }
     widget_div.appendChild(stop_button);
  
@@ -44,12 +48,19 @@ function create_gzweb_widget(machine_div,
     
     var count = 0;
     var link_txt = "";
+    var img = widget_div.querySelector("img");
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name != constellation_name)
             return;
-
+        
+        if (count == 100) 
+            count =0;
+        else 
+            count ++;
+        
         var gzweb_running = false;
         var simulator_running = false;
+        
         
         // X and simulator must be running
         if (data[glx_key] == "running")
@@ -60,7 +71,7 @@ function create_gzweb_widget(machine_div,
             }
             else
             {
-            	widget_div.querySelector("img").src = "/js/images/red_status.png";
+            	img.src = "/js/images/red_status.png";
             	link_txt = "";
             	if(link.innerHTML != link_txt)
             		link.innerHTML = link_txt;
@@ -71,7 +82,7 @@ function create_gzweb_widget(machine_div,
         }
         if (simulator_running == false)
         {
-        	widget_div.querySelector("img").src = "/js/images/red_status.png";
+        	img.src = "/js/images/red_status.png";
         	link_txt = "";
         	if(link.innerHTML != link_txt)
         		link.innerHTML = link_txt;
@@ -82,7 +93,7 @@ function create_gzweb_widget(machine_div,
         
         if (data[gz_web_key] == "running")
         {
-            widget_div.querySelector("img").src = "/js/images/blue_status.png";
+            img.src = "/js/images/blue_status.png";
             var web_url = data['router_public_ip'] + ":8080";
             var notebook_url = data['router_public_ip'] + ":8888";
             link_txt = '<a href=http://' + web_url + '>3D view</a> ' ;
@@ -96,18 +107,20 @@ function create_gzweb_widget(machine_div,
         }
         else if (data[gz_web_key] == "starting")
         {
-        	colors =  ["/js/images/blue_status.png", "/js/images/blue_status.png"];
+        	colors =  ["/js/images/gray_status.png", "/js/images/blue_status.png"];
         	var color = colors[count % colors.length];
-        	widget_div.querySelector("img").src = color;
-            if (count == 100) 
-                count =0;
-            else 
-                count ++;
+        	img.src = color;
         }	
+        else if (data[gz_web_key] == "stopping")
+        {
+        	colors =  ["/js/images/gray_status.png", "/js/images/red_status.png"];
+        	var color = colors[count % colors.length];
+        	img.src = color;
+        }
         else
         {
         	link.innerHTML = "";
-            widget_div.querySelector("img").src = "/js/images/gray_status.png";
+            img.src = "/js/images/gray_status.png";
             stop_button.disabled = true;
             start_button.disabled = false;
             return;

@@ -25,7 +25,7 @@ from launch_utils.launch_db import get_constellation_data, ConstellationState,\
     get_cloudsim_config, log_msg
 
 from launch_utils.testing import get_test_path,\
-    get_boto_path, get_test_dir, get_test_runner
+    get_boto_path, get_test_dir
 
 from launch_utils import get_unique_short_name
 from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\

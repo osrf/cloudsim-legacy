@@ -482,8 +482,8 @@ def start_gzweb(constellation_name):
         constellation = ConstellationState(constellation_name)
         config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
-        constellation_plugin.start_gzweb(constellation_name)
         constellation.set_value("gzweb", 'starting')
+        constellation_plugin.start_gzweb(constellation_name)
     except Exception, e:
         log("cloudsimd.py start_gzweb error: %s" % e)
         tb = traceback.format_exc()
@@ -500,6 +500,7 @@ def stop_gzweb(constellation_name):
         constellation = ConstellationState(constellation_name)
         config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
+        constellation.set_value("gzweb", 'stopping')
         constellation_plugin.stop_gzweb(constellation_name)
     except Exception, e:
         log("cloudsimd.py stop_gzweb error: %s" % e)
