@@ -561,8 +561,7 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
                        constellation_directory,
                        machine_names,
                        "cloudsim/setup/done",
-                       "running",
-                       True)
+                       "running")
     log("_run_machines machines %s : %s rebooted!" % (constellation_name,
                                                      machine_names))
 
