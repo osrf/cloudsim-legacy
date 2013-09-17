@@ -33,7 +33,8 @@ def acquire_aws_server(constellation_name,
                        constellation_directory,
                        machine_prefix,
                        startup_script,
-                       tags):
+                       tags,
+                       ami_key):
 
     sim_machine_name = "%s_%s" % (machine_prefix, constellation_name)
     sim_key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
@@ -59,7 +60,8 @@ def acquire_aws_server(constellation_name,
     key_pair = ec2conn.create_key_pair(sim_key_pair_name)
     key_pair.save(constellation_directory)
     amis = _get_amazon_amis(availability_zone)
-    aws_image = amis['ubuntu_1204_x64']
+    aws_image = amis[ami_key]
+    #aws_image = amis['ubuntu_1204_x64']
 
     roles_to_reservations = {}
 
@@ -657,9 +659,11 @@ def _get_amazon_amis(availability_zone):
         amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
         amis['ubuntu_1204_x64'] = 'ami-f2191786'
 
+
     elif availability_zone.startswith('us-east'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
         amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
+        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-adeca4c4'
 
     elif availability_zone.startswith('nova'):
         # TODO: we might want to move image ids to a configuration file

@@ -246,13 +246,33 @@ def get_plugin(configuration):
     """
     plugin = None
     #log("get_plugin '%s'" % configuration)
-    if configuration.startswith("CloudSim"):
+
+    if configuration.startswith("CloudSim-stable"):
+        from launchers import cloudsim as c
+        plugin = ConstellationPlugin(c.launch_stable, 
+                                     c.terminate,
+                                     c.update,
+                                     c.monitor,
+                              None, None, None, None)
+
+    elif configuration.startswith("CloudSim"):
         from launchers import cloudsim as c
         plugin = ConstellationPlugin(c.launch, 
                                      c.terminate,
                                      c.update,
                                      c.monitor,
                               None, None, None, None)
+    elif configuration.startswith('DRC-stable'):
+        #from launchers import amazon_trio as c
+        from launchers import vrc_contest as c
+        plugin = ConstellationPlugin(c.launch_stable,
+                                     c.terminate,
+                                     c.update,
+                                     c.monitor,
+                                     c.start_task,
+                                     c.stop_task,
+                                     c.start_gzweb,
+                                     c.stop_gzweb)
     elif configuration.startswith('DRC'):
         #from launchers import amazon_trio as c
         from launchers import vrc_contest as c
@@ -323,6 +343,14 @@ def _load_cloudsim_configurations_list():
 </ol>
 """     
     configs['CloudSim'] = {'description': desc}
+    desc = """The CloudSim Web App running in the Cloud (Stable version)
+<ol>
+  <li>Hardware: micro</li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>Web server: Apache</li>
+</ol>
+"""     
+    configs['CloudSim-stable'] = {'description': desc}
 
     set_cloudsim_configuration_list(configs)
 

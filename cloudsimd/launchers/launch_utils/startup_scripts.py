@@ -222,6 +222,21 @@ deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
 
 DELIM
 
+mkdir -p /home/ubuntu/cloudsim
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_sim.bash
+#!/bin/bash
+
+ls \$1
+DELIM
+
+cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_sim.bash
+#!/bin/bash
+
+tail -1 /var/log/dpkg.log
+DELIM
+
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+
 apt-get update
 apt-get install -y python-software-properties
 

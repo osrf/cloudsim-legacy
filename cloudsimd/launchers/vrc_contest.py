@@ -600,16 +600,10 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
 
 
 def deploy_constellation(constellation_name, cloud_provider, machines):
-
     constellation = ConstellationState(constellation_name)
 
     constellation_directory = constellation.get_value(
                                                     'constellation_directory')
-    ssh_router = _get_ssh_router(constellation_name)
-    openvpn_fname = os.path.join(constellation_directory, 'openvpn.key')
-    create_openvpn_key(openvpn_fname)
-
-    _create_zip_files(constellation_name, constellation_directory, machines)
 
     deploy_fname = _create_deploy_zip_files(constellation_name,
         constellation_directory,
@@ -656,16 +650,19 @@ def deploy_constellation(constellation_name, cloud_provider, machines):
     _reboot_machines(constellation_name, ssh_router,
                      machines_to_reboot, constellation_directory)
 
-    _run_machines(constellation_name, machines.keys(), constellation_directory)
-    constellation.set_value("launch_stage", "running")
-
 
 #def launch(username, config, constellation_name, tags,
 #           constellation_directory, credentials_override=None):
-def launch(constellation_name, tags):
+def launch_common(constellation_name, tags):
     """
     Called by cloudsimd when it receives a launch message
     """
+    scripts = {}
+    scripts['router'] = ''
+    scripts['sim'] = ''
+    scripts['fc1'] = ''
+    scripts['fc2'] = ''
+
     cloud_provider = tags['cloud_provider']
     #username = tags['username']
     config = tags['config']
@@ -693,23 +690,6 @@ def launch(constellation_name, tags):
     log("launch constellation name: %s" % constellation_name)
 
     constellation.set_value("launch_stage", "launch")
-
-    drcsim_package_name = "drcsim"
-    ppa_list = []  # ['ubuntu-x-swat/x-updates']
-    gpu_driver_list = ['nvidia-current',
-                       'nvidia-settings',
-                       'nvidia-current-dev',
-                       'nvidia-cg-toolkit']
-
-    if config.find("nightly") >= 0:
-        drcsim_package_name = "drcsim-nightly"
-    elif config.find("nvidia 319") >= 0:
-        ppa_list = ['xorg-edgers/ppa']
-        gpu_driver_list = ["nvidia-319", 'nvidia-settings']
-
-    log("DRC package %s" % drcsim_package_name)
-    log("ppas: %s" % ppa_list)
-    log("gpu packages %s" % gpu_driver_list)
 
     #
     # lets build a list of machines for our constellation
@@ -817,7 +797,24 @@ def launch(constellation_name, tags):
 
     ros_master_ip = SIM_IP
 
-    scripts = {}
+    # Not needed for custom AMIs
+    drcsim_package_name = "drcsim"
+    ppa_list = []  # ['ubuntu-x-swat/x-updates']
+    gpu_driver_list = ['nvidia-current',
+                       'nvidia-settings',
+                       'nvidia-current-dev',
+                       'nvidia-cg-toolkit']
+
+    if config.find("nightly") >= 0:
+        drcsim_package_name = "drcsim-nightly"
+    elif config.find("nvidia 319") >= 0:
+        ppa_list = ['xorg-edgers/ppa']
+        gpu_driver_list = ["nvidia-319", 'nvidia-settings']
+
+    log("DRC package %s" % drcsim_package_name)
+    log("ppas: %s" % ppa_list)
+    log("gpu packages %s" % gpu_driver_list)
+
     scripts['router'] = get_router_script(router_public_network_itf,
                                       router_private_network_itf,
                                       ROUTER_IP,
@@ -855,6 +852,7 @@ def launch(constellation_name, tags):
 
     if has_fc2:
         scripts['fc2'] = fc2_script
+    # ---
 
     cs_cfg = get_cloudsim_config()
     if cloud_provider == "softlayer":
@@ -886,8 +884,27 @@ def launch(constellation_name, tags):
                                   scripts,
                                   tags)
 
-    deploy_constellation(constellation_name, cloud_provider, machines,)
+    # Setup the VPN
+    ssh_router = _get_ssh_router(constellation_name)
+    openvpn_fname = os.path.join(constellation_directory, 'openvpn.key')
+    create_openvpn_key(openvpn_fname)
 
+    _create_zip_files(constellation_name, constellation_directory, machines)
+
+    # Not required with custom AMI
+    if constellation.get_value('configuration') == 'DRC' or \
+       constellation.get_value('configuration') == 'DRC with FC':
+        deploy_constellation(constellation_name, cloud_provider, machines,)
+
+    # Waiting for machines to be ready
+    _run_machines(constellation_name, machines.keys(), constellation_directory)
+    constellation.set_value("launch_stage", "running")
+
+def launch(constellation_name, tags):
+    launch_common(constellation_name, tags)
+
+def launch_stable(constellation_name, tags):
+    launch_common(constellation_name, tags)
 
 def terminate(constellation_name):
     constellation = ConstellationState(constellation_name)

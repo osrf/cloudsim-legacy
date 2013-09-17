@@ -69,7 +69,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
     	}
     }
 
-    if(configuration == "CloudSim")
+    if(configuration.indexOf("CloudSim") == 0)
     {
     	var disable_key_download  = false;
     	if(get_user_info()['role'] == 'user')
