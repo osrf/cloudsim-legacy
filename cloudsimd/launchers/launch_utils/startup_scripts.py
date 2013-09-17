@@ -276,7 +276,7 @@ echo "redis installed" >> /home/ubuntu/setup.log
 apt-get install -y python-dateutil
 echo "python-dateutil installed" >> /home/ubuntu/setup.log
 
-sudo pip install --upgrade boto
+sudo pip install boto==2.8.0
 echo "boto installed" >> /home/ubuntu/setup.log
 
 sudo pip install SoftLayer
@@ -620,8 +620,11 @@ cd /home/ubuntu/cloudsim; hg clone https://bitbucket.org/osrf/gzweb
 #
 # ipython Notebook server
 #
-apt-get install -y ipython
+
+# apt-get install -y ipython
 apt-get install -y ipython-notebook
+apt-get install -y python-pip
+sudo pip install --upgrade ipython
 
 mkdir /home/ubuntu/cloudsim/notebook
 

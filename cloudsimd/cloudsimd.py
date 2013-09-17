@@ -483,6 +483,7 @@ def start_gzweb(constellation_name):
         config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
         constellation_plugin.start_gzweb(constellation_name)
+        constellation.set_value("gzweb", 'starting')
     except Exception, e:
         log("cloudsimd.py start_gzweb error: %s" % e)
         tb = traceback.format_exc()
@@ -715,7 +716,7 @@ def monitor(constellation_name):
     """
     Loop that monitors the execution of a constellation
     """
-    log("monitor() %s" % (constellation_name))
+    log("MONITOR [%s]" % (constellation_name))
     try:
         proc = multiprocessing.current_process().name
         log("monitoring [%s] from proc '%s'" % (constellation_name, proc))
@@ -730,7 +731,7 @@ def monitor(constellation_name):
             try:
                 log("monitor %s (%s)" % (constellation_name, counter) )
                 done = constellation_plugin.monitor(constellation_name, counter)
-                #log("monitor return value %s" % ( done) )
+                log("monitor [%s] returned %s" % ( constellation_name, done) )
                 counter += 1
             except Exception, e:
                 done = False
@@ -752,10 +753,8 @@ def async_monitor(constellation_name):
     try:
         log("cloudsimd async_monitor %s" % (constellation_name))
         p = multiprocessing.Process(target=monitor, 
-                                    args=(constellation_name))
-        log("cloudsimd async_monitor (before start()) %s" % (constellation_name))
+                                    args=(constellation_name,))
         p.start()
-        log("cloudsimd async_monitor (after start) %s" % (constellation_name))
     except Exception, e:
         log("cloudsimd async_monitor Error %s" % e)
 
@@ -890,19 +889,16 @@ def async_stop_gzweb(constellation_name):
 def launch_cmd(root_dir, data):
 
     username = data['username']
-    config = data['configuration']
     cloud_provider = data['cloud_provider']
     # extra arguments to the launch methd
     args = None
     if data.has_key('args'):
         args = data['args']
 
-    #if config.startswith("AWS"):
-    # number of constellations to create
     count = 1
     if data.has_key('count'):
         count = int(data['count'])
-    # log("CLOUDSIM Launch %s" % config)
+
     for i in range(count):
         constellation_name = "c" + get_unique_short_name()
         constellation_path = os.path.join(root_dir, constellation_name)
@@ -911,7 +907,7 @@ def launch_cmd(root_dir, data):
         cs.set_value('constellation_state', 'launching')
         data['constellation_directory'] = constellation_path
         async_launch(constellation_name, data)
-        async_monitor(config, constellation_name)
+        async_monitor(constellation_name)
 
 
 def run(root_dir, tick_interval):
@@ -1012,7 +1008,6 @@ if __name__ == "__main__":
         log("args: %s" % sys.argv)
 
         tick_interval = 5
-    
     
         boto_path = '/var/www-cloudsim-auth/boto-useast'
         softlayer_path = '/var/www-cloudsim-auth/softlayer.json'

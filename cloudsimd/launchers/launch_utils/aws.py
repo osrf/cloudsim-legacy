@@ -616,7 +616,8 @@ def aws_connect(creds_fname = None):
         config = get_cloudsim_config()
         # log("config: %s" % config)
         credentials_ec2 = config['boto_path']
-    ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint = read_boto_file(credentials_ec2)
+    ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint\
+        = read_boto_file(credentials_ec2)
     if ec2_region_name == 'nova':
         # TODO: remove hardcoded OpenStack endpoint
         region = RegionInfo(None, 'cloudsim', region_endpoint)  # 172.16.0.201

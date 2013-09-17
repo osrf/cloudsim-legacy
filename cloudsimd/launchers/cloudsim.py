@@ -27,7 +27,8 @@ from launch_utils.launch_db import get_cloudsim_config, log_msg, set_cloudsim_co
 
 from vrc_contest import create_private_machine_zip
 from launch_utils import acquire_aws_server, terminate_aws_server
-from launch_utils.openstack import acquire_openstack_server, terminate_openstack_server
+from launch_utils.openstack import acquire_openstack_server, terminate_openstack_server,\
+    get_nova_creds
 from launch_utils.sl_cloud import acquire_dedicated_sl_server,\
     terminate_dedicated_sl_server
 
@@ -209,6 +210,12 @@ def upload_and_deploy_cloudsim(constellation_name,
     log("\t%s" % out_s)
     constellation_state.set_value('simulation_launch_msg', "deploying web app")
 
+    # Upload the installed apache2.conf from the papa cloudsim so that the
+    # junior cloudsim is configured the same way (e.g., uses basic auth instead
+    # of openid).
+    ssh_cli.upload_file('/etc/apache2/apache2.conf', 
+                        'cloudsim/distfiles/apache2.conf')
+
     if force:
         ssh_cli.cmd('cp cloudsim_users cloudsim/distfiles/users')
 
@@ -219,9 +226,16 @@ def upload_and_deploy_cloudsim(constellation_name,
         deploy_script_fname += " -f"
     log("running deploy script '%s' remotely" % deploy_script_fname)
 
-def launch_common(constellation_name, tags, script, image_key,
-                  website_distribution=CLOUDSIM_ZIP_PATH):
-    
+    # If applicable, copy in the htpasswd file, for use with basic auth.
+    if force:
+        out_s = ssh_cli.cmd('sudo cp /home/ubuntu/cloudsim_htpasswd /var/www-cloudsim-auth/htpasswd')
+        log("\t%s" % out_s)
+    else:
+        log("Not installing htpasswd file")
+
+
+def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
+
     log("cloudsim launch %s  %s zip = %s" % (constellation_name,
                                              tags, website_distribution))
     cloud_provider = tags['cloud_provider']
@@ -261,7 +275,6 @@ def launch_common(constellation_name, tags, script, image_key,
     jr_other_users = cfg['other_users']
     jr_cs_role = cfg['cs_role']
     jr_cs_admin_users = cfg['cs_admin_users']
-
 
     if 'args' in tags:
         if type(tags['args']) == type(str()):
@@ -386,6 +399,14 @@ def launch_common(constellation_name, tags, script, image_key,
 
     log("add users to cloudsim: %s" % add_user_cmd)
     out = ssh_sim.cmd(add_user_cmd)
+    log("\t%s" % out)
+
+    # Add the currently logged-in user to the htpasswd file on the cloudsim
+    # junior.  This file will be copied into the installation location later, in 
+    # upload_and_deploy_cloudsim().
+    htpasswd_cmd = 'htpasswd -bc cloudsim_htpasswd ' + username + ' ' + constellation_name
+    log("add current user to htpasswd file: %s" % htpasswd_cmd)
+    out = ssh_sim.cmd(htpasswd_cmd)
     log("\t%s" % out)
 
     # fname_zip = os.path.join(constellation_directory, "cs","cs.zip")
