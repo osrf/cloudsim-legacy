@@ -599,7 +599,8 @@ def _run_machines(constellation_name, machine_names, constellation_directory):
     constellation.set_value("launch_stage", "running")
 
 
-def deploy_constellation(constellation_name, cloud_provider, machines):
+def deploy_constellation(constellation_name, cloud_provider, machines,
+                         openvpn_fname):
     constellation = ConstellationState(constellation_name)
 
     constellation_directory = constellation.get_value(
@@ -697,9 +698,17 @@ def launch_common(constellation_name, tags):
     openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
     private_subnet = '10.0.0.0/24'
 
+    if constellation.get_value('configuration') == 'DRC' or \
+       constellation.get_value('configuration') == 'DRC with FC':
+       router_image_key = 'ubuntu_1204_x64'
+       simulator_image_key = 'ubuntu_1204_x64_cluster'
+    else:
+       router_image_key = 'ubuntu_1204_x64_router_stable'
+       simulator_image_key = 'ubuntu_1204_x64_simulator_stable'
+
     machines = {}
     machines['router'] = {'hardware': 'm1.large',    # 't1.micro',
-                      'software': 'ubuntu_1204_x64',
+                      'software': router_image_key,
                       'ip': ROUTER_IP,   # 'startup_script': router_script,
                       'public_network_itf': router_public_network_itf,
                       'private_network_itf': router_private_network_itf,
@@ -758,7 +767,7 @@ def launch_common(constellation_name, tags):
 #             sg.authorize('udp', 0, 65535, openvpn_client_addr)
 
     machines['sim'] = {'hardware': 'cg1.4xlarge',
-                  'software': 'ubuntu_1204_x64_cluster',
+                  'software': simulator_image_key,
                   'ip': SIM_IP,
                       'security_group': [{'protocol': 'icmp',  # ping
                                           'from_port': -1,
@@ -797,62 +806,65 @@ def launch_common(constellation_name, tags):
 
     ros_master_ip = SIM_IP
 
-    # Not needed for custom AMIs
-    drcsim_package_name = "drcsim"
-    ppa_list = []  # ['ubuntu-x-swat/x-updates']
-    gpu_driver_list = ['nvidia-current',
-                       'nvidia-settings',
-                       'nvidia-current-dev',
-                       'nvidia-cg-toolkit']
+    # Not required with any custom AMI
+    if constellation.get_value('configuration') == 'DRC' or \
+       constellation.get_value('configuration') == 'DRC with FC':
 
-    if config.find("nightly") >= 0:
-        drcsim_package_name = "drcsim-nightly"
-    elif config.find("nvidia 319") >= 0:
-        ppa_list = ['xorg-edgers/ppa']
-        gpu_driver_list = ["nvidia-319", 'nvidia-settings']
+        drcsim_package_name = "drcsim"
+        ppa_list = []  # ['ubuntu-x-swat/x-updates']
+        gpu_driver_list = ['nvidia-current',
+                           'nvidia-settings',
+                           'nvidia-current-dev',
+                           'nvidia-cg-toolkit']
 
-    log("DRC package %s" % drcsim_package_name)
-    log("ppas: %s" % ppa_list)
-    log("gpu packages %s" % gpu_driver_list)
+        if config.find("nightly") >= 0:
+            drcsim_package_name = "drcsim-nightly"
+        elif config.find("nvidia 319") >= 0:
+            ppa_list = ['xorg-edgers/ppa']
+            gpu_driver_list = ["nvidia-319", 'nvidia-settings']
 
-    scripts['router'] = get_router_script(router_public_network_itf,
-                                      router_private_network_itf,
-                                      ROUTER_IP,
-                                      SIM_IP,
-                                      drcsim_package_name,
-                                      OPENVPN_SERVER_IP,
-                                      OPENVPN_CLIENT_IP)
+        log("DRC package %s" % drcsim_package_name)
+        log("ppas: %s" % ppa_list)
+        log("gpu packages %s" % gpu_driver_list)
 
-    scripts['sim'] = get_drc_script(drcsim_package_name,
-                                SIM_IP,
-                                ros_master_ip,
-                                gpu_driver_list,
-                                ppa_list,
-                                OPENVPN_CLIENT_IP,
-                                ROUTER_IP)
+        scripts['router'] = get_router_script(router_public_network_itf,
+                                          router_private_network_itf,
+                                          ROUTER_IP,
+                                          SIM_IP,
+                                          drcsim_package_name,
+                                          OPENVPN_SERVER_IP,
+                                          OPENVPN_CLIENT_IP)
 
-    fc1_script = get_drc_script(drcsim_package_name,
-                                    FC1_IP,
+        scripts['sim'] = get_drc_script(drcsim_package_name,
+                                    SIM_IP,
                                     ros_master_ip,
                                     gpu_driver_list,
                                     ppa_list,
                                     OPENVPN_CLIENT_IP,
                                     ROUTER_IP)
 
-    fc2_script = get_drc_script(drcsim_package_name,
-                                    FC2_IP,
-                                    ros_master_ip,
-                                    gpu_driver_list,
-                                    ppa_list,
-                                    OPENVPN_CLIENT_IP,
-                                    ROUTER_IP)
+        fc1_script = get_drc_script(drcsim_package_name,
+                                        FC1_IP,
+                                        ros_master_ip,
+                                        gpu_driver_list,
+                                        ppa_list,
+                                        OPENVPN_CLIENT_IP,
+                                        ROUTER_IP)
 
-    if has_fc1:
-        scripts['fc1'] = fc1_script
+        fc2_script = get_drc_script(drcsim_package_name,
+                                        FC2_IP,
+                                        ros_master_ip,
+                                        gpu_driver_list,
+                                        ppa_list,
+                                        OPENVPN_CLIENT_IP,
+                                        ROUTER_IP)
 
-    if has_fc2:
-        scripts['fc2'] = fc2_script
-    # ---
+        if has_fc1:
+            scripts['fc1'] = fc1_script
+
+        if has_fc2:
+            scripts['fc2'] = fc2_script
+
 
     cs_cfg = get_cloudsim_config()
     if cloud_provider == "softlayer":
@@ -894,7 +906,8 @@ def launch_common(constellation_name, tags):
     # Not required with custom AMI
     if constellation.get_value('configuration') == 'DRC' or \
        constellation.get_value('configuration') == 'DRC with FC':
-        deploy_constellation(constellation_name, cloud_provider, machines,)
+        deploy_constellation(constellation_name, cloud_provider, machines,
+                             openvpn_fname)
 
     # Waiting for machines to be ready
     _run_machines(constellation_name, machines.keys(), constellation_directory)

@@ -319,6 +319,21 @@ def _load_cloudsim_configurations_list():
 </ol>
 """
     configs['DRC'] = {'description': desc}
+    desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
+<ol>
+  <li>Hardware:
+      <ol>
+          <li>Router: large server</li>
+          <li>Simulator: GPU cluster instance</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Fuerte</li>
+  <li>Simulator: Gazebo (latest)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+    configs['DRC-stable'] = {'description': desc}
     desc = """DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages
 <ol>
     <li>Hardware:
