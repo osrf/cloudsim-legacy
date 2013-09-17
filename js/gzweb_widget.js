@@ -25,7 +25,7 @@ function create_gzweb_widget(machine_div,
     	start_button.disabled = true;
         setTimeout( function(){
         	start_button.disabled = false;
-            }, 3000); // setTimeOut
+            }, 10000); // setTimeOut
     }
     widget_div.appendChild(start_button);
 
@@ -35,6 +35,10 @@ function create_gzweb_widget(machine_div,
     stop_button.onclick =  function()
     {
     	stop_web_tools(constellation_name);
+    	stop_button.disabled = true;
+        setTimeout( function(){
+        	stop_button.disabled = false;
+         }, 5000); // setTimeOut
     }
     widget_div.appendChild(stop_button);
  
@@ -48,7 +52,12 @@ function create_gzweb_widget(machine_div,
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name != constellation_name)
             return;
-
+        
+        if (count == 100) 
+            count =0;
+        else 
+            count ++;
+        
         var gzweb_running = false;
         var simulator_running = false;
         
@@ -101,22 +110,12 @@ function create_gzweb_widget(machine_div,
         	colors =  ["/js/images/gray_status.png", "/js/images/blue_status.png"];
         	var color = colors[count % colors.length];
         	img.src = color;
-        	console.log("count: " + count + " " + color);
-            if (count == 100) 
-                count =0;
-            else 
-                count ++;
         }	
         else if (data[gz_web_key] == "stopping")
         {
         	colors =  ["/js/images/gray_status.png", "/js/images/red_status.png"];
         	var color = colors[count % colors.length];
         	img.src = color;
-        	console.log("count: " + count + " " + color);
-            if (count == 100) 
-                count =0;
-            else 
-                count ++;
         }
         else
         {
