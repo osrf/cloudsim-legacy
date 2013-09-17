@@ -175,33 +175,34 @@ def _get_ssh_router(constellation_name):
     return ssh_router
 
 
-def ssh_ping_proc(constellation_name, ip, latency_key):
+def ssh_ping_proc(constellation_name, ip, latency_key, counter):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_ssh_ping(constellation_name, ssh_router, ip, latency_key)
+    log("ssh ping_proc() ENDS %s %s" % (latency_key, counter))
 
-
-def monitor_task_proc(constellation_name):
+def monitor_task_proc(constellation_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_task(constellation_name, ssh_router)
+    log("monitor_task_proc() ENDS %s" % counter)
 
-
-def monitor_simulator_proc(constellation_name):
+def monitor_simulator_proc(constellation_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_simulator(constellation_name, ssh_router, "sim_state")
+    log("monitor_simulator_proc() ENDS %s" % counter)
 
-
-def monitor_gzweb_proc(constellation_name):
+def monitor_gzweb_proc(constellation_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_gzweb(constellation_name, ssh_router, "sim_state")
+    log("monitor_gzweb_proc() ENDS %s" % counter)
 
-
-def monitor_launch(constellation_name, machine_name):
+def monitor_launch(constellation_name, machine_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     constellation = ConstellationState(constellation_name)
     machine_state = constellation.get_value('%s_state' % machine_name)
     monitor_launch_state(constellation_name, ssh_router, machine_state,
                              "cloudsim/dpkg_log_%s.bash" % machine_name,
                              '%s_launch_msg' % machine_name)
+    log("monitor_launch() ENDS %s %s" % (machine_name, counter))
 
 
 def monitor(constellation_name, counter):
@@ -218,19 +219,19 @@ def monitor(constellation_name, counter):
     machines = constellation.get_value('machines')
 
     for machine_name in machines:
-        monitor_launch(constellation_name, machine_name)
+        monitor_launch(constellation_name, machine_name, counter)
 
     procs = []
     p = multiprocessing.Process(target=monitor_simulator_proc,
-                            args=(constellation_name,))
+                            args=(constellation_name, counter))
     procs.append(p)
 
     p = multiprocessing.Process(target=monitor_task_proc,
-                                    args=(constellation_name,))
+                                    args=(constellation_name, counter))
     procs.append(p)
 
     p = multiprocessing.Process(target=monitor_gzweb_proc,
-                            args=(constellation_name,))
+                            args=(constellation_name, counter))
     procs.append(p)
 
     for machine_name, data in machines.iteritems():
@@ -240,7 +241,7 @@ def monitor(constellation_name, counter):
         p = multiprocessing.Process(target=ssh_ping_proc,
                         args=(constellation_name,
                               ip,
-                              '%s_latency' % machine_name))
+                              '%s_latency' % machine_name, counter))
         procs.append(p)
 
     for p in procs:
@@ -553,64 +554,12 @@ def _check_opengl_and_x(constellation, ssh_router):
     # this code should never happen
     return
 
-
-def _run_machines(constellation_name, machine_names, constellation_directory):
-    log("_run_machines wait for machines %s : %s" % (constellation_name,
-                                                     machine_names))
-
-    __wait_for_find_file(constellation_name,
-                       constellation_directory,
-                       machine_names,
-                       "cloudsim/setup/done",
-                       "running",
-                       True)
-    log("_run_machines machines %s : %s rebooted!" % (constellation_name,
-                                                     machine_names))
-
-    # make sure the monitoring of package setup is complete
-    time.sleep(10)
-
-    constellation = ConstellationState(constellation_name)
-    for machine_name in machine_names:
-        constellation.set_value('%s_aws_state' % machine_name, "running")
-        constellation.set_value('%s_launch_state' % machine_name, "running")
-
-    ssh_router = _get_ssh_router(constellation_name)
-
-    log("_run_machines %s: simulator check" % (constellation_name))
-    if "sim" in machine_names:
-        _check_opengl_and_x(constellation, ssh_router)
-
-        # Install gazebo models locally
-        # using a utility script from cloudsim-client-tools
-        # careful, we are running as root here?
-        constellation.set_value('router_launch_msg', 'Final setup')
-        constellation.set_value('sim_launch_msg', 'Loading Gazebo models')
-        ssh_router.cmd("cloudsim/ssh-sim.bash "
-                       "cloudsim/load_gazebo_models.bash")
-        constellation.set_value('sim_launch_msg', "complete")
-
-    log("_run_machines %s: wrap up" % (constellation_name))
-
-    constellation.set_value('router_launch_msg', "complete")
-    for machine_name in machine_names:
-        constellation.set_value('%s_launch_msg' % machine_name, "complete")
-        constellation.set_value('%s_aws_state' % machine_name, "running")
-        constellation.set_value('%s_launch_state' % machine_name, "running")
-    constellation.set_value("launch_stage", "running")
-
-
-def deploy_constellation(constellation_name, cloud_provider, machines):
-
+def deploy_constellation(constellation_name, cloud_provider, machines,
+                         openvpn_fname):
     constellation = ConstellationState(constellation_name)
 
     constellation_directory = constellation.get_value(
                                                     'constellation_directory')
-    ssh_router = _get_ssh_router(constellation_name)
-    openvpn_fname = os.path.join(constellation_directory, 'openvpn.key')
-    create_openvpn_key(openvpn_fname)
-
-    _create_zip_files(constellation_name, constellation_directory, machines)
 
     deploy_fname = _create_deploy_zip_files(constellation_name,
         constellation_directory,
@@ -628,15 +577,16 @@ def deploy_constellation(constellation_name, cloud_provider, machines):
                          "packages_setup")
 
     constellation.set_value('router_launch_msg',
-                            "waiting for base packages to be installed")
+                            "waiting for network connectivity")
     __wait_for_find_file(constellation_name,
                          constellation_directory,
                          ["router"],
                          "cloudsim/setup/deploy_ready",
                          "packages_setup")
     constellation.set_value('router_launch_msg', "deploying keys")
+    ssh_router = _get_ssh_router(constellation_name)
     ssh_router.upload_file(deploy_fname, "cloudsim/deploy.zip")
-    ssh_router.cmd('cd cloudsim; unzip deploy.zip')
+    ssh_router.cmd('cd cloudsim; unzip -o deploy.zip')
 
     ssh_router.cmd('bash cloudsim/deploy/deploy.bash')
 
@@ -650,31 +600,29 @@ def deploy_constellation(constellation_name, cloud_provider, machines):
                          "cloudsim/setup/done",
                          "running")
 
-    # reboot fc1, fc2 and sim (but not router)
-    machines_to_reboot = machines.keys()
-    machines_to_reboot.remove('router')
-
-    _reboot_machines(constellation_name, ssh_router,
-                     machines_to_reboot, constellation_directory)
-
-    _run_machines(constellation_name, machines.keys(), constellation_directory)
-    constellation.set_value("launch_stage", "running")
-
 
 #def launch(username, config, constellation_name, tags,
 #           constellation_directory, credentials_override=None):
-def launch(constellation_name, tags):
+def launch_common(constellation_name, tags):
     """
     Called by cloudsimd when it receives a launch message
     """
+    constellation = ConstellationState(constellation_name)
+    use_latest_version = constellation.get_value('configuration') == 'DRC' or \
+        constellation.get_value('configuration') == 'DRC with FC'
+
+    scripts = {}
+    scripts['router'] = ''
+    scripts['sim'] = ''
+    scripts['fc1'] = ''
+    scripts['fc2'] = ''
+
     cloud_provider = tags['cloud_provider']
     #username = tags['username']
     config = tags['config']
     constellation_directory = tags['constellation_directory']
     credentials_fname = os.path.join(constellation_directory,
                                      'credentials.txt')
-
-    constellation = ConstellationState(constellation_name)
 
 #   if credentials_override:
 #       credentials_fname = credentials_override
@@ -695,32 +643,22 @@ def launch(constellation_name, tags):
 
     constellation.set_value("launch_stage", "launch")
 
-    drcsim_package_name = "drcsim"
-    ppa_list = []  # ['ubuntu-x-swat/x-updates']
-    gpu_driver_list = ['nvidia-current',
-                       'nvidia-settings',
-                       'nvidia-current-dev',
-                       'nvidia-cg-toolkit']
-
-    if config.find("nightly") >= 0:
-        drcsim_package_name = "drcsim-nightly"
-    elif config.find("nvidia 319") >= 0:
-        ppa_list = ['xorg-edgers/ppa']
-        gpu_driver_list = ["nvidia-319", 'nvidia-settings']
-
-    log("DRC package %s" % drcsim_package_name)
-    log("ppas: %s" % ppa_list)
-    log("gpu packages %s" % gpu_driver_list)
-
     #
     # lets build a list of machines for our constellation
     #
     openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
     private_subnet = '10.0.0.0/24'
 
+    if use_latest_version:
+       router_image_key = 'ubuntu_1204_x64'
+       simulator_image_key = 'ubuntu_1204_x64_cluster'
+    else:
+       router_image_key = 'ubuntu_1204_x64_router_stable'
+       simulator_image_key = 'ubuntu_1204_x64_simulator_stable'
+
     machines = {}
     machines['router'] = {'hardware': 'm1.large',    # 't1.micro',
-                      'software': 'ubuntu_1204_x64',
+                      'software': router_image_key,
                       'ip': ROUTER_IP,   # 'startup_script': router_script,
                       'public_network_itf': router_public_network_itf,
                       'private_network_itf': router_private_network_itf,
@@ -779,7 +717,7 @@ def launch(constellation_name, tags):
 #             sg.authorize('udp', 0, 65535, openvpn_client_addr)
 
     machines['sim'] = {'hardware': 'cg1.4xlarge',
-                  'software': 'ubuntu_1204_x64_cluster',
+                  'software': simulator_image_key,
                   'ip': SIM_IP,
                       'security_group': [{'protocol': 'icmp',  # ping
                                           'from_port': -1,
@@ -818,44 +756,64 @@ def launch(constellation_name, tags):
 
     ros_master_ip = SIM_IP
 
-    scripts = {}
-    scripts['router'] = get_router_script(router_public_network_itf,
-                                      router_private_network_itf,
-                                      ROUTER_IP,
-                                      SIM_IP,
-                                      drcsim_package_name,
-                                      OPENVPN_SERVER_IP,
-                                      OPENVPN_CLIENT_IP)
+    # Not required with any custom AMI
+    if use_latest_version:
 
-    scripts['sim'] = get_drc_script(drcsim_package_name,
-                                SIM_IP,
-                                ros_master_ip,
-                                gpu_driver_list,
-                                ppa_list,
-                                OPENVPN_CLIENT_IP,
-                                ROUTER_IP)
+        drcsim_package_name = "drcsim"
+        ppa_list = []  # ['ubuntu-x-swat/x-updates']
+        gpu_driver_list = ['nvidia-current',
+                           'nvidia-settings',
+                           'nvidia-current-dev',
+                           'nvidia-cg-toolkit']
 
-    fc1_script = get_drc_script(drcsim_package_name,
-                                    FC1_IP,
+        if config.find("nightly") >= 0:
+            drcsim_package_name = "drcsim-nightly"
+        elif config.find("nvidia 319") >= 0:
+            ppa_list = ['xorg-edgers/ppa']
+            gpu_driver_list = ["nvidia-319", 'nvidia-settings']
+
+        log("DRC package %s" % drcsim_package_name)
+        log("ppas: %s" % ppa_list)
+        log("gpu packages %s" % gpu_driver_list)
+
+        scripts['router'] = get_router_script(router_public_network_itf,
+                                          router_private_network_itf,
+                                          ROUTER_IP,
+                                          SIM_IP,
+                                          drcsim_package_name,
+                                          OPENVPN_SERVER_IP,
+                                          OPENVPN_CLIENT_IP)
+
+        scripts['sim'] = get_drc_script(drcsim_package_name,
+                                    SIM_IP,
                                     ros_master_ip,
                                     gpu_driver_list,
                                     ppa_list,
                                     OPENVPN_CLIENT_IP,
                                     ROUTER_IP)
 
-    fc2_script = get_drc_script(drcsim_package_name,
-                                    FC2_IP,
-                                    ros_master_ip,
-                                    gpu_driver_list,
-                                    ppa_list,
-                                    OPENVPN_CLIENT_IP,
-                                    ROUTER_IP)
+        fc1_script = get_drc_script(drcsim_package_name,
+                                        FC1_IP,
+                                        ros_master_ip,
+                                        gpu_driver_list,
+                                        ppa_list,
+                                        OPENVPN_CLIENT_IP,
+                                        ROUTER_IP)
 
-    if has_fc1:
-        scripts['fc1'] = fc1_script
+        fc2_script = get_drc_script(drcsim_package_name,
+                                        FC2_IP,
+                                        ros_master_ip,
+                                        gpu_driver_list,
+                                        ppa_list,
+                                        OPENVPN_CLIENT_IP,
+                                        ROUTER_IP)
 
-    if has_fc2:
-        scripts['fc2'] = fc2_script
+        if has_fc1:
+            scripts['fc1'] = fc1_script
+
+        if has_fc2:
+            scripts['fc2'] = fc2_script
+
 
     cs_cfg = get_cloudsim_config()
     if cloud_provider == "softlayer":
@@ -887,8 +845,79 @@ def launch(constellation_name, tags):
                                   scripts,
                                   tags)
 
-    deploy_constellation(constellation_name, cloud_provider, machines,)
+    # Setup the VPN
+    ssh_router = _get_ssh_router(constellation_name)
+    openvpn_fname = os.path.join(constellation_directory, 'openvpn.key')
+    create_openvpn_key(openvpn_fname)
 
+    _create_zip_files(constellation_name, constellation_directory, machines)
+
+    deploy_constellation(constellation_name, cloud_provider, machines,
+                             openvpn_fname)
+
+    # Not required with any custom AMI
+    if use_latest_version:
+        # reboot all machines but not router
+        machines_to_reboot = machines.keys()
+        machines_to_reboot.remove('router')
+        _reboot_machines(constellation_name, ssh_router,
+                         machines_to_reboot, constellation_directory)
+
+    # Waiting for machines to be ready
+    machine_names = machines.keys()
+    log("_run_machines wait for machines %s : %s" % (constellation_name,
+                                                     machine_names))
+
+    __wait_for_find_file(constellation_name,
+                       constellation_directory,
+                       machine_names,
+                       "cloudsim/setup/done",
+                       "running")
+    log("_run_machines machines %s : %s rebooted!" % (constellation_name,
+                                                     machine_names))
+
+    # make sure the monitoring of package setup is complete
+    time.sleep(10)
+
+    constellation = ConstellationState(constellation_name)
+    for machine_name in machine_names:
+        constellation.set_value('%s_aws_state' % machine_name, "running")
+        constellation.set_value('%s_launch_state' % machine_name, "running")
+
+    ssh_router = _get_ssh_router(constellation_name)
+
+    log("_run_machines %s: simulator check" % (constellation_name))
+    if "sim" in machine_names:
+        _check_opengl_and_x(constellation, ssh_router)
+
+        # Install gazebo models locally
+        # using a utility script from cloudsim-client-tools
+        # careful, we are running as root here?
+        # Not required with any custom AMI
+        if constellation.get_value('configuration') == 'DRC' or \
+           constellation.get_value('configuration') == 'DRC with FC':
+            constellation.set_value('router_launch_msg', 'Final setup')
+            constellation.set_value('sim_launch_msg', 'Loading Gazebo models')
+            ssh_router.cmd("cloudsim/ssh-sim.bash "
+                           "cloudsim/load_gazebo_models.bash")
+        constellation.set_value('sim_launch_msg', "complete")
+
+    log("_run_machines %s: wrap up" % (constellation_name))
+
+    constellation.set_value('router_launch_msg', "complete")
+    for machine_name in machine_names:
+        constellation.set_value('%s_launch_msg' % machine_name, "complete")
+        constellation.set_value('%s_aws_state' % machine_name, "running")
+        constellation.set_value('%s_launch_state' % machine_name, "running")
+    constellation.set_value("launch_stage", "running")
+    
+    constellation.set_value("launch_stage", "running")
+
+def launch(constellation_name, tags):
+    launch_common(constellation_name, tags)
+
+def launch_stable(constellation_name, tags):
+    launch_common(constellation_name, tags)
 
 def terminate(constellation_name):
     constellation = ConstellationState(constellation_name)

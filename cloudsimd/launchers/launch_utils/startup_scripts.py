@@ -222,6 +222,21 @@ deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
 
 DELIM
 
+mkdir -p /home/ubuntu/cloudsim
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_sim.bash
+#!/bin/bash
+
+ls \$1
+DELIM
+
+cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_sim.bash
+#!/bin/bash
+
+tail -1 /var/log/dpkg.log
+DELIM
+
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+
 apt-get update
 apt-get install -y python-software-properties
 
@@ -1355,6 +1370,7 @@ sudo iptables -F FORWARD
 sudo stop vrc_netwatcher
 kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
 sudo stop vrc_bytecounter
+sudo """ + cloudsim_dir + """/stop_gzweb.bash
 sudo start vrc_netwatcher
 if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """  "nohup bash cloudsim/start_sim.bash \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"; then
   echo "[router start_sim.bash] simulator start_sim.bash returned non-zero"

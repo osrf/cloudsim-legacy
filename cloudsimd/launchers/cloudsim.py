@@ -54,6 +54,18 @@ def update(constellation_name):
     upload_and_deploy_cloudsim(constellation_name, website_distribution,
                                key_prefix,
                                force=False)
+
+
+    constellation_state = ConstellationState(constellation_name)
+    constellation_dir = constellation_state.get_value(
+                                                    'constellation_directory')
+    ip_address = constellation_state.get_value("simulation_ip")
+    ssh_sim = SshClient(constellation_dir, key_prefix, 'ubuntu', ip_address)
+
+    log("Deploying the cloudsim web app")
+    deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh"
+    out_s = ssh_sim.cmd("bash " + deploy_script_fname)
+    log("\t%s" % out_s)
     constellation = ConstellationState(constellation_name)
     constellation.set_value('simulation_launch_msg', "running")
 
@@ -213,8 +225,6 @@ def upload_and_deploy_cloudsim(constellation_name,
     if force:
         deploy_script_fname += " -f"
     log("running deploy script '%s' remotely" % deploy_script_fname)
-    out_s = ssh_cli.cmd("bash " + deploy_script_fname)
-    log("\t%s" % out_s)
 
     # If applicable, copy in the htpasswd file, for use with basic auth.
     if force:
@@ -297,17 +307,16 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     pub_ip = None
     key_prefix = None
     if cloud_provider == "aws":
-        script = get_cloudsim_startup_script()
         pub_ip, aws_id, key_prefix = acquire_aws_server(constellation_name,
                                     credentials_fname,
                                     constellation_directory,
                                     machine_prefix,
                                     script,
-                                    tags)
+                                    tags,
+                                    image_key)
         constellation.set_value("aws_id", aws_id)
     elif "OpenStack" in cloud_provider:
         openstack_creds = cfg['openstack']
-        script = get_cloudsim_startup_script()
         pub_ip, instance_id, key_prefix = acquire_openstack_server(
                                     constellation_name,
                                     openstack_creds,
@@ -328,6 +337,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
         startup_script(constellation_name)
     else:
         raise Exception("Unsupported cloud provider: %s" % (cloud_provider))
+
     log("SIMULATION IP ---- %s" % pub_ip)
     constellation.set_value("simulation_ip", pub_ip)
     log("%s" % constellation.get_value("simulation_ip"))
@@ -340,6 +350,9 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     local_zip = os.path.join(constellation_directory, "CloudSim.zip")
     shutil.copy(fname_zip, local_zip)
 
+    ip = constellation.get_value("simulation_ip")
+    clean_local_ssh_key_entry(ip)
+
     log("install packages")
 
     print ("\n##############################################")
@@ -349,43 +362,12 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     print ("#                Stay tuned!                 #")
     print ("##############################################\n")
 
-    ip = constellation.get_value("simulation_ip")
-    clean_local_ssh_key_entry(ip)
-
     constellation.set_value('simulation_ip', ip)
     log("%s simulation machine ip %s" % (constellation_name, ip))
     ssh_sim = SshClient(constellation_directory, key_prefix, 'ubuntu', ip)
 
     constellation.set_value('simulation_launch_msg', "waiting for network")
-    networking_done = get_ssh_cmd_generator(ssh_sim,
-                                            "ls launch_stdout_stderr.log",
-                                            "launch_stdout_stderr.log",
-                                            constellation,
-                                            "simulation_state",
-                                            'packages_setup',
-                                            max_retries=100)
-    empty_ssh_queue([networking_done], sleep=2)
-    ssh_sim.cmd("mkdir -p cloudsim")
-    constellation.set_value('simulation_launch_msg',
-                            "creating monitoring scripts")
-    find_file_sim = """
-    #!/bin/bash
 
-    ls \$1
-
-    """
-    ssh_sim.create_file(find_file_sim, "cloudsim/find_file_sim.bash")
-
-    dpkg_log_sim = """
-    #!/bin/bash
-
-    tail -1 /var/log/dpkg.log
-
-    """
-    ssh_sim.create_file(dpkg_log_sim, "cloudsim/dpkg_log_sim.bash")
-
-    constellation.set_value('simulation_launch_msg',
-                            "waiting for packages to install")
     sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done",
                                            "cloudsim/setup/done",
                                            constellation,
@@ -497,15 +479,27 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     else:
         constellation.set_value('simulation_launch_msg',
                                 "No bitbucket key uploaded")
+
+    # Not required with any custom AMI
+    if constellation.get_value('configuration') == 'CloudSim':
+        #
+        #  Upload cloudsim.zip and Deploy
+        #
+        upload_and_deploy_cloudsim(constellation_name,
+                                   website_distribution,
+                                   key_prefix)
+    else:
+        out = ssh_sim.cmd('sudo restart cloudsimd')
+        log("\t%s" % out)
+
+    # Deploy
+    log("Deploying the cloudsim web app")
+    deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh -f"
+    out_s = ssh_sim.cmd("bash " + deploy_script_fname)
+    log("\t%s" % out_s)
+
     #
-    #  Upload cloudsim.zip and Deploy
-    #
-    upload_and_deploy_cloudsim(constellation_name,
-                               website_distribution,
-                               key_prefix,
-                               force=True)
-    #
-    # For a CLoudSim launch, we look at the tags for a configuration to launch
+    # For a CloudSim launch, we look at the tags for a configuration to launch
     # at the end.
     if auto_launch_configuration:
 
@@ -526,6 +520,21 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     time.sleep(10)
     constellation.set_value('simulation_launch_msg', "Complete")
     log("provisioning done")
+
+
+def launch_stable(constellation_name, tags,
+    website_distribution=CLOUDSIM_ZIP_PATH):
+    
+    script = ''
+    launch_common(constellation_name, tags, script,
+                  'ubuntu_1204_x64_cloudsim_stable', website_distribution)
+     #            'ubuntu_1204_x64', website_distribution)
+
+def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
+
+    script = get_cloudsim_startup_script()
+    launch_common(constellation_name, tags, script, 'ubuntu_1204_x64',
+                  website_distribution)
 
 
 def terminate(constellation_name):

@@ -246,13 +246,33 @@ def get_plugin(configuration):
     """
     plugin = None
     #log("get_plugin '%s'" % configuration)
-    if configuration.startswith("CloudSim"):
+
+    if configuration.startswith("CloudSim-stable"):
+        from launchers import cloudsim as c
+        plugin = ConstellationPlugin(c.launch_stable, 
+                                     c.terminate,
+                                     c.update,
+                                     c.monitor,
+                              None, None, None, None)
+
+    elif configuration.startswith("CloudSim"):
         from launchers import cloudsim as c
         plugin = ConstellationPlugin(c.launch, 
                                      c.terminate,
                                      c.update,
                                      c.monitor,
                               None, None, None, None)
+    elif configuration.startswith('DRC-stable'):
+        #from launchers import amazon_trio as c
+        from launchers import vrc_contest as c
+        plugin = ConstellationPlugin(c.launch_stable,
+                                     c.terminate,
+                                     c.update,
+                                     c.monitor,
+                                     c.start_task,
+                                     c.stop_task,
+                                     c.start_gzweb,
+                                     c.stop_gzweb)
     elif configuration.startswith('DRC'):
         #from launchers import amazon_trio as c
         from launchers import vrc_contest as c
@@ -299,6 +319,21 @@ def _load_cloudsim_configurations_list():
 </ol>
 """
     configs['DRC'] = {'description': desc}
+    desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
+<ol>
+  <li>Hardware:
+      <ol>
+          <li>Router: large server</li>
+          <li>Simulator: GPU cluster instance</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Fuerte</li>
+  <li>Simulator: Gazebo (latest)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+    configs['DRC-stable'] = {'description': desc}
     desc = """DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages
 <ol>
     <li>Hardware:
@@ -323,6 +358,14 @@ def _load_cloudsim_configurations_list():
 </ol>
 """     
     configs['CloudSim'] = {'description': desc}
+    desc = """The CloudSim Web App running in the Cloud (Stable version)
+<ol>
+  <li>Hardware: micro</li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>Web server: Apache</li>
+</ol>
+"""     
+    configs['CloudSim-stable'] = {'description': desc}
 
     set_cloudsim_configuration_list(configs)
 
@@ -846,12 +889,12 @@ def async_stop_gzweb(constellation_name):
     
 def launch_cmd(root_dir, data):
 
-    username = data['username']
+    """username = data['username']
     cloud_provider = data['cloud_provider']
     # extra arguments to the launch methd
     args = None
     if data.has_key('args'):
-        args = data['args']
+        args = data['args']"""
 
     count = 1
     if data.has_key('count'):
@@ -863,6 +906,7 @@ def launch_cmd(root_dir, data):
         os.makedirs(constellation_path)
         cs = ConstellationState(constellation_name)
         cs.set_value('constellation_state', 'launching')
+        cs.set_value('configuration', data['configuration'])
         data['constellation_directory'] = constellation_path
         async_launch(constellation_name, data)
         async_monitor(constellation_name)
