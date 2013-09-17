@@ -13,7 +13,7 @@ class SshRetryException(Exception):
 
 def get_ssh_cmd_generator(ssh_client, cmd,
                           expected_output,
-                          constellation_data,
+                          constellation,
                           key, value, max_retries=100):
 
     log("generator ssh cmd: %s, expected output: %s" % (cmd, expected_output))
@@ -21,6 +21,11 @@ def get_ssh_cmd_generator(ssh_client, cmd,
     done = False
 
     while not done:
+        constellation_state = constellation.get_value("constellation_state")
+        if constellation_state == "terminated":
+            constellation_name = constellation.get_value("constellation_name")
+            raise SshRetryException("constellation %s is terminated" %
+                                    constellation_name)
         count -= 1
         try:
             result = ssh_client.cmd(cmd)
@@ -28,7 +33,7 @@ def get_ssh_cmd_generator(ssh_client, cmd,
                 log("   FOUND %s (%s/%s)" % (cmd,
                                              max_retries - count,
                                              max_retries))
-                constellation_data.set_value(key, value)
+                constellation.set_value(key, value)
                 yield True
                 done = True
             else:

@@ -14,7 +14,7 @@ DELIM
 
 
 sudo mv /tmp/cloudsimd.log $BAKLOG
-. $DIR/../deploy.sh
+. $DIR/../deploy.sh -b
 
 echo "*"
 echo "*"

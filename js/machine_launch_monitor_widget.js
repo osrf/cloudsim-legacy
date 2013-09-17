@@ -18,14 +18,18 @@ function create_machine_launch_monitor_widget(machine_div,
     var current_error = "";
     var current_msg = "";
     
+    //var top_div = document.getElementById("#constellations_div");
+    var constellation_div =  document.getElementById(constellation_name);
+    var error_div = constellation_div.querySelector("#error" );
+    
     $.subscribe("/constellation", function(event, data){
         
         if(data.constellation_name != constellation_name)
             return;
         
         count ++;
-       
         
+         
         var error_txt = "";
         if ( data.error.length)
         {
@@ -54,9 +58,15 @@ function create_machine_launch_monitor_widget(machine_div,
         var msg = data[message_key];
         
         // update if necessary
-        if ((color != current_color) || (error_txt != current_error) || (msg != current_msg))
+        if ((color != current_color) || (msg != current_msg))
         {
-        	widget_div.innerHTML =  status_img(color) + error_txt +  "<b>Launch:</b>  " + msg;
+        	widget_div.innerHTML =  status_img(color)   +  "<b>Launch:</b>  " + msg;
+        }
+        
+        if (error_txt != current_error)
+        {
+        	console.log(error_txt)
+        	error_div.innerHTML = error_txt;
         }
         
         current_color = color;

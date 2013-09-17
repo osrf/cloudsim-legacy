@@ -1,7 +1,8 @@
 from __future__ import print_function
 
 import time
-import boto
+
+import boto.ec2
 from boto.ec2.regioninfo import RegionInfo
 from boto.ec2.connection import EC2Connection
 from boto.vpc import VPCConnection
@@ -32,7 +33,8 @@ def acquire_aws_server(constellation_name,
                        constellation_directory,
                        machine_prefix,
                        startup_script,
-                       tags):
+                       tags,
+                       ami_key):
 
     sim_machine_name = "%s_%s" % (machine_prefix, constellation_name)
     sim_key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
@@ -58,7 +60,7 @@ def acquire_aws_server(constellation_name,
     key_pair = ec2conn.create_key_pair(sim_key_pair_name)
     key_pair.save(constellation_directory)
     amis = _get_amazon_amis(availability_zone)
-    aws_image = amis['ubuntu_1204_x64']
+    aws_image = amis[ami_key]
 
     roles_to_reservations = {}
 
@@ -127,15 +129,15 @@ def acquire_aws_server(constellation_name,
     return sim_ip, simulation_aws_id, sim_key_pair_name
 
 
-def terminate_aws_server(constellation_name):
+def terminate_aws_server(constellation_name, credentials_fname):
     log("terminate AWS CloudSim [constellation %s]" % (constellation_name))
     constellation = ConstellationState(constellation_name)
     ec2conn = None
     try:
         running_machines = {}
-        running_machines['simulation_aws_state'] = constellation.get_value(
+        running_machines['simulation'] = constellation.get_value(
                                                         'simulation_aws_id')
-        ec2conn = aws_connect()[0]
+        ec2conn = aws_connect(credentials_fname)[0]
         wait_for_multiple_machines_to_terminate(ec2conn, running_machines,
                                                 constellation, max_retries=150)
         constellation.set_value('simulation_state', "terminated")
@@ -182,10 +184,10 @@ def acquire_aws_constellation(constellation_name,
     for machine_name, machine_data in machines.iteritems():
         aws_key_name = _acquire_key_pair(constellation_name,
                           machine_name, ec2conn)
-
+        security_group_data = machines[machine_name]['security_group']
         security_group_id = _acquire_vpc_security_group(constellation_name,
                                     machine_name,
-                                    VPN_PRIVATE_SUBNET,
+                                    security_group_data,
                                     vpc_id,
                                     ec2conn)
         startup_srcript = scripts[machine_name]
@@ -235,11 +237,10 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
     running_machines = {}
     for machine_prefix in machines.keys():
         try:
-            state_key = '%s_aws_state' % machine_prefix
             aws_id_key = '%s_aws_id' % machine_prefix
             aws_id = constellation.get_value(aws_id_key)
             log("%s aws id: %s" % (machine_prefix, aws_id))
-            running_machines[state_key] = aws_id
+            running_machines[machine_prefix] = aws_id
             m = "terminate machine instance"
             constellation.set_value("%s_launch_msg" % machine_prefix, m)
         except Exception, e:
@@ -458,7 +459,7 @@ def _get_security_group_key(machine_prefix):
 
 def _acquire_vpc_security_group(constellation_name,
                                 machine_prefix,
-                                vpn_subnet,
+                                security_group_data,
                                 vpc_id,
                                 ec2conn):
     constellation = ConstellationState(constellation_name)
@@ -485,22 +486,13 @@ def _acquire_vpc_security_group(constellation_name,
                 time.sleep(i * 2)
                 if i == max_try:
                     raise
+        for rule in security_group_data:
+            log("authorize %s" % (rule))
+            sg.authorize(rule['protocol'],
+                         rule['from_port'],
+                         rule['to_port'],
+                         rule['cidr'])
 
-        if machine_prefix == "router":
-            sg.authorize('udp', 1194, 1194, '0.0.0.0/0')   # openvpn
-            sg.authorize('tcp', 22, 22, '0.0.0.0/0')   # ssh
-            sg.authorize('icmp', -1, -1, '0.0.0.0/0')  # ping
-            sg.authorize('udp', 0, 65535, vpn_subnet)
-            sg.authorize('tcp', 0, 65535, vpn_subnet)
-        else:
-            sg.authorize('icmp', -1, -1, vpn_subnet)
-            sg.authorize('tcp',  0, 65535, vpn_subnet)
-            sg.authorize('udp', 0, 65535, vpn_subnet)
-            # Also allow all traffic from the OpenVPN client
-            openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)
-            sg.authorize('icmp', -1, -1, openvpn_client_addr)
-            sg.authorize('tcp', 0, 65535, openvpn_client_addr)
-            sg.authorize('udp', 0, 65535, openvpn_client_addr)
         security_group_id = sg.id
         sg_key = _get_security_group_key(machine_prefix)
         constellation.set_value(sg_key, security_group_id)
@@ -569,7 +561,8 @@ def __get_block_device_mapping(aws_instance):
         dev_sda1.size = 50  # size in Gigabytes
         bdm = boto.ec2.blockdevicemapping.BlockDeviceMapping()
         bdm['/dev/sda1'] = dev_sda1
-    return bdm
+    #return bdm
+    return None
 
 
 def _acquire_vpc_server(constellation_name,
@@ -617,11 +610,14 @@ def read_boto_file(credentials_ec2):
     return  ec2_region_name, key_id, aws_secret_access_key, region_endpoint
 
 
-def aws_connect():
-    config = get_cloudsim_config()
-    # log("config: %s" % config)
-    credentials_ec2 = config['boto_path']
-    ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint = read_boto_file(credentials_ec2)
+def aws_connect(creds_fname = None):
+    credentials_ec2 = creds_fname
+    if not credentials_ec2:
+        config = get_cloudsim_config()
+        # log("config: %s" % config)
+        credentials_ec2 = config['boto_path']
+    ec2_region_name, aws_access_key_id, aws_secret_access_key, region_endpoint\
+        = read_boto_file(credentials_ec2)
     if ec2_region_name == 'nova':
         # TODO: remove hardcoded OpenStack endpoint
         region = RegionInfo(None, 'cloudsim', region_endpoint)  # 172.16.0.201
@@ -662,10 +658,14 @@ def _get_amazon_amis(availability_zone):
     if availability_zone.startswith('eu-west'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
         amis['ubuntu_1204_x64'] = 'ami-f2191786'
+        amis['ubuntu_1204_x64_router_stable'] = 'ami-b2e105c5'
+        amis['ubuntu_1204_x64_simulator_stable'] = 'ami-b6e105c1'
+
 
     elif availability_zone.startswith('us-east'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
         amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
+        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-adeca4c4'
 
     elif availability_zone.startswith('nova'):
         # TODO: we might want to move image ids to a configuration file
@@ -794,7 +794,8 @@ def wait_for_multiple_machines_to_terminate(ec2conn,
             for instance in instances:
                 aws_id = instance.id
                 if aws_id in aws_ids_to_roles:
-                    constellation.set_value(role, instance.state)
+                    state = instance.state
+                    constellation.set_value("%s_aws_state" % role, state)
                     if instance.state == 'terminated':
                         role = aws_ids_to_roles[aws_id]
                         aws_ids_to_roles.pop(aws_id)

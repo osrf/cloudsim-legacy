@@ -2,10 +2,7 @@ from __future__ import print_function
 
 import os
 import time
-import sys
-import uuid
 import unittest
-import redis
 import commands
 
 import novaclient.v1_1.client as nvclient
@@ -33,8 +30,12 @@ def acquire_openstack_server(constellation_name,
     Stores the returned values in a redis database
     '''
     floating_ip, instance_name, keypair_name, security_group_name = \
-        openstack_launch(constellation_name, machine_name, 
-                constellation_directory, script, creds)
+    openstack_launch(constellation_name,
+                     machine_name,
+                     constellation_directory,
+                     script,
+                     creds)
+
     constellation = ConstellationState(constellation_name)
     constellation.set_value("security_group", security_group_name)
     constellation.set_value("keypair", keypair_name)
@@ -43,7 +44,7 @@ def acquire_openstack_server(constellation_name,
     return floating_ip, instance_name, keypair_name
 
 
-def terminate_openstack_server(constellation_name):
+def terminate_openstack_server(constellation_name, creds):
     '''
     Retrieves necessary information from the redis database.
     Uses that information to call terminate.
@@ -52,14 +53,14 @@ def terminate_openstack_server(constellation_name):
     secgroup = constellation.get_value("security_group")
     keypair = constellation.get_value("keypair")
     instance_name = constellation.get_value("instance")
-    terminate(instance_name, keypair, secgroup)
+    terminate(instance_name, keypair, secgroup, creds)
 
 
 def openstack_launch(constellation_name, machine_name, 
         constellation_directory, user_data, nova_creds):
     '''
     Launches an openstack instance.
-    Creates a unique keypair, security group, and floating ip 
+    Creates a unique keypair, security group, and floating ip
     and assigns them to the instance
     '''
     #nova_creds = get_nova_creds()
@@ -105,7 +106,7 @@ def openstack_launch(constellation_name, machine_name,
     #assign_floating_ip
     instance = nova.servers.get(instance.id)
     flag = 0
-    instance_ip = None
+
     for floating_ip in nova.floating_ips.list():
         if floating_ip.instance_id is None:
             instance.add_floating_ip(floating_ip)
@@ -118,12 +119,11 @@ def openstack_launch(constellation_name, machine_name,
     return floating_ip.ip, instance_name, keypair_name, security_group_name
 
 
-def terminate(instance_name, keypair_name, secgroup_name):
+def terminate(instance_name, keypair_name, secgroup_name, creds):
     '''
     Terminates an openstack instance.
     Destroys the associated security group, keypair, and floating ip
     '''
-    creds = get_nova_creds()
     nova = nvclient.Client(**creds)
     instance = nova.servers.find(name=instance_name)
     secgroup = nova.security_groups.find(name=secgroup_name)
@@ -179,7 +179,7 @@ class TestOpenstack(unittest.TestCase):
         script = '''#!/bin/bash
 touch /home/ubuntu/new_file.txt'''  # startup script
         floating_ip, instance_name, keypair_name = acquire_openstack_server(
-            self.constellation_name, creds, self.constellation_directory, 
+            self.constellation_name, creds, self.constellation_directory,
             machine_name, script)
         constellation = ConstellationState(self.constellation_name)
         #uname = 'cirros'
@@ -198,7 +198,8 @@ touch /home/ubuntu/new_file.txt'''  # startup script
             ctr -= 1
             if ctr < 0:
                 msg = ("timeout while waiting for floating ip for %s"
-                    % sim_machine_name)
+                    % machine_name)
+                raise Exception(msg)
             pingable, ping_str = commands.getstatusoutput(
                 "ping -c3 %s" % floating_ip)
             if pingable == 0:
@@ -219,7 +220,7 @@ touch /home/ubuntu/new_file.txt'''  # startup script
 
     def tearDown(self):
         '''
-        Call the terminate function and 
+        Call the terminate function and
         make sure that all resources (floating ip, security group, keypair)
         are destroyed.
         '''

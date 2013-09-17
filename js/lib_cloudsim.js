@@ -371,6 +371,29 @@ function reset_tasks(constellation_name)
     return msg;
 }
 
+function start_web_tools(constellation_name)
+{
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=start_gzweb';
+    url += '&constellation=' + constellation_name;
+
+    console.log(url);
+    msg = httpGet(url);
+    console.log(msg);
+    return msg;
+}
+
+function stop_web_tools(constellation_name)
+{
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=stop_gzweb';
+    url += '&constellation=' + constellation_name;
+
+    console.log(url);
+    msg = httpGet(url);
+    console.log(msg);
+    return msg;
+}
+
+
 function async_get_constellations(callback)
 {
 	var url = '/cloudsim/inside/cgi-bin/constellations/';
@@ -414,6 +437,7 @@ function async_get_users(callback)
 	});
 }
 
+////////////////////////////////////////
 
 function httpGet(theUrl)
 {
@@ -454,15 +478,7 @@ function httpDelete(theUrl)
     return xmlHttp.responseText;
 }
 
-function log_to_div(div_name, message)
-{
-   document.getElementById(div_name).innerHTML += message +"<br>";
-}
 
-function clear_div(div_name)
-{
-   document.getElementById(div_name).innerHTML = "";
-}
 
 
 

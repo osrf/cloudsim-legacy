@@ -28,6 +28,13 @@ if d['command'] == 'stop_task':
 if d['command'] == 'reset_tasks':
     d['constellation'] = form.getfirst('constellation')
 
+if d['command'] == 'start_gzweb':
+    d['constellation'] = form.getfirst('constellation')
+
+if d['command'] == 'stop_gzweb':
+    d['constellation'] = form.getfirst('constellation')
+
+
 s = dumps(d)
 redis_client = redis.Redis()
 redis_client.publish('cloudsim_cmds', s)

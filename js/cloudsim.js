@@ -34,7 +34,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
     		}
     		else
     		{
-
+    			// its a field computer
     		}
 
     		var machine_div = create_machine(machines_div, machine_name);
@@ -56,13 +56,20 @@ function create_constellation(div_name, configuration, constellation, machine_da
 
     		if(has_simulator)
     		{
-    			create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
+    			create_simulator_state_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo");
+    			
     		}
+
+    		if (machine_name == "router")
+    		{
+    			create_gzweb_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo", "gzweb");
+    		}
+    		
     		create_latency_widget(machine_div, constellation, machine_name, latency_key, latency_msg, max_latency);
     	}
     }
 
-    if(configuration == "CloudSim")
+    if(configuration.indexOf("CloudSim") == 0)
     {
     	var disable_key_download  = false;
     	if(get_user_info()['role'] == 'user')
@@ -93,9 +100,9 @@ function create_constellation(div_name, configuration, constellation, machine_da
         create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file", disable_key_download );
         create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "simulation_launch_msg", "simulation_state");
         create_machine_state_widget(machine_div, constellation, machine_name,"simulation_aws_state");
-        //create_glx_state_widget(machine_div, constellation, machine_name, "simulation_glx_state");
+        //create_glx_state_widget(machine_div, constellation, machine_name, "sim_glx_state");
 
-        create_simulator_state_widget(machine_div, constellation, machine_name, "simulation_glx_state", "gazebo");
+        create_simulator_state_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo");
 
         //create_traffic_shaper_widget(machine_div, constellation, machine_name, "traffic_shaper");
         create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to CloudSim", 1.1);

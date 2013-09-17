@@ -72,22 +72,18 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     const_div.appendChild(title_div);
     var title_txt = configuration_name + ": " +constellation_name  
     title_div.appendChild(document.createTextNode(title_txt));
-    
-    
     var top_div = document.createElement("div");
 
     top_div.id = "top";
     var title_str = " <h3 style=' margin-top:0; margin-bottom:0;'><table width='100%'><tr><td align='left'>";
     title_str    +=   constellation_name + "</td><td align='right'><FONT SIZE=2> Launched by " + username + " (UTC " + gmt + ")</FONT></td></tr>"; //"<tr><td><FONT SIZE=2>" + configuration_name + "</FONT></td><td align='right'><FONT SIZE=2> at UTC " + gmt + "</FONT></td></tr></table></h3>";
-
     const_div.appendChild(top_div);
     // div.insertBefore(top_div, node);
 
-
-    var msg_div = document.createElement("div");
-    msg_div.id = "error";
-    msg_div.style.color = "red"; 
-    top_div.appendChild(msg_div);
+    var error_msg_div = document.createElement("div");
+    error_msg_div.id = "error";
+    error_msg_div.style.color = "red"; 
+    top_div.appendChild(error_msg_div);
 
 
     // do not allow simple users to terminate constellations
@@ -113,9 +109,7 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
             terminate_constellation(constellation_name);
             location.reload(true);
         };
-        
         top_div.appendChild(terminate_button);
-
 	}
 
 	if(get_user_info()['role'] == 'admin')
@@ -147,10 +141,8 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     var machines_div = document.createElement("div");
     machines_div.id = "machines";
     const_div.appendChild(machines_div);
-
     // const_div.innerHTML = _get_constellation_div_str(div_name, configuration, constellation);
     div.insertBefore(const_div, node);
-    
     return const_div;
 }
 
@@ -185,7 +177,5 @@ function remove_old_constellations(constellations)
 			console.log(id + " DOES NOT EXISTS ANYMORE");
 			constellations_div.removeChild(constellation_div);
 		}
-		
 	}
-
 }
