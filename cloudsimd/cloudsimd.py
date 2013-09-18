@@ -429,8 +429,9 @@ def launch(constellation_name, data):
             constellation_plugin.launch(constellation_name, data)
         except Exception, e:
             #error_msg = constellation.get_value('error')
-            constellation.set_value('error', '%s' % e)
             tb = traceback.format_exc()
+            constellation.set_value('error', 'Launch aborted with exception: '
+                                    '%s<pre>%s</pre>' % (e,tb))
             log("LAUNCH ERROR traceback:  %s" % tb)
 
             #time.sleep(10)
