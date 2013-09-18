@@ -686,6 +686,52 @@ DELIM
     """
     return s
 
+def get_simulator_script(drc_package_name,
+                   machine_ip,
+                   ros_master_ip,
+                   gpu_driver_list,
+                   ppa_list,
+                   OPENVPN_CLIENT_IP,
+                   OPENVPN_SERVER_IP
+                   ):
+  s = """#!/bin/bash
+
+# Exit on error
+set -ex
+# Redirect everybody's output to a file
+logfile=/home/ubuntu/launch_stdout_stderr.log
+
+exec > $logfile 2>&1
+
+mkdir -p home/ubuntu/cloudsim/setup
+chown -R ubuntu:ubuntu /home/ubuntu/
+
+# this is a bootstrap script that we use to detect the presence of a file
+# on the machine. It is used by CloudSim and therefore must be present
+# on the machine soon after boot
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_sim.bash
+#!/bin/bash
+ls \$1
+DELIM
+chmod +x /home/ubuntu/cloudsim/find_file_sim.bash
+# ---------------------------------------------------------------------------
+
+# this one may be overriden but its early presence will make the installation
+# more friendly
+cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_sim.bash
+#!/bin/bash
+
+tail -1 /var/log/dpkg.log
+
+DELIM
+chmod +x /home/ubuntu/cloudsim/dpkg_log_sim.bash
+# --------------------------------
+
+touch /home/ubuntu/cloudsim/setup/deploy_ready
+"""
+  return s
+
+
 def get_drc_script(drc_package_name,
                    machine_ip,
                    ros_master_ip,

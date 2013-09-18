@@ -601,9 +601,7 @@ def deploy_constellation(constellation_name, cloud_provider, machines,
                          "running")
 
 
-#def launch(username, config, constellation_name, tags,
-#           constellation_directory, credentials_override=None):
-def launch_common(constellation_name, tags):
+def launch(constellation_name, tags):
     """
     Called by cloudsimd when it receives a launch message
     """
@@ -913,11 +911,6 @@ def launch_common(constellation_name, tags):
     
     constellation.set_value("launch_stage", "running")
 
-def launch(constellation_name, tags):
-    launch_common(constellation_name, tags)
-
-def launch_stable(constellation_name, tags):
-    launch_common(constellation_name, tags)
 
 def terminate(constellation_name):
     constellation = ConstellationState(constellation_name)

@@ -262,10 +262,10 @@ def get_plugin(configuration):
                                      c.update,
                                      c.monitor,
                               None, None, None, None)
-    elif configuration.startswith('DRC-stable'):
-        #from launchers import amazon_trio as c
+
+    elif configuration.startswith('DRC'):
         from launchers import vrc_contest as c
-        plugin = ConstellationPlugin(c.launch_stable,
+        plugin = ConstellationPlugin(c.launch,
                                      c.terminate,
                                      c.update,
                                      c.monitor,
@@ -273,9 +273,9 @@ def get_plugin(configuration):
                                      c.stop_task,
                                      c.start_gzweb,
                                      c.stop_gzweb)
-    elif configuration.startswith('DRC'):
-        #from launchers import amazon_trio as c
-        from launchers import vrc_contest as c
+    
+    elif configuration.startswith('Simulator'):
+        from launchers import simulator as c
         plugin = ConstellationPlugin(c.launch,
                                      c.terminate,
                                      c.update,
@@ -302,8 +302,6 @@ def _load_cloudsim_configurations_list():
     """
 
     configs = {}
-    config = get_cloudsim_config()
-    credentials_ec2 = config['boto_path']
     desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
 <ol>
   <li>Hardware:
@@ -366,6 +364,20 @@ def _load_cloudsim_configurations_list():
 </ol>
 """     
     configs['CloudSim-stable'] = {'description': desc}
+    desc = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
+<ol>
+  <li>Hardware:
+      <ol>
+          <li>Simulator: GPU cluster instance</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Fuerte</li>
+  <li>Simulator: Gazebo (latest)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+    configs['Simulator'] = {'description': desc}
 
     set_cloudsim_configuration_list(configs)
 
