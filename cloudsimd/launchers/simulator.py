@@ -30,8 +30,7 @@ from launch_utils.testing import get_test_path,\
 from launch_utils import get_unique_short_name
 from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
     create_vpc_vpn_connect_file, create_ros_connect_file,\
-    create_ssh_connect_file, get_simulator_script,\
-    get_router_deploy_script
+    create_ssh_connect_file, get_router_deploy_script, get_simulator_script
 
 from launch_utils.sshclient import SshClient
 from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue

@@ -331,7 +331,6 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
 
 
-
 def get_simulator_script(drc_package_name,
                    machine_ip,
                    ros_master_ip,
@@ -345,12 +344,33 @@ def get_simulator_script(drc_package_name,
 set -ex
 exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
-""" + _cloudsim_dir_find_file_and_dpkg_generator("router") + """
+""" + _cloudsim_dir_find_file_and_dpkg_generator("sim") + """
 """ + _packagage_sources_update_generator() + """
 """ + _openvpn_install_and_conf_generator(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP) + """
+""" + _install_ntp_vim_sshhpn_generator() + """
+
 
 apt-get install -y unzip
-touch /home/ubuntu/cloudsim/setup/deploy_ready"""
+touch /home/ubuntu/cloudsim/setup/deploy_ready
+
+
+""" + _robotics_packages_install_generator(drc_package_name) + """
+
+""" + _networking_sniffing_and_control_generator("eth0", "eth0") + """
+""" + _gzweb_clone_and_deploy_generator() + """
+""" + _notebook_install_and_upstart_generator() + """
+
+""" + _install_and_configure_xgl(gpu_driver_list) + """
+""" + _start_sim_stop_sim_local_generator(machine_ip) + """
+""" + _ping_gl_local_generator() + """
+""" + _send_to_portal_generator() + """
+""" + _load_gazebo_models_generator() + """
+
+
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+touch /home/ubuntu/cloudsim/setup/done
+
+"""
     return s
 
 
@@ -436,11 +456,12 @@ exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 """ + _cloudsim_dir_find_file_and_dpkg_generator("router") + """
 """ + _packagage_sources_update_generator() + """
 """ + _openvpn_install_and_conf_generator(vpn_server_ip, vpn_client_ip) + """
+""" + _install_ntp_vim_sshhpn_generator() + """
 
 apt-get install -y unzip
 touch /home/ubuntu/cloudsim/setup/deploy_ready
 
-""" + _install_ftp_vim_sshhpn_generator() + """
+
 """ + _configure_and_install_iptable_generator(
                                         public_network_interface_name) + """
 """ + _robotics_packages_install_generator(drc_package_name) + """
@@ -472,7 +493,7 @@ chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
     return s
 
 
-def _install_ftp_vim_sshhpn_generator():
+def _install_ntp_vim_sshhpn_generator():
     s = """
 apt-get install -y ntp
 apt-get install -y vim
@@ -582,6 +603,9 @@ dev tun
 ifconfig """ + vpn_server_ip + " " + vpn_client_ip + """
 secret static.key
 DELIM
+
+echo "openvpn /etc/openvpn/openvpn.conf generated"
+
 """
     return s
 
@@ -756,7 +780,7 @@ apt-get install -y vim
 apt-get install -y ipython
 apt-get install -y ntp
 
-""" + _install_ftp_vim_sshhpn_generator() + """
+""" + _install_ntp_vim_sshhpn_generator() + """
 
 # ----------------------------------------------------------------------------
 mkdir -p /home/ubuntu/cloudsim
@@ -796,8 +820,8 @@ DELIM
 
 
 """ + _install_and_configure_xgl(gpu_driver_list) + """
-""" + _start_sim_stop_sim_generator(machine_ip) + """
-""" + _ping_gl_generator() + """
+""" + _start_sim_stop_sim_local_generator(machine_ip) + """
+""" + _ping_gl_local_generator() + """
 """ + _send_to_portal_generator() + """
 """ + _load_gazebo_models_generator() + """
 """
@@ -864,7 +888,7 @@ initctl start lightdm
     return s
 
 
-def _ping_gl_generator():
+def _ping_gl_local_generator():
     s = """
 cat <<DELIM > /home/ubuntu/cloudsim/ping_gl.bash
 
@@ -878,7 +902,7 @@ chmod +x /home/ubuntu/cloudsim/ping_gl.bash
     return s
 
 
-def _start_sim_stop_sim_generator(machine_ip):
+def _start_sim_stop_sim_local_generator(machine_ip):
     s = """
 cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
 #!/bin/bash
