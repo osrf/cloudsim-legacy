@@ -331,22 +331,31 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
 
 
-def get_router_script(public_network_interface_name,
-                      private_network_interface_name,
-                      machine_private_ip,
-                      ros_master_ip,
-                      drc_package_name,
-                      vpn_server_ip,
-                      vpn_client_ip,):
-    gazebo_master_ip = ros_master_ip
-    if not private_network_interface_name:
-        private_network_interface_name = public_network_interface_name
 
+def get_simulator_script(drc_package_name,
+                   machine_ip,
+                   ros_master_ip,
+                   gpu_driver_list,
+                   ppa_list,
+                   OPENVPN_CLIENT_IP,
+                   OPENVPN_SERVER_IP
+                   ):
     s = """#!/bin/bash
 # Exit on error
 set -ex
 exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
+""" + _cloudsim_dir_find_file_and_dpkg_generator("router") + """
+""" + _packagage_sources_update_generator() + """
+""" + _openvpn_install_and_conf_generator(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP) + """
+
+apt-get install -y unzip
+touch /home/ubuntu/cloudsim/setup/deploy_ready"""
+    return s
+
+
+def _packagage_sources_update_generator():
+    s = """
 
 cat <<DELIM > /etc/apt/sources.list
 
@@ -369,49 +378,102 @@ wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
 # we need to tell apt about the new repos
 apt-get update
 
+    """
+    return s
+
+
+def _cloudsim_dir_find_file_and_dpkg_generator(machine_name):
+    s = """
 
 # this is where we store all data for this part
 mkdir -p /home/ubuntu/cloudsim
 mkdir -p /home/ubuntu/cloudsim/setup
 
+
 # this is a bootstrap script that we use to detect the presence of a file
 # on the machine. It is used by CloudSim and therefore must be present
 # on the machine soon after boot
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_router.bash
+cat <<DELIM > /home/ubuntu/cloudsim/find_file_""" + machine_name + """.bash
 #!/bin/bash
 ls \$1
 DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_router.bash
+chmod +x /home/ubuntu/cloudsim/find_file_""" + machine_name + """.bash
 # ---------------------------------------------------------------------------
 
 # this one may be overriden but its early presence will make the installation
 # more friendly
-cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_router.bash
+cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_""" + machine_name + """.bash
 #!/bin/bash
 
 tail -1 /var/log/dpkg.log
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/dpkg_log_router.bash
-# ---------------------------------------------------------------------------
-
+chmod +x /home/ubuntu/cloudsim/dpkg_log_""" + machine_name + """.bash
+# ---------------------------------------------------------------------------    
 
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+    """
+    return s
 
 
-#
-# Install minimum to deploy cloudsim scripts
-#
+def get_router_script(public_network_interface_name,
+                      private_network_interface_name,
+                      machine_private_ip,
+                      ros_master_ip,
+                      drc_package_name,
+                      vpn_server_ip,
+                      vpn_client_ip,):
+    gazebo_master_ip = ros_master_ip
+    if not private_network_interface_name:
+        private_network_interface_name = public_network_interface_name
+
+    s = """#!/bin/bash
+# Exit on error
+set -ex
+exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
+
+
+""" + _cloudsim_dir_find_file_and_dpkg_generator("router") + """
+""" + _packagage_sources_update_generator() + """
+""" + _openvpn_install_and_conf_generator(vpn_server_ip, vpn_client_ip) + """
+
 apt-get install -y unzip
-apt-get install -y openvpn
-# Signal we are ready to send the keys to the router. We need:
-# * unzip, and unzip needs update
-# * openvpn
-
-""" + _openvpn_conf_generator(vpn_server_ip, vpn_client_ip) + """
-
 touch /home/ubuntu/cloudsim/setup/deploy_ready
 
+""" + _install_ftp_vim_sshhpn_generator() + """
+""" + _configure_and_install_iptable_generator(
+                                        public_network_interface_name) + """
+""" + _robotics_packages_install_generator(drc_package_name) + """
+
+# roscore is in simulator's machine
+cat <<DELIM >> /etc/environment
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
+export ROS_IP=""" + machine_private_ip + """
+export GAZEBO_MASTER_URI=http://""" + gazebo_master_ip + """:11345
+source /usr/share/drcsim/setup.sh
+DELIM
+
+
+# VRC specific.. sends emails when machines are down
+# sudo start vrc_monitor || true
+
+# _networking_sniffing_and_control_generator
+""" + _networking_sniffing_and_control_generator(
+                                        private_network_interface_name,
+                                        public_network_interface_name) + """
+""" + _gzweb_clone_and_deploy_generator() + """
+""" + _notebook_install_and_upstart_generator() + """
+
+#######################################################
+touch /home/ubuntu/cloudsim/setup/done
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+
+"""
+    return s
+
+
+def _install_ftp_vim_sshhpn_generator():
+    s = """
 apt-get install -y ntp
 apt-get install -y vim
 
@@ -431,8 +493,49 @@ NoneEnabled yes
 DELIM
 
 sudo service ssh restart
+"""
+    return s
+
+def _robotics_packages_install_generator(drc_package_name):
+    s = """# At least in some cases, we need to explicitly install graphviz before ROS to avoid apt-get dependency problems.
+sudo apt-get install -y graphviz
+# That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
+apt-get install -y ros-fuerte-ros-comm
+# We need atlas_msgs, which is in drcsim
+apt-get install -y """ + drc_package_name + """
+
+# Answer the postfix questions
+sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
+sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+
+sudo apt-get install -y cloudsim-client-tools
+"""
+    return s
 
 
+def _gzweb_clone_and_deploy_generator():
+    s = """
+
+apt-get install -y mercurial
+apt-get install -y imagemagick
+apt-get install -y libjansson-dev
+apt-get install -y nodejs npm
+apt-get install -y python-matplotlib
+
+npm install -g http-server
+npm install -g node-gyp
+npm install websocket
+
+cd /home/ubuntu/cloudsim; hg clone https://bitbucket.org/osrf/gzweb
+. /usr/share/drcsim/setup.sh
+. /home/ubuntu/cloudsim/gzweb/deploy.sh -m  # build a model db
+
+"""
+    return s
+
+
+def _configure_and_install_iptable_generator(public_network_interface_name):
+    s = """
 cat <<DELIM > /etc/init.d/iptables_cloudsim
 #! /bin/sh
 
@@ -464,97 +567,16 @@ ln -sf /etc/init.d/iptables_cloudsim /etc/rc2.d/S99iptables_cloudsim
 #invoke it
 /etc/init.d/iptables_cloudsim start
 
-
-##############################################################
-#
-# ROBOTICS software install
-#
-#
-
-
-# At least in some cases, we need to explicitly install graphviz before ROS to avoid apt-get dependency problems.
-sudo apt-get install -y graphviz
-# That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
-apt-get install -y ros-fuerte-ros-comm
-# We need atlas_msgs, which is in drcsim
-apt-get install -y """ + drc_package_name + """
-
-# roscore is in simulator's machine
-cat <<DELIM >> /etc/environment
-export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
-export ROS_IP=""" + machine_private_ip + """
-export GAZEBO_MASTER_URI=http://""" + gazebo_master_ip + """:11345
-source /usr/share/drcsim/setup.sh
-DELIM
-
-# Answer the postfix questions
-sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
-sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
-
-sudo apt-get install -y cloudsim-client-tools
-
-
-# VRC specific.. sends emails when machines are down
-# sudo start vrc_monitor || true
-
-
-##############################################################
-
-""" + _networking_sniffing_and_control_generator(
-                                        private_network_interface_name,
-                                        public_network_interface_name) + """
-
-# start vrc_sniffer and vrc_controllers
-sudo start vrc_sniffer || true
-sudo start vrc_controller_private || true
-sudo start vrc_controller_public || true
-
-
-
-
-#
-# gzweb (gazebo web tools)
-#
-apt-get install -y mercurial
-apt-get install -y imagemagick
-apt-get install -y libjansson-dev
-apt-get install -y nodejs npm
-apt-get install -y python-matplotlib
-
-npm install -g http-server
-npm install -g node-gyp
-npm install websocket
-
-cd /home/ubuntu/cloudsim; hg clone https://bitbucket.org/osrf/gzweb
-. /usr/share/drcsim/setup.sh
-. /home/ubuntu/cloudsim/gzweb/deploy.sh -m  # build a model db
-
-
-######################################################
-#
-# ipython Notebook server
-#
-
-# apt-get install -y ipython
-apt-get install -y ipython-notebook
-apt-get install -y python-pip
-sudo pip install --upgrade ipython
-
-""" + _notebook_service_generator() + """
-
-
-
-#######################################################
-touch /home/ubuntu/cloudsim/setup/done
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
-
 """
     return s
 
 
-def _openvpn_conf_generator(vpn_server_ip, vpn_client_ip):
+def _openvpn_install_and_conf_generator(vpn_server_ip, vpn_client_ip):
 
     s = """
+
+apt-get install -y openvpn
+
 cat <<DELIM > /etc/openvpn/openvpn.conf
 dev tun
 ifconfig """ + vpn_server_ip + " " + vpn_client_ip + """
@@ -564,8 +586,12 @@ DELIM
     return s
 
 
-def _notebook_service_generator():
+def _notebook_install_and_upstart_generator():
     s = """
+apt-get install -y ipython-notebook
+apt-get install -y python-pip
+sudo pip install --upgrade ipython
+
 mkdir /home/ubuntu/cloudsim/notebook
 
 # Create upstart notebook job
@@ -606,7 +632,6 @@ def _networking_sniffing_and_control_generator(private_network_interface_name,
 exec vrc_controller.py -f 0.25 -cl vrc_current_outbound_latency -tl vrc_target_outbound_latency -s 0.5 -v -d """ + private_network_interface_name + """  > /var/log/vrc_controller_private.log 2>&1
 
 """
-
     s = """
 # Create upstart vrc_sniffer job
 cat <<DELIM > /etc/init/vrc_sniffer.conf
@@ -683,53 +708,14 @@ exec vrc_wrapper.sh vrc_netwatcher.py -o -m replace -d /tmp -p vrc_netwatcher_us
 
 DELIM
 # ----------------------------------------------------------------------------
+
+# start vrc_sniffer and vrc_controllers
+sudo start vrc_sniffer || true
+sudo start vrc_controller_private || true
+sudo start vrc_controller_public || true
+
     """
     return s
-
-def get_simulator_script(drc_package_name,
-                   machine_ip,
-                   ros_master_ip,
-                   gpu_driver_list,
-                   ppa_list,
-                   OPENVPN_CLIENT_IP,
-                   OPENVPN_SERVER_IP
-                   ):
-  s = """#!/bin/bash
-
-# Exit on error
-set -ex
-# Redirect everybody's output to a file
-logfile=/home/ubuntu/launch_stdout_stderr.log
-
-exec > $logfile 2>&1
-
-mkdir -p home/ubuntu/cloudsim/setup
-chown -R ubuntu:ubuntu /home/ubuntu/
-
-# this is a bootstrap script that we use to detect the presence of a file
-# on the machine. It is used by CloudSim and therefore must be present
-# on the machine soon after boot
-cat <<DELIM > /home/ubuntu/cloudsim/find_file_sim.bash
-#!/bin/bash
-ls \$1
-DELIM
-chmod +x /home/ubuntu/cloudsim/find_file_sim.bash
-# ---------------------------------------------------------------------------
-
-# this one may be overriden but its early presence will make the installation
-# more friendly
-cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_sim.bash
-#!/bin/bash
-
-tail -1 /var/log/dpkg.log
-
-DELIM
-chmod +x /home/ubuntu/cloudsim/dpkg_log_sim.bash
-# --------------------------------
-
-touch /home/ubuntu/cloudsim/setup/deploy_ready
-"""
-  return s
 
 
 def get_drc_script(drc_package_name,
@@ -739,10 +725,6 @@ def get_drc_script(drc_package_name,
                    ppa_list,
                    OPENVPN_CLIENT_IP,
                    ROUTER_IP):
-
-    gpu_driver_packages_string = ""
-    for driver in gpu_driver_list:
-        gpu_driver_packages_string += "apt-get install -y %s\n" % driver
 
     ppa_string = ""
     for ppa in ppa_list:
@@ -756,27 +738,8 @@ logfile=/home/ubuntu/launch_stdout_stderr.log
 exec > $logfile 2>&1
 
 
-cat <<DELIM > /etc/apt/sources.list
-
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-updates main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-backports main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-security main restricted universe multiverse
-
-
-DELIM
-
-
-
-# Add ROS and OSRF repositories
-echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list
-echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" > /etc/apt/sources.list.d/drc-latest.list
-
-date >> /home/ubuntu/setup.log
-echo 'setting up the ros and drc repos keys' >> /home/ubuntu/setup.log
-wget http://packages.ros.org/ros.key -O - | apt-key add -
-wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
-
+""" + _cloudsim_dir_find_file_and_dpkg_generator("sim") + """
+""" + _packagage_sources_update_generator() + """
 
 """ + ppa_string + """
 
@@ -785,10 +748,6 @@ wget http://packages.osrfoundation.org/drc.key -O - | apt-key add -
 # we need python-software-properties for ad-apt-repository
 # it requires apt-get update for some reason
 #
-
-echo "update packages" >> /home/ubuntu/setup.log
-
-
 apt-get update
 
 apt-get install -y python-software-properties
@@ -797,43 +756,72 @@ apt-get install -y vim
 apt-get install -y ipython
 apt-get install -y ntp
 
+""" + _install_ftp_vim_sshhpn_generator() + """
 
-add-apt-repository -y ppa:w-rouesnel/openssh-hpn
-apt-get update
-
-apt-get install -y openssh-server
-
-cat <<EOF >>/etc/ssh/sshd_config
-
-# SSH HPN
-HPNDisabled no
-TcpRcvBufPoll yes
-HPNBufferSize 8192
-NoneEnabled yes
-EOF
 # ----------------------------------------------------------------------------
-
-echo "restart ssh" >> /home/ubuntu/setup.log
-sudo service ssh restart
-
 mkdir -p /home/ubuntu/cloudsim
 mkdir -p /home/ubuntu/cloudsim/setup
 
+""" + _robotics_packages_install_generator(drc_package_name) + """
+
+
+cat <<DELIM > /home/ubuntu/cloudsim/ros.bash
+
+# To connect via ROS:
+
+# ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path
+oldrpp=$ROS_PACKAGE_PATH
+
+. /usr/share/drcsim/setup.sh
+eval export ROS_PACKAGE_PATH=\$oldrpp:\\$ROS_PACKAGE_PATH
+export ROS_IP=""" + machine_ip + """
+export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
+
+export GAZEBO_IP=""" + machine_ip + """
+export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
+
+DELIM
 
 #
-# Install drc sim and related packages
+# Automatic sourcing of drcsim/setup
 #
+cat <<DELIM >> /home/ubuntu/.bashrc
+# CloudSim
+. /usr/share/drcsim/setup.sh
+export DISPLAY=:0
+export ROS_IP="""    + machine_ip + """
+export GAZEBO_IP=""" + machine_ip + """
+
+DELIM
 
 
-echo "install cloudsim-client-tools" >> /home/ubuntu/setup.log
-# Answer the postfix questions
-sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
-sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
-apt-get install -y cloudsim-client-tools
+""" + _install_and_configure_xgl(gpu_driver_list) + """
+""" + _start_sim_stop_sim_generator(machine_ip) + """
+""" + _ping_gl_generator() + """
+""" + _send_to_portal_generator() + """
+""" + _load_gazebo_models_generator() + """
+"""
 
-echo "install """ + drc_package_name + """ ">> /home/ubuntu/setup.log
-apt-get install -y """ + drc_package_name + """
+    if ROUTER_IP:
+        s += """
+# Traffic routing daemon via the router
+""" + _vpc_route_generator(OPENVPN_CLIENT_IP, ROUTER_IP) + """
 
+    """
+
+    # finally,signal that the process is done
+    s += """
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+touch /home/ubuntu/cloudsim/setup/done
+"""
+    return s
+
+
+def _install_and_configure_xgl(gpu_driver_list):
+    gpu_driver_packages_string = ""
+    for driver in gpu_driver_list:
+        gpu_driver_packages_string += "apt-get install -y %s\n" % driver
+    s = """
 #
 # Packages for X
 #
@@ -872,84 +860,6 @@ user-session=gnome-fallback
 initctl stop lightdm || true
 initctl start lightdm
 
-
-
-
-#cat <<DELIM > /etc/rc.local
-#!/bin/sh -e
-#
-# rc.local
-#
-# This script is executed at the end of each multiuser runlevel.
-# Make sure that the script will "exit 0" on success or any other
-# value on error.
-#
-# In order to enable or disable this script just change the execution
-# bits.
-#
-# By default this script does nothing.
-# insmod /lib/modules/\`uname -r\`/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
-#exit 0
-#DELIM
-
-
-
-cat <<DELIM > /home/ubuntu/cloudsim/ros.bash
-
-# To connect via ROS:
-
-# ROS's setup.sh will overwrite ROS_PACKAGE_PATH, so we'll first save the existing path
-oldrpp=$ROS_PACKAGE_PATH
-
-. /usr/share/drcsim/setup.sh
-eval export ROS_PACKAGE_PATH=\$oldrpp:\\$ROS_PACKAGE_PATH
-export ROS_IP=""" + machine_ip + """
-export ROS_MASTER_URI=http://""" + ros_master_ip + """:11311
-
-export GAZEBO_IP=""" + machine_ip + """
-export GAZEBO_MASTER_URI=http://""" + ros_master_ip + """:11345
-
-DELIM
-# ----------------------------------------------------------------------------
-
-""" + _start_sim_stop_sim_generator(machine_ip) + """
-
-""" + _ping_gl_generator() + """
-
-
-
-#
-# Automatic sourcing of drcsim/setup
-#
-
-echo "Updating bashrc file">> /home/ubuntu/setup.log
-cat <<DELIM >> /home/ubuntu/.bashrc
-# CloudSim
-. /usr/share/drcsim/setup.sh
-export DISPLAY=:0
-export ROS_IP="""    + machine_ip + """
-export GAZEBO_IP=""" + machine_ip + """
-
-DELIM
-# ----------------------------------------------------------------------------
-
-""" + _send_to_portal_generator() + """
-
-""" + _load_gazebo_models_generator() 
-
-    if ROUTER_IP:
-        s += """
-# Traffic routing daemon via the router
-""" + _vpc_route_generator(OPENVPN_CLIENT_IP, ROUTER_IP) + """
-
-# invoke it now to add route to the router
-/etc/init.d/vpcroute start || true
-    """
-
-    # finally,signal that the process is done
-    s += """
-chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
-touch /home/ubuntu/cloudsim/setup/done
 """
     return s
 
@@ -1104,6 +1014,8 @@ DELIM
 chmod +x  /etc/init.d/vpcroute
 ln -sf /etc/init.d/vpcroute /etc/rc2.d/S99vpcroute
 # ----------------------------------------------------------------------------
+# invoke it now to add route to the router
+/etc/init.d/vpcroute start || true
 
     """
     return s
