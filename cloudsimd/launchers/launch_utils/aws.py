@@ -586,6 +586,14 @@ def _acquire_vpc_server(constellation_name,
 
         bdm = __get_block_device_mapping(aws_instance)
 
+        constellation_directory = constellation.get_value(
+                                                    'constellation_directory')
+        # save local startup script copy
+        script_fname = os.path.join(constellation_directory,
+                                    "%s_startup_script.txt" % machine_prefix)
+        with open(script_fname,'r') as f:
+            f.write(startup_script)
+
         res = ec2conn.run_instances(aws_image,
                          instance_type=aws_instance,
                          subnet_id=subnet_id,

@@ -177,20 +177,24 @@ def ssh_ping_proc(constellation_name, ip, latency_key, counter):
     monitor_ssh_ping(constellation_name, ssh_client, ip, latency_key)
     log("ssh ping_proc() ENDS %s %s" % (latency_key, counter))
 
+
 def monitor_task_proc(constellation_name, counter):
     ssh_client = _get_ssh_client(constellation_name)
     monitor_task(constellation_name, ssh_client)
     log("monitor_task_proc() ENDS %s" % counter)
+
 
 def monitor_simulator_proc(constellation_name, counter):
     ssh_client = _get_ssh_client(constellation_name)
     monitor_simulator(constellation_name, ssh_client, "sim_state")
     log("monitor_simulator_proc() ENDS %s" % counter)
 
+
 def monitor_gzweb_proc(constellation_name, counter):
     ssh_client = _get_ssh_client(constellation_name)
     monitor_gzweb(constellation_name, ssh_client, "sim_state")
     log("monitor_gzweb_proc() ENDS %s" % counter)
+
 
 def monitor_launch(constellation_name, machine_name, counter):
     ssh_client = _get_ssh_client(constellation_name)
@@ -539,6 +543,7 @@ def _check_opengl_and_x(constellation, ssh_client):
     # this code should never happen
     return
 
+
 def deploy_constellation(constellation_name, cloud_provider, machines,
                          openvpn_fname):
     constellation = ConstellationState(constellation_name)
@@ -610,9 +615,9 @@ def launch(constellation_name, tags):
     private_subnet = '10.0.0.0/24'
 
     if use_latest_version:
-       simulator_image_key = 'ubuntu_1204_x64_cluster'
+        simulator_image_key = 'ubuntu_1204_x64_cluster'
     else:
-       simulator_image_key = 'ubuntu_1204_x64_simulator_stable'
+        simulator_image_key = 'ubuntu_1204_x64_simulator_stable'
 
     machines = {}
     machines['sim'] = {'hardware': 'cg1.4xlarge',
@@ -788,7 +793,7 @@ def launch(constellation_name, tags):
         constellation.set_value('%s_aws_state' % machine_name, "running")
         constellation.set_value('%s_launch_state' % machine_name, "running")
     constellation.set_value("launch_stage", "running")
-    
+
     constellation.set_value("launch_stage", "running")
 
 
