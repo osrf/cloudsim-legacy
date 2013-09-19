@@ -39,7 +39,8 @@ import multiprocessing
 from launch_utils.sl_cloud import acquire_softlayer_constellation,\
  terminate_softlayer_constellation
 
-from launch_utils.aws import acquire_aws_constellation
+from launch_utils.aws import acquire_aws_constellation,\
+    get_aws_ubuntu_sources_repo, acquire_aws_single_server
 from launch_utils.aws import terminate_aws_constellation
 from launch_utils import LaunchException
 
@@ -709,7 +710,10 @@ def launch(constellation_name, tags):
                                           OPENVPN_SERVER_IP,
                                           OPENVPN_CLIENT_IP)'''
 
-        scripts['sim'] = get_simulator_script(drcsim_package_name,
+        ubuntu_sources_repo = get_aws_ubuntu_sources_repo(
+                                                      credentials_fname)
+        script = get_simulator_script(ubuntu_sources_repo,
+                                              drcsim_package_name,
                                     SIM_IP,
                                     ros_master_ip,
                                     gpu_driver_list,
@@ -720,12 +724,18 @@ def launch(constellation_name, tags):
     cs_cfg = get_cloudsim_config()
 
     if cloud_provider == "aws":
-        credentials_fname = cs_cfg['boto_path']
-        log("credentials_ec2 %s" % credentials_fname)
-        acquire_aws_constellation(constellation_name,
-                                  credentials_fname,
-                                  machines,
-                                  scripts,
+#         log("credentials_ec2 %s" % credentials_fname)
+#         acquire_aws_constellation(constellation_name,
+#                                   credentials_fname,
+#                                   machines,
+#                                   scripts,
+#                                   tags)
+        acquire_aws_single_server(constellation_name,
+                                  credentials_ec2=credentials_fname, 
+                                  constellation_directory,
+                                  machine_prefix='sim',
+                                  machine_data=machines['sim'],
+                                  startup_script=script,
                                   tags)
     else:
         raise LaunchException('Unsupported cloud '

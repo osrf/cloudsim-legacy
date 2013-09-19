@@ -40,7 +40,8 @@ import multiprocessing
 from launch_utils.sl_cloud import acquire_softlayer_constellation,\
  terminate_softlayer_constellation
 
-from launch_utils.aws import acquire_aws_constellation
+from launch_utils.aws import acquire_aws_constellation, aws_connect,\
+    get_aws_ubuntu_sources_repo
 from launch_utils.aws import terminate_aws_constellation
 
 
@@ -180,20 +181,24 @@ def ssh_ping_proc(constellation_name, ip, latency_key, counter):
     monitor_ssh_ping(constellation_name, ssh_router, ip, latency_key)
     log("ssh ping_proc() ENDS %s %s" % (latency_key, counter))
 
+
 def monitor_task_proc(constellation_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_task(constellation_name, ssh_router)
     log("monitor_task_proc() ENDS %s" % counter)
+
 
 def monitor_simulator_proc(constellation_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_simulator(constellation_name, ssh_router, "sim_state")
     log("monitor_simulator_proc() ENDS %s" % counter)
 
+
 def monitor_gzweb_proc(constellation_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     monitor_gzweb(constellation_name, ssh_router, "sim_state")
     log("monitor_gzweb_proc() ENDS %s" % counter)
+
 
 def monitor_launch(constellation_name, machine_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
@@ -554,6 +559,7 @@ def _check_opengl_and_x(constellation, ssh_router):
     # this code should never happen
     return
 
+
 def deploy_constellation(constellation_name, cloud_provider, machines,
                          openvpn_fname):
     constellation = ConstellationState(constellation_name)
@@ -648,11 +654,11 @@ def launch(constellation_name, tags):
     private_subnet = '10.0.0.0/24'
 
     if use_latest_version:
-       router_image_key = 'ubuntu_1204_x64'
-       simulator_image_key = 'ubuntu_1204_x64_cluster'
+        router_image_key = 'ubuntu_1204_x64'
+        simulator_image_key = 'ubuntu_1204_x64_cluster'
     else:
-       router_image_key = 'ubuntu_1204_x64_router_stable'
-       simulator_image_key = 'ubuntu_1204_x64_simulator_stable'
+        router_image_key = 'ubuntu_1204_x64_router_stable'
+        simulator_image_key = 'ubuntu_1204_x64_simulator_stable'
 
     machines = {}
     machines['router'] = {'hardware': 'm1.large',    # 't1.micro',
@@ -707,12 +713,6 @@ def launch(constellation_name, tags):
                                           'cidr': '0.0.0.0/0', },
                                          ]
                           }
-# VPN_PRIVATE_SUBNET = '10.0.0.0/24'
-#
-#             openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP) '11.8.0.2'
-#             sg.authorize('icmp', -1, -1, openvpn_client_addr)
-#             sg.authorize('tcp', 0, 65535, openvpn_client_addr)
-#             sg.authorize('udp', 0, 65535, openvpn_client_addr)
 
     machines['sim'] = {'hardware': 'cg1.4xlarge',
                   'software': simulator_image_key,
@@ -764,17 +764,23 @@ def launch(constellation_name, tags):
                            'nvidia-current-dev',
                            'nvidia-cg-toolkit']
 
-        if config.find("nightly") >= 0:
-            drcsim_package_name = "drcsim-nightly"
-        elif config.find("nvidia 319") >= 0:
-            ppa_list = ['xorg-edgers/ppa']
-            gpu_driver_list = ["nvidia-319", 'nvidia-settings']
+#         if config.find("nightly") >= 0:
+#             drcsim_package_name = "drcsim-nightly"
+#         elif config.find("nvidia 319") >= 0:
+#             ppa_list = ['xorg-edgers/ppa']
+#             gpu_driver_list = ["nvidia-319", 'nvidia-settings']
 
         log("DRC package %s" % drcsim_package_name)
         log("ppas: %s" % ppa_list)
         log("gpu packages %s" % gpu_driver_list)
 
-        scripts['router'] = get_router_script(router_public_network_itf,
+        ubuntu_sources_repo = "http://us.archive.ubuntu.com/ubuntu/"
+        if cloud_provider == "aws":
+            ubuntu_sources_repo = get_aws_ubuntu_sources_repo(
+                                                        credentials_fname)
+
+        scripts['router'] = get_router_script(ubuntu_sources_repo,
+                                              router_public_network_itf,
                                           router_private_network_itf,
                                           ROUTER_IP,
                                           SIM_IP,
@@ -782,7 +788,8 @@ def launch(constellation_name, tags):
                                           OPENVPN_SERVER_IP,
                                           OPENVPN_CLIENT_IP)
 
-        scripts['sim'] = get_drc_script(drcsim_package_name,
+        scripts['sim'] = get_drc_script(ubuntu_sources_repo,
+                                        drcsim_package_name,
                                     SIM_IP,
                                     ros_master_ip,
                                     gpu_driver_list,
@@ -790,7 +797,8 @@ def launch(constellation_name, tags):
                                     OPENVPN_CLIENT_IP,
                                     ROUTER_IP)
 
-        fc1_script = get_drc_script(drcsim_package_name,
+        fc1_script = get_drc_script(ubuntu_sources_repo,
+                                    drcsim_package_name,
                                         FC1_IP,
                                         ros_master_ip,
                                         gpu_driver_list,
@@ -798,7 +806,8 @@ def launch(constellation_name, tags):
                                         OPENVPN_CLIENT_IP,
                                         ROUTER_IP)
 
-        fc2_script = get_drc_script(drcsim_package_name,
+        fc2_script = get_drc_script(ubuntu_sources_repo,
+                                    drcsim_package_name,
                                         FC2_IP,
                                         ros_master_ip,
                                         gpu_driver_list,
@@ -812,8 +821,6 @@ def launch(constellation_name, tags):
         if has_fc2:
             scripts['fc2'] = fc2_script
 
-
-    cs_cfg = get_cloudsim_config()
     if cloud_provider == "softlayer":
         log("softlayer %s" % credentials_fname)
         constellation_prefix = config.split()[-1]
@@ -835,7 +842,6 @@ def launch(constellation_name, tags):
                                     fc2_script)
 
     if cloud_provider == "aws":
-        credentials_fname = cs_cfg['boto_path']
         log("credentials_ec2 %s" % credentials_fname)
         acquire_aws_constellation(constellation_name,
                                   credentials_fname,
@@ -907,8 +913,6 @@ def launch(constellation_name, tags):
         constellation.set_value('%s_launch_msg' % machine_name, "complete")
         constellation.set_value('%s_aws_state' % machine_name, "running")
         constellation.set_value('%s_launch_state' % machine_name, "running")
-    constellation.set_value("launch_stage", "running")
-    
     constellation.set_value("launch_stage", "running")
 
 

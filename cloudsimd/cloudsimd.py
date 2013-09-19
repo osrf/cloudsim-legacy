@@ -441,8 +441,9 @@ def launch(constellation_name, data):
             constellation_plugin.launch(constellation_name, data)
         except Exception, e:
             #error_msg = constellation.get_value('error')
-            constellation.set_value('error', '%s' % e)
             tb = traceback.format_exc()
+            constellation.set_value('error', 'Launch aborted with exception: '
+                                    '%s<pre>%s</pre>' % (e,tb))
             log("LAUNCH ERROR traceback:  %s" % tb)
 
             #time.sleep(10)
@@ -467,21 +468,16 @@ def update_constellation(constellation_name):
     """
     proc = multiprocessing.current_process().name
     log("update '%s' from proc '%s'" % (constellation_name, proc))
-
+    constellation = ConstellationState(constellation_name)
     try:
-
-        data = get_constellation_data(constellation_name)
-        config = data['configuration']
-        log("    configuration is '%s'" % (config))
-
+        config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
         constellation_plugin.update(constellation_name)
     except Exception, e:
-        log("cloudsimd.py update error: %s" % e)
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb)
-        log("UPDATE ERROR %s traceback:  %s" % (constellation_name, tb),
-            "launch_errors")
+        constellation.set_value('error', 'Update aborted with exception: '
+                                '%s<pre>%s</pre>' % (e,tb))
+        log("UPDATE ERROR traceback:  %s" % tb)
 
 
 def start_gzweb(constellation_name):
@@ -490,16 +486,17 @@ def start_gzweb(constellation_name):
     """
     proc = multiprocessing.current_process().name
     log("start_gzweb '%s' from proc '%s'" % (constellation_name,  proc))
+    constellation = ConstellationState(constellation_name)
     try:
-        constellation = ConstellationState(constellation_name)
         config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
         constellation.set_value("gzweb", 'starting')
         constellation_plugin.start_gzweb(constellation_name)
     except Exception, e:
-        log("cloudsimd.py start_gzweb error: %s" % e)
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb)
+        constellation.set_value('error', 'Start gzweb aborted with exception: '
+                                '%s<pre>%s</pre>' % (e,tb))
+        log("START_GZWEB ERROR traceback:  %s" % tb)
 
 
 def stop_gzweb(constellation_name):
@@ -508,16 +505,17 @@ def stop_gzweb(constellation_name):
     """
     proc = multiprocessing.current_process().name
     log("stop_gzweb '%s' from proc '%s'" % (constellation_name,  proc))
+    constellation = ConstellationState(constellation_name)
     try:
-        constellation = ConstellationState(constellation_name)
         config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
         constellation.set_value("gzweb", 'stopping')
         constellation_plugin.stop_gzweb(constellation_name)
     except Exception, e:
-        log("cloudsimd.py stop_gzweb error: %s" % e)
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb)
+        constellation.set_value('error', 'Stop gzweb aborted with exception: '
+                                '%s<pre>%s</pre>' % (e,tb))
+        log("STOP_GZWEB ERROR traceback:  %s" % tb)
 
              
 def terminate(constellation_name):
@@ -530,18 +528,18 @@ def terminate(constellation_name):
     proc = multiprocessing.current_process().name
     log("terminate '%s' from proc '%s'" % (constellation_name,  proc))
 
+    constellation = ConstellationState(constellation_name)
     try:
-        constellation = ConstellationState(constellation_name)
         config = constellation.get_value('configuration')
         log("    configuration is '%s'" % (config))
         constellation_plugin = get_plugin(config)
         constellation_plugin.terminate(constellation_name)
     except Exception, e:
-        log("cloudsimd.py terminate error: %s" % e)
         tb = traceback.format_exc()
-        log("TERMINATE ERROR %s traceback:  %s" % (constellation_name, tb))
+        constellation.set_value('error', 'Terminate aborted with exception: '
+                                '%s<pre>%s</pre>' % (e,tb))
+        log("TERMINATE ERROR traceback:  %s" % tb)
             
-    constellation = ConstellationState(constellation_name)
     constellation.set_value('constellation_state', 'terminated')
     log("Deleting %s from the database" % constellation_name)
     constellation.expire(1)

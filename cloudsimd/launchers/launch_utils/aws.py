@@ -28,6 +28,106 @@ class LaunchException(Exception):
     pass
 
 
+def get_aws_ubuntu_sources_repo(credentials_ec2):
+    aws_connect(credentials_ec2)
+    availability_zone = boto.config.get('Boto', 'ec2_region_name')
+    if availability_zone.startswith('eu-west'):
+        return "http://ie.archive.ubuntu.com/ubuntu/"
+    if availability_zone.startswith('us-east'):
+        return "http://us.archive.ubuntu.com/ubuntu/"
+    return "http://us.archive.ubuntu.com/ubuntu/"
+
+
+def acquire_aws_single_server(constellation_name,
+                       credentials_ec2,
+                       constellation_directory,
+                       machine_prefix,  # name of machine, ie "sim"
+                       machine_data,
+                       startup_script,
+                       tags):
+    sim_machine_name = "%s_%s" % (machine_prefix, constellation_name)
+
+    ec2conn, _ = aws_connect(credentials_ec2)
+    availability_zone = boto.config.get('Boto', 'ec2_region_name')
+    amis = _get_amazon_amis(availability_zone)
+    soft = machine_data['software']
+    aws_image = amis[soft]
+    aws_instance = machine_data['hardware']
+
+    bdm = __get_block_device_mapping(aws_instance)
+
+    constellation = ConstellationState(constellation_name)
+    constellation.set_value('%s_launch_msg' % machine_prefix,
+                            "setting up security groups")
+
+    constellation.set_value('machine_name', machine_prefix)
+    security_group_data = machine_data['security_group']
+    security_group_id = _acquire_vpc_security_group(constellation_name,
+                                    machine_prefix,
+                                    security_group_data,
+                                    vpc_id=None,
+                                    ec2conn)
+    constellation.set_value('%s_security_group_id' % machine_prefix,
+                                security_group_id)
+
+    key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
+    key_pair = ec2conn.create_key_pair(key_pair_name)
+    key_pair.save(constellation_directory)
+
+    roles_to_reservations = {}
+    try:
+        constellation.set_value('%s_launch_msg' % machine_prefix,
+                                "requesting machine")
+        res = ec2conn.run_instances(image_id=aws_image,
+            instance_type=aws_instance,
+            #subnet_id      = subnet_id,
+            #private_ip_address=SIM_IP,
+            security_groups=[security_group_id],
+            key_name=key_pair_name,
+            user_data=startup_script,
+            block_device_map=bdm)
+        roles_to_reservations['simulation_state'] = res.id
+    except:
+        log("ouch!")
+        raise
+
+    running_machines = {}
+    count = 200
+    done = False
+
+    while not done:
+        log("attempt %s" % count)
+        time.sleep(2)
+        count -= 1
+        for r in ec2conn.get_all_instances():
+            if count < 0:
+                msg = ("timeout while waiting "
+                       "for EC2 machine(s) %s" % sim_machine_name)
+                raise LaunchException(msg)
+            if r.id == res.id:
+                state = r.instances[0].state
+                if state == 'running':
+                    aws_id = r.instances[0].id
+                    running_machines['simulation_state'] = aws_id
+                    constellation.set_value('%s_state' % machine_prefix,
+                                            'network_setup')
+                    done = True
+                constellation.set_value('%s_aws_state' % machine_prefix, state)
+    constellation.set_value('%s_launch_msg' % machine_prefix,
+                            "machine running")
+    aws_id = running_machines['simulation_state']
+    constellation.set_value('%s_aws_id' % machine_prefix, aws_id)
+    sim_tags = {'Name': sim_machine_name}
+    sim_tags.update(tags)
+    ec2conn.create_tags([aws_id], sim_tags)
+
+    # ec2conn.associate_address(router_aws_id, allocation_id=eip_allocation_id)
+    instance = get_ec2_instance(ec2conn, aws_id)
+    ip = instance.ip_address
+    clean_local_ssh_key_entry(ip)
+    return ip, aws_id, key_pair_name
+
+
 def acquire_aws_server(constellation_name,
                        credentials_ec2,
                        constellation_directory,
@@ -134,25 +234,28 @@ def terminate_aws_server(constellation_name, credentials_fname):
     constellation = ConstellationState(constellation_name)
     ec2conn = None
     try:
+        machine_prefix = constellation.get_value('machine_name')
         running_machines = {}
         running_machines['simulation'] = constellation.get_value(
-                                                        'simulation_aws_id')
+                                                '%s_aws_id' % machine_prefix)
         ec2conn = aws_connect(credentials_fname)[0]
         wait_for_multiple_machines_to_terminate(ec2conn, running_machines,
                                                 constellation, max_retries=150)
-        constellation.set_value('simulation_state', "terminated")
-        constellation.set_value('simulation_launch_msg', "terminated")
+        constellation.set_value('%s_state' % machine_prefix, "terminated")
+        constellation.set_value('%s_launch_msg' % machine_prefix, "terminated")
         print ('Waiting after killing instances...')
         time.sleep(10.0)
     except Exception as e:
         log("error killing instances: %s" % e)
     try:
-        sim_key_pair_name = constellation.get_value('sim_key_pair_name')
+        sim_key_pair_name = constellation.get_value(
+                                        '%s_key_pair_name' % machine_prefix)
         ec2conn.delete_key_pair(sim_key_pair_name)
     except Exception as e:
         log("error cleaning up simulation key %s: %s" % (sim_key_pair_name, e))
     try:
-        security_group_id = constellation.get_value('sim_security_group_id')
+        security_group_id = constellation.get_value(
+                                    '%s_security_group_id' % machine_prefix)
         ec2conn.delete_security_group(group_id=security_group_id)
     except Exception as e:
         log("error cleaning up security group %s: %s" % (security_group_id, e))
@@ -173,7 +276,7 @@ def acquire_aws_constellation(constellation_name,
 
     constellation.set_value('machines', machines)
 
-    ec2conn, vpcconn = aws_connect()
+    ec2conn, vpcconn = aws_connect(credentials_ec2)
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
 
     vpc_id, subnet_id = _acquire_vpc(constellation_name,
@@ -591,7 +694,7 @@ def _acquire_vpc_server(constellation_name,
         # save local startup script copy
         script_fname = os.path.join(constellation_directory,
                                     "%s_startup_script.txt" % machine_prefix)
-        with open(script_fname,'r') as f:
+        with open(script_fname, 'w') as f:
             f.write(startup_script)
 
         res = ec2conn.run_instances(aws_image,
@@ -603,8 +706,7 @@ def _acquire_vpc_server(constellation_name,
                          user_data=startup_script,
                          block_device_map=bdm)
         return res.id
-    except Exception, e:
-        constellation.set_value('error', "%s" % e)
+    except:
         raise
 
 
@@ -618,7 +720,7 @@ def read_boto_file(credentials_ec2):
     return  ec2_region_name, key_id, aws_secret_access_key, region_endpoint
 
 
-def aws_connect(creds_fname = None):
+def aws_connect(creds_fname=None):
     credentials_ec2 = creds_fname
     if not credentials_ec2:
         config = get_cloudsim_config()
@@ -668,7 +770,6 @@ def _get_amazon_amis(availability_zone):
         amis['ubuntu_1204_x64'] = 'ami-f2191786'
         amis['ubuntu_1204_x64_router_stable'] = 'ami-b2e105c5'
         amis['ubuntu_1204_x64_simulator_stable'] = 'ami-b6e105c1'
-
 
     elif availability_zone.startswith('us-east'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
@@ -755,7 +856,7 @@ def wait_for_multiple_machines_to_run(ec2conn,
                     constellation.set_value("%s_state" % machine_name,
                                             final_state)
                     constellation.set_value("%s_aws_id" % machine_name, aws_id)
-                    constellation.set_value('%s_aws_state' % machine_name, 
+                    constellation.set_value('%s_aws_state' % machine_name,
                                             'running')
                     log('Done launching machine %s'
                         '(AWS %s)' % (machine_name, aws_id))

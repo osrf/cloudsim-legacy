@@ -331,7 +331,8 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
 
 
-def get_simulator_script(drc_package_name,
+def get_simulator_script(ubuntu_sources_repo,
+                         drc_package_name,
                    machine_ip,
                    ros_master_ip,
                    gpu_driver_list,
@@ -339,16 +340,19 @@ def get_simulator_script(drc_package_name,
                    OPENVPN_CLIENT_IP,
                    OPENVPN_SERVER_IP
                    ):
+
     s = """#!/bin/bash
 # Exit on error
 set -ex
 exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
 """ + _cloudsim_dir_find_file_and_dpkg_generator("sim") + """
-""" + _packagage_sources_update_generator() + """
-""" + _openvpn_install_and_conf_generator(OPENVPN_SERVER_IP, OPENVPN_CLIENT_IP) + """
+""" + _packagage_sources_update_generator(ubuntu_sources_repo) + """
+""" + _openvpn_install_and_conf_generator(OPENVPN_SERVER_IP,
+                                          OPENVPN_CLIENT_IP) + """
 """ + _install_ntp_vim_sshhpn_generator() + """
 
+""" + _reboot_local_script_generator('/home/ubuntu/cloudsim', 'sim') + """
 
 apt-get install -y unzip
 touch /home/ubuntu/cloudsim/setup/deploy_ready
@@ -373,16 +377,37 @@ touch /home/ubuntu/cloudsim/setup/done
 """
     return s
 
+def _reboot_local_script_generator(cloudsim_dir, machine_name):
+    s = """
+# cloudsim/reboot_sim.bash
+#
+# reboot script
+#
+cat <<DELIM > """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash
+#!/bin/bash
 
-def _packagage_sources_update_generator():
+sudo reboot now
+
+DELIM
+chmod +x """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash    
+    """
+    return s
+
+
+def _packagage_sources_update_generator(ubuntu_sources_repo):
+    
+    # expected : "http://ie.archive.ubuntu.com/ubuntu/"
+    
     s = """
 
 cat <<DELIM > /etc/apt/sources.list
 
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-updates main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-backports main restricted universe multiverse
-deb mirror://mirrors.ubuntu.com/mirrors.txt precise-security main restricted universe multiverse
+###### Ubuntu Main Repos
+deb """ + ubuntu_sources_repo + """ precise main restricted universe multiverse
+
+###### Ubuntu Update Repos
+deb """ + ubuntu_sources_repo + """ precise-security main restricted universe multiverse
+deb """ + ubuntu_sources_repo + """ precise-updates main restricted universe multiverse
 
 DELIM
 
@@ -436,7 +461,8 @@ chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
     return s
 
 
-def get_router_script(public_network_interface_name,
+def get_router_script(ubuntu_sources_repo,
+                      public_network_interface_name,
                       private_network_interface_name,
                       machine_private_ip,
                       ros_master_ip,
@@ -454,7 +480,7 @@ exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
 
 """ + _cloudsim_dir_find_file_and_dpkg_generator("router") + """
-""" + _packagage_sources_update_generator() + """
+""" + _packagage_sources_update_generator(ubuntu_sources_repo) + """
 """ + _openvpn_install_and_conf_generator(vpn_server_ip, vpn_client_ip) + """
 """ + _install_ntp_vim_sshhpn_generator() + """
 
@@ -517,6 +543,7 @@ sudo service ssh restart
 """
     return s
 
+
 def _robotics_packages_install_generator(drc_package_name):
     s = """# At least in some cases, we need to explicitly install graphviz before ROS to avoid apt-get dependency problems.
 sudo apt-get install -y graphviz
@@ -548,6 +575,7 @@ npm install -g node-gyp
 npm install websocket
 
 cd /home/ubuntu/cloudsim; hg clone https://bitbucket.org/osrf/gzweb
+cd /home/ubuntu/cloudsim/gzweb/; hg up cloudsim_release
 . /usr/share/drcsim/setup.sh
 . /home/ubuntu/cloudsim/gzweb/deploy.sh -m  # build a model db
 
@@ -742,7 +770,8 @@ sudo start vrc_controller_public || true
     return s
 
 
-def get_drc_script(drc_package_name,
+def get_drc_script(ubuntu_sources_repo,
+                   drc_package_name,
                    machine_ip,
                    ros_master_ip,
                    gpu_driver_list,
@@ -763,7 +792,7 @@ exec > $logfile 2>&1
 
 
 """ + _cloudsim_dir_find_file_and_dpkg_generator("sim") + """
-""" + _packagage_sources_update_generator() + """
+""" + _packagage_sources_update_generator(ubuntu_sources_repo) + """
 
 """ + ppa_string + """
 
@@ -1121,6 +1150,7 @@ install ()
 
     echo -n "Downloading \$1..."
     hg clone https://bitbucket.org/osrf/\$1
+    cd $1; hg up cloudsim_release
 
     echo "Done"
     cd \$1
