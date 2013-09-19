@@ -90,13 +90,13 @@ function create_constellation(div_name, configuration, constellation, machine_da
     }
 
 
-    if((configuration == "Simulator") || (configuration.indexOf("bitcoin") ==0))
+    if((configuration == "Simulator") ==0))
     {
         create_task_list_widget(constellation_div, constellation);
         var machine_name = "simulator";
         var machine_div = create_machine(machines_div, machine_name);
 
-        create_hostname_widget(machine_div, constellation, machine_name, "sim_ip", "sim_aws_id", "username", "gmt", "sim_zip_file", disable_key_download );
+        create_hostname_widget(machine_div, constellation, machine_name, "sim_public_ip", "sim_aws_id", "username", "gmt", "sim_zip_file", disable_key_download );
         create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "sim_launch_msg", "sim_state");
         create_machine_state_widget(machine_div, constellation, machine_name,"sim_aws_state");
         create_simulator_state_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo");

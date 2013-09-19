@@ -60,19 +60,25 @@ def acquire_aws_single_server(constellation_name,
     constellation.set_value('%s_launch_msg' % machine_prefix,
                             "setting up security groups")
 
+    constellation_directory = constellation.get_value(
+                                                    'constellation_directory')
+    # save local startup script copy
+    script_fname = os.path.join(constellation_directory,
+                                    "%s_startup_script.txt" % machine_prefix)
+    with open(script_fname, 'w') as f:
+            f.write(startup_script)
+
     constellation.set_value('machine_name', machine_prefix)
     security_group_data = machine_data['security_group']
-    security_group_id = _acquire_vpc_security_group(constellation_name,
+    security_group_id = _acquire_security_group(constellation_name,
                                     machine_prefix,
                                     security_group_data,
                                     vpc_id=None,
-                                    ec2conn)
-    constellation.set_value('%s_security_group_id' % machine_prefix,
-                                security_group_id)
+                                    ec2conn=ec2conn)
 
-    key_pair_name = 'key-%s-%s' % (machine_prefix, constellation_name)
-    key_pair = ec2conn.create_key_pair(key_pair_name)
-    key_pair.save(constellation_directory)
+    key_pair_name = _acquire_key_pair(constellation_name,
+                                      machine_prefix,
+                                      ec2conn)
 
     roles_to_reservations = {}
     try:
@@ -125,6 +131,7 @@ def acquire_aws_single_server(constellation_name,
     instance = get_ec2_instance(ec2conn, aws_id)
     ip = instance.ip_address
     clean_local_ssh_key_entry(ip)
+    constellation.set_value('%s_public_ip' % (machine_prefix), ip)
     return ip, aws_id, key_pair_name
 
 
@@ -236,7 +243,7 @@ def terminate_aws_server(constellation_name, credentials_fname):
     try:
         machine_prefix = constellation.get_value('machine_name')
         running_machines = {}
-        running_machines['simulation'] = constellation.get_value(
+        running_machines[machine_prefix] = constellation.get_value(
                                                 '%s_aws_id' % machine_prefix)
         ec2conn = aws_connect(credentials_fname)[0]
         wait_for_multiple_machines_to_terminate(ec2conn, running_machines,
@@ -247,18 +254,10 @@ def terminate_aws_server(constellation_name, credentials_fname):
         time.sleep(10.0)
     except Exception as e:
         log("error killing instances: %s" % e)
-    try:
-        sim_key_pair_name = constellation.get_value(
-                                        '%s_key_pair_name' % machine_prefix)
-        ec2conn.delete_key_pair(sim_key_pair_name)
-    except Exception as e:
-        log("error cleaning up simulation key %s: %s" % (sim_key_pair_name, e))
-    try:
-        security_group_id = constellation.get_value(
-                                    '%s_security_group_id' % machine_prefix)
-        ec2conn.delete_security_group(group_id=security_group_id)
-    except Exception as e:
-        log("error cleaning up security group %s: %s" % (security_group_id, e))
+
+    _release_key_pair(constellation_name, machine_prefix, ec2conn)
+
+    _release_security_group(constellation_name, machine_prefix, ec2conn)
 
 
 def acquire_aws_constellation(constellation_name,
@@ -288,7 +287,7 @@ def acquire_aws_constellation(constellation_name,
         aws_key_name = _acquire_key_pair(constellation_name,
                           machine_name, ec2conn)
         security_group_data = machines[machine_name]['security_group']
-        security_group_id = _acquire_vpc_security_group(constellation_name,
+        security_group_id = _acquire_security_group(constellation_name,
                                     machine_name,
                                     security_group_data,
                                     vpc_id,
@@ -371,8 +370,8 @@ def terminate_aws_constellation(constellation_name, credentials_ec2):
         while not released:
             time.sleep(count)
             if count > 0:
-                log("_release_vpc_security_group retry")
-            released = _release_vpc_security_group(constellation_name,
+                log("_release_security_group retry")
+            released = _release_security_group(constellation_name,
                                                    machine_prefix, ec2conn)
             count += 2
             if count > 10:
@@ -560,7 +559,7 @@ def _get_security_group_key(machine_prefix):
     return sg_key
 
 
-def _acquire_vpc_security_group(constellation_name,
+def _acquire_security_group(constellation_name,
                                 machine_prefix,
                                 security_group_data,
                                 vpc_id,
@@ -597,16 +596,25 @@ def _acquire_vpc_security_group(constellation_name,
                          rule['cidr'])
 
         security_group_id = sg.id
+        if not vpc_id:
+            security_group_id = sg.name
+
         sg_key = _get_security_group_key(machine_prefix)
         constellation.set_value(sg_key, security_group_id)
     except Exception, e:
         constellation.set_value('error',  "security group error: %s" % e)
         raise
 
+#     while True:
+#         groups = ec2conn.get_all_security_groups()
+#         log("*** %s ***" % security_group_id)
+#         for g in groups:
+#             log("%s: id %s" % (g, g.id))
+#         time.sleep(2)
     return security_group_id
 
 
-def _release_vpc_security_group(constellation_name, machine_prefix, ec2conn):
+def _release_security_group(constellation_name, machine_prefix, ec2conn):
     constellation = ConstellationState(constellation_name)
     security_group_id = None
     try:
@@ -678,7 +686,6 @@ def _acquire_vpc_server(constellation_name,
                         availability_zone,
                         ec2conn):
     amis = _get_amazon_amis(availability_zone)
-
     constellation = ConstellationState(constellation_name)
     try:
         constellation.set_value('%s_launch_msg' % machine_prefix, "booting")
@@ -686,9 +693,7 @@ def _acquire_vpc_server(constellation_name,
         aws_image = amis[soft]
         aws_instance = machine_data['hardware']
         ip = machine_data['ip']
-
         bdm = __get_block_device_mapping(aws_instance)
-
         constellation_directory = constellation.get_value(
                                                     'constellation_directory')
         # save local startup script copy

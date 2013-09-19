@@ -40,7 +40,7 @@ from launch_utils.sl_cloud import acquire_softlayer_constellation,\
  terminate_softlayer_constellation
 
 from launch_utils.aws import acquire_aws_constellation,\
-    get_aws_ubuntu_sources_repo, acquire_aws_single_server
+    get_aws_ubuntu_sources_repo, acquire_aws_single_server, terminate_aws_server
 from launch_utils.aws import terminate_aws_constellation
 from launch_utils import LaunchException
 
@@ -683,7 +683,7 @@ def launch(constellation_name, tags):
                                           'cidr': openvpn_client_addr, }
                                          ]
                         }
-
+    constellation.set_value('machines', machines)
     _init_computer_data(constellation_name, machines)
 
     ros_master_ip = SIM_IP
@@ -721,22 +721,15 @@ def launch(constellation_name, tags):
                                     OPENVPN_CLIENT_IP,
                                     OPENVPN_SERVER_IP)
 
-    cs_cfg = get_cloudsim_config()
-
     if cloud_provider == "aws":
-#         log("credentials_ec2 %s" % credentials_fname)
-#         acquire_aws_constellation(constellation_name,
-#                                   credentials_fname,
-#                                   machines,
-#                                   scripts,
-#                                   tags)
-        acquire_aws_single_server(constellation_name,
-                                  credentials_ec2=credentials_fname, 
-                                  constellation_directory,
-                                  machine_prefix='sim',
-                                  machine_data=machines['sim'],
-                                  startup_script=script,
-                                  tags)
+        acquire_aws_single_server(
+                              constellation_name,
+                              credentials_ec2=credentials_fname,
+                              constellation_directory=constellation_directory,
+                              machine_prefix='sim',
+                              machine_data=machines['sim'],
+                              startup_script=script,
+                              tags=tags)
     else:
         raise LaunchException('Unsupported cloud '
                               'provider "%s"' % cloud_provider)
@@ -809,7 +802,7 @@ def launch(constellation_name, tags):
 
 def terminate(constellation_name):
     constellation = ConstellationState(constellation_name)
-    machines = constellation.get_value('machines')
+    machine_name = constellation.get_value('machine_name')
 
     constellation_directory = constellation.get_value(
                                                     "constellation_directory")
@@ -820,27 +813,18 @@ def terminate(constellation_name):
     constellation.set_value('gazebo', "not running")
     constellation.set_value('gz_web', "")
 
-    for machine_name in machines:
-        constellation.set_value("%s_state" % machine_name, 'terminating')
-        constellation.set_value("%s_launch_msg" % machine_name, 'terminating')
-        constellation.set_value("%s_aws_state" % machine_name, 'terminating')
+    constellation.set_value("%s_state" % machine_name, 'terminating')
+    constellation.set_value("%s_launch_msg" % machine_name, 'terminating')
+    constellation.set_value("%s_aws_state" % machine_name, 'terminating')
     constellation.set_value("launch_stage", "nothing")
 
     cloud_provider = constellation.get_value('cloud_provider')
     if cloud_provider == "aws":
-        terminate_aws_constellation(constellation_name, credentials_fname)
-    if cloud_provider == 'softlayer':
-        partial = False
-        constellation_prefix = constellation_name.split('_')[-1]
-        terminate_softlayer_constellation(constellation_name,
-                       constellation_prefix,
-                       partial,
-                       credentials_fname)
+        terminate_aws_server(constellation_name, credentials_fname)
 
-    for machine_name in machines:
-        constellation.set_value("%s_state" % machine_name, 'terminated')
-        constellation.set_value("%s_launch_msg" % machine_name, 'terminated')
-        constellation.set_value("%s_aws_state" % machine_name, 'terminated')
+    constellation.set_value("%s_state" % machine_name, 'terminated')
+    constellation.set_value("%s_launch_msg" % machine_name, 'terminated')
+    constellation.set_value("%s_aws_state" % machine_name, 'terminated')
 
     constellation.set_value('constellation_state', 'terminated')
 
