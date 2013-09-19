@@ -658,6 +658,7 @@ def _get_amazon_amis(availability_zone):
     if availability_zone.startswith('eu-west'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
         amis['ubuntu_1204_x64'] = 'ami-f2191786'
+        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-743eda03'
         amis['ubuntu_1204_x64_router_stable'] = 'ami-b2e105c5'
         amis['ubuntu_1204_x64_simulator_stable'] = 'ami-b6e105c1'
 
