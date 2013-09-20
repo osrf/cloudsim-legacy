@@ -153,6 +153,9 @@ def acquire_aws_server(constellation_name,
 
     constellation.set_value('simulation_launch_msg',
                             "setting up security groups")
+
+    constellation.set_value('machine_name', 'simulation')
+
     sim_sg_name = 'sim-sg-%s' % (constellation_name)
     log("Creating a security group")
     sim_security_group = ec2conn.create_security_group(sim_sg_name,
@@ -242,8 +245,13 @@ def terminate_aws_server(constellation_name, credentials_fname):
     log("terminate AWS CloudSim [constellation %s]" % (constellation_name))
     constellation = ConstellationState(constellation_name)
     ec2conn = None
+    machine_prefix = ""
     try:
-        machine_prefix = constellation.get_value('machine_name')
+        machine_prefix = "simulation"
+        try:
+            machine_prefix = constellation.get_value('machine_name')
+        except:
+            pass
         running_machines = {}
         running_machines[machine_prefix] = constellation.get_value(
                                                 '%s_aws_id' % machine_prefix)

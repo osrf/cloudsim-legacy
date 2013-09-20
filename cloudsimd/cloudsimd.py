@@ -124,7 +124,21 @@ def reset_tasks(name=None):
                 cs.update_task_value(task_id, 'task_state', 'ready')
                 cs.update_task_value(task_id, 'task_message', 'Ready to run')
 
-
+def gather_cs_credentials():
+    """
+    Gather the names and IP addresses of all CloudSim constellations and pretty-print them for handing out to users
+    """
+    consts = [x for x in  list_constellations() if 'configuration' in x and x['configuration'].startswith('CloudSim')]
+    for const in consts:
+        try:
+            print('Your CloudSim information:')
+            print('IP address: %s'%(const['simulation_ip']))
+            print('Username: guest')
+            print('Password: %s'%(const['constellation_name']))
+            print('\n\n\n')
+        except Exception as e:
+            print('Failed to get information for constellation %s: %s'%(const, e))
+    
 def launch_constellation(username, configuration, args=None):
     """
     Launches one (or count) constellation of a given configuration

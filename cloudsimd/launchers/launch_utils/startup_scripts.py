@@ -257,6 +257,9 @@ echo "mercurial installed" >> /home/ubuntu/setup.log
 #apt-get install -y cloud-utils
 #echo "cloud-utils installed" >> /home/ubuntu/setup.log
 
+sudo apt-get install python-novaclient
+echo "python-novaclient installed" >> /home/ubuntu/setup.log
+
 apt-get install -y ntp
 echo "ntp installed" >> /home/ubuntu/setup.log
 
@@ -1281,7 +1284,7 @@ sudo vrc_init_tc.py """ + private_network_interface_name + """
 """
 
     start_script = "/home/ubuntu/cloudsim/start_gazebo.bash"
-    start_sim_cmd = start_script
+    start_sim_cmd = start_script + " \$1 \$2 \$3"
 
     #
     # if the simulator is a different machine, we call the scrtip on the
@@ -1347,7 +1350,7 @@ sudo stop vrc_bytecounter
 sudo """ + cloudsim_dir + """/stop_gzweb.bash
 sudo start vrc_netwatcher
 
-""" + start_sim_cmd + """ \$1 \$2 \$3
+""" + start_sim_cmd + """
 
 # done 
 DELIM
@@ -1469,7 +1472,6 @@ chmod +x """ + cloudsim_dir + """/ping_gl.bash
                                            private_network_interface_name,
                                            SIM_IP) + """
 
-def _get_deploy_start_stop_sim_generator(cloudsim_dir):
 
 # --------------------------------------------
 cat <<DELIM > """ + cloudsim_dir + """/ping_gazebo.bash
