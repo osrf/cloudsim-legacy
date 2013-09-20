@@ -377,6 +377,7 @@ touch /home/ubuntu/cloudsim/setup/done
 """
     return s
 
+
 def _reboot_local_script_generator(cloudsim_dir, machine_name):
     s = """
 # cloudsim/reboot_sim.bash
@@ -395,9 +396,6 @@ chmod +x """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash
 
 
 def _packagage_sources_update_generator(ubuntu_sources_repo):
-    
-    # expected : "http://ie.archive.ubuntu.com/ubuntu/"
-    
     s = """
 
 cat <<DELIM > /etc/apt/sources.list
@@ -454,7 +452,7 @@ tail -1 /var/log/dpkg.log
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/dpkg_log_""" + machine_name + """.bash
-# ---------------------------------------------------------------------------    
+# ---------------------------------------------------------------------------
 
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
     """
@@ -931,9 +929,12 @@ chmod +x /home/ubuntu/cloudsim/ping_gl.bash
     return s
 
 
-def _start_sim_stop_sim_local_generator(machine_ip):
+def _start_sim_stop_sim_local_generator(machine_ip,
+                start_sim_fname="/home/ubuntu/cloudsim/start_gazebo.bash",
+                ping_sim_fname="/home/ubuntu/cloudsim/ping_gazebo.bash",
+                stop_sim_fname="/home/ubuntu/cloudsim/stop_gazebo.bash"):
     s = """
-cat <<DELIM > /home/ubuntu/cloudsim/start_sim.bash
+cat <<DELIM > """ + start_sim_fname + """
 #!/bin/bash
 
 MAX_TIME=30
@@ -942,7 +943,7 @@ MAX_TIME=30
 DIR=\`echo \$2 | cut -d'.' -f 1\`
 rm -rf /tmp/\$DIR
 
-echo \`date\` "\$1 \$2 \$3" >> /home/ubuntu/cloudsim/start_sim.log
+echo \`date\` "\$1 \$2 \$3" >> """ + start_sim_fname + """.log
 
 . /usr/share/drcsim/setup.sh
 if [ -f /home/ubuntu/local/share/vrc_arenas/setup.sh ]; then
@@ -981,18 +982,18 @@ while [[ \$? -ne 0 ]]; do
     timeout -k 1 5 gztopic list
 done
 
-echo \`date\` "$1 $2 $3 - End" >> /home/ubuntu/cloudsim/start_sim.log
+echo \`date\` "$1 $2 $3 - End" >> """ + start_sim_fname + """.log
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/start_sim.bash
+chmod +x """ + start_sim_fname + """
 # ----------------------------------------------------------------------------
 
 
-cat <<DELIM > /home/ubuntu/cloudsim/stop_sim.bash
+cat <<DELIM > """ + stop_sim_fname + """
 #!/bin/bash
 
 MAX_TIME=30
-echo \`date\` "Stop sim - Begin" >> /home/ubuntu/cloudsim/stop_sim.log
+echo \`date\` "Stop sim - Begin" >> """ + stop_sim_fname + """.log
 . /usr/share/drcsim/setup.sh
 
 if timeout -k 1 2 gztopic list; then
@@ -1004,12 +1005,12 @@ if timeout -k 1 2 gztopic list; then
   while [ "\`timeout -k 1 1 gzstats -p 2>/dev/null |cut -d , -f 4 | tail -n 1\`" != " F" ]; do
     sleep 1
     if [ "\`ps aux | grep gzserver | wc -l\`" == "1" ]; then
-        echo "  gzserver died, force exit" >> /home/ubuntu/cloudsim/stop_sim.log
+        echo "  gzserver died, force exit" >> """ + stop_sim_fname + """.log
         break
     fi
     # look for the name of the Log file
     if [ "\`tail -n 1 \$LOG_PATH\`" = "</gazebo_log>" ] ; then 
-        echo "  Log end tag detected" >> /home/ubuntu/cloudsim/stop_sim.log
+        echo "  Log end tag detected" >> """ + stop_sim_fname + """.log
         break
     fi
   done
@@ -1033,9 +1034,17 @@ kill -9 \$(ps aux | grep ros | awk '{print \$2}') || true
 killall -9 gzserver || true
 
 DELIM
-chmod +x /home/ubuntu/cloudsim/stop_sim.bash
+chmod +x """ + stop_sim_fname + """
 # ----------------------------------------------------------------------------
 
+cat <<DELIM > """ + ping_sim_fname + """
+#!/bin/bash
+
+. /usr/share/drcsim/setup.sh; timeout -k 1 5 gztopic list
+
+
+DELIM
+chmod +x """ + ping_sim_fname + """
     """
     return s
 
@@ -1183,68 +1192,8 @@ chmod +x /home/ubuntu/cloudsim/load_gazebo_models.bash
     return s
 
 
-def get_router_deploy_script(private_network_interface_name,
-                             public_network_interface_name,
-                             machines_to_ip,
-                             dst_dir='/home/ubuntu/cloudsim'):
-
-    cloudsim_dir = os.path.abspath(dst_dir)
-    SIM_IP = machines_to_ip['sim']
-    restore_default_tc_rules = ""
-    if public_network_interface_name:
-        restore_default_tc_rules += """
-# Restore the default tc rules
-sudo vrc_init_tc.py """ + public_network_interface_name + """
-
-"""
-    if private_network_interface_name:
-        restore_default_tc_rules += """
-sudo vrc_init_tc.py """ + private_network_interface_name + """
-"""
-    ssh_scripts = ""
-    for machine_name, ip in machines_to_ip.iteritems():
-        ssh_scripts += """
-
-#
-# interactive ssh script
-#
-cat <<DELIM > """ + cloudsim_dir + """/ssh-""" + machine_name + """.bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """ \$1 \$2 \$3 \$4 \$5 \$6
-DELIM
-chmod +x """ + cloudsim_dir + """/ssh-""" + machine_name + """.bash
-# --------------------------------------------
-
-#
-# dpkg log script
-#
-cat <<DELIM > """ + cloudsim_dir + """/dpkg_log_""" + machine_name + """.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "tail -1 /var/log/dpkg.log"
-DELIM
-chmod +x """ + cloudsim_dir + """/dpkg_log_""" + machine_name + """.bash
-# --------------------------------------------
-
-#
-# find file script
-#
-cat <<DELIM > """ + cloudsim_dir + """/find_file_""" + machine_name + """.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "ls \$1"
-DELIM
-chmod +x """ + cloudsim_dir + """/find_file_""" + machine_name + """.bash
-# --------------------------------------------
-
-#
-# reboot script
-#
-cat <<DELIM > """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash
-#!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """ "sudo reboot"
-
-DELIM
-chmod +x """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash
-
-
+def _get_gzweb_deploy_generator(cloudsim_dir):
+    s="""
 #
 # gzweb
 #
@@ -1308,28 +1257,51 @@ ps aux | grep ws_server  | grep -v grep
 DELIM
 chmod +x """ + cloudsim_dir + """/ping_gzweb.bash
 
+    """
+    return s
+
+
+def _get_deploy_start_stop_sim_generator(cloudsim_dir,
+                                         public_network_interface_name,
+                                         private_network_interface_name,
+                                         sim_ip):
+
+    restore_default_tc_rules = ""
+    if public_network_interface_name:
+        restore_default_tc_rules += """
+# Restore the default tc rules
+sudo vrc_init_tc.py """ + public_network_interface_name + """
+
+"""
+    if private_network_interface_name == None:
+        restore_default_tc_rules += ""
+    else:
+        restore_default_tc_rules += """
+sudo vrc_init_tc.py """ + private_network_interface_name + """
 """
 
-# now create a script that contains all the scripts together
-    deploy_script = """#!/bin/bash
-# Exit on error
-set -ex
-# Redirect everybody's output to a file
-logfile=""" + cloudsim_dir + """/deploy.log
-exec > $logfile 2>&1
+    start_script = "/home/ubuntu/cloudsim/start_gazebo.bash"
+    start_sim_cmd = start_script
 
-# copy keys to cloudsim directory
-cp """ + cloudsim_dir + """/deploy/*.pem """ + cloudsim_dir + """
+    #
+    # if the simulator is a different machine, we call the scrtip on the
+    # remote machine
+    #
+    if sim_ip:
+        start_sim_cmd = """
+if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + sim_ip + """  "nohup bash """ + start_script + """ \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"; then
+  echo "[router start_sim.bash] simulator start_sim.bash returned non-zero"
+  exit 1
+fi
+    """
+    stop_script = "/home/ubuntu/cloudsim/stop_gazebo.bash"
+    stop_sim_cmd = stop_script
+    if sim_ip:
+        stop_sim_cmd = """
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + sim_ip + """  "bash """ + stop_script + """"
+        """
 
-""" + ssh_scripts + """
-
-
-cat <<DELIM > """ + cloudsim_dir + """/ping_gl.bash
-#!/bin/bash
-
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """  "DISPLAY=localhost:0 timeout -k 1 5 glxinfo"
-DELIM
-chmod +x """ + cloudsim_dir + """/ping_gl.bash
+    s = """
 
 # --------------------------------------------
 
@@ -1339,7 +1311,9 @@ sudo stop vrc_netwatcher
 kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
 sudo stop vrc_bytecounter
 sudo redis-cli set vrc_target_outbound_latency 0
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """  "bash cloudsim/stop_sim.bash"
+
+""" + stop_sim_cmd + """
+
 sudo iptables -F FORWARD
 
 # Stop the latency injection
@@ -1352,18 +1326,6 @@ DELIM
 chmod +x """ + cloudsim_dir + """/stop_sim.bash
 
 
-# --------------------------------------------
-
-cat <<DELIM > """ + cloudsim_dir + """/ping_gazebo.bash
-#!/bin/bash
-
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
- -i """ + cloudsim_dir + """/key-sim.pem -n ubuntu@""" + SIM_IP + """ \
- ". /usr/share/drcsim/setup.sh; timeout -k 1 5 gztopic list"
-
-
-DELIM
-chmod +x """ + cloudsim_dir + """/ping_gazebo.bash
 # --------------------------------------------
 
 cat <<DELIM > """ + cloudsim_dir + """/start_sim.bash
@@ -1384,14 +1346,142 @@ kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
 sudo stop vrc_bytecounter
 sudo """ + cloudsim_dir + """/stop_gzweb.bash
 sudo start vrc_netwatcher
-if ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """  "nohup bash cloudsim/start_sim.bash \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"; then
-  echo "[router start_sim.bash] simulator start_sim.bash returned non-zero"
-  exit 1
-fi
 
+""" + start_sim_cmd + """ \$1 \$2 \$3
+
+# done 
 DELIM
 chmod +x """ + cloudsim_dir + """/start_sim.bash
+# --------------------------------------------
 
+    """
+    return s
+
+
+def get_simulator_deploy_script(cloudsim_dir="/home/ubuntu/cloudsim"):
+    public_network_interface_name = "eth0"
+    private_network_interface_name = None
+    s = """
+#!/bin/bash
+
+""" + _get_gzweb_deploy_generator(cloudsim_dir) + """
+
+""" + _get_deploy_start_stop_sim_generator(
+           cloudsim_dir,
+           public_network_interface_name,
+           private_network_interface_name,
+           sim_ip=None  # None here means call a local script (no ssh from a router)
+           ) + """
+
+""" + _get_score_deploy_generator(cloudsim_dir) + """
+
+# configure openvpn
+sudo cp /home/ubuntu/cloudsim/deploy/openvpn.key /etc/openvpn/static.key
+sudo chmod 644 /etc/openvpn/static.key
+sudo service openvpn restart
+
+# chechck that the tunnel interface is up
+# sudo ifconfig
+    """
+    return s
+
+
+def get_router_deploy_script(private_network_interface_name,
+                             public_network_interface_name,
+                             machines_to_ip,
+                             dst_dir='/home/ubuntu/cloudsim'):
+
+    cloudsim_dir = os.path.abspath(dst_dir)
+    SIM_IP = machines_to_ip['sim']
+
+    ssh_scripts = ""
+    for machine_name, ip in machines_to_ip.iteritems():
+        ssh_scripts += """
+
+#
+# interactive ssh script
+#
+cat <<DELIM > """ + cloudsim_dir + """/ssh-""" + machine_name + """.bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """ \$1 \$2 \$3 \$4 \$5 \$6
+DELIM
+chmod +x """ + cloudsim_dir + """/ssh-""" + machine_name + """.bash
+# --------------------------------------------
+
+#
+# dpkg log script
+#
+cat <<DELIM > """ + cloudsim_dir + """/dpkg_log_""" + machine_name + """.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "tail -1 /var/log/dpkg.log"
+DELIM
+chmod +x """ + cloudsim_dir + """/dpkg_log_""" + machine_name + """.bash
+# --------------------------------------------
+
+#
+# find file script
+#
+cat <<DELIM > """ + cloudsim_dir + """/find_file_""" + machine_name + """.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "ls \$1"
+DELIM
+chmod +x """ + cloudsim_dir + """/find_file_""" + machine_name + """.bash
+# --------------------------------------------
+
+#
+# reboot script
+#
+cat <<DELIM > """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash
+#!/bin/bash
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """ "sudo reboot"
+
+DELIM
+chmod +x """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash
+
+
+
+"""
+
+# now create a script that contains all the scripts together
+    deploy_script = """#!/bin/bash
+# Exit on error
+set -ex
+# Redirect everybody's output to a file
+logfile=""" + cloudsim_dir + """/deploy.log
+exec > $logfile 2>&1
+
+# copy keys to cloudsim directory
+cp """ + cloudsim_dir + """/deploy/*.pem """ + cloudsim_dir + """
+
+""" + _get_gzweb_deploy_generator(cloudsim_dir) + """
+""" + ssh_scripts + """
+
+
+cat <<DELIM > """ + cloudsim_dir + """/ping_gl.bash
+#!/bin/bash
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-sim.pem ubuntu@""" + SIM_IP + """  "DISPLAY=localhost:0 timeout -k 1 5 glxinfo"
+DELIM
+chmod +x """ + cloudsim_dir + """/ping_gl.bash
+
+
+""" + _get_deploy_start_stop_sim_generator(cloudsim_dir,
+                                           public_network_interface_name,
+                                           private_network_interface_name,
+                                           SIM_IP) + """
+
+def _get_deploy_start_stop_sim_generator(cloudsim_dir):
+
+# --------------------------------------------
+cat <<DELIM > """ + cloudsim_dir + """/ping_gazebo.bash
+#!/bin/bash
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
+ -i """ + cloudsim_dir + """/key-sim.pem -n ubuntu@""" + SIM_IP + """ \
+ ". /usr/share/drcsim/setup.sh; timeout -k 1 5 gztopic list"
+
+
+DELIM
+chmod +x """ + cloudsim_dir + """/ping_gazebo.bash
 # --------------------------------------------
 
 cat <<DELIM > """ + cloudsim_dir + """/copy_net_usage.bash
@@ -1464,19 +1554,7 @@ tail -1 /tmp/vrc_netwatcher_usage.log
 DELIM
 chmod +x """ + cloudsim_dir + """/get_network_usage.bash
 
-# ----------------------------------------------------
-
-cat <<DELIM > """ + cloudsim_dir + """/get_score.bash
-#!/bin/bash
-
-. /usr/share/drcsim/setup.sh
-# rostopic echo the last message of the score
-timeout -k 1 10 rostopic echo -p /vrc_score -n 1
-
-
-DELIM
-chmod +x """ + cloudsim_dir + """/get_score.bash
-
+""" + _get_score_deploy_generator(cloudsim_dir) + """
 
 # configure openvpn
 sudo cp """ + cloudsim_dir + """/deploy/openvpn.key /etc/openvpn/static.key
@@ -1490,6 +1568,23 @@ sudo ifconfig
     return deploy_script
 
 
+def _get_score_deploy_generator(cloudsim_dir):
+    s = """# ----------------------------------------------------
+
+cat <<DELIM > """ + cloudsim_dir + """/get_score.bash
+#!/bin/bash
+
+. /usr/share/drcsim/setup.sh
+# rostopic echo the last message of the score
+timeout -k 1 10 rostopic echo -p /vrc_score -n 1
+
+
+DELIM
+chmod +x """ + cloudsim_dir + """/get_score.bash
+    """
+    return s
+
+
 class UpperCase(unittest.TestCase):
     def atest_one(self):
         dst_dir = '/home/hugo/code/tests/deploy_test'
@@ -1499,32 +1594,32 @@ class UpperCase(unittest.TestCase):
         with open(fname, 'w') as f:
             f.write(s)
 
-    def test_drc_script(self):
+    def ztest_drc_script(self):
 
-        drc_package_name = ""
-        machine_ip = ""
-        ros_master_ip = ""
-        gpu_driver_list = ""
-        ppa_list = []
-        OPENVPN_CLIENT_IP = "11.8.0.0"
-        ROUTER_IP = "10.50"
-
-        s = get_drc_script(drc_package_name,
-                       machine_ip,
-                       ros_master_ip,
-                       gpu_driver_list,
-                       ppa_list,
-                       OPENVPN_CLIENT_IP,
-                       ROUTER_IP)
+        s = get_drc_script(
+           ubuntu_sources_repo="http://us.archive.ubuntu.com/ubuntu/",
+           drc_package_name="drcsim",
+           machine_ip="10.51",
+           ros_master_ip="10.51",
+           gpu_driver_list="",
+           ppa_list=[],
+           OPENVPN_CLIENT_IP="11.8.0.0",
+           ROUTER_IP="10.50")
         print(s)
 
-        s = get_router_script(public_network_interface_name='eth0',
-                              private_network_interface_name=None,
-                              machine_private_ip='10.50',
-                              ros_master_ip='10.51',
-                              drc_package_name='drcsim',
-                              vpn_server_ip='11.8.0.1',
-                              vpn_client_ip='11.8.0.2')
+        s = get_router_script(
+                  ubuntu_sources_repo="http://us.archive.ubuntu.com/ubuntu/",
+                  public_network_interface_name='eth0',
+                  private_network_interface_name=None,
+                  machine_private_ip='10.50',
+                  ros_master_ip='10.51',
+                  drc_package_name='drcsim',
+                  vpn_server_ip='11.8.0.1',
+                  vpn_client_ip='11.8.0.2')
+        print(s)
+
+    def test_deploy_simulator(self):
+        s = get_simulator_deploy_script(cloudsim_dir="/homeubuntu/cloudsim")
         print(s)
 
 if __name__ == "__main__":

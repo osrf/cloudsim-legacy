@@ -5,7 +5,8 @@ function create_gzweb_widget(machine_div,
 						     machine_name,
 							 glx_key,
 							 simulator_key,
-							 gz_web_key)
+							 gz_web_key,
+							 ip_key)
 {
 	// roslaunch atlas_utils atlas_position_controllers.launch
     var package_name = "atlas_utils";//"drc_robot_utils";
@@ -94,10 +95,10 @@ function create_gzweb_widget(machine_div,
         if (data[gz_web_key] == "running")
         {
             img.src = "/js/images/blue_status.png";
-            var web_url = data['router_public_ip'] + ":8080";
-            var notebook_url = data['router_public_ip'] + ":8888";
-            link_txt = '<a href=http://' + web_url + '>3D view</a> ' ;
-            link_txt += '<a href=http://' + notebook_url + '>Python notebook</a>' ;
+            var web_url = data[ip_key] + ":8080";
+            var notebook_url = data[ip_key] + ":8888";
+            link_txt = '<a href=http://' + web_url + ' target="_blank" >3D view</a> ' ;
+            link_txt += '<a href=http://' + notebook_url + ' target="_blank" >Python notebook</a>' ;
             if (link.innerHTML != link_txt)
             {
             	link.innerHTML = link_txt;

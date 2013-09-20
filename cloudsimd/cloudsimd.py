@@ -317,21 +317,8 @@ def _load_cloudsim_configurations_list():
 </ol>
 """
     configs['DRC'] = {'description': desc}
-    desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
-<ol>
-  <li>Hardware:
-      <ol>
-          <li>Router: large server</li>
-          <li>Simulator: GPU cluster instance</li>
-      </ol>
-  </li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>ROS: Fuerte</li>
-  <li>Simulator: Gazebo (latest)</li>
-  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-</ol>
-"""
     configs['DRC-stable'] = {'description': desc}
+
     desc = """DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages
 <ol>
     <li>Hardware:
@@ -356,14 +343,8 @@ def _load_cloudsim_configurations_list():
 </ol>
 """     
     configs['CloudSim'] = {'description': desc}
-    desc = """The CloudSim Web App running in the Cloud (Stable version)
-<ol>
-  <li>Hardware: micro</li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>Web server: Apache</li>
-</ol>
-"""     
     configs['CloudSim-stable'] = {'description': desc}
+    
     desc = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
 <ol>
   <li>Hardware:
@@ -378,6 +359,7 @@ def _load_cloudsim_configurations_list():
 </ol>
 """
     configs['Simulator'] = {'description': desc}
+    configs['Simulator-Stable'] = {'description': desc}
 
     set_cloudsim_configuration_list(configs)
 

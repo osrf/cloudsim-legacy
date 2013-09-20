@@ -32,9 +32,11 @@ def get_aws_ubuntu_sources_repo(credentials_ec2):
     aws_connect(credentials_ec2)
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
     if availability_zone.startswith('eu-west'):
-        return "http://ie.archive.ubuntu.com/ubuntu/"
+        # return "http://ie.archive.ubuntu.com/ubuntu/"
+        return "http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/"
     if availability_zone.startswith('us-east'):
-        return "http://us.archive.ubuntu.com/ubuntu/"
+        # return "http://us.archive.ubuntu.com/ubuntu/"
+        "http://us-east-1.ec2.archive.ubuntu.com/ubuntu/"
     return "http://us.archive.ubuntu.com/ubuntu/"
 
 
@@ -775,11 +777,13 @@ def _get_amazon_amis(availability_zone):
         amis['ubuntu_1204_x64'] = 'ami-f2191786'
         amis['ubuntu_1204_x64_router_stable'] = 'ami-b2e105c5'
         amis['ubuntu_1204_x64_simulator_stable'] = 'ami-b6e105c1'
+        amis['ubuntu_1204_x64_simulator_single_stable'] = 'ami-xxxxx'
 
     elif availability_zone.startswith('us-east'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
         amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
         amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-adeca4c4'
+        amis['ubuntu_1204_x64_simulator_single_stable'] = 'ami-xxxxx'
 
     elif availability_zone.startswith('nova'):
         # TODO: we might want to move image ids to a configuration file

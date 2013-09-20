@@ -8,8 +8,8 @@ import shutil
 import json
 import subprocess
 import dateutil.parser
+import multiprocessing
 
-from shutil import copyfile
 
 from launch_utils.traffic_shaping import  run_tc_command
 
@@ -18,30 +18,22 @@ from launch_utils.monitoring import constellation_is_terminated,\
     monitor_launch_state,  monitor_ssh_ping,\
     monitor_task, monitor_simulator, TaskTimeOut, monitor_gzweb
 
-from launch_utils.softlayer import load_osrf_creds,\
-    get_softlayer_path, get_machine_login_info, create_openvpn_key
+from launch_utils.softlayer import create_openvpn_key
 
 from launch_utils.launch_db import get_constellation_data, ConstellationState,\
     get_cloudsim_config, log_msg
 
-from launch_utils.testing import get_test_path,\
-    get_boto_path, get_test_dir
-
-from launch_utils import get_unique_short_name
 from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
     create_vpc_vpn_connect_file, create_ros_connect_file,\
-    create_ssh_connect_file, get_router_deploy_script, get_simulator_script
+    create_ssh_connect_file, get_simulator_script,\
+    get_simulator_deploy_script
 
 from launch_utils.sshclient import SshClient
 from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
 
-import multiprocessing
-from launch_utils.sl_cloud import acquire_softlayer_constellation,\
- terminate_softlayer_constellation
+from launch_utils.aws import acquire_aws_single_server, terminate_aws_server,\
+    get_aws_ubuntu_sources_repo
 
-from launch_utils.aws import acquire_aws_constellation,\
-    get_aws_ubuntu_sources_repo, acquire_aws_single_server, terminate_aws_server
-from launch_utils.aws import terminate_aws_constellation
 from launch_utils import LaunchException
 
 
@@ -293,7 +285,7 @@ def create_private_machine_zip(machine_name_prefix,
     os.makedirs(machine_dir)
     key_short_filename = '%s.pem' % key_prefix
     key_fpath = os.path.join(machine_dir, key_short_filename)
-    copyfile(os.path.join(constellation_directory, key_short_filename),
+    shutil.copyfile(os.path.join(constellation_directory, key_short_filename),
              key_fpath)
     os.chmod(key_fpath, 0600)
 
@@ -305,8 +297,39 @@ def create_private_machine_zip(machine_name_prefix,
         f.write(file_content)
     os.chmod(fname_ssh_sh, 0755)
 
+    vpn_key_short_filename = 'openvpn.key'
+    vpnkey_fname = os.path.join(machine_dir, vpn_key_short_filename)
+    shutil.copyfile(os.path.join(constellation_directory,
+                                 vpn_key_short_filename),
+             vpnkey_fname)
+    os.chmod(vpnkey_fname, 0600)
+
+    # create open vpn config file
+    file_content = create_openvpn_client_cfg_file(machine_ip,
+                    client_ip=OPENVPN_CLIENT_IP, server_ip=OPENVPN_SERVER_IP)
+    fname_vpn_cfg = os.path.join(machine_dir, "openvpn.config")
+    with open(fname_vpn_cfg, 'w') as f:
+        f.write(file_content)
+
+    fname_start_vpn = os.path.join(machine_dir, "start_vpn.bash")
+    file_content = create_vpc_vpn_connect_file(OPENVPN_CLIENT_IP)
+    with open(fname_start_vpn, 'w') as f:
+        f.write(file_content)
+    os.chmod(fname_start_vpn, 0755)
+
+    fname_ros = os.path.join(machine_dir, "ros.bash")
+    file_content = create_ros_connect_file(machine_ip=OPENVPN_CLIENT_IP,
+                                           master_ip=SIM_IP)
+
+    with open(fname_ros, 'w') as f:
+        f.write(file_content)
+
     files_to_zip = [key_fpath,
-                    fname_ssh_sh, ]
+                    fname_ssh_sh,
+                    vpnkey_fname,
+                    fname_vpn_cfg,
+                    fname_start_vpn,
+                    fname_ros]
 
     fname_zip = os.path.join(machine_dir, "%s_%s.zip" % (machine_name_prefix,
                                                          constellation_name))
@@ -320,24 +343,7 @@ def _create_deploy_zip_files(constellation_name,
                      machines,
                      zipped_files=[]):
 
-    '''private_network_interface_name = machines['router']['public_network_itf']
-    public_network_interface_name = machines['router']['private_network_itf']
-    machines_to_ip = {m: machines[m]['ip'] for m in machines}
-
-    deploy_script = get_router_deploy_script(private_network_interface_name,
-                                             public_network_interface_name,
-                                             machines_to_ip)'''
-    deploy_script = '''
-        #!/bin/bash
-
-        # configure openvpn
-        sudo cp /home/ubuntu/deploy/openvpn.key /etc/openvpn/static.key
-        sudo chmod 644 /etc/openvpn/static.key
-        sudo service openvpn restart
-
-        # chechck that the tunnel interface is up
-        sudo ifconfig
-    '''
+    deploy_script = get_simulator_deploy_script()
 
     # constellation = ConstellationState(constellation_name)
     deploy_dir = os.path.join(constellation_directory, "deploy")
@@ -453,7 +459,7 @@ def _create_zip_files(constellation_name,
     if launch_sequence.index(launch_stage) >= launch_sequence.index('zip'):
         return
 
-    for machine_name, machine_data in machines.iteritems():
+    for machine_name, _ in machines.iteritems():
         machine_key_prefix = 'key-%s' % (machine_name)
         msg_key = '%s_launch_msg' % machine_name
         zip_ready_key = "%s_zip_file" % machine_name
@@ -475,7 +481,7 @@ def _create_zip_files(constellation_name,
             pass
         else:
             constellation.set_value(msg_key, 'creating zip files')
-            ip = machine_data['ip']
+            ip = constellation.get_value('sim_public_ip')
             machine_zip_fname = create_private_machine_zip(machine_name,
                                                ip,
                                                constellation_name,
@@ -590,6 +596,7 @@ def launch(constellation_name, tags):
     """
     Called by cloudsimd when it receives a launch message
     """
+    ip = "127.0.0.1"
     constellation = ConstellationState(constellation_name)
     use_latest_version = \
         constellation.get_value('configuration') == 'Simulator'
@@ -623,7 +630,7 @@ def launch(constellation_name, tags):
     machines = {}
     machines['sim'] = {'hardware': 'cg1.4xlarge',
                       'software': simulator_image_key,
-                      'ip': SIM_IP,
+                      'ip': ip,
                       'public_network_itf': sim_public_network_itf,
                       'private_network_itf': sim_private_network_itf,
                       'security_group': [{'name': 'openvpn',
@@ -686,7 +693,7 @@ def launch(constellation_name, tags):
     constellation.set_value('machines', machines)
     _init_computer_data(constellation_name, machines)
 
-    ros_master_ip = SIM_IP
+    ros_master_ip = ip
 
     # Required only if we are not using a prepolated AMI
     if use_latest_version:
@@ -702,19 +709,11 @@ def launch(constellation_name, tags):
         log("ppas: %s" % ppa_list)
         log("gpu packages %s" % gpu_driver_list)
 
-        '''scripts['router'] = get_router_script(router_public_network_itf,
-                                          router_private_network_itf,
-                                          ROUTER_IP,
-                                          SIM_IP,
-                                          drcsim_package_name,
-                                          OPENVPN_SERVER_IP,
-                                          OPENVPN_CLIENT_IP)'''
-
         ubuntu_sources_repo = get_aws_ubuntu_sources_repo(
                                                       credentials_fname)
         script = get_simulator_script(ubuntu_sources_repo,
-                                              drcsim_package_name,
-                                    SIM_IP,
+                                    drcsim_package_name,
+                                    ip,
                                     ros_master_ip,
                                     gpu_driver_list,
                                     ppa_list,
