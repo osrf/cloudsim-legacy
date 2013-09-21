@@ -625,7 +625,7 @@ def launch(constellation_name, tags):
     if use_latest_version:
         simulator_image_key = 'ubuntu_1204_x64_cluster'
     else:
-        simulator_image_key = 'ubuntu_1204_x64_simulator_stable'
+        simulator_image_key = 'ubuntu_1204_x64_simulator_standalone_stable'
 
     machines = {}
     machines['sim'] = {'hardware': 'cg1.4xlarge',
@@ -719,7 +719,8 @@ def launch(constellation_name, tags):
                                     ppa_list,
                                     OPENVPN_CLIENT_IP,
                                     OPENVPN_SERVER_IP)
-
+    else:
+        script = ""
     if cloud_provider == "aws":
         acquire_aws_single_server(
                               constellation_name,

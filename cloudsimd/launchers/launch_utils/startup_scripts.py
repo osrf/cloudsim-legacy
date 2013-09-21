@@ -1235,7 +1235,7 @@ chmod +x """ + cloudsim_dir + """/start_gzweb.bash
 # ----------------------------------------------------------------------------
 cat <<DELIM > """ + cloudsim_dir + """/stop_gzweb.bash
 #!/bin/bash
-logfile=""" + cloudsim_dir + """/stop_gzweb.log.log
+logfile=""" + cloudsim_dir + """/stop_gzweb.log
 exec >> \$logfile 2>&1
 
 echo "#"
@@ -1284,7 +1284,7 @@ sudo vrc_init_tc.py """ + private_network_interface_name + """
 """
 
     start_script = "/home/ubuntu/cloudsim/start_gazebo.bash"
-    start_sim_cmd = start_script + " \$1 \$2 \$3"
+    start_sim_cmd = "nohup bash " + start_script + " \$1 \$2 \$3 > ssh_start_sim.out 2> ssh_start_sim.err < /dev/null"
 
     #
     # if the simulator is a different machine, we call the scrtip on the
@@ -1347,7 +1347,7 @@ sudo iptables -F FORWARD
 sudo stop vrc_netwatcher
 kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
 sudo stop vrc_bytecounter
-sudo """ + cloudsim_dir + """/stop_gzweb.bash
+""" + cloudsim_dir + """/stop_gzweb.bash
 sudo start vrc_netwatcher
 
 """ + start_sim_cmd + """
