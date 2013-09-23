@@ -82,8 +82,7 @@ def start_task(constellation_name, package_name, launch_file_name,
     log("start_task constellation %s, package_name %s, launch_file_name %s,"
         " timeout %s, launch_args %s, latency %s, data_cap %s" %
         (constellation_name, package_name, launch_file_name, timeout,
-         launch_args,
-         latency, data_cap))
+         launch_args, latency, data_cap))
 
 
 def get_softlayer_path():
@@ -492,7 +491,7 @@ def launch_common(constellation_name, tags, script, image_key,
     out_s = ssh_cli.cmd("bash " + deploy_script_fname)
     log("\t%s" % out_s)
 
-    # If applicable, copy in the htpasswd file, for use with basic auth.
+    # Copy in the htpasswd file, for use with basic auth.
     out_s = ssh_cli.cmd('sudo cp /home/ubuntu/cloudsim_htpasswd '
                         '/var/www-cloudsim-auth/htpasswd')
     log("\t%s" % out_s)

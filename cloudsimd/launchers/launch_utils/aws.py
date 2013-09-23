@@ -32,12 +32,11 @@ def get_aws_ubuntu_sources_repo(credentials_ec2):
     aws_connect(credentials_ec2)
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
     if availability_zone.startswith('eu-west'):
-        # return "http://ie.archive.ubuntu.com/ubuntu/"
         return "http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/"
-    if availability_zone.startswith('us-east'):
-        # return "http://us.archive.ubuntu.com/ubuntu/"
-        "http://us-east-1.ec2.archive.ubuntu.com/ubuntu/"
-    return "http://us.archive.ubuntu.com/ubuntu/"
+    elif availability_zone.startswith('us-east'):
+        return "http://us-east-1.ec2.archive.ubuntu.com/ubuntu/"
+    else:
+        return "http://us.archive.ubuntu.com/ubuntu/"
 
 
 def acquire_aws_single_server(constellation_name,
