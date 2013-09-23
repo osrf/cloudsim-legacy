@@ -596,7 +596,6 @@ def _acquire_vpc_server(constellation_name,
                          block_device_map=bdm)
         return res.id
     except Exception, e:
-        constellation.set_value('error', "%s" % e)
         raise
 
 
