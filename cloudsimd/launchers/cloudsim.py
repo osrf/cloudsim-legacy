@@ -51,20 +51,24 @@ def update(constellation_name):
     key_prefix = _extract_key_prefix(constellation_name)
     # Do the software update here, via ssh
     website_distribution = CLOUDSIM_ZIP_PATH
-    upload_and_deploy_cloudsim(constellation_name, website_distribution,
-                               key_prefix,
-                               force=False)
-
+    upload_cloudsim(constellation_name, website_distribution,
+                               key_prefix)
 
     constellation_state = ConstellationState(constellation_name)
     constellation_dir = constellation_state.get_value(
                                                     'constellation_directory')
     ip_address = constellation_state.get_value("simulation_ip")
-    ssh_sim = SshClient(constellation_dir, key_prefix, 'ubuntu', ip_address)
+    ssh_cli = SshClient(constellation_dir, key_prefix, 'ubuntu', ip_address)
+
+    # Upload the installed apache2.conf from the papa cloudsim so that the
+    # junior cloudsim is configured the same way (e.g., uses basic auth instead
+    # of openid).
+    ssh_cli.upload_file('/etc/apache2/apache2.conf',
+                        'cloudsim/distfiles/apache2.conf')
 
     log("Deploying the cloudsim web app")
     deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh"
-    out_s = ssh_sim.cmd("bash " + deploy_script_fname)
+    out_s = ssh_cli.cmd("bash " + deploy_script_fname)
     log("\t%s" % out_s)
     constellation = ConstellationState(constellation_name)
     constellation.set_value('simulation_launch_msg', "running")
@@ -77,8 +81,8 @@ def start_task(constellation_name, package_name, launch_file_name,
         log("*****")
     log("start_task constellation %s, package_name %s, launch_file_name %s,"
         " timeout %s, launch_args %s, latency %s, data_cap %s" %
-        (constellation_name, package_name, launch_file_name, timeout, launch_args,
-         latency, data_cap))
+        (constellation_name, package_name, launch_file_name, timeout,
+         launch_args, latency, data_cap))
 
 
 def get_softlayer_path():
@@ -184,10 +188,9 @@ def startup_script(constellation_name):
     constellation.set_value("launch_stage", "startup")
 
 
-def upload_and_deploy_cloudsim(constellation_name,
+def upload_cloudsim(constellation_name,
                                website_distribution,
-                               key_prefix,
-                               force=False):
+                               key_prefix):
 
     constellation_state = ConstellationState(constellation_name)
     constellation_dir = constellation_state.get_value(
@@ -210,31 +213,12 @@ def upload_and_deploy_cloudsim(constellation_name,
     log("\t%s" % out_s)
     constellation_state.set_value('simulation_launch_msg', "deploying web app")
 
-    # Upload the installed apache2.conf from the papa cloudsim so that the
-    # junior cloudsim is configured the same way (e.g., uses basic auth instead
-    # of openid).
-    ssh_cli.upload_file('/etc/apache2/apache2.conf', 
-                        'cloudsim/distfiles/apache2.conf')
-
-    if force:
-        ssh_cli.cmd('cp cloudsim_users cloudsim/distfiles/users')
-
-    log("Deploying the cloudsim web app")
-    deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh"
-    # If asked, pass -f to force deploy.sh to overwrite any existing users file
-    if force:
-        deploy_script_fname += " -f"
-    log("running deploy script '%s' remotely" % deploy_script_fname)
-
-    # If applicable, copy in the htpasswd file, for use with basic auth.
-    if force:
-        out_s = ssh_cli.cmd('sudo cp /home/ubuntu/cloudsim_htpasswd /var/www-cloudsim-auth/htpasswd')
-        log("\t%s" % out_s)
-    else:
-        log("Not installing htpasswd file")
 
 
-def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
+
+
+def launch_common(constellation_name, tags, script, image_key,
+                  website_distribution=CLOUDSIM_ZIP_PATH):
 
     log("cloudsim launch %s  %s zip = %s" % (constellation_name,
                                              tags, website_distribution))
@@ -364,11 +348,11 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
 
     constellation.set_value('simulation_ip', ip)
     log("%s simulation machine ip %s" % (constellation_name, ip))
-    ssh_sim = SshClient(constellation_directory, key_prefix, 'ubuntu', ip)
+    ssh_cli = SshClient(constellation_directory, key_prefix, 'ubuntu', ip)
 
     constellation.set_value('simulation_launch_msg', "waiting for network")
 
-    sim_setup_done = get_ssh_cmd_generator(ssh_sim, "ls cloudsim/setup/done",
+    sim_setup_done = get_ssh_cmd_generator(ssh_cli, "ls cloudsim/setup/done",
                                            "cloudsim/setup/done",
                                            constellation,
                                            "simulation_state",
@@ -398,15 +382,15 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     add_user_cmd += '}\' > cloudsim_users'
 
     log("add users to cloudsim: %s" % add_user_cmd)
-    out = ssh_sim.cmd(add_user_cmd)
+    out = ssh_cli.cmd(add_user_cmd)
     log("\t%s" % out)
 
     # Add the currently logged-in user to the htpasswd file on the cloudsim
     # junior.  This file will be copied into the installation location later, in 
-    # upload_and_deploy_cloudsim().
+    # upload_cloudsim().
     htpasswd_cmd = 'htpasswd -bc cloudsim_htpasswd ' + username + ' ' + constellation_name
     log("add current user to htpasswd file: %s" % htpasswd_cmd)
-    out = ssh_sim.cmd(htpasswd_cmd)
+    out = ssh_cli.cmd(htpasswd_cmd)
     log("\t%s" % out)
 
     # fname_zip = os.path.join(constellation_directory, "cs","cs.zip")
@@ -415,7 +399,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
                             "Uploading the key file to the server")
     remote_fname = "/home/ubuntu/cloudsim/cloudsim_ssh.zip"
     log("uploading '%s' to the server to '%s'" % (fname_zip, remote_fname))
-    out = ssh_sim.upload_file(fname_zip, remote_fname)
+    out = ssh_cli.upload_file(fname_zip, remote_fname)
     log("\t%s" % out)
 
     if jr_softlayer_path is not None and os.path.exists(jr_softlayer_path):
@@ -424,7 +408,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
         remote_fname = "/home/ubuntu/softlayer.json"
         log("uploading '%s' to the server to '%s'" % (jr_softlayer_path,
                                                       remote_fname))
-        out = ssh_sim.upload_file(jr_softlayer_path, remote_fname)
+        out = ssh_cli.upload_file(jr_softlayer_path, remote_fname)
         log("\t%s" % out)
     else:
         constellation.set_value('simulation_launch_msg',
@@ -438,7 +422,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
         remote_fname = "/home/ubuntu/boto.ini"
         log("uploading '%s' to the server to '%s'" % (ec2_creds_fname,
                                                       remote_fname))
-        out = ssh_sim.upload_file(ec2_creds_fname, remote_fname)
+        out = ssh_cli.upload_file(ec2_creds_fname, remote_fname)
         log("\t%s" % out)
     else:
         constellation.set_value('simulation_launch_msg',
@@ -453,7 +437,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
         remote_fname = "/home/ubuntu/cloudsim_portal.key"
         log("uploading '%s' to the server to '%s'" % (
                                     jr_cloudsim_portal_key_path, remote_fname))
-        out = ssh_sim.upload_file(jr_cloudsim_portal_key_path, remote_fname)
+        out = ssh_cli.upload_file(jr_cloudsim_portal_key_path, remote_fname)
         log("\t%s" % out)
 
         constellation.set_value('simulation_launch_msg',
@@ -461,7 +445,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
         remote_fname = "/home/ubuntu/cloudsim_portal.json"
         log("uploading '%s' to the server to '%s'" % (
                                 jr_cloudsim_portal_json_path, remote_fname))
-        out = ssh_sim.upload_file(jr_cloudsim_portal_json_path, remote_fname)
+        out = ssh_cli.upload_file(jr_cloudsim_portal_json_path, remote_fname)
         log("\t%s" % out)
     else:
         constellation.set_value('simulation_launch_msg',
@@ -474,7 +458,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
         remote_fname = "/home/ubuntu/cloudsim_bitbucket.key"
         log("uploading '%s' to the server to '%s'" % (jr_bitbucket_key_path,
                                                                 remote_fname))
-        out = ssh_sim.upload_file(jr_bitbucket_key_path, remote_fname)
+        out = ssh_cli.upload_file(jr_bitbucket_key_path, remote_fname)
         log("\t%s" % out)
     else:
         constellation.set_value('simulation_launch_msg',
@@ -485,18 +469,33 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
         #
         #  Upload cloudsim.zip and Deploy
         #
-        upload_and_deploy_cloudsim(constellation_name,
+        upload_cloudsim(constellation_name,
                                    website_distribution,
                                    key_prefix)
+
     else:
-        out = ssh_sim.cmd('sudo restart cloudsimd')
+        out = ssh_cli.cmd('sudo restart cloudsimd')
         log("\t%s" % out)
 
+
+    # Upload the installed apache2.conf from the papa cloudsim so that the
+    # junior cloudsim is configured the same way (e.g., uses basic auth instead
+    # of openid).
+    ssh_cli.upload_file('/etc/apache2/apache2.conf',
+                        'cloudsim/distfiles/apache2.conf')
+
+    ssh_cli.cmd('cp cloudsim_users cloudsim/distfiles/users')
     # Deploy
     log("Deploying the cloudsim web app")
     deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh -f"
-    out_s = ssh_sim.cmd("bash " + deploy_script_fname)
+    out_s = ssh_cli.cmd("bash " + deploy_script_fname)
     log("\t%s" % out_s)
+
+    # Copy in the htpasswd file, for use with basic auth.
+    out_s = ssh_cli.cmd('sudo cp /home/ubuntu/cloudsim_htpasswd '
+                        '/var/www-cloudsim-auth/htpasswd')
+    log("\t%s" % out_s)
+
 
     #
     # For a CloudSim launch, we look at the tags for a configuration to launch
@@ -508,7 +507,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
         log(msg)
         constellation.set_value('simulation_launch_msg', msg)
         time.sleep(20)
-        ssh_sim.cmd("/home/ubuntu/cloudsim/launch.py"
+        ssh_cli.cmd("/home/ubuntu/cloudsim/launch.py"
                     " \"%s\" \"%s\"" % (username, auto_launch_configuration))
 
     print ("\033[1;32mCloudSim ready. Visit http://%s \033[0m\n" % ip)

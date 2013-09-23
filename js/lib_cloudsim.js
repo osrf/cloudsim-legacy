@@ -351,6 +351,7 @@ function start_task(constellation_name, task_id)
 
 function stop_task(constellation_name)
 {
+	stop_web_tools(constellation_name);
     var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=stop_task';
     url += '&constellation=' + constellation_name;
 

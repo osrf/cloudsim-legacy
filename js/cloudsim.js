@@ -30,7 +30,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
     		}
     		else if (machine_name == "router")
     		{
-    			latency_msg = "Latency between the router and the OCU over the VPN";
+    			latency_msg = "RTT latency between the router and the OCU over the VPN";
     		}
     		else
     		{
@@ -62,7 +62,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
 
     		if (machine_name == "router")
     		{
-    			create_gzweb_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo", "gzweb");
+    			create_gzweb_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo", "gzweb", "router_public_ip");
     		}
     		
     		create_latency_widget(machine_div, constellation, machine_name, latency_key, latency_msg, max_latency);
@@ -90,23 +90,18 @@ function create_constellation(div_name, configuration, constellation, machine_da
     }
 
 
-    if((configuration == "AWS simulator") || (configuration.indexOf("bitcoin") ==0))
+    if(configuration.indexOf("Simulator") == 0)
     {
-
         create_task_list_widget(constellation_div, constellation);
         var machine_name = "simulator";
         var machine_div = create_machine(machines_div, machine_name);
 
-        create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file", disable_key_download );
-        create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "simulation_launch_msg", "simulation_state");
-        create_machine_state_widget(machine_div, constellation, machine_name,"simulation_aws_state");
-        //create_glx_state_widget(machine_div, constellation, machine_name, "sim_glx_state");
-
+        create_hostname_widget(machine_div, constellation, machine_name, "sim_public_ip", "sim_aws_id", "username", "gmt", "sim_zip_file", disable_key_download );
+        create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "sim_launch_msg", "sim_state");
+        create_machine_state_widget(machine_div, constellation, machine_name,"sim_aws_state");
         create_simulator_state_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo");
-
-        //create_traffic_shaper_widget(machine_div, constellation, machine_name, "traffic_shaper");
-        create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to CloudSim", 1.1);
-
+        create_gzweb_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo", "gzweb", "sim_public_ip");
+        create_latency_widget(machine_div, constellation, machine_name, "sim_latency", "RTT latency between the simulator and OCU over the VPN", 1.1);
     }
 
 }
