@@ -124,7 +124,21 @@ def reset_tasks(name=None):
                 cs.update_task_value(task_id, 'task_state', 'ready')
                 cs.update_task_value(task_id, 'task_message', 'Ready to run')
 
-
+def gather_cs_credentials():
+    """
+    Gather the names and IP addresses of all CloudSim constellations and pretty-print them for handing out to users
+    """
+    consts = [x for x in  list_constellations() if 'configuration' in x and x['configuration'].startswith('CloudSim')]
+    for const in consts:
+        try:
+            print('Your CloudSim information:')
+            print('IP address: %s'%(const['simulation_ip']))
+            print('Username: guest')
+            print('Password: %s'%(const['constellation_name']))
+            print('\n\n\n')
+        except Exception as e:
+            print('Failed to get information for constellation %s: %s'%(const, e))
+    
 def launch_constellation(username, configuration, args=None):
     """
     Launches one (or count) constellation of a given configuration
@@ -262,10 +276,10 @@ def get_plugin(configuration):
                                      c.update,
                                      c.monitor,
                               None, None, None, None)
-    elif configuration.startswith('DRC-stable'):
-        #from launchers import amazon_trio as c
+
+    elif configuration.startswith('DRC'):
         from launchers import vrc_contest as c
-        plugin = ConstellationPlugin(c.launch_stable,
+        plugin = ConstellationPlugin(c.launch,
                                      c.terminate,
                                      c.update,
                                      c.monitor,
@@ -273,9 +287,9 @@ def get_plugin(configuration):
                                      c.stop_task,
                                      c.start_gzweb,
                                      c.stop_gzweb)
-    elif configuration.startswith('DRC'):
-        #from launchers import amazon_trio as c
-        from launchers import vrc_contest as c
+    
+    elif configuration.startswith('Simulator'):
+        from launchers import simulator as c
         plugin = ConstellationPlugin(c.launch,
                                      c.terminate,
                                      c.update,
@@ -302,8 +316,6 @@ def _load_cloudsim_configurations_list():
     """
 
     configs = {}
-    config = get_cloudsim_config()
-    credentials_ec2 = config['boto_path']
     desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
 <ol>
   <li>Hardware:
@@ -319,21 +331,8 @@ def _load_cloudsim_configurations_list():
 </ol>
 """
     configs['DRC'] = {'description': desc}
-    desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
-<ol>
-  <li>Hardware:
-      <ol>
-          <li>Router: large server</li>
-          <li>Simulator: GPU cluster instance</li>
-      </ol>
-  </li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>ROS: Fuerte</li>
-  <li>Simulator: Gazebo (latest)</li>
-  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-</ol>
-"""
     configs['DRC-stable'] = {'description': desc}
+
     desc = """DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages
 <ol>
     <li>Hardware:
@@ -358,14 +357,23 @@ def _load_cloudsim_configurations_list():
 </ol>
 """     
     configs['CloudSim'] = {'description': desc}
-    desc = """The CloudSim Web App running in the Cloud (Stable version)
-<ol>
-  <li>Hardware: micro</li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>Web server: Apache</li>
-</ol>
-"""     
     configs['CloudSim-stable'] = {'description': desc}
+    
+    desc = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
+<ol>
+  <li>Hardware:
+      <ol>
+          <li>Simulator: GPU cluster instance</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Fuerte</li>
+  <li>Simulator: Gazebo (latest)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+    configs['Simulator'] = {'description': desc}
+    configs['Simulator-Stable'] = {'description': desc}
 
     set_cloudsim_configuration_list(configs)
 
@@ -456,21 +464,16 @@ def update_constellation(constellation_name):
     """
     proc = multiprocessing.current_process().name
     log("update '%s' from proc '%s'" % (constellation_name, proc))
-
+    constellation = ConstellationState(constellation_name)
     try:
-
-        data = get_constellation_data(constellation_name)
-        config = data['configuration']
-        log("    configuration is '%s'" % (config))
-
+        config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
         constellation_plugin.update(constellation_name)
     except Exception, e:
-        log("cloudsimd.py update error: %s" % e)
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb)
-        log("UPDATE ERROR %s traceback:  %s" % (constellation_name, tb),
-            "launch_errors")
+        constellation.set_value('error', 'Update aborted with exception: '
+                                '%s<pre>%s</pre>' % (e,tb))
+        log("UPDATE ERROR traceback:  %s" % tb)
 
 
 def start_gzweb(constellation_name):
@@ -479,16 +482,17 @@ def start_gzweb(constellation_name):
     """
     proc = multiprocessing.current_process().name
     log("start_gzweb '%s' from proc '%s'" % (constellation_name,  proc))
+    constellation = ConstellationState(constellation_name)
     try:
-        constellation = ConstellationState(constellation_name)
         config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
         constellation.set_value("gzweb", 'starting')
         constellation_plugin.start_gzweb(constellation_name)
     except Exception, e:
-        log("cloudsimd.py start_gzweb error: %s" % e)
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb)
+        constellation.set_value('error', 'Start gzweb aborted with exception: '
+                                '%s<pre>%s</pre>' % (e,tb))
+        log("START_GZWEB ERROR traceback:  %s" % tb)
 
 
 def stop_gzweb(constellation_name):
@@ -497,16 +501,17 @@ def stop_gzweb(constellation_name):
     """
     proc = multiprocessing.current_process().name
     log("stop_gzweb '%s' from proc '%s'" % (constellation_name,  proc))
+    constellation = ConstellationState(constellation_name)
     try:
-        constellation = ConstellationState(constellation_name)
         config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
         constellation.set_value("gzweb", 'stopping')
         constellation_plugin.stop_gzweb(constellation_name)
     except Exception, e:
-        log("cloudsimd.py stop_gzweb error: %s" % e)
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb)
+        constellation.set_value('error', 'Stop gzweb aborted with exception: '
+                                '%s<pre>%s</pre>' % (e,tb))
+        log("STOP_GZWEB ERROR traceback:  %s" % tb)
 
              
 def terminate(constellation_name):
@@ -519,18 +524,18 @@ def terminate(constellation_name):
     proc = multiprocessing.current_process().name
     log("terminate '%s' from proc '%s'" % (constellation_name,  proc))
 
+    constellation = ConstellationState(constellation_name)
     try:
-        constellation = ConstellationState(constellation_name)
         config = constellation.get_value('configuration')
         log("    configuration is '%s'" % (config))
         constellation_plugin = get_plugin(config)
         constellation_plugin.terminate(constellation_name)
     except Exception, e:
-        log("cloudsimd.py terminate error: %s" % e)
         tb = traceback.format_exc()
-        log("TERMINATE ERROR %s traceback:  %s" % (constellation_name, tb))
+        constellation.set_value('error', 'Terminate aborted with exception: '
+                                '%s<pre>%s</pre>' % (e,tb))
+        log("TERMINATE ERROR traceback:  %s" % tb)
             
-    constellation = ConstellationState(constellation_name)
     constellation.set_value('constellation_state', 'terminated')
     log("Deleting %s from the database" % constellation_name)
     constellation.expire(1)
