@@ -54,7 +54,7 @@ if email not in users:
         common.print_http_header()
         print("""
         Your open session ID is not associated with a user. Please login again<br>
-        <a href="/cloudsim/login.html">login</a>
+        <a href="/cloudsim/index.html">login</a>
         """)
         sys.exit(0)
 
@@ -66,36 +66,4 @@ if auth_type == 'OpenID':
     sdb.db[openid_session] = email
     sdb.save()
 
-common.print_http_header()
-
-version_info = common.get_cloudsim_version_txt()
-
-page = """
-<!DOCTYPE html>
-<html>
-<head>
-<link href="/js/layout.css" rel="stylesheet" type="text/css">
-</head>
-<body>
-<img src="/js/images/osrf.png" width="400px"/>
-<div>
-
-<h1>CloudSim %s</h1>
-
-</div>
-
-<div style="padding: 10px; margin-bottom:20px; margin-top:20px;" more="border-radius: 15px; border: 1px solid black; "> 
-<pre>
-
-</pre>
-</div>
-
-<a href="/cloudsim/inside/cgi-bin/console">Console</a><br>
-<a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-<a href="https://bitbucket.org/osrf/cloudsim">Source</a>
-</body>
-</html>
-""" % version_info
-print(page)
-#print("Location: /cloudsim/inside/cgi-bin/console\n")
-
+print("Location: /cloudsim/inside/cgi-bin/console\n")

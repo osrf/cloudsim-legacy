@@ -1,12 +1,46 @@
-<h1>Welcome to Cloudsim</h1>
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>CloudSim Login</title>
+  <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="custom.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="login">
+      <div class="cs_logo"><img src="js/images/CloudSimLogo1.svg
+        " alt="CloudSim logo" width="180" />
+      </div>
+      <div class="welcome">
+        <p> Welcome! Login to launch and access simulation machines. </p>
+      </div>
+      <div class="login_form">
+        <form action="/cloudsim/inside/cgi-bin/usercheck.py" method="GET">
+          <!-- The username and password boxes are disabled here for now, 
+               as the current authentication mechanisms either use third-party OpenID
+               of pop up a browser-controlled diaglog to get credentials. -->
+          <!-- 
+          <input class="form-control" type="text" placeholder="Username">
+          <input class="form-control" type="password" placeholder="Password">
+          -->
+          <input type="hidden" name="openid_identifier" value="https://www.google.com/accounts/o8/id"/>
+          <input type="hidden" name="openid.ns.ext1" value="http://openid.net/srv/ax/1.0" />
+          <input type="hidden" name="openid.ext1.mode" value="fetch_request" />
+          <input type="hidden" name="openid.ext1.type.email" value="http://axschema.org/contact/email" />
+          <input type="hidden" name="openid.ext1.required" value="email" />
+          <button type="submit" class="btn btn-default">Login</button>
+        </form>
+      </div>
+    </div>
+    <div id="push"></div>
+  </div>
 
+  <div id="footer">
+   Brought to you by: <a href="http://osrfoundation.org"> <img src="js/images/grey_horiz_osrf.svg" alt="CloudSim logo"  width="180" height="50" /></a>
+  </div>
 
-<!--
-If this is the first time you use Cloudsim, please add your cloud credentials on the admin page<p>
---!>
-
-<a href="/login.html">Login</a>
-<p>
-<a href="http://www.google.com/accounts/logout">Google Logout</a>
-<p>
-<a href="http://osrfoundation.org/">Open Source Robotics Foundation</a>
+ <script src="http://code.jquery.com/jquery.js"></script> 
+ <script src="js/bootstrap.min.js"></script>
+</body>
+</html>
