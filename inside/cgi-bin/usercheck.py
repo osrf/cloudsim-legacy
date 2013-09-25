@@ -22,7 +22,6 @@ if auth_type == 'OpenID':
     in_cookies = Cookie.Cookie()
     in_cookies.load(os.environ[common.HTTP_COOKIE])
     openid_session = in_cookies[common.OPENID_SESSION_COOKIE_NAME].value
-    
     sdb = common.SessionDatabase()
     sdb.load()
 
@@ -58,49 +57,12 @@ if email not in users:
         """)
         sys.exit(0)
 
-
-
 # Save session ID and email to our own database
-
 if auth_type == 'OpenID':
     sdb.db[openid_session] = email
     sdb.save()
 
-<<<<<<< local
+# redirect to the console now
 common.print_http_header()
-
-version_info = common.get_cloudsim_version_txt()
-
-page = """
-<!DOCTYPE html>
-<html>
-<head>
-<link href="/js/layout.css" rel="stylesheet" type="text/css">
-</head>
-<body>
-<img src="/js/images/osrf.png" width="400px"/>
-<div>
-
-<h1>CloudSim %s</h1>
-
-</div>
-
-<div style="padding: 10px; margin-bottom:20px; margin-top:20px;" more="border-radius: 15px; border: 1px solid black; "> 
-<pre>
-
-</pre>
-</div>
-
-<a href="/cloudsim/inside/cgi-bin/console">Console</a><br>
-<a href="/cloudsim/inside/cgi-bin/logout">Logout</a><br>
-<a href="https://bitbucket.org/osrf/cloudsim">Source</a>
-</body>
-</html>
-""" % version_info
-#print(page)
 print ('<meta http-equiv="refresh" content="0; url=/cloudsim/inside/cgi-bin/console">')
-#print("Location: /cloudsim/inside/cgi-bin/console\n")
 
-=======
-print("Location: /cloudsim/inside/cgi-bin/console\n")
->>>>>>> other

@@ -261,15 +261,7 @@ def get_plugin(configuration):
     plugin = None
     #log("get_plugin '%s'" % configuration)
 
-    if configuration.startswith("CloudSim-stable"):
-        from launchers import cloudsim as c
-        plugin = ConstellationPlugin(c.launch_stable, 
-                                     c.terminate,
-                                     c.update,
-                                     c.monitor,
-                              None, None, None, None)
-
-    elif configuration.startswith("CloudSim"):
+    if configuration.startswith("CloudSim"):
         from launchers import cloudsim as c
         plugin = ConstellationPlugin(c.launch, 
                                      c.terminate,
@@ -471,8 +463,8 @@ def update_constellation(constellation_name):
         constellation_plugin.update(constellation_name)
     except Exception, e:
         tb = traceback.format_exc()
-        constellation.set_value('error', 'Update aborted with exception: '
-                                '%s<pre>%s</pre>' % (e,tb))
+#         constellation.set_value('error', 'Update aborted with exception: '
+#                                 '%s<pre>%s</pre>' % (e,tb))
         log("UPDATE ERROR traceback:  %s" % tb)
 
 
@@ -490,8 +482,8 @@ def start_gzweb(constellation_name):
         constellation_plugin.start_gzweb(constellation_name)
     except Exception, e:
         tb = traceback.format_exc()
-        constellation.set_value('error', 'Start gzweb aborted with exception: '
-                                '%s<pre>%s</pre>' % (e,tb))
+#         constellation.set_value('error', 'Start gzweb aborted with exception: '
+#                                 '%s<pre>%s</pre>' % (e,tb))
         log("START_GZWEB ERROR traceback:  %s" % tb)
 
 
@@ -509,8 +501,8 @@ def stop_gzweb(constellation_name):
         constellation_plugin.stop_gzweb(constellation_name)
     except Exception, e:
         tb = traceback.format_exc()
-        constellation.set_value('error', 'Stop gzweb aborted with exception: '
-                                '%s<pre>%s</pre>' % (e,tb))
+#         constellation.set_value('error', 'Stop gzweb aborted with exception: '
+#                                 '%s<pre>%s</pre>' % (e,tb))
         log("STOP_GZWEB ERROR traceback:  %s" % tb)
 
              

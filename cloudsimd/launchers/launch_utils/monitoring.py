@@ -362,16 +362,15 @@ def monitor_task(constellation_name, ssh_router):
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
 
-        if net_str and score_str:
-            final_score = "%s %s" % (score_str, net_str)
-            log("score %s" % final_score)
-            constellation.update_task_value(task['task_id'],
+        final_score = ""
+        if net_str:
+            final_score += "%s " % net_str
+        if score_str:
+            final_score += "%s" % score_str
+        log("score %s" % final_score)
+        constellation.update_task_value(task['task_id'],
                                             'task_message',
                                             final_score)
-#         else:
-#             constellation.update_task_value(task['task_id'],
-#                                             'task_message',
-#                                             "No score available")
         if sim_time > timeout:
             task = constellation.get_task(task_id)
             timeout_msg = ' [Timeout]'
