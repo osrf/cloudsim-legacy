@@ -22,13 +22,54 @@ elif auth_type == 'OpenID':
     out_cookies[common.OPENID_SESSION_COOKIE_NAME]['path'] = partial_path
     print(out_cookies)
 
-print("""Content-type: text/html
+common.print_http_header()
+# TODO: remove this copy of index.html and somehow redirect there on logout.
+#       I had trouble mixing the Status: and Location: headers to get both 
+#       basic auth "logout" and redirect to another page.
+print("""
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>CloudSim Login</title>
+  <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="/custom.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="login">
+      <div class="cs_logo"><img src="/js/images/CloudSimLogo1.svg
+        " alt="CloudSim logo" width="180" />
+      </div>
+      <div class="welcome">
+        <p> Welcome! Login to launch and access simulation machines. </p>
+      </div>
+      <div class="login_form">
+        <form action="/cloudsim/inside/cgi-bin/usercheck.py" method="GET">
+          <!-- The username and password boxes are disabled here for now, 
+               as the current authentication mechanisms either use third-party OpenID
+               of pop up a browser-controlled diaglog to get credentials. -->
+          <!-- 
+          <input class="form-control" type="text" placeholder="Username">
+          <input class="form-control" type="password" placeholder="Password">
+          -->
+          <input type="hidden" name="openid_identifier" value="https://www.google.com/accounts/o8/id"/>
+          <input type="hidden" name="openid.ns.ext1" value="http://openid.net/srv/ax/1.0" />
+          <input type="hidden" name="openid.ext1.mode" value="fetch_request" />
+          <input type="hidden" name="openid.ext1.type.email" value="http://axschema.org/contact/email" />
+          <input type="hidden" name="openid.ext1.required" value="email" />
+          <button type="submit" class="btn btn-default">Login</button>
+        </form>
+      </div>
+    </div>
+    <div id="push"></div>
+  </div>
 
-<h1>Goodbye</h1>
-<a href="/cloudsim/login.html">login</a>
-""")
-if auth_type == 'OpenID':
-  print("""<p>
-<a href="http://www.google.com/accounts/logout">Google Logout</a>
+  <div id="footer">
+   Brought to you by: <a href="http://osrfoundation.org"> <img src="/js/images/grey_horiz_osrf.svg" alt="CloudSim logo"  width="180" height="50" /></a>
+  </div>
 
-""")
+ <script src="http://code.jquery.com/jquery.js"></script> 
+ <script src="/js/bootstrap.min.js"></script>
+</body>
+</html>""")
+
