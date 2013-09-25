@@ -154,31 +154,26 @@ if method == 'GET':
 
 d = {}
 d['username'] = email
-d['type'] = 'launchers'
+
+
+if role not in ['admin']:
+    d['role'] = role
+    d['error'] = 'Insufficient privileges "%s"' % role
+    s = json.dumps(d)
+    print("%s" % s)
+    exit(0)
 
 if method == 'DELETE':
     d['command'] = 'terminate'
     d['constellation'] = get_constellation_from_path()
-    if role == 'user':
-        d['error'] = "Insufficient privileges"
-        s = json.dumps(d)
-        print("%s" % s)
-        exit(0)
 
 
 if method == 'PUT':
     d['command'] = 'update'
     d['constellation'] = get_constellation_from_path()
-    if role != 'admin':
-        d['error'] = "Insufficient privileges"
-        s = json.dumps(d)
-        print("%s" % s)
-        exit(0)
 
 
 if method == 'POST':
-    d = {}
-    d['username'] = email
     d['command'] = 'launch'
     d['cloud_provider'] = get_query_param('cloud_provider')
     d['configuration'] = get_query_param('configuration')

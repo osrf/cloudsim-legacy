@@ -257,7 +257,7 @@ echo "mercurial installed" >> /home/ubuntu/setup.log
 #apt-get install -y cloud-utils
 #echo "cloud-utils installed" >> /home/ubuntu/setup.log
 
-sudo apt-get install python-novaclient
+sudo apt-get install -y python-novaclient
 echo "python-novaclient installed" >> /home/ubuntu/setup.log
 
 apt-get install -y ntp

@@ -40,7 +40,7 @@ if email:
     email = email.lower()
 
 if email not in users:
-    
+
     # print ("openid_session %s" % openid_session)
     if email:
         common.print_http_header()
@@ -96,6 +96,7 @@ page = """
 </body>
 </html>
 """ % version_info
-print(page)
+#print(page)
+print ('<meta http-equiv="refresh" content="0; url=/cloudsim/inside/cgi-bin/console">')
 #print("Location: /cloudsim/inside/cgi-bin/console\n")
 

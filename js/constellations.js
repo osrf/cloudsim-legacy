@@ -86,8 +86,8 @@ function insert_constellation_div(div_name, configuration_name, constellation_na
     top_div.appendChild(error_msg_div);
 
 
-    // do not allow simple users to terminate constellations
-    if(get_user_info()['role'] != 'user')
+    // do not allow non admin users to terminate constellations
+    if(get_user_info()['role'] == 'admin')
 	{
         var terminate_button= document.createElement('input');
         terminate_button.setAttribute('type','button');

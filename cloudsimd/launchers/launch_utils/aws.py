@@ -773,6 +773,7 @@ def _get_amazon_amis(availability_zone):
     AMIs are the Amazon disk images. They have unique ids, and those ids vary
     in different regions
     """
+
 #     config = get_cloudsim_config()
 #     credentials_ec2 = config['boto_path']
 #     boto.config = BotoConfig(credentials_ec2)
@@ -782,7 +783,7 @@ def _get_amazon_amis(availability_zone):
     if availability_zone.startswith('eu-west'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
         amis['ubuntu_1204_x64'] = 'ami-f2191786'
-        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-743eda03'
+        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-44846333'
         amis['ubuntu_1204_x64_router_stable'] = 'ami-b2e105c5'
         amis['ubuntu_1204_x64_simulator_stable'] = 'ami-b6e105c1'
         amis['ubuntu_1204_x64_simulator_standalone_stable'] = 'ami-4866823f'
@@ -790,10 +791,10 @@ def _get_amazon_amis(availability_zone):
     elif availability_zone.startswith('us-east'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
         amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
-        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-adeca4c4'
+        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-f92e7b90'
         amis['ubuntu_1204_x64_router_stable'] = 'ami-37256f5e'
-        amis['ubuntu_1204_x64_simulator_stable'] = 'ami-6339730a' # 'ami-01256f68'
-        amis['ubuntu_1204_x64_simulator_standalone_stable'] = 'ami-0b327862'
+        amis['ubuntu_1204_x64_simulator_stable'] = 'ami-6339730a'
+        amis['ubuntu_1204_x64_simulator_standalone_stable'] = 'ami-152e7b7c'
 
     elif availability_zone.startswith('nova'):
         # TODO: we might want to move image ids to a configuration file
