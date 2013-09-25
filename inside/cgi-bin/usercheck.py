@@ -54,7 +54,7 @@ if email not in users:
         common.print_http_header()
         print("""
         Your open session ID is not associated with a user. Please login again<br>
-        <a href="/cloudsim/login.html">login</a>
+        <a href="/cloudsim/index.html">login</a>
         """)
         sys.exit(0)
 
@@ -66,6 +66,7 @@ if auth_type == 'OpenID':
     sdb.db[openid_session] = email
     sdb.save()
 
+<<<<<<< local
 common.print_http_header()
 
 version_info = common.get_cloudsim_version_txt()
@@ -100,3 +101,6 @@ page = """
 print ('<meta http-equiv="refresh" content="0; url=/cloudsim/inside/cgi-bin/console">')
 #print("Location: /cloudsim/inside/cgi-bin/console\n")
 
+=======
+print("Location: /cloudsim/inside/cgi-bin/console\n")
+>>>>>>> other
