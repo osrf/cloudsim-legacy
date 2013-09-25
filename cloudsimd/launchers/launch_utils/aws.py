@@ -178,7 +178,7 @@ def acquire_aws_server(constellation_name,
     if availability_zone.startswith('nova'):
         instance_type = 'cloudsim-basic'
     else:
-        instance_type = 't1.micro'
+        instance_type = 'm1.small' # 't1.micro'
     try:
         constellation.set_value('simulation_launch_msg', "requesting machine")
         res = ec2conn.run_instances(image_id=aws_image,
