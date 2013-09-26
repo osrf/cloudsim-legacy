@@ -328,7 +328,7 @@ def monitor_task(constellation_name, ssh_router):
             log(s)
             score, sim_time, fall_count, msg = parse_score_data(s)
             score_str = ""
-            score_str += "<b>%s</b>: %s. " % ("score", score)
+            #score_str += "<b>%s</b>: %s. " % ("score", score)
             score_str += "<b>%s</b>: %s. " % ("sim time",   sim_time)
             score_str += " %s" % (msg)
             score_str += "<b>falls:</b> %s." % fall_count
@@ -362,6 +362,7 @@ def monitor_task(constellation_name, ssh_router):
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
 
+        net_str = None
         final_score = ""
         if net_str:
             final_score += "%s " % net_str
