@@ -13,6 +13,7 @@ import time
 import smtplib
 from email.mime.text import MIMEText
 import yaml
+import sys
 
 
 def mail(gmail_user, gmail_pwd, to, subject, text):
@@ -104,95 +105,96 @@ def go(configuration, admin_email, max_hours, gmail_user, gmail_passwd):
         excluded_prefix = account['excluded-prefix-iname']
         print 'Checking ', account_name, 'account'
 
-        try:
-            ec2conn = EC2Connection(key, secret)
-            reservations = ec2conn.get_all_instances()
-            instances = [i for r in reservations for i in r.instances]
+        ec2conn = EC2Connection(key, secret)
+        reservations = ec2conn.get_all_instances()
+        instances = [i for r in reservations for i in r.instances]
 
-            for i in instances:
-                # Check if the instance is running and not excluded
-                # in the configuration file
-                if i.state == 'running':
-                    is_excluded = False
-                    for prefix in excluded_prefix:
-                        if i.tags['Name'].startswith(prefix):
-                            is_excluded = True
+        for i in instances:
+            # Check if the instance is running and not excluded
+            # in the configuration file
+            if i.state == 'running':
+                is_excluded = False
+                for prefix in excluded_prefix:
+                    if i.tags['Name'].startswith(prefix):
+                        is_excluded = True
 
-                    if not is_excluded:
-                        # The instances use GMT time. The local time is
-                        # converted to GMT. Both are converted to seconds
-                        # and the difference is calculated
-                        start = time.strptime(i.launch_time[:19],
-                                              '%Y-%m-%dT%H:%M:%S')
-                        ins_start = time.mktime(start)
-                        now = time.mktime(time.gmtime(time.time()))
-                        diff = float(now - ins_start)
+                if not is_excluded:
+                    # The instances use GMT time. The local time is
+                    # converted to GMT. Both are converted to seconds
+                    # and the difference is calculated
+                    start = time.strptime(i.launch_time[:19],
+                                          '%Y-%m-%dT%H:%M:%S')
+                    ins_start = time.mktime(start)
+                    now = time.mktime(time.gmtime(time.time()))
+                    diff = float(now - ins_start)
 
-                        # -1h. for the tm_isdst attribute (is set to -1 ??)
-                        diff -= 3600
+                    # -1h. for the tm_isdst attribute (is set to -1 ??)
+                    diff -= 3600
 
-                        # Calculate hours and minutes (format is h.00 to h.99)
-                        minute = diff / 60
-                        hr = minute / 60
+                    # Calculate hours and minutes (format is h.00 to h.99)
+                    minute = diff / 60
+                    hr = minute / 60
 
-                        # Is the number of running hours above the threshold?
-                        if hr > max_hours:
+                    # Is the number of running hours above the threshold?
+                    if hr > max_hours:
 
-                            # Retrieve the instance's owner (or admin)
-                            username = admin_email
-                            if 'username' in i.tags:
-                                username = i.tags['username']
+                        # Retrieve the instance's owner (or admin)
+                        username = admin_email
+                        if 'username' in i.tags:
+                            username = i.tags['username']
 
-                            # Retrieve the instance's name if possible
-                            instance_name = 'unknown'
-                            if 'Name' in i.tags:
-                                instance_name = i.tags['Name']
+                        # Retrieve the instance's name if possible
+                        instance_name = 'unknown'
+                        if 'Name' in i.tags:
+                            instance_name = i.tags['Name']
 
-                            # Update a dict. with the future notifications.
-                            # The keys are the email accounts and the value
-                            # are the data to be included in the notification.
-                            # Email accounts are unique.
-                            for user in list(set(notifyTo + [username])):
-                                if user in notifs:
-                                    notifs[user].append((account_name, console,
-                                                         instance_name))
-                                else:
-                                    notifs[user] = [(account_name, console,
-                                                    instance_name)]
-        except Exception, ex:
-            print 'Unable to connect to ', account_name
-            print ex
-
+                        # Update a dict. with the future notifications.
+                        # The keys are the email accounts and the value
+                        # are the data to be included in the notification.
+                        # Email accounts are unique.
+                        for user in list(set(notifyTo + [username])):
+                            if user in notifs:
+                                notifs[user].append((account_name, console,
+                                                     instance_name))
+                            else:
+                                notifs[user] = [(account_name, console,
+                                                instance_name)]
+       
     notify(notifs, gmail_user, gmail_passwd, max_hours)
 
 
 if __name__ == "__main__":
 
-    # Specify command line arguments
-    parser = argparse.ArgumentParser(description='Checks running instances in \
-                                                  the cloud to prevent \
-                                                  machine leaks.')
-    parser.add_argument('file', metavar='CONF-FILE',
-                        help='YAML file with the accounts information')
-    parser.add_argument('admin_email', metavar='ADMIN-EMAIL',
-                        help='email to notify unknown instances')
-    parser.add_argument('max_hours', metavar='MAX-HOURS', type=int,
-                        help='max. hours allowed for a running instance')
-    parser.add_argument('gmail_user', metavar='GMAIL-USER',
-                        help='gmail account for sending alarms')
-    parser.add_argument('gmail_passwd', metavar='GMAIL-PASSWD',
-                        help='gmail password for sending alarms')
-    args = parser.parse_args()
-    conf_file = args.file
-    admin_email = args.admin_email
-    max_hours = args.max_hours
-    gmail_user = args.gmail_user
-    gmail_passwd = args.gmail_passwd
+    try:
+        # Specify command line arguments
+        parser = argparse.ArgumentParser(description='Checks running instances in \
+                                                      the cloud to prevent \
+                                                      machine leaks.')
+        parser.add_argument('file', metavar='CONF-FILE',
+                            help='YAML file with the accounts information')
+        parser.add_argument('admin_email', metavar='ADMIN-EMAIL',
+                            help='email to notify unknown instances')
+        parser.add_argument('max_hours', metavar='MAX-HOURS', type=int,
+                            help='max. hours allowed for a running instance')
+        parser.add_argument('gmail_user', metavar='GMAIL-USER',
+                            help='gmail account for sending alarms')
+        parser.add_argument('gmail_passwd', metavar='GMAIL-PASSWD',
+                            help='gmail password for sending alarms')
+        args = parser.parse_args()
+        conf_file = args.file
+        admin_email = args.admin_email
+        max_hours = args.max_hours
+        gmail_user = args.gmail_user
+        gmail_passwd = args.gmail_passwd
 
-    # Load YAML conf file with the accounts information to check
-    f = open(conf_file)
-    configuration = yaml.load_all(f)
+        # Load YAML conf file with the accounts information to check
+        f = open(conf_file)
+        configuration = yaml.load_all(f)
 
-    # Check the accounts!
-    go(configuration, admin_email, max_hours, gmail_user, gmail_passwd)
-    f.close()
+        # Check the accounts!
+        go(configuration, admin_email, max_hours, gmail_user, gmail_passwd)
+        f.close()
+        sys.exit(0)
+    except Exception, ex:
+        print 'Exception captured: ', ex
+        sys.exit(1)
