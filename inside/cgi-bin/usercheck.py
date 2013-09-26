@@ -66,4 +66,5 @@ if auth_type == 'OpenID':
     sdb.db[openid_session] = email
     sdb.save()
 
-print("Location: /cloudsim/inside/cgi-bin/console\n")
+#print("Location: /cloudsim/inside/cgi-bin/console\n")
+print ('<meta http-equiv="refresh" content="0; url=/cloudsim/inside/cgi-bin/console">')
