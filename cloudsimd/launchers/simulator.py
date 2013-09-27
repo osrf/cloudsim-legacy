@@ -546,7 +546,7 @@ def launch(constellation_name, tags):
     if use_latest_version:
         simulator_image_key = 'ubuntu_1204_x64_cluster'
     else:
-        simulator_image_key = 'ubuntu_1204_x64_simulator_standalone_stable'
+        simulator_image_key = 'ubuntu_1204_x64_simulator'
 
     machines = {}
     machines['sim'] = {'hardware': 'cg1.4xlarge',

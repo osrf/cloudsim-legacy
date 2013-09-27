@@ -27,7 +27,7 @@ function create_hostname_widget(machine_div,
 		{
 			var ip =  msg[key_ip];
 			var txt = "<td align='right'><FONT SIZE=2>IP:"
-			if(ip != "undefined")
+			if(ip)
 			{
 				txt += " <a href='http://" +  ip + "' target='_blank'>";
 				txt +=    "<font color='white'>" 

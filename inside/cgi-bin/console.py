@@ -35,8 +35,6 @@ page =  """<!DOCTYPE html>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Cloudsim console</title>
 
-
-
 <link href="/js/layout.css" rel="stylesheet" type="text/css">
 <link rel="stylesheet" href="/js/jquery-ui.css" />
 
