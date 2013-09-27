@@ -22,8 +22,8 @@ function get_machine_names(div_name, constellation)
 function create_machine(div, machine_name )
 {
 	
-	var left = "left";
-	var right = "right";
+	var left = "";
+	var right = "";
 
     console.log("create_machine_widget " + machine_name + " in div " + div.id);
     var widget = document.createElement("div");

@@ -22,7 +22,6 @@ if auth_type == 'OpenID':
     in_cookies = Cookie.Cookie()
     in_cookies.load(os.environ[common.HTTP_COOKIE])
     openid_session = in_cookies[common.OPENID_SESSION_COOKIE_NAME].value
-    
     sdb = common.SessionDatabase()
     sdb.load()
 
@@ -40,7 +39,7 @@ if email:
     email = email.lower()
 
 if email not in users:
-    
+
     # print ("openid_session %s" % openid_session)
     if email:
         common.print_http_header()
@@ -58,13 +57,12 @@ if email not in users:
         """)
         sys.exit(0)
 
-
-
 # Save session ID and email to our own database
-
 if auth_type == 'OpenID':
     sdb.db[openid_session] = email
     sdb.save()
 
-#print("Location: /cloudsim/inside/cgi-bin/console\n")
+# redirect to the console now
+common.print_http_header()
 print ('<meta http-equiv="refresh" content="0; url=/cloudsim/inside/cgi-bin/console">')
+

@@ -61,7 +61,6 @@ function _split_tasks(task_div_list,
         {
             divs_to_update.push(task_div);
             tasks_to_update.push(task);
-           
         }
     }
 
@@ -75,10 +74,9 @@ function _split_tasks(task_div_list,
             new_tasks.push(task);
         }
     }
-    
 }
 
-function _add_form_textinput(form_div, title)
+function _add_form_textinput(form_div, title, visible)
 {
     var input_field  = document.createElement("input");
     input_field.size = "35";
@@ -87,23 +85,34 @@ function _add_form_textinput(form_div, title)
     var title_line = document.createElement("i")
     
     title_line.appendChild(title_text);
-    form_div.appendChild(document.createElement("br"));
+    if(visible)
+    	form_div.appendChild(document.createElement("br"));
     form_div.appendChild(title_line);
-    form_div.appendChild(document.createElement("br"));
+    if(visible)
+    	form_div.appendChild(document.createElement("br"));
     form_div.appendChild(input_field);
+
+    if(visible == false)
+    {
+    	input_field.style.display = "none";
+    	title_line.style.display  = "none";
+    }    
     return input_field;
 }
 
-function _begin_form_fieldset(form_div, title)
+function _begin_form_fieldset(form_div, title, visible)
 {
-    form_div.appendChild(document.createElement("br"));
-    form_div.appendChild(document.createElement("br"));
-    section = document.createElement("b");
-    section.appendChild(document.createTextNode(title));
-    form_div.appendChild(section);	
+	if(visible)
+	{
+		form_div.appendChild(document.createElement("br"));
+		form_div.appendChild(document.createElement("br"));
+		section = document.createElement("b");
+		section.appendChild(document.createTextNode(title));
+		form_div.appendChild(section);	
+	}
 }
 
-function _end_form_fieldset(form_div)
+function _end_form_fieldset(form_div, visiblev)
 {
 
 }
@@ -115,27 +124,31 @@ function _create_task_form(form_id)
     form_div.id = form_id;
 	
     form_div.title = "Task properties";
-    var task_title_input = _add_form_textinput(form_div, "Task title");
+    var visible = true;
+    var task_title_input = _add_form_textinput(form_div, "Task title", visible);
     
-    _begin_form_fieldset(form_div, "Simulation parameters");
-    var ros_package =  _add_form_textinput(form_div, "ROS package" );
-    var launch_file =  _add_form_textinput(form_div, "Launch file" );
-    var timeout =  _add_form_textinput(form_div, "Maximum time (sec)" );
-    var launch_arguments =  _add_form_textinput(form_div, "Arguments" );
-    _end_form_fieldset(form_div);
+    _begin_form_fieldset(form_div, "Simulation parameters", visible);
+    var ros_package =  _add_form_textinput(form_div, "ROS package", visible);
+    var launch_file =  _add_form_textinput(form_div, "Launch file", visible);
+    var timeout =  _add_form_textinput(form_div, "Maximum time (sec)", visible);
     
-    _begin_form_fieldset(form_div, "Network parameters");
-    var latency =  _add_form_textinput(form_div, "Minimum latency (ms, round trip)");
-    var uplink_data_cap=  _add_form_textinput(form_div, "Uplink data cap (bits, 0 for unlimited)");
-    var downlink_data_cap = _add_form_textinput(form_div, "Downlink data cap (bits, 0 for unlimited)");
+    visible = false;
+    var launch_arguments =  _add_form_textinput(form_div, "Arguments", visible );
     _end_form_fieldset(form_div);
+    _begin_form_fieldset(form_div, "Network parameters", visible);
+    var latency =  _add_form_textinput(form_div, "Minimum latency (ms, round trip)", visible);
+    var uplink_data_cap=  _add_form_textinput(form_div, "Uplink data cap (bits, 0 for unlimited)", visible);
+    var downlink_data_cap = _add_form_textinput(form_div, "Downlink data cap (bits, 0 for unlimited)", visible);
+    _end_form_fieldset(form_div, visible);
     
-    _begin_form_fieldset(form_div, "VRC parameters");
-    var local_start = _add_form_textinput(form_div, "Valid from (UTC)");
-    var local_stop = _add_form_textinput(form_div, "Valid until (UTC)");
-    var vrc_id = _add_form_textinput(form_div, "Run (1, 2, 3, 4 or 5)");
-    var vrc_num = _add_form_textinput(form_div, "Task (1, 2 or 3)");
-    _end_form_fieldset(form_div);
+    _begin_form_fieldset(form_div, "Time frame", visible);
+    var local_start = _add_form_textinput(form_div, "Valid from (UTC)", visible);
+    var local_stop = _add_form_textinput(form_div, "Valid until (UTC)", visible);
+
+    visible = false;
+    var vrc_id = _add_form_textinput(form_div, "Run (1, 2, 3, 4 or 5)", visible);
+    var vrc_num = _add_form_textinput(form_div, "Task (1, 2 or 3)", visible);
+    _end_form_fieldset(form_div, visible);
     
     // default values
     ros_package.value = "atlas_utils";
@@ -160,7 +173,7 @@ function create_task_list_widget(const_div, constellation_name)
 
     var dlg_options = {
             autoOpen: false,
-            height: 580,
+            height: 420,
             width: 450,
             modal: true,
             buttons: {
@@ -423,7 +436,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     
      $( "#" + form_id ).dialog({
       autoOpen: false,
-      height: 600,
+      height: 420,
       width: 500,
       modal: true,
       buttons: dlg_buttons,

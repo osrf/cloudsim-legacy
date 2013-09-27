@@ -368,85 +368,6 @@ def _create_deploy_zip_files(constellation_name,
     return deploy_fname_zip
 
 
-'''def create_router_zip(router_ip, constellation_name, key_prefix,
-                      constellation_directory):
-    """ create router zip file with keys
-     This file is kept on the server and provides the user with:
-      - key file for ssh access to the router
-      - openvpn key
-      - scripts to connect with ssh, openvpn, ROS setup
-    """
-
-    router_machine_dir = os.path.join(constellation_directory, "router")
-    os.makedirs(router_machine_dir)
-
-    # copy router-key into router directory
-    router_key_short_filename = '%s.pem' % key_prefix  # 'key-router'
-    router_key_path = os.path.join(router_machine_dir,
-                                   router_key_short_filename)
-    copyfile(os.path.join(constellation_directory, router_key_short_filename),
-             router_key_path)
-    os.chmod(router_key_path, 0600)
-
-    vpn_key_short_filename = 'openvpn.key'
-    vpnkey_fname = os.path.join(router_machine_dir, vpn_key_short_filename)
-    copyfile(os.path.join(constellation_directory, vpn_key_short_filename),
-             vpnkey_fname)
-    os.chmod(vpnkey_fname, 0600)
-
-    # create open vpn config file
-    file_content = create_openvpn_client_cfg_file(router_ip,
-                    client_ip=OPENVPN_CLIENT_IP, server_ip=OPENVPN_SERVER_IP)
-    fname_vpn_cfg = os.path.join(router_machine_dir, "openvpn.config")
-    with open(fname_vpn_cfg, 'w') as f:
-        f.write(file_content)
-
-    fname_start_vpn = os.path.join(router_machine_dir, "start_vpn.bash")
-    file_content = create_vpc_vpn_connect_file(OPENVPN_CLIENT_IP)
-    with open(fname_start_vpn, 'w') as f:
-        f.write(file_content)
-    os.chmod(fname_start_vpn, 0755)
-
-    fname_ros = os.path.join(router_machine_dir, "ros.bash")
-    file_content = create_ros_connect_file(machine_ip=OPENVPN_CLIENT_IP,
-                                           master_ip=SIM_IP)
-
-    with open(fname_ros, 'w') as f:
-        f.write(file_content)
-
-    fname_ssh_sh = os.path.join(router_machine_dir, 'ssh-router.bash')
-    file_content = create_ssh_connect_file(router_key_short_filename,
-                                           router_ip)
-    with open(fname_ssh_sh, 'w') as f:
-        f.write(file_content)
-    os.chmod(fname_ssh_sh, 0755)
-
-    # wait (if necessary) for openvpn key to have been generated
-    #creating zip for admin and officer users
-    files_to_zip = [router_key_path,
-                    fname_start_vpn,
-                    fname_ssh_sh,
-                    fname_vpn_cfg,
-                    vpnkey_fname,
-                    fname_ros, ]
-    router_fname_zip = os.path.join(router_machine_dir,
-                                    "router_%s.zip" % constellation_name)
-    create_zip_file(router_fname_zip,
-                            "router_%s" % constellation_name, files_to_zip)
-
-    # create another zip file, this time for users only
-    # (without the ssh key or the ssh-router.bash)
-    files_to_zip = [fname_start_vpn,
-                    fname_vpn_cfg,
-                    vpnkey_fname,
-                    fname_ros, ]
-    router_user_fname_zip = os.path.join(router_machine_dir,
-                                    "user_router_%s.zip" % constellation_name)
-    create_zip_file(router_user_fname_zip,
-                                "router_%s" % constellation_name, files_to_zip)
-    return router_fname_zip, router_user_fname_zip'''
-
-
 def _create_zip_files(constellation_name,
                      constellation_directory,
                      machines):
@@ -721,6 +642,7 @@ def launch(constellation_name, tags):
                                     OPENVPN_SERVER_IP)
     else:
         script = ""
+
     if cloud_provider == "aws":
         acquire_aws_single_server(
                               constellation_name,
