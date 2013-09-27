@@ -657,8 +657,8 @@ def launch(constellation_name, tags):
         router_image_key = 'ubuntu_1204_x64'
         simulator_image_key = 'ubuntu_1204_x64_cluster'
     else:
-        router_image_key = 'ubuntu_1204_x64_router_stable'
-        simulator_image_key = 'ubuntu_1204_x64_simulator_stable'
+        router_image_key = 'ubuntu_1204_x64_drc_router'
+        simulator_image_key = 'ubuntu_1204_x64_drc_simulator'
 
     machines = {}
     machines['router'] = {'hardware': 'm1.large',    # 't1.micro',

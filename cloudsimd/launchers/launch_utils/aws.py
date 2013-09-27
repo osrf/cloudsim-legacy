@@ -784,17 +784,17 @@ def _get_amazon_amis(availability_zone):
         amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
         amis['ubuntu_1204_x64'] = 'ami-f2191786'
         amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-44846333'
-        amis['ubuntu_1204_x64_router_stable'] = 'ami-b2e105c5'
-        amis['ubuntu_1204_x64_simulator_stable'] = 'ami-b6e105c1'
-        amis['ubuntu_1204_x64_simulator_standalone_stable'] = 'ami-b6ff18c1'
+        amis['ubuntu_1204_x64_drc_router'] = 'ami-bcd235cb'
+        amis['ubuntu_1204_x64_drc_simulator'] = 'ami-bad235cd'
+        amis['ubuntu_1204_x64_simulator'] = 'ami-d4d532a3'
 
     elif availability_zone.startswith('us-east'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
         amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
-        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-f92e7b90'
-        amis['ubuntu_1204_x64_router_stable'] = 'ami-37256f5e'
-        amis['ubuntu_1204_x64_simulator_stable'] = 'ami-6339730a'
-        amis['ubuntu_1204_x64_simulator_standalone_stable'] = 'ami-3bd48152'
+        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-c51e4aac'
+        amis['ubuntu_1204_x64_drc_router'] = 'ami-8d0155e4'
+        amis['ubuntu_1204_x64_drc_simulator'] = 'ami-8f0155e6'
+        amis['ubuntu_1204_x64_simulator'] = 'ami-1f1b4f76'
 
     elif availability_zone.startswith('nova'):
         # TODO: we might want to move image ids to a configuration file

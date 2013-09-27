@@ -36,7 +36,7 @@ page =  """<!DOCTYPE html>
     <title>Cloudsim console</title>
 
 
-
+<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
 <link href="/js/layout.css" rel="stylesheet" type="text/css">
 <link rel="stylesheet" href="/js/jquery-ui.css" />
 
