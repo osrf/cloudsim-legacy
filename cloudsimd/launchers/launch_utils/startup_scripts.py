@@ -13,7 +13,7 @@ def get_open_vpn_single(client_ip,
 cat <<DELIM >  /home/ubuntu/openvpn.config  
 dev tun
 ifconfig """ + server_ip + " " + client_ip + """
-secret static.key  
+secret static.key
 
 DELIM
 
@@ -257,7 +257,7 @@ echo "mercurial installed" >> /home/ubuntu/setup.log
 #apt-get install -y cloud-utils
 #echo "cloud-utils installed" >> /home/ubuntu/setup.log
 
-sudo apt-get install python-novaclient
+sudo apt-get install -y python-novaclient
 echo "python-novaclient installed" >> /home/ubuntu/setup.log
 
 apt-get install -y ntp
@@ -1349,11 +1349,11 @@ sudo stop vrc_netwatcher
 kill -9 \$(ps aux | grep vrc_netwatcher | awk '{print \$2}') || true
 sudo stop vrc_bytecounter
 """ + cloudsim_dir + """/stop_gzweb.bash
-sudo start vrc_netwatcher
-
 """ + start_sim_cmd + """
 
-# done 
+sudo start vrc_netwatcher
+
+# done
 DELIM
 chmod +x """ + cloudsim_dir + """/start_sim.bash
 # --------------------------------------------
@@ -1378,6 +1378,11 @@ def get_simulator_deploy_script(cloudsim_dir="/home/ubuntu/cloudsim"):
            ) + """
 
 """ + _get_score_deploy_generator(cloudsim_dir) + """
+""" + _get_network_usage_deploy_generator(cloudsim_dir) + """
+
+# append to /etc/environment
+# this is used by services (vrc_netwatcher) to get ROS access
+sudo sh -c 'echo source /usr/share/drcsim/setup.sh >> /etc/environment'
 
 # configure openvpn
 sudo cp /home/ubuntu/cloudsim/deploy/openvpn.key /etc/openvpn/static.key
@@ -1546,16 +1551,7 @@ chmod +x """ + cloudsim_dir + """/get_sim_logs.bash
 
 # ----------------------------------------------------
 
-cat <<DELIM > """ + cloudsim_dir + """/get_network_usage.bash
-#!/bin/bash
-
-#
-# wall or sim clock, wall or sim clock, uplink downlink
-# space is the separator
-tail -1 /tmp/vrc_netwatcher_usage.log
-
-DELIM
-chmod +x """ + cloudsim_dir + """/get_network_usage.bash
+""" + _get_network_usage_deploy_generator(cloudsim_dir) + """
 
 """ + _get_score_deploy_generator(cloudsim_dir) + """
 
@@ -1571,6 +1567,22 @@ sudo ifconfig
     return deploy_script
 
 
+def _get_network_usage_deploy_generator(cloudsim_dir):
+    s = """
+cat <<DELIM > """ + cloudsim_dir + """/get_network_usage.bash
+#!/bin/bash
+
+#
+# wall or sim clock, wall or sim clock, uplink downlink
+# space is the separator
+tail -1 /tmp/vrc_netwatcher_usage.log
+
+DELIM
+chmod +x """ + cloudsim_dir + """/get_network_usage.bash
+    """
+    return s
+    
+    
 def _get_score_deploy_generator(cloudsim_dir):
     s = """# ----------------------------------------------------
 

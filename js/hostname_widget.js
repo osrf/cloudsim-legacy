@@ -25,7 +25,23 @@ function create_hostname_widget(machine_div,
         var ip_str = title[1].innerHTML;
 		if(ip_str.indexOf(ip) == -1)
 		{
-			title[1].innerHTML = "<td align='right'><FONT SIZE=2>IP: " + msg[key_ip] + "<FONT></td>";
+			var ip =  msg[key_ip];
+			var txt = "<td align='right'><FONT SIZE=2>IP:"
+			if(ip != "undefined")
+			{
+				txt += " <a href='http://" +  ip + "' target='_blank'>";
+				txt +=    "<font color='white'>" 
+				txt +=       msg[key_ip];
+				txt +=    "</font>";
+				txt += "</a>";
+			}
+			else
+			{
+				txt += "N/A";
+			}
+			txt += "<FONT></td>";
+			title[1].innerHTML = txt;
+			
 		}
 		
 		if (msg[key_zip_file] == 'ready')

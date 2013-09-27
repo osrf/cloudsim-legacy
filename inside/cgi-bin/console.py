@@ -74,10 +74,11 @@ page =  """<!DOCTYPE html>
     {
         var user_info = get_user_info();
         console.log("User role: " +  user_info.role);
-        if(user_info.role != "user")
+        
+        if(user_info.role == "admin")
         {
-            $('#officer_only').show();
-            $('#officer_only2').show();
+            $('#admin_only1').show();
+            $('#admin_only2').show();
             create_constellation_launcher_widget("launcher_div");
         }
         create_constellations_widget("constellations_div");
@@ -133,7 +134,7 @@ page =  """<!DOCTYPE html>
         </td>
         <td align='right'>
             <span id="head_span">Welcome, """ + role + " " + email + """</span><br>
-            <div id="officer_only" style="display:none; padding:  0px 0px 0px 0px;" >
+            <div id="admin_only1" style="display:none; padding:  0px 0px 0px 0px;" >
                 <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
             </div>
             <div style="padding:0px 0px 0px;" align="right">
@@ -149,7 +150,7 @@ page =  """<!DOCTYPE html>
 <div><br><hr><br></div>
 
     <!-- Constellation provisioning widget -->
-    <div id='officer_only2' style="display: none;">
+    <div id='admin_only2' style="display: none;">
         <div id="launcher_div" ></div>
     </div>
 
