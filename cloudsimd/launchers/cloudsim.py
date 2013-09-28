@@ -226,7 +226,10 @@ def upload_cloudsim(constellation_name,
     constellation_state.set_value('simulation_launch_msg', "deploying web app")
 
 
-def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
+def launch(constellation_name,
+           tags,
+           website_distribution=CLOUDSIM_ZIP_PATH,
+           bootstrap=False):
 
     constellation = ConstellationState(constellation_name)
     cloudsim_stable = True
@@ -508,7 +511,11 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     # Upload the installed apache2.conf from the papa cloudsim so that the
     # junior cloudsim is configured the same way (e.g., uses basic auth instead
     # of openid).
-    ssh_cli.upload_file('/etc/apache2/apache2.conf',
+    # if the file is not there (new install), we keep the default
+    if not bootstrap:
+        log("Replacing default apache2.conf")
+        if os.path.exists('/etc/apache2/apache2.conf'):
+            ssh_cli.upload_file('/etc/apache2/apache2.conf',
                         'cloudsim/distfiles/apache2.conf')
 
     ssh_cli.cmd('cp /home/ubuntu/cloudsim_users cloudsim/distfiles/users')
@@ -587,12 +594,14 @@ def cloudsim_bootstrap(username, credentials_ec2,
     constellation_name = get_unique_short_name('c')
 
     gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-    tags = {'GMT': gmt,
-            'username': username,
-            }
 
     constellation_directory = tempfile.mkdtemp("cloudsim")
     website_distribution = zip_cloudsim()
+
+    tags = {'GMT': gmt,
+            'username': username,
+            'cloud_provider': "aws",
+            'constellation_directory': constellation_directory}
 
     constellation = ConstellationState(constellation_name)
     constellation.set_value('username', username)
@@ -603,12 +612,14 @@ def cloudsim_bootstrap(username, credentials_ec2,
     constellation.set_value('constellation_state', 'launching')
     constellation.set_value('error', '')
 
-    return launch(username, 'CloudSim', constellation_name, tags,
-                  constellation_directory, website_distribution)
+    print("BOOTSTRAP cloudsim launch")
+    return launch(constellation_name,
+                  tags,
+                  website_distribution,
+                  bootstrap=True)
 
 
 def zip_cloudsim():
-
     tmp_dir = tempfile.mkdtemp("cloudsim")
     tmp_zip = os.path.join(tmp_dir, "cloudsim.zip")
     p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
