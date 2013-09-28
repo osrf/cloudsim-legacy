@@ -1,6 +1,8 @@
 import requests
 import urllib2
 
+import time
+
 # http://docs.python-requests.org/en/latest/
 
 class CloudSimRestApi(object):
@@ -34,9 +36,18 @@ class CloudSimRestApi(object):
         j = r.json()
         return j
 
+    def _api_delete(self, path):
+        theurl = "/".join([self.url, path])
+        r = requests.delete(theurl, auth=(self.user, self.passwd))
+        if r.status_code != 200:
+            raise Exception("GET request error (code %s)" % r.status_code)
+        j = r.json()
+        return j
+
     def get_constellations(self):
-        r = self._api_get('cloudsim/inside/cgi-bin/constellations')
-        return r
+        cs = self._api_get('cloudsim/inside/cgi-bin/constellations')
+        valids = [x for x in cs if 'configuration' in x]
+        return valids
 
     def list_constellations(self):
         constellations = self.get_constellations()
@@ -59,9 +70,50 @@ class CloudSimRestApi(object):
         s = self._api_post(url)
         return s
 
-    def update_constellation(constellation_name):
+    def update_constellation(self, constellation_name):
         url = '/cloudsim/inside/cgi-bin/constellations';
         url += '/' + constellation_name;
         s = self._api_put(url)
         return s
+    
+    def terminate_constellation(self, constellation_name):
+        url = '/cloudsim/inside/cgi-bin/constellations';
+        url += '/' + constellation_name;
+        s = self._api_delete(url)
+        return s 
+
+
+def baby_cloudsims(papa_cloudsim, user):
+    
+    constellations  = papa_cloudsim.get_constellations()
+    cloudsims = [c for c in constellations \
+                  if c['configuration'].startswith('CloudSim')]
+    babies = []
+    for cloudsim in cloudsims:
+        url = cloudsim['simulation_ip']
+        passwd = 'admin' + cloudsim['constellation_name']
+        # print("url: http://%s user: %s, psswd: %s" % (url, user, passwd))
+        cloudsim = CloudSimRestApi(url, user, passwd)
+        babies.append(cloudsim)
+    return babies
+     
+     
+def baby_launch(cloudsims, provider, configuration, delay=0.1):
+    print("launching %s on %s cloudsims with %s sec delay" % (
+                                   configuration, len(cloudsims), delay))
+    for cloudsim in cloudsims:
+        print("- launching from %s" % cloudsim)
+        s = cloudsim.launch_constellation(provider, configuration)
+        time.sleep(delay)
+
+
+
+def multi_launch(papa, provider, configuration, count, delay=10):
+    print("launching %s %s on %s with %s sec delay" % (
+                                   count, configuration, papa.url, delay))
+    for i in range(count):
+        print (" launching %s" % i)
+        papa.launch_constellation(provider, configuration)
+        time.sleep(delay)
+    
     

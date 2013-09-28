@@ -55,7 +55,7 @@ cred.save()
 auto_launch_constellation = None
 
 config = {}
-config['cloudsim_version'] = '1.5.0'
+config['cloudsim_version'] = '1.7.0'
 config['boto_path'] = tmp_fname.name
 config['softlayer_path'] = args.softlayer_path
 config['machines_directory'] = args.root_dir
