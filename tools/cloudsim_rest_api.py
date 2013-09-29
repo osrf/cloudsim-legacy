@@ -107,7 +107,6 @@ def baby_launch(cloudsims, provider, configuration, delay=0.1):
         time.sleep(delay)
 
 
-
 def multi_launch(papa, provider, configuration, count, delay=10):
     print("launching %s %s on %s with %s sec delay" % (
                                    count, configuration, papa.url, delay))
@@ -116,4 +115,30 @@ def multi_launch(papa, provider, configuration, count, delay=10):
         papa.launch_constellation(provider, configuration)
         time.sleep(delay)
     
-    
+
+def launch_baby_cloudsims(url, papa_name, count=25, user='admin', delay=10):
+    papa = CloudSimRestApi(url, user, 'admin%s' % papa_name)
+    multi_launch(papa, 'aws', 'CloudSim-stable', count=count, delay=delay)    
+
+
+def launch_simulators(papa_url, papa_name, user='admin', delay=0.1):
+    papa = CloudSimRestApi(url, user, 'admin%s' % papa_name)
+    cloudsims = baby_cloudsims(papa, user=user)
+    baby_launch(cloudsims, 'aws', 'Simulator-stable', delay)
+
+
+def update_baby_cloudsims(papa_url, papa_name, user='admin', delay=0.1):
+    papa = CloudSimRestApi(papa_url, user, 'admin%s' % papa_name)
+    constellations  = papa.get_constellations()
+    cloudsims = [c for c in constellations \
+                  if c['configuration'].startswith('CloudSim')]
+    for cloudsim in cloudsims:
+	cloudsim_name = cloudsim['constellation_name']
+        print ("xxxx %s" % cloudsim_name)
+        papa.update_constellation(cloudsim_name)
+
+
+def update_simulators():
+    pass
+
+
