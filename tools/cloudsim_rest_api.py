@@ -134,9 +134,19 @@ def update_baby_cloudsims(papa_url, papa_name, user='admin', delay=0.1):
                   if c['configuration'].startswith('CloudSim')]
     for cloudsim in cloudsims:
 	cloudsim_name = cloudsim['constellation_name']
-        print ("xxxx %s" % cloudsim_name)
+        print ("updating %s" % cloudsim_name)
         papa.update_constellation(cloudsim_name)
 
+
+def terminate_baby_cloudsims(papa_url, papa_name, user='admin', delay=0.1):
+    papa = CloudSimRestApi(papa_url, user, 'admin%s' % papa_name)
+    constellations  = papa.get_constellations()
+    cloudsims = [c for c in constellations \
+                  if c['configuration'].startswith('CloudSim')]
+    for cloudsim in cloudsims:
+	cloudsim_name = cloudsim['constellation_name']
+        print ("terminating %s" % cloudsim_name)
+        papa.terminate_constellation(cloudsim_name)
 
 def update_simulators():
     pass
