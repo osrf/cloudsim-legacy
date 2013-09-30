@@ -138,15 +138,24 @@ def update_baby_cloudsims(papa_url, papa_name, user='admin', delay=0.1):
         papa.update_constellation(cloudsim_name)
 
 
-def terminate_baby_cloudsims(papa_url, papa_name, user='admin', delay=0.1):
+def terminate_children(papa_url, papa_name, user='admin', delay=0.1):
+    papa = CloudSimRestApi(papa_url, user, 'admin%s' % papa_name)
+    constellations  = papa.get_constellations()
+    for constellation in constellations:
+	name = constellation['constellation_name']
+        print ("terminating %s" % name)
+        papa.terminate_constellation(name)
+
+
+def terminate_simulators(papa_url, papa_name, user='admin', delay=0.1):
     papa = CloudSimRestApi(papa_url, user, 'admin%s' % papa_name)
     constellations  = papa.get_constellations()
     cloudsims = [c for c in constellations \
                   if c['configuration'].startswith('CloudSim')]
     for cloudsim in cloudsims:
-	cloudsim_name = cloudsim['constellation_name']
-        print ("terminating %s" % cloudsim_name)
-        papa.terminate_constellation(cloudsim_name)
+	url = cloudsim.url
+	name = cloudsim.passwd.replace('admin','')
+	terminate_children(url, name, user=user, delay=delay)
 
 def update_simulators():
     pass
