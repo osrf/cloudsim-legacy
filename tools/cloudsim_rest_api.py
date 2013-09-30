@@ -122,7 +122,7 @@ def launch_baby_cloudsims(url, papa_name, count=25, user='admin', delay=10):
 
 
 def launch_simulators(papa_url, papa_name, user='admin', delay=0.1):
-    papa = CloudSimRestApi(url, user, 'admin%s' % papa_name)
+    papa = CloudSimRestApi(papa_url, user, 'admin%s' % papa_name)
     cloudsims = baby_cloudsims(papa, user=user)
     baby_launch(cloudsims, 'aws', 'Simulator-stable', delay)
 
