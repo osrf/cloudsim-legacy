@@ -153,8 +153,8 @@ def terminate_simulators(papa_url, papa_name, user='admin', delay=0.1):
     cloudsims = [c for c in constellations \
                   if c['configuration'].startswith('CloudSim')]
     for cloudsim in cloudsims:
-	url = cloudsim.url
-	name = cloudsim.passwd.replace('admin','')
+	url = cloudsim['simulation_ip']
+	name = cloudsim['constellation_name'].replace('admin','')
 	terminate_children(url, name, user=user, delay=delay)
 
 def update_simulators():
