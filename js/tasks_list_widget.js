@@ -266,7 +266,7 @@ function create_task_list_widget(const_div, constellation_name)
     
     var reset_tasks_button = document.createElement('input');
     reset_tasks_button.setAttribute('type','button');
-    reset_tasks_button.setAttribute('value','reset tasks');
+    reset_tasks_button.setAttribute('value','Reset tasks');
     reset_tasks_button.onclick = function()
     {
     	var txt  = "This clear the current task and will make all finished tasks ready to run again.";
