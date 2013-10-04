@@ -9,19 +9,63 @@ import sys
 import os
 import tempfile
 import argparse
+import time
+
 
 
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, basepath)
 
-# Modify PYTHONPATH variable with relative directories to basepath
+import cloudsimd.launchers.cloudsim as cloudsim
+import cloudsimd
+from cloudsimd.launchers.launch_utils.launch_db import set_cloudsim_config
+from cloudsimd.launchers.launch_utils.launch_db import get_unique_short_name
+from cloudsimd.launchers.launch_utils.launch_db import ConstellationState
+
+#  Modify PYTHONPATH variable with relative directories to basepath
 new_path = os.path.join(basepath, "inside", "cgi-bin")
 sys.path.insert(0, new_path)
-new_path = os.path.join(basepath, "cloudsimd", "launchers")
-sys.path.insert(0, new_path)
-
 import common
-import cloudsim
+
+# 
+# 
+# new_path = os.path.join(basepath, "cloudsimd", "launchers")
+# sys.path.insert(0, new_path)
+
+
+
+import cloudsimd.launchers.cloudsim as cloudsim
+
+
+def cloudsim_bootstrap(username):
+
+    constellation_name = get_unique_short_name('c')
+    gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+    constellation_directory = tempfile.mkdtemp("cloudsim")
+
+    tags = {'GMT': gmt,
+            'username': username,
+            'cloud_provider': 'aws',
+            'constellation_directory': constellation_directory
+            }
+
+    website_distribution = cloudsim.zip_cloudsim()
+
+    constellation = ConstellationState(constellation_name)
+    constellation.set_value('configuration', 'CloudSim-stable')
+
+    constellation.set_value('username', username)
+    constellation.set_value('constellation_name', constellation_name)
+    constellation.set_value('gmt', gmt)
+    constellation.set_value('constellation_directory', constellation_directory)
+    constellation.set_value('constellation_state', 'launching')
+    constellation.set_value('error', '')
+
+    r = cloudsim.launch(constellation_name, tags, website_distribution)
+    return r
+
+
 
 # Specify command line arguments
 parser = argparse.ArgumentParser(description='Launch a cloudsim instance on the cloud.')
@@ -47,16 +91,17 @@ secret = args.secret_key
 ec2_zone = args.ec2_zone
 
 # Create temporal BOTO configuration file
-tmp_fname = tempfile.NamedTemporaryFile()
-tmp_fname.close()
-cred = common.CloudCredentials(key, secret, fname=tmp_fname.name, ec2_region_name=ec2_zone)
+tmp_file = tempfile.NamedTemporaryFile()
+tmp_file.close()
+cred = common.CloudCredentials(key, secret, fname=tmp_file.name,
+                               ec2_region_name=ec2_zone)
 cred.save()
 
 auto_launch_constellation = None
 
 config = {}
 config['cloudsim_version'] = '1.7.0'
-config['boto_path'] = tmp_fname.name
+config['boto_path'] = tmp_file.name
 config['softlayer_path'] = args.softlayer_path
 config['machines_directory'] = args.root_dir
 config['cloudsim_portal_key_path'] = args.cloudsim_portal_key_path
@@ -67,10 +112,11 @@ config['cs_role'] = "admin"
 config['cs_admin_users'] = []
 config['ec2_zone'] = args.ec2_zone
 
+set_cloudsim_config(config)
 
 # Launch a cloudsim instance
-machine = cloudsim.cloudsim_bootstrap(username, tmp_fname.name, auto_launch_constellation, config)
+machine = cloudsim_bootstrap(username)
 
 print("removing temporary files...")
-os.remove(tmp_fname.name)
+os.remove(tmp_file.name)
 print("temporary files removed")
