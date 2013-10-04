@@ -14,7 +14,7 @@ import smtplib
 from email.mime.text import MIMEText
 import yaml
 import sys
-
+import re
 
 def mail(gmail_user, gmail_pwd, to, subject, text):
     '''
@@ -159,8 +159,9 @@ def go(configuration, admin_email, max_hours, gmail_user, gmail_passwd):
                             else:
                                 notifs[user] = [(account_name, console,
                                                 instance_name)]
-       
-    notify(notifs, gmail_user, gmail_passwd, max_hours)
+    # Check if the email address is valid
+    if re.match(r"[^@]+@[^@]+\.[^@]+", account_name):
+        notify(notifs, gmail_user, gmail_passwd, max_hours)
 
 
 if __name__ == "__main__":
