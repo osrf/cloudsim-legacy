@@ -3,6 +3,7 @@ import urllib2
 
 import time
 
+# this script uses requests
 # http://docs.python-requests.org/en/latest/
 
 class CloudSimRestApi(object):
@@ -62,7 +63,7 @@ class CloudSimRestApi(object):
 #               for x in constellations]
 #         return r
 
-    def select_constellations(self, config_start=None):
+    def select_constellations(self, config=None):
         """
         Returns the names of constellations. If config is not None, only
         the constellations of this configuration are returned.
@@ -74,8 +75,9 @@ class CloudSimRestApi(object):
         for constellation in self.get_constellations():
             name = constellation['constellation_name']
             const_config = constellation['configuration']
-            if config and config.startswith(config_start):
-                constellations.append(constellation)
+            if config:
+                if const_config.startswith(config):
+                    constellations.append(constellation)
         return constellations
 
     def get_constellation_data(self, constellation_name):
@@ -124,7 +126,7 @@ def update_children(cloudsim, config=None, delay=10):
     not None, the update only applies to the selected configuration (i.e 
     "Simulator" or "Cloudsim". No regex, please
     """
-    constellations = cloudsim.select_constellations(cloudsim, config)
+    constellations = cloudsim.select_constellations(config)
     for constellation in constellations:
         name = constellation['constellation_name']
         print ("updating %s" % name)
@@ -137,7 +139,7 @@ def terminate_children(cloudsim, config=None, delay=1):
     Terminates all constellations of a CloudSimRestApi instance, unless a 
     specific configuration is requested (see update_children)
     """
-    constellations_data = cloudsim.select_constellations(cloudsim, config)
+    constellations_data = cloudsim.select_constellations(config)
     for constellation in constellations_data:
         name = constellation['constellation_name']
         print ("terminating %s" % name)
@@ -159,7 +161,7 @@ def multi_launch(papa, provider, configuration, count, delay=10):
         time.sleep(delay)
      
      
-def baby_launch(cloudsims, provider, configuration, delay=0.1):
+def launch_for_each_cloudsim(cloudsims, provider, configuration, delay=0.1):
     """
     Launches a constellation of specific configuration for each 
     CloudSimRestApi in the cloudsims list.
