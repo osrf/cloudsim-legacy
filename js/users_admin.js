@@ -1,5 +1,7 @@
 
-function add_users_admin_widget(users_div_name)
+// 
+// the auth_type is either OpenID or Basic
+function add_users_admin_widget(users_div_name, auth_type)
 {
 
 	var x = httpGet("/cloudsim/inside/cgi-bin/users.py");
