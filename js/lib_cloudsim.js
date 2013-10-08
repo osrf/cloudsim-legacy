@@ -41,11 +41,12 @@ function terminate_constellation(constellation_name)
     console.log( msg);
 }
 
-
-function add_user(user_name, role)
+function add_user(user_name, role, password)
 {
     var url = "/cloudsim/inside/cgi-bin/user?user=" + user_name;
     url +="&role=" + role;
+    if(password)
+    url += "&passwd=" + password;
     console.log("[POST] " + url);
     var x = httpPost(url);
     console.log(x);
@@ -159,7 +160,6 @@ function update_traffic_shaper(_constellationName, _machineName, _targetPacketLa
     console.log(msg);
     return msg;
 }
-
 
 function get_constellations()
 {

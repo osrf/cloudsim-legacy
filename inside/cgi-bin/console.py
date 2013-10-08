@@ -132,7 +132,7 @@ page =  """<!DOCTYPE html>
         </td>
         <td align='right'>
             <span id="head_span">Welcome, """ + role + " " + email + """</span><br>
-            <div id="admin_only1" style="padding:  0px 0px 0px 0px;" >
+            <div id="admin_only1" style="display:none; padding:  0px 0px 0px 0px;" >
                 <a href="/cloudsim/inside/cgi-bin/settings">Settings</a><br>
             </div>
             <div style="padding:0px 0px 0px;" align="right">
