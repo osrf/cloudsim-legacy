@@ -19,11 +19,27 @@ SESSION_DATABASE = '/var/www-cloudsim-auth/sessions'
 
 
 def set_user_password(username, password):
-    r = subprocess.check_output("cd /var/www-cloudsim-auth;"
+    """
+    only for Basic auth:
+    """
+    auth_type, _ = get_auth_type()
+    if auth_type == 'Basic':
+        subprocess.check_output("cd /var/www-cloudsim-auth;"
                         " htpasswd -b htpasswd %s %s" % (username, password),
                         stderr=subprocess.STDOUT,
                         shell=True)
-    return r
+
+
+def remove_user_password(username):
+    """
+    only for Basic auth:
+    """
+    auth_type, _ = get_auth_type()
+    if auth_type == 'Basic':
+        subprocess.check_output("cd /var/www-cloudsim-auth;"
+                        " htpasswd -D htpasswd %s" % (username),
+                        stderr=subprocess.STDOUT,
+                        shell=True)
 
 
 class UserDatabase (object):
@@ -54,10 +70,6 @@ class UserDatabase (object):
         role = self.get_users()[email]
         return role
 
-#     def get_domain(self, email):
-#         d = d = email.split('@')[1]
-#         return d
-
     def add_user(self, username, role, password):
         users = self.get_users()
         new_guy = username.strip()
@@ -78,6 +90,7 @@ class UserDatabase (object):
         if old_guy in users:
             del users[old_guy]
             self._write_users(users)
+            remove_user_password(old_guy)
 
 
 class SessionDatabase(object):
@@ -231,7 +244,7 @@ class CloudsimTest(unittest.TestCase):
 
 class AdminDbTest(unittest.TestCase):
 
-    def test_addremove_users(self):
+    def xtest_addremove_users(self):
         db_fname = "userdbtest.txt"  # get_test_path('userdbtest.txt')
         if(os.path.exists(db_fname)):
             os.remove(db_fname)
@@ -250,6 +263,9 @@ class AdminDbTest(unittest.TestCase):
         db.remove_user('toto@popo.com')
         self.assert_(len(db.get_users()) == 0, "not removed!")
 
+    def test_x(self):
+        x = get_auth_type()
+        print(x)
 
 if __name__ == '__main__':
     print('web TESTS')

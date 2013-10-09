@@ -41,6 +41,15 @@ function terminate_constellation(constellation_name)
     console.log( msg);
 }
 
+function get_users()
+{
+	var url = '/cloudsim/inside/cgi-bin/users/';
+	console.log("[GET]" + url);
+	var x = httpGet(url);
+    var r = eval( '(' + x + ')' );
+    return r;
+}
+
 function add_user(user_name, role, password)
 {
     var url = "/cloudsim/inside/cgi-bin/user?user=" + user_name;

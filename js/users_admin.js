@@ -15,10 +15,15 @@ function add_users_admin_widget(users_div_name, auth_type)
 	
 	var user_list_div = users_div.querySelector("#user_list");
 	
+	var old_str = "";
     $.subscribe("/users", function(event, data)
     {
     	var str = _get_user_list_str(data)
-    	user_list_div.innerHTML = str;
+    	if (str != old_str)
+    	{
+    		old_str = 
+    		user_list_div.innerHTML = str;
+    	}
     });
 }
 
@@ -41,13 +46,33 @@ function _get_user_list_str(users)
     	{
     		button_state = "disabled";
     	}
-        
-    	str += '<button type="button" onclick="remove_user(\'' + user + '\');" ' +button_state + '>X</button>';
+    	str += '<button type="button" onclick="remove_user_click(\'' + user + '\');" ' + button_state + '>X</button>';
     	str += '</li>';
-    		
     }
     str +="</ul>";
     return str;
+}
+
+function remove_user_click(user)
+{
+	var users = get_users();
+	var admin_count = 0;
+	for(var u in users)
+	{
+		if(user != u)
+		{
+			if(users[u] == "admin")
+			{
+				admin_count += 1;
+			}
+		}
+	}
+	if (admin_count == 0)
+	{
+		alert("It is not possible to delete the last user!");
+		return;
+	}
+	remove_user(user);
 }
 
 function _get_user_div_str(users_div_name, users, auth_type)
@@ -56,33 +81,46 @@ function _get_user_div_str(users_div_name, users, auth_type)
     str += "<div id='user_list'>";
     str += _get_user_list_str(users);
     str +="</div>";
-
+    
+    str += '<div>' ; //  class= "second_level_container">';
+    
+//    str += '<h3>Add new user</h3>';
     if(auth_type == "OpenID")
     {
     	str += "New User's Gmail Address:";
     }	
     else
     {
-    	str += 'Name:';
+    	str += 'Add user:';
     }
     str += ' <input type="text" name="new_user"/>';
 
     if(auth_type != "OpenID")
     {
-    	str += "<br>"
+//    	str += "<br>";
     	str += 'Password: <input type="password" name="passwd1"/>'
+//    	str += "<br>";
     	str += 'Retype Password: <input type="password" name="passwd2"/>'
+//    	str += "<br>";
     }
-
+    
+//    str += "<br>";
+    str += "Role: ";
     str += '<select id="role" />';
     str += '   <option value="user" selected="selected">simulation user</option>';
     str += '   <option value="admin">administrator</option>';
     str += '   <option value="officer">simulations officer</option>';
     str += '</select>';
-
+    
+//    str += "<br>"
     str += '<button type="button" onclick="_add_click(';
     str += "'" +  users_div_name + "'";
-    str +=');">Add user</button><br><br>Add or remove users. Do not remove the last remaining administrative user!';
+    str +=');">Add user</button>';
+    
+    // str +='<br><br>Add or remove users. Do not remove the last remaining administrative user!';
+    
+    str +="</div>";
+    
     return str;
 }
 

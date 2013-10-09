@@ -9,7 +9,6 @@ import json
 
 import redis
 from common import  authorize, UserDatabase
-from common.web import get_auth_type
 
 
 cgitb.enable()
@@ -55,17 +54,16 @@ if method == 'POST':
 #             exit(0)
 
     red.publish("user", "role is %s" % new_role)
-    db.add_user(user_name, new_role)
+    db.add_user(user_name, new_role, password)
     user['role'] = new_role
     user['action'] = "added"
 
 if method == 'DELETE':
-    old_role = udb.get_role(user_name)
-    if old_role == "admin":
-        if role == "officer":
-            print("Unauthorized")
-            exit(0)
-
+#     old_role = udb.get_role(user_name)
+#     if old_role == "admin":
+#         if role == "officer":
+#             print("Unauthorized")
+#             exit(0)
     db.remove_user(user_name)
     user['action'] = "deleted"
 
@@ -75,4 +73,3 @@ if method == 'DELETE':
 juser = json.dumps(user)
 red.publish("cloudsim_admin", juser)
 print(juser)
-
