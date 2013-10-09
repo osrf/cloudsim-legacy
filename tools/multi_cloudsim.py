@@ -1,4 +1,3 @@
-
 from cloudsim_rest_api import CloudSimRestApi
 from cloudsim_rest_api import multi_launch
 from cloudsim_rest_api import launch_for_each_cloudsim
@@ -104,4 +103,3 @@ if __name__ == "__main__":
     
 #    papa = CloudSimRestApi(papa_url, user, 'admin%s' % papa_name)   
 #    update_baby_cloudsims(papa_url, papa_name)
-    
