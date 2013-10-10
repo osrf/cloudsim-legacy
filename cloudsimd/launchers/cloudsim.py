@@ -43,7 +43,7 @@ CLOUDSIM_ZIP_PATH = '/var/www-cloudsim-auth/cloudsim.zip'
 
 LAUNCH_MSG_KEY = "cs_launch_msg"
 STATE_KEY = 'cs_state'
-IP_KEY = "cs_ip"
+IP_KEY = "cs_public_ip"
 LATENCY_KEY = 'cs_latency'
 
 
@@ -143,7 +143,7 @@ launch_sequence = ["nothing", "os_reload", "init", "zip",  "change_ip",
                    "startup", "reboot", "running"]
 
 
-def create_zip(constellation_name, key_prefix):
+def create_zip(constellation_name, key_prefix, ip):
     constellation = ConstellationState(constellation_name)
     constellation_directory = constellation.get_value(
                                                     "constellation_directory")
@@ -158,8 +158,6 @@ def create_zip(constellation_name, key_prefix):
     log("constellation name %s" % constellation_name)
     constellation = ConstellationState(constellation_name)
     log("%s" % constellation.get_values())
-    ip = constellation.get_value(IP_KEY)
-
     constellation_directory = constellation.get_value(
                                                     "constellation_directory")
     create_private_machine_zip("cs",
@@ -322,7 +320,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
                                           'cidr': '0.0.0.0/0', },
                                           {'name': 'ssh',
                                            'protocol': 'tcp',
-                                          'from_port': 22,   # ssh
+                                          'from_port': 22,
                                           'to_port': 22,
                                           'cidr': '0.0.0.0/0', },
                                           {'name': 'http',
@@ -332,7 +330,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
                                           'cidr': '0.0.0.0/0', }, ]
                         }
 
-        acquire_aws_single_server(constellation_name,
+        pub_ip, _, _ = acquire_aws_single_server(constellation_name,
                               credentials_ec2=credentials_fname,
                               constellation_directory=constellation_directory,
                               machine_prefix="cs",
@@ -342,7 +340,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
 
     elif "OpenStack" in cloud_provider:
         openstack_creds = cfg['openstack']
-        pub_ip, instance_id, key_prefix = acquire_openstack_server(
+        pub_ip, _, key_prefix = acquire_openstack_server(
                                     constellation_name,
                                     openstack_creds,
                                     constellation_directory,
@@ -368,7 +366,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
 
     constellation.set_value(LAUNCH_MSG_KEY, "create zip file")
     log("create zip")
-    fname_zip = create_zip(constellation_name, key_prefix)
+    fname_zip = create_zip(constellation_name, key_prefix, pub_ip)
 
     #create a copy for downloads
     local_zip = os.path.join(constellation_directory, "CloudSim.zip")
@@ -657,7 +655,7 @@ class JustInCase(unittest.TestCase):
         os.makedirs(self.constellation_directory)
 
         self.username = "toto@osrfoundation.org"
-        CONFIGURATION = 'cloudsim-stable'
+        CONFIGURATION = 'CloudSim-stable'
         self.tags.update({'TestCase': CONFIGURATION,
                       'configuration': CONFIGURATION,
                       'constellation': self.constellation_name,
@@ -678,7 +676,7 @@ class JustInCase(unittest.TestCase):
         constellation.set_value("constellation_name", self.constellation_name)
         constellation.set_value("constellation_directory",
                                 self.constellation_directory)
-        constellation.set_value("configuration", 'cloudsim')
+        constellation.set_value("configuration", CONFIGURATION)
         constellation.set_value('current_task', "")
         constellation.set_value('tasks', [])
 
@@ -691,16 +689,11 @@ class JustInCase(unittest.TestCase):
         sweep_count = 2
         for i in range(sweep_count):
             print("monitoring %s/%s" % (i, sweep_count))
-            monitor(self.username,
-                    self.constellation_name,
-                    self.credentials_softlayer,
-                    i)
+            monitor(self.constellation_name, i)
 
             time.sleep(1)
 
-        terminate(self.constellation_name,
-                  self.credentials_softlayer,
-                  self.constellation_directory)
+        terminate(self.constellation_name)
 
 
 if __name__ == "__main__":
