@@ -517,7 +517,6 @@ def launch(constellation_name, tags):
     """
     Called by cloudsimd when it receives a launch message
     """
-    ip = "127.0.0.1"
     constellation = ConstellationState(constellation_name)
     use_latest_version = \
         constellation.get_value('configuration') == 'Simulator'
@@ -530,9 +529,6 @@ def launch(constellation_name, tags):
     credentials_fname = os.path.join(constellation_directory,
                                      'credentials.txt')
 
-    sim_public_network_itf = "eth0"
-    sim_private_network_itf = None
-
     log("launch constellation name: %s" % constellation_name)
 
     constellation.set_value("launch_stage", "launch")
@@ -541,19 +537,16 @@ def launch(constellation_name, tags):
     # lets build a list of machines for our constellation
     #
     openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
-    private_subnet = '10.0.0.0/24'
-
     if use_latest_version:
         simulator_image_key = 'ubuntu_1204_x64_cluster'
     else:
         simulator_image_key = 'ubuntu_1204_x64_simulator'
 
+    ip = "127.0.0.1"
     machines = {}
     machines['sim'] = {'hardware': 'cg1.4xlarge',
                       'software': simulator_image_key,
                       'ip': ip,
-                      'public_network_itf': sim_public_network_itf,
-                      'private_network_itf': sim_private_network_itf,
                       'security_group': [{'name': 'openvpn',
                                           'protocol': 'udp',
                                           'from_port': 1194,
@@ -566,19 +559,9 @@ def launch(constellation_name, tags):
                                           'cidr': '0.0.0.0/0', },
                                           {'name': 'ssh',
                                            'protocol': 'tcp',
-                                          'from_port': 22,   # ssh
+                                          'from_port': 22,
                                           'to_port': 22,
                                           'cidr': '0.0.0.0/0', },
-                                          {'name': 'all udp on private sub',
-                                           'protocol': 'udp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': private_subnet, },
-                                          {'name': 'all tcp on private sub',
-                                          'protocol': 'tcp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': private_subnet, },
                                          {'name': 'gzweb',
                                           'protocol': 'tcp',
                                           'from_port': 8080,
@@ -613,9 +596,6 @@ def launch(constellation_name, tags):
                         }
     constellation.set_value('machines', machines)
     _init_computer_data(constellation_name, machines)
-
-    ros_master_ip = ip
-
     # Required only if we are not using a prepolated AMI
     if use_latest_version:
 
@@ -635,7 +615,7 @@ def launch(constellation_name, tags):
         script = get_simulator_script(ubuntu_sources_repo,
                                     drcsim_package_name,
                                     ip,
-                                    ros_master_ip,
+                                    ros_master_ip=ip,
                                     gpu_driver_list,
                                     ppa_list,
                                     OPENVPN_CLIENT_IP,

@@ -80,13 +80,13 @@ function create_constellation(div_name, configuration, constellation, machine_da
 
         // create_task_list_widget(constellation_div, constellation);
         var machine_div = create_machine(machines_div, machine_name);
-        create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file", false );
-        create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "simulation_launch_msg", "simulation_state");
-        create_machine_state_widget(machine_div, constellation, machine_name, "simulation_aws_state", "simulation_state");
+        create_hostname_widget(machine_div, constellation, machine_name, "cs_ip", "cs_aws_id", "username", "gmt", "cs_zip_file", false );
+        create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "cs_launch_msg", "cs_state");
+        create_machine_state_widget(machine_div, constellation, machine_name, "cs_aws_state", "cs_state");
         // create_machine_lifecycle_widget(machine_div,constellation, machine_name, "life_cycle");
 
-        create_hostname_widget(machine_div, constellation, machine_name, "simulation_ip", "simulation_aws_id", "username", "gmt", "sim_zip_file", false );
-        create_latency_widget(machine_div, constellation, machine_name, "simulation_latency", "RTT latency to its parent CloudSim", 550);
+        create_hostname_widget(machine_div, constellation, machine_name, "cs_ip", "cs_aws_id", "username", "gmt", "cs_zip_file", false );
+        create_latency_widget(machine_div, constellation, machine_name, "cs_latency", "RTT latency to its parent CloudSim", 550);
     }
 
 
