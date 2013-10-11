@@ -1,6 +1,5 @@
 import requests
 import urllib2
-
 import time
 
 # this script uses requests
@@ -13,11 +12,17 @@ class CloudSimRestApi(object):
     """
 
     def __init__(self, url, user, passwd):
+        """
+        initialization, only pass the ip as the url
+        """
         self.url = "http://%s" % url
         self.user = user
         self.passwd = passwd
 
     def _api_get(self, path):
+        """
+        internal http GET boilerplate
+        """
         theurl = "/".join([self.url, path])
         r = requests.get(theurl, auth=(self.user, self.passwd))
         if r.status_code != 200:
@@ -26,58 +31,59 @@ class CloudSimRestApi(object):
         return j
 
     def _api_post(self, path):
+        """
+        internal http POST boilerplate
+        """
         theurl = "/".join([self.url, path])
         r = requests.post(theurl, auth=(self.user, self.passwd))
         if r.status_code != 200:
-            raise Exception("GET request error (code %s)" % r.status_code)
+            raise Exception("POST request error (code %s)" % r.status_code)
         j = r.json()
         return j
 
     def _api_put(self, path):
+        """
+        internal http PUT boilerplate
+        """
         theurl = "/".join([self.url, path])
         r = requests.put(theurl, auth=(self.user, self.passwd))
         if r.status_code != 200:
-            raise Exception("GET request error (code %s)" % r.status_code)
+            raise Exception("PUT request error (code %s)" % r.status_code)
         j = r.json()
         return j
 
     def _api_delete(self, path):
+        """
+        internal http DELETE boilerplate
+        """
         theurl = "/".join([self.url, path])
         r = requests.delete(theurl, auth=(self.user, self.passwd))
         if r.status_code != 200:
-            raise Exception("GET request error (code %s)" % r.status_code)
+            raise Exception("DELETE request error (code %s)" % r.status_code)
         j = r.json()
         return j
 
     def get_constellations(self):
+        """
+        returuns the list of constellations for this CLoudSim
+        """
         cs = self._api_get('cloudsim/inside/cgi-bin/constellations')
         valids = [x for x in cs if 'configuration' in x]
         return valids
-
-#     def list_constellations(self):
-#         """
-#         Returns the names and configuration of the constellations.
-#         """
-#         constellations = self.get_constellations()
-#         r = [[x['constellation_name'], x['configuration']]\
-#               for x in constellations]
-#         return r
 
     def select_constellations(self, config=None):
         """
         Returns the names of constellations. If config is not None, only
         the constellations of this configuration are returned.
         startswith is used for the match, allowing to select "Cloudsim" 
-        and "Cloudsim-stabe" together by specifying only "Cloudsim". 
+        and "Cloudsim-stable" together by specifying only "Cloudsim". 
         No regex (yet), please
         """
         constellations = []
         for constellation in self.get_constellations():
-            name = constellation['constellation_name']
             const_config = constellation['configuration']
-            if config:
-                if const_config.startswith(config):
-                    constellations.append(constellation)
+            if config and const_config.startswith(config):
+                constellations.append(constellation)
         return constellations
 
     def get_constellation_data(self, constellation_name):
@@ -92,7 +98,7 @@ class CloudSimRestApi(object):
 
     def launch_constellation(self, provider, configuration):
         """
-        Creates a new constellation with tbe specified configuration
+        Creates a new constellation with the specified configuration
         """
         p = urllib2.quote(provider)
         c = urllib2.quote(configuration)
@@ -103,7 +109,8 @@ class CloudSimRestApi(object):
 
     def update_constellation(self, constellation_name):
         """
-        Updates a constellation
+        Updates a constellation. Returns an error code 
+        or the constellation name
         """
         url = '/cloudsim/inside/cgi-bin/constellations';
         url += '/' + constellation_name;
@@ -172,5 +179,6 @@ def launch_for_each_cloudsim(cloudsims, provider, configuration, delay=0.1):
     for cloudsim in cloudsims:
         print("- launching from %s" % cloudsim)
         s = cloudsim.launch_constellation(provider, configuration)
+        print(s)
         time.sleep(delay)
 

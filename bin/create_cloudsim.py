@@ -26,13 +26,6 @@ new_path = os.path.join(basepath, "inside", "cgi-bin")
 sys.path.insert(0, new_path)
 import common
 
-# 
-# 
-# new_path = os.path.join(basepath, "cloudsimd", "launchers")
-# sys.path.insert(0, new_path)
-
-import cloudsimd.launchers.cloudsim as cloudsim
-
 def cloudsim_bootstrap(username):
 
     constellation_name = get_unique_short_name('c')

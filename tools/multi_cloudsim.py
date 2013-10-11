@@ -29,7 +29,7 @@ def get_baby_cloudsims(papa_cloudsim, user):
 
 def launch_baby_cloudsims(url, papa_name, count=25, user='admin', delay=10):
     """
-    Creates many Cloudsims for a pap cloudsim. It is good practice to wait
+    Creates many Cloudsims for a papa cloudsim. It is good practice to wait
     between calls to avoid network clogging.
     """
     papa = CloudSimRestApi(url, user, 'admin%s' % papa_name)
@@ -80,6 +80,9 @@ def terminate_simulators(papa_url, papa_name, user='admin', delay=1):
 
 if __name__ == "__main__":
     
+    #
+    # This is only a test.
+    # 
     step = 3
 
     if step == 1:
@@ -96,10 +99,13 @@ if __name__ == "__main__":
     if step == 2:
         count = 1
         launch_baby_cloudsims(papa_url, papa_name, count, user, delay)
+
+# TO DO    
+#    papa = CloudSimRestApi(papa_url, user, 'admin%s' % papa_name)   
+#    update_baby_cloudsims(papa_url, papa_name)
+
     
     if step == 3:
         delay = 1
         terminate_cloudsims(papa_url, papa_name, user, delay)
     
-#    papa = CloudSimRestApi(papa_url, user, 'admin%s' % papa_name)   
-#    update_baby_cloudsims(papa_url, papa_name)
