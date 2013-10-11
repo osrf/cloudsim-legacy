@@ -43,12 +43,23 @@ def remove_user_password(username):
 
 
 class UserDatabase (object):
+    """
+    Manages a list of users, roles, and passwords.
+    Users and roles are stored in a json file,
+    passwords use htpasswd
+    """
     def __init__(self, fname=USER_DATABASE):
+        """
+        ctor
+        """
         self.fname = fname
         if not os.path.exists(self.fname):
             self._write_users({})
 
     def get_users(self):
+        """
+        returns the users with roles
+        """
         tmp_users = {}
         if os.path.exists(self.fname):
             with open(self.fname, 'r') as f:
@@ -60,6 +71,10 @@ class UserDatabase (object):
         return users
 
     def has_role(self, email, minimum_role):
+        """
+        True if the user has the specified role or a role
+        with more provilieges
+        """
         role = self.get_role(email)
         roles = ["user", "officer", "admin"]
         if roles.index(role) >= roles.index(minimum_role):
@@ -67,10 +82,16 @@ class UserDatabase (object):
         return False
 
     def get_role(self, email):
+        """
+        Returns the role for a given user
+        """
         role = self.get_users()[email]
         return role
 
     def add_user(self, username, role, password):
+        """
+        Adds a user, and a password (in the case of BASIC auth)
+        """
         users = self.get_users()
         new_guy = username.strip()
         if not new_guy in users:
@@ -81,10 +102,16 @@ class UserDatabase (object):
                 set_user_password(username, password)
 
     def _write_users(self, users):
+        """
+        Saves users/roles dict to a file
+        """
         with open(self.fname, 'w') as fp:
             json.dump(users, fp)
 
     def remove_user(self, email_address):
+        """
+        Removes a user
+        """
         old_guy = email_address.strip()
         users = self.get_users()
         if old_guy in users:
