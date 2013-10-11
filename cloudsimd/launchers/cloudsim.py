@@ -45,6 +45,7 @@ LAUNCH_MSG_KEY = "cs_launch_msg"
 STATE_KEY = 'cs_state'
 IP_KEY = "cs_public_ip"
 LATENCY_KEY = 'cs_latency'
+ZIP_READY_KEY = 'cs_zip_file'
 
 
 def log(msg, channel=__name__, severity='info'):
@@ -165,7 +166,7 @@ def create_zip(constellation_name, key_prefix, ip):
                                constellation_name,
                                constellation_directory,
                                key_prefix)
-    constellation.set_value('sim_zip_file', 'ready')
+    constellation.set_value(ZIP_READY_KEY, 'ready')
     constellation.set_value("launch_stage", "zip")
     return fname_zip
 
@@ -264,7 +265,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
 
     constellation.set_value(LAUNCH_MSG_KEY, "starting")
     constellation.set_value(LATENCY_KEY, '[]')
-    constellation.set_value('sim_zip_file', 'not ready')
+    constellation.set_value(ZIP_READY_KEY, 'not ready')
     constellation.set_value("error", "")
 
     constellation.set_value("gazebo", "not running")

@@ -71,7 +71,8 @@ def acquire_aws_single_server(constellation_name,
 
     constellation.set_value('machine_name', machine_prefix)
     security_group_data = machine_data['security_group']
-    security_group_id = _acquire_security_group(constellation_name,
+    security_group_name, security_group_id = _acquire_security_group(
+                                    constellation_name,
                                     machine_prefix,
                                     security_group_data,
                                     vpc_id=None,
@@ -89,7 +90,7 @@ def acquire_aws_single_server(constellation_name,
             instance_type=aws_instance,
             #subnet_id      = subnet_id,
             #private_ip_address=SIM_IP,
-            security_groups=[security_group_id],
+            security_groups=[security_group_name],
             key_name=key_pair_name,
             user_data=startup_script,
             block_device_map=bdm)
@@ -138,29 +139,29 @@ def terminate_aws_server(constellation_name, credentials_fname):
     log("terminate AWS CloudSim [constellation %s]" % (constellation_name))
     constellation = ConstellationState(constellation_name)
     ec2conn = None
-    machine_prefix = ""
+    machine_prefix = constellation.get_value('machine_name')
     try:
-        machine_prefix = "simulation"
-        try:
-            machine_prefix = constellation.get_value('machine_name')
-        except:
-            pass
-        running_machines = {}
-        running_machines[machine_prefix] = constellation.get_value(
-                                                '%s_aws_id' % machine_prefix)
+        constellation.set_value('%s_state' % machine_prefix, "terminating")
+        constellation.set_value('%s_launch_msg' % machine_prefix, "terminating")
+
+        log("Terminate machine_prefix: %s" % machine_prefix)
+        aws_id = constellation.get_value('%s_aws_id' % machine_prefix)
+        log("Terminate aws_id: %s" % aws_id)
+        running_machines = {machine_prefix: aws_id}
         ec2conn = aws_connect(credentials_fname)[0]
         wait_for_multiple_machines_to_terminate(ec2conn, running_machines,
                                                 constellation, max_retries=150)
         constellation.set_value('%s_state' % machine_prefix, "terminated")
-        constellation.set_value('%s_launch_msg' % machine_prefix, "terminated")
         print ('Waiting after killing instances...')
         time.sleep(10.0)
     except Exception as e:
         log("error killing instances: %s" % e)
-
+    constellation.set_value('%s_launch_msg' % machine_prefix, "removing key")
     _release_key_pair(constellation_name, machine_prefix, ec2conn)
-
+    constellation.set_value('%s_launch_msg' % machine_prefix,
+                             "removing security group")
     _release_security_group(constellation_name, machine_prefix, ec2conn)
+    constellation.set_value('%s_launch_msg' % machine_prefix, "terminated")
 
 
 def acquire_aws_constellation(constellation_name,
@@ -190,7 +191,8 @@ def acquire_aws_constellation(constellation_name,
         aws_key_name = _acquire_key_pair(constellation_name,
                           machine_name, ec2conn)
         security_group_data = machines[machine_name]['security_group']
-        security_group_id = _acquire_security_group(constellation_name,
+        _, security_group_id = _acquire_security_group(
+                                    constellation_name,
                                     machine_name,
                                     security_group_data,
                                     vpc_id,
@@ -457,11 +459,6 @@ def _release_vpc(constellation_name, vpcconn):
         constellation.set_value('error', error_msg)
 
 
-def _get_security_group_key(machine_prefix):
-    sg_key = '%s_security_group_id' % machine_prefix
-    return sg_key
-
-
 def _acquire_security_group(constellation_name,
                                 machine_prefix,
                                 security_group_data,
@@ -499,29 +496,23 @@ def _acquire_security_group(constellation_name,
                          rule['cidr'])
 
         security_group_id = sg.id
-        if not vpc_id:
-            security_group_id = sg.name
+        security_group_name = sg.name
 
-        sg_key = _get_security_group_key(machine_prefix)
-        constellation.set_value(sg_key, security_group_id)
+        constellation.set_value('%s_security_group_id' % machine_prefix,
+                                security_group_id)
+        constellation.set_value('%s_security_group_name' % machine_prefix,
+                                security_group_name)
     except Exception, e:
         constellation.set_value('error',  "security group error: %s" % e)
         raise
-
-#     while True:
-#         groups = ec2conn.get_all_security_groups()
-#         log("*** %s ***" % security_group_id)
-#         for g in groups:
-#             log("%s: id %s" % (g, g.id))
-#         time.sleep(2)
-    return security_group_id
+    return security_group_name, security_group_id
 
 
 def _release_security_group(constellation_name, machine_prefix, ec2conn):
     constellation = ConstellationState(constellation_name)
     security_group_id = None
     try:
-        sg_key = _get_security_group_key(machine_prefix)
+        sg_key = '%s_security_group_id' % machine_prefix
         security_group_id = constellation.get_value(sg_key)
         ec2conn.delete_security_group(group_id=security_group_id)
         return True
