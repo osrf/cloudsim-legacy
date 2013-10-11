@@ -54,20 +54,48 @@ def cloudsim_bootstrap(username):
     return r
 
 # Specify command line arguments
-parser = argparse.ArgumentParser(description='Launch a cloudsim instance on the cloud.')
-parser.add_argument('username', metavar='ADMIN-EMAIL', help='CloudSim admin gmail account')
+parser = argparse.ArgumentParser(
+                    description='Launch a cloudsim instance on the cloud.')
+parser.add_argument('username',
+                    metavar='ADMIN-EMAIL', help='CloudSim admin gmail account')
 parser.add_argument('access_key', metavar='ACCESS-KEY', help='AWS access key')
 parser.add_argument('secret_key', metavar='SECRET-KEY', help='AWS secret key')
 parser.add_argument('ec2_zone', metavar='EC2-AVAILABILITY-ZONE',
                     help='Amazon EC2 availability zone',
-                    choices=['nova', 'us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d', 'eu-west-1a', 'eu-west-1b', 'eu-west-1c',])
+                    choices=['nova',
+                             'us-east-1a',
+                             'us-east-1b',
+                             'us-east-1c',
+                             'us-east-1d',
+                             'eu-west-1a',
+                             'eu-west-1b',
+                             'eu-west-1c',])
 
-#parser.add_argument('boto_path', nargs='?', metavar='BOTO-PATH', help='Boto path', default='/var/www-cloudsim-auth/boto-useast')
-parser.add_argument('softlayer_path', nargs='?', metavar='SOFTLAYER-PATH', help='SoftLayer path', default='/var/www-cloudsim-auth/softlayer.json')
-parser.add_argument('root_dir', nargs='?', metavar='ROOT-DIR', help='Root dir', default='/var/www-cloudsim-auth/machines')
-parser.add_argument('cloudsim_portal_key_path', nargs='?', metavar='CLOUDSIM-PORTAL-KEY-PATH', help='CloudSim portal key path', default='/var/www-cloudsim-auth/cloudsim_portal.key')
-parser.add_argument('cloudsim_portal_json_path', nargs='?', metavar='CLOUDSIM-PORTAL-JSON-PATH', help='CloudSim portal json path', default='/var/www-cloudsim-auth/cloudsim_portal.json')
-parser.add_argument('cloudsim_bitbucket_key_path', nargs='?', metavar='CLOUDSIM-BITBUCKET-KEY-PATH', help='CloudSim BitBucket key path', default='/var/www-cloudsim-auth/cloudsim_bitbucket.key')
+parser.add_argument('softlayer_path',
+                    nargs='?',
+                    metavar='SOFTLAYER-PATH',
+                    help='SoftLayer path',
+                    default='/var/www-cloudsim-auth/softlayer.json')
+parser.add_argument('root_dir',
+                    nargs='?',
+                    metavar='ROOT-DIR',
+                    help='Root dir',
+                    default='/var/www-cloudsim-auth/machines')
+parser.add_argument('cloudsim_portal_key_path',
+                    nargs='?',
+                    metavar='CLOUDSIM-PORTAL-KEY-PATH',
+                    help='CloudSim portal key path',
+                    default='/var/www-cloudsim-auth/cloudsim_portal.key')
+parser.add_argument('cloudsim_portal_json_path',
+                    nargs='?',
+                    metavar='CLOUDSIM-PORTAL-JSON-PATH',
+                    help='CloudSim portal json path',
+                    default='/var/www-cloudsim-auth/cloudsim_portal.json')
+parser.add_argument('cloudsim_bitbucket_key_path',
+                    nargs='?',
+                    metavar='CLOUDSIM-BITBUCKET-KEY-PATH',
+                    help='CloudSim BitBucket key path',
+                    default='/var/www-cloudsim-auth/cloudsim_bitbucket.key')
 
 # Parse command line arguments
 args = parser.parse_args()
