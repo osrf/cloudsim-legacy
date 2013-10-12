@@ -75,7 +75,7 @@ function _split_tasks(task_div_list,
         }
     }
 }
-
+/*
 function _add_form_textinput(form_div, title, visible)
 {
     var input_field  = document.createElement("input");
@@ -135,6 +135,7 @@ function _create_task_form(form_id)
     visible = false;
     var launch_arguments =  _add_form_textinput(form_div, "Arguments", visible );
     _end_form_fieldset(form_div);
+    
     _begin_form_fieldset(form_div, "Network parameters", visible);
     var latency =  _add_form_textinput(form_div, "Minimum latency (ms, round trip)", visible);
     var uplink_data_cap=  _add_form_textinput(form_div, "Uplink data cap (bits, 0 for unlimited)", visible);
@@ -166,7 +167,46 @@ function _create_task_form(form_id)
 
     return form_div;
 }
+*/
 
+function _create_task_form(form_id)
+{
+    var form_div = document.createElement("div");
+    form_div.id = form_id;
+    
+    var title_input = document.createElement("input");
+    title_input.size = 35;
+    form_div.appendChild(document.createElement("br"));
+    
+    form_div.appendChild(document.createTextNode("Task title"));
+    form_div.appendChild(title_input);
+    
+    var tabs_div = document.createElement("tabs");
+    var t = '<ul>';
+    t += '<li><a href="#tabs-sim">Simulation</a></li>';
+    t += '<li><a href="#tabs-network">Networking</a></li>';
+    t += '<li><a href="#tabs-calendar">Availability</a></li>';
+    t += '</ul>';
+    tabs_div.innerHTML = t;
+    form_div.appendChild(tabs_div);
+    
+    var tab1 = document.createElement("div");
+    tab1.id = 'tabs-sim';
+    tab1.innerHTML = "<p>Lorem ipsum dolor sit amet,</p>"
+    tabs_div.appendChild(tab1)
+
+    var tab2 = document.createElement("div");
+    tab2.id = 'tabs-network';
+    tab2.innerHTML = "<p>2 Lorem ipsum dolor sit amet,</p>"
+    tabs_div.appendChild(tab2)
+ 
+    var tab3 = document.createElement("div");
+    tab3.id = 'tabs-availability';
+    tab3.innerHTML = "<p>3 Lorem ipsum dolor sit amet,</p>"
+    tabs_div.appendChild(tab3)   
+    
+    return form_div;  
+}
 
 function create_task_list_widget(const_div, constellation_name)
 { 
