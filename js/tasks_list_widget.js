@@ -75,7 +75,7 @@ function _split_tasks(task_div_list,
         }
     }
 }
-/*
+
 function _add_form_textinput(form_div, title, visible)
 {
     var input_field  = document.createElement("input");
@@ -100,56 +100,54 @@ function _add_form_textinput(form_div, title, visible)
     return input_field;
 }
 
-function _begin_form_fieldset(form_div, title, visible)
-{
-	if(visible)
-	{
-		form_div.appendChild(document.createElement("br"));
-		form_div.appendChild(document.createElement("br"));
-		section = document.createElement("b");
-		section.appendChild(document.createTextNode(title));
-		form_div.appendChild(section);	
-	}
-}
-
-function _end_form_fieldset(form_div, visiblev)
-{
-
-}
-                             
 function _create_task_form(form_id)
 {
     var form_div = document.createElement("div");
-
     form_div.id = form_id;
-	
-    form_div.title = "Task properties";
+    
+    var title_input = document.createElement("input");
+    title_input.size = 35;
+    form_div.appendChild(document.createElement("br"));
+    
+    form_div.appendChild(document.createTextNode("Task title"));
+    form_div.appendChild(title_input);
+    form_div.appendChild(document.createElement("br"));
+    form_div.appendChild(document.createElement("br"));
+    
+    var tabs_div = document.createElement('div');
+    tabs_div.id = "tabs_" + form_id;
+    var t = '<ul>';
+    t += '<li><a href="#tab-sim">Simulation</a></li>';
+    t += '<li><a href="#tab-network">Networking</a></li>';
+    t += '<li><a href="#tab-calendar">Availability</a></li>';
+    t += '</ul>';
+    tabs_div.innerHTML = t;
+    form_div.appendChild(tabs_div);
+    
     var visible = true;
-    var task_title_input = _add_form_textinput(form_div, "Task title", visible);
-    
-    _begin_form_fieldset(form_div, "Simulation parameters", visible);
-    var ros_package =  _add_form_textinput(form_div, "ROS package", visible);
-    var launch_file =  _add_form_textinput(form_div, "Launch file", visible);
-    var timeout =  _add_form_textinput(form_div, "Maximum time (sec)", visible);
-    
-    visible = false;
-    var launch_arguments =  _add_form_textinput(form_div, "Arguments", visible );
-    _end_form_fieldset(form_div);
-    
-    _begin_form_fieldset(form_div, "Network parameters", visible);
-    var latency =  _add_form_textinput(form_div, "Minimum latency (ms, round trip)", visible);
-    var uplink_data_cap=  _add_form_textinput(form_div, "Uplink data cap (bits, 0 for unlimited)", visible);
-    var downlink_data_cap = _add_form_textinput(form_div, "Downlink data cap (bits, 0 for unlimited)", visible);
-    _end_form_fieldset(form_div, visible);
-    
-    _begin_form_fieldset(form_div, "Time frame", visible);
-    var local_start = _add_form_textinput(form_div, "Valid from (UTC)", visible);
-    var local_stop = _add_form_textinput(form_div, "Valid until (UTC)", visible);
+    var tab1 = document.createElement("div");
+    tab1.id = 'tab-sim';
+    var ros_package =  _add_form_textinput(tab1, "ROS package", visible);
+    var launch_file =  _add_form_textinput(tab1, "Launch file", visible);
+    var timeout =  _add_form_textinput(tab1, "Maximum time (sec)", visible);
+    var launch_arguments =  _add_form_textinput(tab1, "Arguments", visible );
+    tabs_div.appendChild(tab1)
 
+    var tab2 = document.createElement("div");
+    tab2.id = 'tab-network';
+    var latency =  _add_form_textinput(tab2, "Minimum latency (ms, round trip)", visible);
+    var uplink_data_cap=  _add_form_textinput(tab2, "Uplink data cap (bits, 0 for unlimited)", visible);
+    var downlink_data_cap = _add_form_textinput(tab2, "Downlink data cap (bits, 0 for unlimited)", visible)
+    tabs_div.appendChild(tab2)
+ 
+    var tab3 = document.createElement("div");
+    tab3.id = 'tab-calendar';
+    var local_start = _add_form_textinput(tab3, "Valid from (UTC)", visible);
+    var local_stop = _add_form_textinput(tab3, "Valid until (UTC)", visible);
     visible = false;
     var vrc_id = _add_form_textinput(form_div, "Run (1, 2, 3, 4 or 5)", visible);
-    var vrc_num = _add_form_textinput(form_div, "Task (1, 2 or 3)", visible);
-    _end_form_fieldset(form_div, visible);
+    var vrc_num = _add_form_textinput(form_div, "Task (1, 2 or 3)", visible);   	
+    tabs_div.appendChild(tab3)   
     
     // default values
     ros_package.value = "atlas_utils";
@@ -164,57 +162,21 @@ function _create_task_form(form_id)
     
     local_start.value = '2013-01-01T00:00:00.0';
     local_stop.value  = '2014-01-01T00:00:00.0';
-
-    return form_div;
-}
-*/
-
-function _create_task_form(form_id)
-{
-    var form_div = document.createElement("div");
-    form_div.id = form_id;
-    
-    var title_input = document.createElement("input");
-    title_input.size = 35;
-    form_div.appendChild(document.createElement("br"));
-    
-    form_div.appendChild(document.createTextNode("Task title"));
-    form_div.appendChild(title_input);
-    
-    var tabs_div = document.createElement("tabs");
-    var t = '<ul>';
-    t += '<li><a href="#tabs-sim">Simulation</a></li>';
-    t += '<li><a href="#tabs-network">Networking</a></li>';
-    t += '<li><a href="#tabs-calendar">Availability</a></li>';
-    t += '</ul>';
-    tabs_div.innerHTML = t;
-    form_div.appendChild(tabs_div);
-    
-    var tab1 = document.createElement("div");
-    tab1.id = 'tabs-sim';
-    tab1.innerHTML = "<p>Lorem ipsum dolor sit amet,</p>"
-    tabs_div.appendChild(tab1)
-
-    var tab2 = document.createElement("div");
-    tab2.id = 'tabs-network';
-    tab2.innerHTML = "<p>2 Lorem ipsum dolor sit amet,</p>"
-    tabs_div.appendChild(tab2)
- 
-    var tab3 = document.createElement("div");
-    tab3.id = 'tabs-availability';
-    tab3.innerHTML = "<p>3 Lorem ipsum dolor sit amet,</p>"
-    tabs_div.appendChild(tab3)   
     
     return form_div;  
 }
 
 function create_task_list_widget(const_div, constellation_name)
 { 
-
+    //
+    // create a form for the content 
+    //
+    var form_id = constellation_name + "-task-view-form";
+    
     var dlg_options = {
             autoOpen: false,
-            height: 420,
-            width: 450,
+            height: 550,
+            width: 500,
             modal: true,
             buttons: {
                "Create": function() {
@@ -233,7 +195,7 @@ function create_task_list_widget(const_div, constellation_name)
 	               var vrc_id = inputs[10].value;
 	               var vrc_num = inputs[11].value;
 	               
-	               console.log("timeout is " + timeout);
+	               console.log( "create_task_list_widget #" + form_id);
 	               create_task(constellation_name, 
 	            		   	   title, 
 	                           ros_package, 
@@ -251,9 +213,15 @@ function create_task_list_widget(const_div, constellation_name)
 	               $( this ).dialog( "close" );
                 }
               },
-
+            
             close: function() {
-          	  console.log("create_task_list_widget close");
+          	  console.log("create_task_list_widget close #" + form_id);
+            },
+            
+            open: function() { 
+            	console.log("create_task_list_widget open #" + form_id);
+            	$("#tabs_" + form_id).tabs();
+
             }
     };
 
@@ -274,19 +242,11 @@ function create_task_list_widget(const_div, constellation_name)
 	widgets_div.id = "widgets";
 	tasks_div.appendChild(widgets_div);
 	
-
-    //
-    // create a form for the content 
-    //
-
-    var form_id = constellation_name + "-task-view-form";
-
     var add_task_button = document.createElement('input');
     add_task_button.setAttribute('type','button');
     add_task_button.setAttribute('value','Create task...');
     add_task_button.onclick =  function()
     {
-    	
     	$( "#" + form_id ).dialog( "open" );
     }
     if(get_user_info().role == "user")
@@ -338,10 +298,16 @@ function create_task_list_widget(const_div, constellation_name)
     buttons_div.appendChild(reset_tasks_button);
 
     var form_div = _create_task_form(form_id);
+	console.log("tabs!!")
+	$("#tabs_" + form_id).tabs();
+	
     p.insertBefore(form_div, widgets_div);
     
     // this is necessary, otherwise the form does not form
-    setTimeout(function(){ $( "#" + form_id ).dialog(dlg_options );}, 0);
+    setTimeout(function()
+    	{ 	
+    		$( "#" + form_id ).dialog(dlg_options );
+    	}, 0);
 
     var task_div_list = widgets_div.children;
 
@@ -476,7 +442,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     
      $( "#" + form_id ).dialog({
       autoOpen: false,
-      height: 420,
+      height: 550,
       width: 500,
       modal: true,
       buttons: dlg_buttons,
