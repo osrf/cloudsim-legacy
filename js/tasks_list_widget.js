@@ -104,6 +104,7 @@ function _create_task_form(form_id)
 {
     var form_div = document.createElement("div");
     form_div.id = form_id;
+    form_div.title = "Task dialog";
     
     var title_input = document.createElement("input");
     title_input.size = 35;
