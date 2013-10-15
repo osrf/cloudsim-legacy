@@ -177,8 +177,10 @@ def launch_for_each_cloudsim(cloudsims, provider, configuration, delay=0.1):
     print("launching %s on %s cloudsims with %s sec delay" % (
                                    configuration, len(cloudsims), delay))
     for cloudsim in cloudsims:
-        print("- launching from %s" % cloudsim)
-        s = cloudsim.launch_constellation(provider, configuration)
-        print(s)
+        try:
+            print("Launching from %s" % (cloudsim))
+            cloudsim.launch_constellation(provider, configuration)
+        except Exception, e:
+            print("   Error: %s" % e)
         time.sleep(delay)
 
