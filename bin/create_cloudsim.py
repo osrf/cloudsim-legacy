@@ -16,7 +16,6 @@ basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, basepath)
 
 import cloudsimd.launchers.cloudsim as cloudsim
-import cloudsimd
 from cloudsimd.launchers.launch_utils.launch_db import set_cloudsim_config
 from cloudsimd.launchers.launch_utils.launch_db import get_unique_short_name
 from cloudsimd.launchers.launch_utils.launch_db import ConstellationState
