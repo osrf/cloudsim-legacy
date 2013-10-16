@@ -204,30 +204,31 @@ def upload_cloudsim(constellation_name,
                                website_distribution,
                                key_prefix):
 
-    constellation_state = ConstellationState(constellation_name)
-    constellation_dir = constellation_state.get_value(
+    constellation = ConstellationState(constellation_name)
+    constellation_dir = constellation.get_value(
                                                     'constellation_directory')
-    ip_address = constellation_state.get_value("simulation_ip")
+    ip_address = constellation.get_value("simulation_ip")
     ssh_cli = SshClient(constellation_dir, key_prefix, 'ubuntu', ip_address)
     short_file_name = os.path.split(website_distribution)[1]
     remote_filename = "/home/ubuntu/%s" % (short_file_name)
     log("uploading '%s' to the server to '%s'" % (website_distribution,
                                                   remote_filename))
 
-    constellation_state.set_value('simulation_launch_msg',
+    constellation.set_value('simulation_launch_msg',
                                   "uploading CloudSim distribution")
     out_s = ssh_cli.upload_file(website_distribution, remote_filename)
     log(" upload: %s" % out_s)
 
-    constellation_state.set_value('simulation_launch_msg', "unzip web app")
+    constellation.set_value('simulation_launch_msg', "unzip web app")
     log("unzip web app")
     out_s = ssh_cli.cmd("unzip -o " + remote_filename)
     log("\t%s" % out_s)
-    constellation_state.set_value('simulation_launch_msg', "deploying web app")
+    constellation.set_value('simulation_launch_msg', "deploying web app")
 
 
 def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
 
+    log("CloudSim launch %s" % constellation_name)
     constellation = ConstellationState(constellation_name)
     cloudsim_stable = True
     if constellation.get_value('configuration') == 'CloudSim':

@@ -623,7 +623,7 @@ def launch(constellation_name, tags):
 
     cloud_provider = tags['cloud_provider']
     #username = tags['username']
-    config = tags['config']
+    config = tags['configuration']
     constellation_directory = tags['constellation_directory']
     credentials_fname = os.path.join(constellation_directory,
                                      'credentials.txt')
@@ -1004,9 +1004,9 @@ def notify_portal(constellation, task):
 
         if task_num < '1' or task_num > '3':
             task_num = '1'
-        run = task['vrc_id']
-        if run < '1' or run > '5':
-            run = '1'
+        _run_cloudsim_cmd_loop = task['vrc_id']
+        if _run_cloudsim_cmd_loop < '1' or _run_cloudsim_cmd_loop > '5':
+            _run_cloudsim_cmd_loop = '1'
 
         start_time = task['start_time']
         start_task = dateutil.parser.parse(start_time)
@@ -1070,7 +1070,7 @@ def notify_portal(constellation, task):
         const.update_task_value(task['task_id'], 'task_message', new_msg)
 
         # Tar all the log content
-        tar_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(run) +
+        tar_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(_run_cloudsim_cmd_loop) +
                     '.tar')
         p = os.path.join(root_log_dir, task_dirname)
         cmd = 'tar cf /tmp/' + tar_name + ' -C ' + p + ' .'
