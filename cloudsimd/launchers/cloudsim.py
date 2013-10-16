@@ -384,7 +384,8 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     empty_ssh_queue([sim_setup_done], sleep=2)
 
     log("Setup admin user %s and friends" % username)
-    users = {"guest": "officer", username: "admin", "user": "user"}
+    users = {"officer": "officer", username: "admin", "user": "user"}
+
     for u in jr_cs_admin_users:
         users[u] = "admin"
     for u in jr_other_users:
@@ -403,24 +404,17 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     # Add the currently logged-in user to the htpasswd file on the cloudsim
     # junior.  This file will be copied into the installation location later in
     # upload_cloudsim().
-    htpasswd_cmd = 'htpasswd -bc cloudsim_htpasswd %s admin%s' % (username,
-                                                            constellation_name)
-    log("add current user to htpasswd file: %s" % htpasswd_cmd)
-    out = ssh_cli.cmd(htpasswd_cmd)
-    log("\t%s" % out)
+    psswds = {}
+    psswds.update(users)
+    psswds[username] = "admin%s" % constellation_name
+    psswds['officer'] = "off%s" % constellation_name,
+    psswds['user'] = constellation_name
 
-    htpasswd_cmd = 'htpasswd -b cloudsim_htpasswd guest %s' % (
-                                                            constellation_name)
-    log("add officer user to htpasswd file: %s" % htpasswd_cmd)
-    out = ssh_cli.cmd(htpasswd_cmd)
-    log("\t%s" % out)
-
-    htpasswd_cmd = 'htpasswd -b cloudsim_htpasswd user %s' % (
-                                                            constellation_name)
-
-    log("add user to htpasswd file: %s" % htpasswd_cmd)
-    out = ssh_cli.cmd(htpasswd_cmd)
-    log("\t%s" % out)
+    for user, psswd in psswds.items():
+        htpasswd_cmd = 'htpasswd -b cloudsim_htpasswd %s %s' % (user, psswd)
+        log("add current user to htpasswd file: %s" % htpasswd_cmd)
+        out = ssh_cli.cmd(htpasswd_cmd)
+        log("\t%s" % out)
 
     # fname_zip = os.path.join(constellation_directory, "cs","cs.zip")
     log("Uploading the key file to the server")

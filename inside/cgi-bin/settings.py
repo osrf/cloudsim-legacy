@@ -6,7 +6,8 @@ import json
 import os
 
 from common.web import get_javascripts, authorize, UserDatabase,\
-    get_cloudsim_version_txt, print_http_header
+    get_cloudsim_version_txt, print_http_header, get_auth_type
+
 cgitb.enable()
 
 email = authorize("officer")
@@ -19,7 +20,15 @@ if method != 'GET':
 
 
 version = get_cloudsim_version_txt()
-user = {'user': email, 'role': role}
+
+# Authentication type (Basic or OpenId)
+auth, _ = get_auth_type()
+
+user = {'user': email,
+        'role': role,
+        'auth_type': auth}
+
+ 
 user_info = json.dumps(user)
 scripts = get_javascripts(['jquery-1.8.3.min.js'])
 
@@ -61,7 +70,7 @@ page = """<!DOCTYPE html>
             add_cloud_credentials_widget("amazon_credentials_div");
             add_portal_settings_widget("portal_settings_div");
         }
-        add_users_admin_widget("users_div");
+        add_users_admin_widget("users_div", user_info.auth_type);
         setTimeout(users_update , 500);
     }
 
@@ -97,7 +106,7 @@ page = """<!DOCTYPE html>
 Welcome, """ + email + """ <br>
 
 <div class="admin_only"
-     style="display:none; padding: 0px 0px 0px 0px;"
+     style="display: none; padding: 0px 0px 0px 0px;"
      align="right">
     <a href="/cloudsim/inside/cgi-bin/admin_download">SSH key download</a><br>
 
@@ -115,7 +124,7 @@ Welcome, """ + email + """ <br>
 
 <div style="width:100%; float:left;"><br><hr><br></div>
 
-    <div class="admin_only" style="display:none;" >
+    <div class="admin_only" style="display: none;" >
 
         <div id="osrf_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
         </div>
