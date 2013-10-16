@@ -1,6 +1,4 @@
 #!/usr/bin/python
-
-from __future__ import with_statement
 from __future__ import print_function
 
 import os
@@ -32,10 +30,13 @@ from launchers.launch_utils import LaunchException
 
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch_db import log_msg
+from launchers.launch_utils.launch_db import init_constellation_data
 
 # for interactive use
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.aws import read_boto_file
+
+
 
 try:
     logging.basicConfig(filename='/tmp/cloudsimd.log',
@@ -46,6 +47,7 @@ except:
                 format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                 level=logging.DEBUG)
 
+
 def log(msg, channel=__name__, severity="info"):
     log_msg(msg, channel, severity)
 
@@ -54,11 +56,9 @@ class UnknownConfig(LaunchException):
     pass
 
 task_states = ['ready', 
-               #'setup',
                'starting',
                'running',
                'stopping',
-               #'teardown',
                'stopped']
 
 def remove_tasks(name=None):
@@ -105,7 +105,7 @@ def reset_tasks(name=None):
      - starting
      - running
      - stopping
-    set to stopped, and it can't be run again.
+    set to stopped, and it can't be _run_cloudsim_cmd_loop again.
     Stopped tasks are not affected
     """
     names = []
@@ -122,13 +122,17 @@ def reset_tasks(name=None):
             state = task['task_state']
             if state not in ['ready']:
                 cs.update_task_value(task_id, 'task_state', 'ready')
-                cs.update_task_value(task_id, 'task_message', 'Ready to run')
+                cs.update_task_value(task_id, 'task_message',
+                                     'Ready to _run_cloudsim_cmd_loop')
+
 
 def gather_cs_credentials():
     """
-    Gather the names and IP addresses of all CloudSim constellations and pretty-print them for handing out to users
+    Gather the names and IP addresses of all CloudSim constellations
+    and pretty-print them for handing out to users
     """
-    consts = [x for x in  list_constellations() if 'configuration' in x and x['configuration'].startswith('CloudSim')]
+    consts = [x for x in  list_constellations() if 'configuration' in x \
+              and x['configuration'].startswith('CloudSim')]
     for const in consts:
         try:
             print('Your CloudSim information:')
@@ -137,7 +141,9 @@ def gather_cs_credentials():
             print('Password: %s'%(const['constellation_name']))
             print('\n\n\n')
         except Exception as e:
-            print('Failed to get information for constellation %s: %s'%(const, e))
+            print('Failed to get information for '
+                  'constellation %s: %s'%(const, e))
+
     
 def launch_constellation(username, configuration, args=None):
     """
@@ -179,7 +185,6 @@ def del_constellations():
     for k in r.keys():
         if k.find('cloudsim/') == 0:
             r.delete(k)
-    # r.flushdb()
 
 
 def list_constellations():
@@ -195,7 +200,6 @@ def list_constellations():
             constellations.append(c)
 
     return constellations 
-
 
 
 def get_aws_instance_by_name(instance_name, boto_path="../../boto.ini"):
@@ -294,7 +298,7 @@ def get_plugin(configuration):
     else:
         raise UnknownConfig('Invalid configuration "%s"' % (configuration,))
     
-    log("get_plugin: %s %s" % (configuration, plugin))
+    log("get_plugin: [%s] %s" % (configuration, plugin))
     return plugin
 
 
@@ -370,82 +374,47 @@ def _load_cloudsim_configurations_list():
     set_cloudsim_configuration_list(configs)
 
 
+def launch_cmd(root_dir, data):
+    constellation_name = "c" + get_unique_short_name()
+    constellation = ConstellationState(constellation_name)
+    
+    # put the minimum information in Redis so that the monitoring
+    # can work
+    constellation.set_value('constellation_state', 'launching')
+    constellation.set_value('configuration', data['configuration'])
+    
+    async_launch(constellation_name, data)
+    async_monitor(constellation_name)
+
+
 def launch(constellation_name, data):
     """
     Deploys a constellation. The configuration determines what type of
     constellation will be launched. the constellation directory is where all
     data should be saved (ssh keys, downloadable scripts, etc.)
     """
-
-    log("launch constellation_name %s" % constellation_name)
-
+    proc = multiprocessing.current_process().name
+    log("LAUNCH  [%s] from proc %s" % (constellation_name, proc))
     constellation = ConstellationState(constellation_name)
     try:
-        proc = multiprocessing.current_process().name
-
+        config = data['configuration']
         cloudsim_config = get_cloudsim_config()
-        version = cloudsim_config['cloudsim_version']
-        constellation_directory = data['constellation_directory']
-        
-        #log("cloudsimd.py launch")
-        data['config'] = data['configuration']
-        config = data['config']
-        log("CloudSim [%s] Launching constellation [%s], config [%s] "
-            "for user [%s] from proc [%s]" % (version, 
-                                              constellation_name, 
-                                              config,
-                                              data['username'],
-                                              proc))
+        log("preparing REDIS and filesystem %s" % constellation_name)
+        init_constellation_data(constellation_name,
+                                data,
+                                cloudsim_config)
         constellation_plugin = get_plugin(config)
-
-        gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-        data['GMT'] = gmt
-        data['CloudSim'] = version
-        data['constellation_name'] = constellation_name
-        cloud_provider = data['cloud_provider']
-        for k,v in data.iteritems():
-            constellation.set_value(k,v)
-
-        constellation.set_value('error', '')
-        constellation.set_value('current_task', "")
-        constellation.set_value('tasks', [])
+        log("calling the plugin's launch function")
+        constellation_plugin.launch(constellation_name, data)
         
-        try:
-            # save a copy of the credentials in the constellation directory
-            cs_cfg = get_cloudsim_config()
-            credentials_src = None
-            if cloud_provider == "softlayer":
-                credentials_src = cs_cfg['softlayer_path']
-            elif cloud_provider == "aws":
-                credentials_src = cs_cfg['boto_path']
-    
-            if not os.path.exists(credentials_src):
-                raise LaunchException('Cannot find credentials for cloud '
-                                      'provider "%s"' % cloud_provider)
-
-            credentials_fname = os.path.join(constellation_directory,
-                                         'credentials.txt')
-            shutil.copy(credentials_src, credentials_fname)    
-            constellation_plugin.launch(constellation_name, data)
-        except Exception, e:
-            #error_msg = constellation.get_value('error')
-            tb = traceback.format_exc()
-            constellation.set_value('error', 'Launch aborted with exception: '
-                                    '%s<pre>%s</pre>' % (e,tb))
-            log("LAUNCH ERROR traceback:  %s" % tb)
-
-            #time.sleep(10)
-            #terminate(constellation_name, constellation_directory)
-            #constellation.expire(10)
-
-        else:
-            log("Launch of constellation %s done" % constellation_name)
-
+        constellation.set_value('constellation_state', 'running')
+        log("Launch of constellation %s done" % constellation_name)
     except Exception, e:
-
-        log("cloudsimd.py launch error: %s" % e)
+        #error_msg = constellation.get_value('error')
         tb = traceback.format_exc()
-        log("traceback:  %s" % tb)
+        constellation.set_value('error', 'Launch aborted with exception: '
+                                '%s<pre>%s</pre>' % (e,tb))
+        log("LAUNCH ERROR traceback:  %s" % tb)
 
 
 def update_constellation(constellation_name):
@@ -463,8 +432,6 @@ def update_constellation(constellation_name):
         constellation_plugin.update(constellation_name)
     except Exception, e:
         tb = traceback.format_exc()
-#         constellation.set_value('error', 'Update aborted with exception: '
-#                                 '%s<pre>%s</pre>' % (e,tb))
         log("UPDATE ERROR traceback:  %s" % tb)
 
 
@@ -482,8 +449,6 @@ def start_gzweb(constellation_name):
         constellation_plugin.start_gzweb(constellation_name)
     except Exception, e:
         tb = traceback.format_exc()
-#         constellation.set_value('error', 'Start gzweb aborted with exception: '
-#                                 '%s<pre>%s</pre>' % (e,tb))
         log("START_GZWEB ERROR traceback:  %s" % tb)
 
 
@@ -501,8 +466,6 @@ def stop_gzweb(constellation_name):
         constellation_plugin.stop_gzweb(constellation_name)
     except Exception, e:
         tb = traceback.format_exc()
-#         constellation.set_value('error', 'Stop gzweb aborted with exception: '
-#                                 '%s<pre>%s</pre>' % (e,tb))
         log("STOP_GZWEB ERROR traceback:  %s" % tb)
 
              
@@ -555,7 +518,7 @@ def create_task(constellation_name, data):
         task_id = "t" + get_unique_short_name()
         data['task_id'] = task_id
         data['task_state'] = "ready"
-        data['task_message'] = 'Ready to run'
+        data['task_message'] = 'Ready to _run_cloudsim_cmd_loop'
 
         cs = ConstellationState(constellation_name)
         tasks = cs.get_value('tasks')
@@ -618,7 +581,8 @@ def delete_task(constellation_name, task_id):
 
 def start_task(constellation_name, task_id):
     """
-    Starts a simulation task on a constellation. Only one task can run at a
+    Starts a simulation task on a constellation. 
+    Only one task can _run_cloudsim_cmd_loop at a
     time.
     """
     try:
@@ -658,7 +622,7 @@ def start_task(constellation_name, task_id):
             else:
                 log("Task is not ready (%s)" % task_state)
         else:
-                log("can't run task %s while tasks %s "
+                log("can't _run_cloudsim_cmd_loop task %s while tasks %s "
                         "is already running" % (task_id, current_task))
     except Exception, e:
         log("start_task error %s" % e)
@@ -719,7 +683,7 @@ def monitor(constellation_name):
     try:
         proc = multiprocessing.current_process().name
         log("monitoring [%s] from proc '%s'" % (constellation_name, proc))
-        
+
         constellation = ConstellationState(constellation_name)
         config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
@@ -729,7 +693,8 @@ def monitor(constellation_name):
         while not done:
             try:
                 log("monitor %s (%s)" % (constellation_name, counter) )
-                done = constellation_plugin.monitor(constellation_name, counter)
+                done = constellation_plugin.monitor(constellation_name,
+                                                    counter)
                 log("monitor [%s] returned %s" % ( constellation_name, done) )
                 counter += 1
             except Exception, e:
@@ -743,7 +708,7 @@ def monitor(constellation_name):
         log("cloudsimd.py monitor error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
-        
+
     log("END OF MONITOR %s" % constellation_name)
 
 
@@ -833,84 +798,64 @@ def resume_monitoring(root_dir):
             log("deleting %s from redis database" % constellation_name)
 
 
-def async_create_task(constellation_name, data):
-    log('async_create_task')
+def _async_create_task(constellation_name, data):
+    log('_async_create_task')
 
     p = multiprocessing.Process(target=create_task,
                                 args=(constellation_name, data))
     p.start()
 
 
-def async_update_task(constellation_name, data):
-    log('async_update_task')
+def _async_update_task(constellation_name, data):
+    log('_async_update_task')
     p = multiprocessing.Process(target=update_task,
                                 args=(constellation_name, data))
     p.start()
 
 
-def async_delete_task(constellation_name, task_id):
+def _async_delete_task(constellation_name, task_id):
     p = multiprocessing.Process(target=delete_task,
                                 args=(constellation_name, task_id))
     p.start()
 
 
-def async_start_task(constellation_name, task_id):
+def _async_start_task(constellation_name, task_id):
     p = multiprocessing.Process(target=start_task,
                                 args=(constellation_name, task_id))
     p.start()
 
 
-def async_stop_task(constellation_name):
+def _async_stop_task(constellation_name):
     p = multiprocessing.Process(target=stop_task,
                                 args=(constellation_name,))
     p.start()
 
-def async_reset_tasks(constellation_name):
+
+def _async_reset_tasks(constellation_name):
     p = multiprocessing.Process(target=reset_tasks,
                                 args=(constellation_name,))
     p.start()
 
-def async_update_cloudsim_configuration_list():
+
+def _async_update_cloudsim_configuration_list():
     p = multiprocessing.Process(target=_load_cloudsim_configurations_list,
                                 args=())
     p.start()
 
-def async_start_gzweb(constellation_name):
+
+def _async_start_gzweb(constellation_name):
     p = multiprocessing.Process(target=start_gzweb,
                                 args=(constellation_name,))
     p.start()
+
     
-def async_stop_gzweb(constellation_name):
+def _async_stop_gzweb(constellation_name):
     p = multiprocessing.Process(target=stop_gzweb,
                                 args=(constellation_name,))
     p.start()
+
     
-def launch_cmd(root_dir, data):
-
-    """username = data['username']
-    cloud_provider = data['cloud_provider']
-    # extra arguments to the launch methd
-    args = None
-    if data.has_key('args'):
-        args = data['args']"""
-
-    count = 1
-    if data.has_key('count'):
-        count = int(data['count'])
-
-    for i in range(count):
-        constellation_name = "c" + get_unique_short_name()
-        constellation_path = os.path.join(root_dir, constellation_name)
-        os.makedirs(constellation_path)
-        cs = ConstellationState(constellation_name)
-        cs.set_value('constellation_state', 'launching')
-        cs.set_value('configuration', data['configuration'])
-        data['constellation_directory'] = constellation_path
-        async_launch(constellation_name, data)
-        async_monitor(constellation_name)
-
-
-def run(root_dir, tick_interval):
+def _run_cloudsim_cmd_loop(root_dir, tick_interval):
 
     red = redis.Redis()
     ps = red.pubsub()
@@ -923,7 +868,6 @@ def run(root_dir, tick_interval):
     log("Ready to get commands")
     red.set('cloudsim_ready', True)
     for msg in ps.listen():
-
         
         log("=== CLOUDSIMD EVENT ===") 
         try:
@@ -933,12 +877,10 @@ def run(root_dir, tick_interval):
                 continue
 
             cmd = data['command']
-            # config = data['configuration']
-
             log("CMD= \"%s\" DATA=\"%s\" " % (cmd, data))
 
             if cmd == '_load_cloudsim_configurations_list':
-                async_update_cloudsim_configuration_list()
+                _async_update_cloudsim_configuration_list()
 
             elif cmd == 'launch':
                 launch_cmd(root_dir, data)
@@ -958,42 +900,42 @@ def run(root_dir, tick_interval):
                 constellation = data['constellation']
                 data.pop('constellation')
                 data.pop('command')
-                async_create_task(constellation, data)
+                _async_create_task(constellation, data)
 
             elif cmd == "update_task":
                 constellation = data['constellation']
                 data.pop('constellation')
                 data.pop('command')
-                async_update_task(constellation, data)
+                _async_update_task(constellation, data)
 
             elif cmd == 'delete_task':
                 constellation = data['constellation']
                 task_id = data['task_id']
-                async_delete_task(constellation, task_id)
+                _async_delete_task(constellation, task_id)
 
             elif cmd == 'start_task':
                 log('start_task')
                 constellation = data['constellation']
                 task_id = data['task_id']
                 log('start_task %s' % task_id)
-                async_start_task(constellation, task_id)
+                _async_start_task(constellation, task_id)
 
             elif cmd == 'stop_task':
                 constellation = data['constellation']
-                async_stop_task(constellation)
+                _async_stop_task(constellation)
             
             elif cmd == 'reset_tasks':
                 constellation = data['constellation']
-                async_reset_tasks(constellation)
+                _async_reset_tasks(constellation)
             
             # gzweb commands
             elif cmd == 'start_gzweb':
                 constellation = data['constellation']
-                async_start_gzweb(constellation)
+                _async_start_gzweb(constellation)
 
             elif cmd == 'stop_gzweb':
                 constellation = data['constellation']
-                async_stop_gzweb(constellation)
+                _async_stop_gzweb(constellation)
 
         except Exception:
             log("Error processing message [%s]" % msg)
@@ -1012,10 +954,12 @@ if __name__ == "__main__":
         boto_path = '/var/www-cloudsim-auth/boto-useast'
         softlayer_path = '/var/www-cloudsim-auth/softlayer.json'
         root_dir = '/var/www-cloudsim-auth/machines'
-        cloudsim_portal_key_path = '/var/www-cloudsim-auth/cloudsim_portal.key'
-        cloudsim_portal_json_path = '/var/www-cloudsim-auth/cloudsim_portal.json'
-        cloudsim_bitbucket_key_path = '/var/www-cloudsim-auth/cloudsim_bitbucket.key'
-
+        cloudsim_portal_key_path = ('/var/www-cloudsim-auth/' 
+                                    'cloudsim_portal.key')
+        cloudsim_portal_json_path = ('/var/www-cloudsim-auth/'
+                                     'cloudsim_portal.json')
+        cloudsim_bitbucket_key_path = ('/var/www-cloudsim-auth/'
+                                       'cloudsim_bitbucket.key')
         if len(sys.argv) > 1:
             boto_path = os.path.abspath(sys.argv[1])
 
@@ -1051,7 +995,7 @@ if __name__ == "__main__":
         set_cloudsim_config(config)
         _load_cloudsim_configurations_list()
 
-        run(root_dir, tick_interval)
+        _run_cloudsim_cmd_loop(root_dir, tick_interval)
 
     except Exception, e:
         log("cloudsimd.py error: %s" % e)
