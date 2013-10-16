@@ -198,13 +198,10 @@ def startup_script(constellation_name):
     constellation.set_value("launch_stage", "startup")
 
 
-def upload_cloudsim(constellation_name,
-                               website_distribution,
-                               key_prefix):
+def upload_cloudsim(constellation_name, website_distribution, key_prefix):
 
     constellation = ConstellationState(constellation_name)
-    constellation_dir = constellation.get_value(
-                                                    'constellation_directory')
+    constellation_dir = constellation.get_value('constellation_directory')
 
     ip_address = constellation.get_value(IP_KEY)
     ssh_cli = SshClient(constellation_dir, key_prefix, 'ubuntu', ip_address)
