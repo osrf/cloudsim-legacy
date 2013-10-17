@@ -8,7 +8,7 @@ for arg in $*; do
     # Wipe out redis keys, so that we'll know later when cloudsimd is up
     redis-cli flushdb
   elif [ "$arg" == "-b" ]; then
-    basic_auth=1 
+    basic_auth=1
   else
     echo "Warning: ignoring unrecognized argument: $arg"
   fi
@@ -25,6 +25,8 @@ echo
 
 if [ "$basic_auth" == "1" ]; then
   sudo cp $DIR/distfiles/apache2-basic-auth.conf /etc/apache2/apache2.conf
+  # create the password file if it does not exist
+  sudo touch /var/www-cloudsim-auth/htpasswd
 else
   sudo cp $DIR/distfiles/apache2.conf /etc/apache2/apache2.conf
 fi
