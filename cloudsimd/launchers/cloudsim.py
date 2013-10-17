@@ -422,9 +422,10 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     psswds = {}
     psswds.update(users)
     psswds[username] = "admin%s" % constellation_name
-    psswds['officer'] = "off%s" % constellation_name,
+    psswds['officer'] = "off%s" % constellation_name
     psswds['user'] = constellation_name
 
+    ssh_cli.cmd('touch cloudsim_htpasswd')
     for user, psswd in psswds.items():
         htpasswd_cmd = 'htpasswd -b cloudsim_htpasswd %s %s' % (user, psswd)
         log("add current user to htpasswd file: %s" % htpasswd_cmd)

@@ -11,47 +11,26 @@ import tempfile
 import argparse
 import time
 
+
+
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, basepath)
 
 import cloudsimd.launchers.cloudsim as cloudsim
-import cloudsimd
+from cloudsimd.launchers.launch_utils.launch_db import init_constellation_data
 from cloudsimd.launchers.launch_utils.launch_db import set_cloudsim_config
 from cloudsimd.launchers.launch_utils.launch_db import get_unique_short_name
 from cloudsimd.launchers.launch_utils.launch_db import ConstellationState
+
+#import cloudsimd
 
 #  Modify PYTHONPATH variable with relative directories to basepath
 new_path = os.path.join(basepath, "inside", "cgi-bin")
 sys.path.insert(0, new_path)
 import common
 
-def cloudsim_bootstrap(username):
 
-    constellation_name = get_unique_short_name('c')
-    gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-    constellation_directory = tempfile.mkdtemp("cloudsim")
-
-    tags = {'GMT': gmt,
-            'username': username,
-            'cloud_provider': 'aws',
-            'constellation_directory': constellation_directory
-            }
-
-    website_distribution = cloudsim.zip_cloudsim()
-
-    constellation = ConstellationState(constellation_name)
-    constellation.set_value('configuration', 'CloudSim-stable')
-
-    constellation.set_value('username', username)
-    constellation.set_value('constellation_name', constellation_name)
-    constellation.set_value('gmt', gmt)
-    constellation.set_value('constellation_directory', constellation_directory)
-    constellation.set_value('constellation_state', 'launching')
-    constellation.set_value('error', '')
-
-    r = cloudsim.launch(constellation_name, tags, website_distribution)
-    return r
 
 # Specify command line arguments
 parser = argparse.ArgumentParser(
@@ -71,34 +50,35 @@ parser.add_argument('ec2_zone', metavar='EC2-AVAILABILITY-ZONE',
                              'eu-west-1b',
                              'eu-west-1c',])
 
-parser.add_argument('softlayer_path',
-                    nargs='?',
-                    metavar='SOFTLAYER-PATH',
-                    help='SoftLayer path',
-                    default='/var/www-cloudsim-auth/softlayer.json')
-parser.add_argument('root_dir',
-                    nargs='?',
-                    metavar='ROOT-DIR',
-                    help='Root dir',
-                    default='/var/www-cloudsim-auth/machines')
-parser.add_argument('cloudsim_portal_key_path',
-                    nargs='?',
-                    metavar='CLOUDSIM-PORTAL-KEY-PATH',
-                    help='CloudSim portal key path',
-                    default='/var/www-cloudsim-auth/cloudsim_portal.key')
-parser.add_argument('cloudsim_portal_json_path',
-                    nargs='?',
-                    metavar='CLOUDSIM-PORTAL-JSON-PATH',
-                    help='CloudSim portal json path',
-                    default='/var/www-cloudsim-auth/cloudsim_portal.json')
-parser.add_argument('cloudsim_bitbucket_key_path',
-                    nargs='?',
-                    metavar='CLOUDSIM-BITBUCKET-KEY-PATH',
-                    help='CloudSim BitBucket key path',
-                    default='/var/www-cloudsim-auth/cloudsim_bitbucket.key')
+# parser.add_argument('softlayer_path',
+#                     nargs='?',
+#                     metavar='SOFTLAYER-PATH',
+#                     help='SoftLayer path',
+#                     default='/var/www-cloudsim-auth/softlayer.json')
+# parser.add_argument('root_dir',
+#                     nargs='?',
+#                     metavar='ROOT-DIR',
+#                     help='Root dir',
+#                     default='/var/www-cloudsim-auth/machines')
+# parser.add_argument('cloudsim_portal_key_path',
+#                     nargs='?',
+#                     metavar='CLOUDSIM-PORTAL-KEY-PATH',
+#                     help='CloudSim portal key path',
+#                     default='/var/www-cloudsim-auth/cloudsim_portal.key')
+# parser.add_argument('cloudsim_portal_json_path',
+#                     nargs='?',
+#                     metavar='CLOUDSIM-PORTAL-JSON-PATH',
+#                     help='CloudSim portal json path',
+#                     default='/var/www-cloudsim-auth/cloudsim_portal.json')
+# parser.add_argument('cloudsim_bitbucket_key_path',
+#                     nargs='?',
+#                     metavar='CLOUDSIM-BITBUCKET-KEY-PATH',
+#                     help='CloudSim BitBucket key path',
+#                     default='/var/www-cloudsim-auth/cloudsim_bitbucket.key')
 
 # Parse command line arguments
 args = parser.parse_args()
+
 username = args.username
 key = args.access_key
 secret = args.secret_key
@@ -116,20 +96,30 @@ auto_launch_constellation = None
 config = {}
 config['cloudsim_version'] = '1.7.0'
 config['boto_path'] = tmp_file.name
-config['softlayer_path'] = args.softlayer_path
-config['machines_directory'] = args.root_dir
-config['cloudsim_portal_key_path'] = args.cloudsim_portal_key_path
-config['cloudsim_portal_json_path'] = args.cloudsim_portal_json_path
-config['cloudsim_bitbucket_key_path'] = args.cloudsim_bitbucket_key_path
-config['other_users'] = []
-config['cs_role'] = "admin"
-config['cs_admin_users'] = []
-config['ec2_zone'] = args.ec2_zone
+config['ec2_zone'] = ec2_zone
+config['machines_directory'] = tempfile.mkdtemp("cloudsim")
 
-set_cloudsim_config(config)
+#config['softlayer_path'] = args.softlayer_path
+#config['cloudsim_portal_key_path'] = args.cloudsim_portal_key_path
+#config['cloudsim_portal_json_path'] = args.cloudsim_portal_json_path
+#config['cloudsim_bitbucket_key_path'] = args.cloudsim_bitbucket_key_path
+#config['other_users'] = []
+#config['cs_role'] = "admin"
+#config['cs_admin_users'] = []
 
+# set_cloudsim_config(config)
+constellation_name = get_unique_short_name('c')
+
+data = {}
+data['username'] = username
+data['cloud_provider'] = 'aws'
+data['configuration'] = 'CloudSim-Stable'
+
+init_constellation_data(constellation_name, data, config)
+
+website_distribution = cloudsim.zip_cloudsim()
 # Launch a cloudsim instance
-machine = cloudsim_bootstrap(username)
+machine = cloudsim.launch(constellation_name, tags, website_distribution)
 
 print("removing temporary files...")
 os.remove(tmp_file.name)

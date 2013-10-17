@@ -475,12 +475,13 @@ def terminate(constellation_name):
     This could give the resources back to the cloud provider (AWS), 
     or wipe data.
     """
-
     proc = multiprocessing.current_process().name
     log("terminate '%s' from proc '%s'" % (constellation_name,  proc))
 
     constellation = ConstellationState(constellation_name)
     try:
+        # clear the error message
+        constellation.set_value('error', '')
         config = constellation.get_value('configuration')
         log("    configuration is '%s'" % (config))
         constellation_plugin = get_plugin(config)
