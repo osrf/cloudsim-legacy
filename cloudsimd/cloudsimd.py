@@ -105,7 +105,7 @@ def reset_tasks(name=None):
      - starting
      - running
      - stopping
-    set to stopped, and it can't be _run_cloudsim_cmd_loop again.
+    set to stopped, and it can't be run again.
     Stopped tasks are not affected
     """
     names = []
@@ -123,7 +123,7 @@ def reset_tasks(name=None):
             if state not in ['ready']:
                 cs.update_task_value(task_id, 'task_state', 'ready')
                 cs.update_task_value(task_id, 'task_message',
-                                     'Ready to _run_cloudsim_cmd_loop')
+                                     'Ready to run')
 
 
 def gather_cs_credentials():
@@ -518,7 +518,7 @@ def create_task(constellation_name, data):
         task_id = "t" + get_unique_short_name()
         data['task_id'] = task_id
         data['task_state'] = "ready"
-        data['task_message'] = 'Ready to _run_cloudsim_cmd_loop'
+        data['task_message'] = 'Ready to run'
 
         cs = ConstellationState(constellation_name)
         tasks = cs.get_value('tasks')
@@ -582,7 +582,7 @@ def delete_task(constellation_name, task_id):
 def start_task(constellation_name, task_id):
     """
     Starts a simulation task on a constellation. 
-    Only one task can _run_cloudsim_cmd_loop at a
+    Only one task can run at a
     time.
     """
     try:
@@ -622,7 +622,7 @@ def start_task(constellation_name, task_id):
             else:
                 log("Task is not ready (%s)" % task_state)
         else:
-                log("can't _run_cloudsim_cmd_loop task %s while tasks %s "
+                log("can't run task %s while tasks %s "
                         "is already running" % (task_id, current_task))
     except Exception, e:
         log("start_task error %s" % e)
