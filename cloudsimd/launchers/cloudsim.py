@@ -199,7 +199,6 @@ def startup_script(constellation_name):
 
 
 def upload_cloudsim(constellation_name, website_distribution, key_prefix):
-
     constellation = ConstellationState(constellation_name)
     constellation_dir = constellation.get_value('constellation_directory')
     ip_address = constellation.get_value(IP_KEY)
