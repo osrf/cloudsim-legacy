@@ -203,9 +203,10 @@ def startup_script(constellation_name):
 def upload_cloudsim(constellation_name,
                                website_distribution,
                                key_prefix):
-
     constellation = ConstellationState(constellation_name)
+
     constellation_dir = constellation.get_value('constellation_directory')
+
     ip_address = constellation.get_value("simulation_ip")
     ssh_cli = SshClient(constellation_dir, key_prefix, 'ubuntu', ip_address)
     short_file_name = os.path.split(website_distribution)[1]
