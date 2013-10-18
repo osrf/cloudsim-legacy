@@ -22,7 +22,8 @@ from launch_utils.monitoring import monitor_cloudsim_ping
 from launch_utils.monitoring import monitor_launch_state
 
 from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
-from launch_utils.launch_db import get_cloudsim_config, log_msg, LaunchException
+from launch_utils.launch_db import get_cloudsim_config
+from launch_utils.launch_db import log_msg, LaunchException
 
 from vrc_contest import create_private_machine_zip
 from launch_utils import terminate_aws_server
@@ -201,7 +202,6 @@ def upload_cloudsim(constellation_name, website_distribution, key_prefix):
 
     constellation = ConstellationState(constellation_name)
     constellation_dir = constellation.get_value('constellation_directory')
-
     ip_address = constellation.get_value(IP_KEY)
     ssh_cli = SshClient(constellation_dir, key_prefix, 'ubuntu', ip_address)
     short_file_name = os.path.split(website_distribution)[1]
