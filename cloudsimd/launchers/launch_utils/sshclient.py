@@ -38,6 +38,7 @@ class SshClient(object):
                                       "%s.pem" % key_name)
         self.user = '%s@%s' % (username, ip)
         self.ssh_connect_timeout = 10
+        self.ip = ip
 
     def cmd(self, cmd, extra_ssh_args=[]):
         ssh_cmd = ['ssh',

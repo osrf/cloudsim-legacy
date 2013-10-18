@@ -32,8 +32,6 @@ include(CPack)
 # Testing
 enable_testing()
 set(TEST_SCRIPTS
-  cloudsimd/launchers/vpc_micro_trio.py
-  cloudsimd/launchers/vpc_trio.py
   cloudsimd/launchers/cloudsim.py
   cloudsimd/launchers/simulator.py
 )

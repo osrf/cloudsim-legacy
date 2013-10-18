@@ -3,6 +3,7 @@ from __future__ import print_function
 
 
 import os
+import sys
 
 
 def get_test_dir():
@@ -20,12 +21,19 @@ def get_test_path(fname):
     return abs_path
 
 
+def flush():
+    pass
+
+
 def get_test_runner():
     try:
         import xmlrunner
         path = get_test_dir()
         runner = xmlrunner.XMLTestRunner(output=path)
+        sys.stderr.flush = flush
+        sys.stdout.flush = flush
         return runner
+    
     except:
         return None
 

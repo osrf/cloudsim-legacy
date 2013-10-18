@@ -4,38 +4,39 @@ import unittest
 import os
 import time
 import commands
-
+import json
 import tempfile
 import shutil
 
 
-from launch_utils import get_unique_short_name
-
 
 from launch_utils import SshClient
 from launch_utils import ConstellationState  # launch_db
+
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_cloudsim_startup_script
-from launch_utils.testing import get_test_runner, get_test_path, get_boto_path
+
 from launch_utils.monitoring import constellation_is_terminated
 from launch_utils.monitoring import monitor_cloudsim_ping
 from launch_utils.monitoring import monitor_launch_state
 
 from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
+
 from launch_utils.launch_db import get_cloudsim_config
-from launch_utils.launch_db import log_msg, LaunchException
+from launch_utils.launch_db import log_msg
+from launch_utils.launch_db import LaunchException
 
 from vrc_contest import create_private_machine_zip
-from launch_utils import terminate_aws_server
 
 from launch_utils.openstack import acquire_openstack_server
 from launch_utils.openstack import terminate_openstack_server
 from launch_utils.openstack import get_nova_creds
 
-from launch_utils.sl_cloud import acquire_dedicated_sl_server,\
-    terminate_dedicated_sl_server
-import json
+from launch_utils.sl_cloud import acquire_dedicated_sl_server
+from launch_utils.sl_cloud import terminate_dedicated_sl_server
+
 from launch_utils.aws import acquire_aws_single_server
+from launch_utils.aws import terminate_aws_server
 
 
 CONFIGURATION = "cloudsim"
@@ -615,79 +616,81 @@ def terminate(constellation_name):
 
 
 def zip_cloudsim():
+    """
+    creates a zipped cloudsim directory and returns
+     a path to a cloudsim.zip in a temp directory
+    """
     tmp_dir = tempfile.mkdtemp("cloudsim")
     tmp_zip = os.path.join(tmp_dir, "cloudsim.zip")
     p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     full_path_of_cloudsim = os.path.dirname(p)
-    # Account for having a version in the name of the directory, which we
-    # want to get rid of
-    shutil.copytree(full_path_of_cloudsim, os.path.join(tmp_dir, 'cloudsim'))
+    cloudsim_dir = os.path.join(tmp_dir, 'cloudsim')
+    shutil.copytree(full_path_of_cloudsim, cloudsim_dir)
     os.chdir(tmp_dir)
     commands.getoutput('zip -r %s cloudsim' % (tmp_zip))
-
+    # remove unzipped files.
+    shutil.rmtree(cloudsim_dir)
     return tmp_zip
 
 
-class JustInCase(unittest.TestCase):
+class TestCloudSim(unittest.TestCase):
 
-    def test_launch(self):
+    def setUp(self):
+        from launch_utils.testing import get_test_path
+        from launch_utils.testing import get_boto_path
+        from launch_utils.launch_db import get_unique_short_name
+        from launch_utils.launch_db import get_cloudsim_version
+        from launch_utils.launch_db import init_constellation_data
+        from launch_utils.launch_db import get_cloudsim_version
 
-        launch_stage = None  # use the current stage
-        # "nothing", "os_reload", "init_router", "init_privates",
-        # "zip",  "change_ip", "startup", "reboot", "running"
-        self.tags = {}
 
-        test_name = "cs_test_"
-        # self.constellation_name = 'CloudSim_test'
-        self.constellation_name = get_unique_short_name(test_name + "_")
-        self.constellation_directory = os.path.abspath(
-                                        os.path.join(get_test_path(test_name),
-                                        self.constellation_name))
-            #  print("creating: %s" % self.constellation_directory )
-        os.makedirs(self.constellation_directory)
+        print("setup")
+        self.username = 'tester'
+        self.password = "tester123"
+        self.constellation_name = get_unique_short_name("cstest_")
 
-        self.username = "toto@osrfoundation.org"
-        CONFIGURATION = 'CloudSim-stable'
-        self.tags.update({'TestCase': CONFIGURATION,
-                      'configuration': CONFIGURATION,
-                      'constellation': self.constellation_name,
-                      'username': self.username,
-                      'GMT': "now",
-                      'cloud_provider': 'aws',
-                      'constellation_directory': self.constellation_directory,
-                      })
+        # zip cloudsim
+        self.cloudsim_distribution = zip_cloudsim()
+        self.data_dir = get_test_path("cstest")
 
-        # config = get_cloudsim_config()
-        creds_fname = get_boto_path()
-        dst = os.path.join(self.constellation_directory, "credentials.txt")
-        shutil.copy(creds_fname, dst)
+        # setup CloudSim
+        config = {}
+        config['machines_directory'] = self.data_dir
+        config['cloudsim_version'] = get_cloudsim_version()
+        config['boto_path'] = get_boto_path()
 
-        test_name = "test_" + CONFIGURATION
+        # prepare the launch
+        data = {}
+        data['cloud_provider'] = 'aws'
+        data['configuration'] = 'CloudSim'
+        data['username'] = self.username
 
-        constellation = ConstellationState(self.constellation_name)
-        constellation.set_value("constellation_name", self.constellation_name)
-        constellation.set_value("constellation_directory",
-                                self.constellation_directory)
-        constellation.set_value("configuration", CONFIGURATION)
-        constellation.set_value('current_task', "")
-        constellation.set_value('tasks', [])
+        init_constellation_data(self.constellation_name, data, config)
 
-        log(self.constellation_directory)
-        if launch_stage:
-            constellation.set_value("launch_stage", launch_stage)
+        print("Launch %s: %s" % (self.constellation_name, data))
+        self.cloudsim_ip = launch(self.constellation_name,
+                   tags=data,
+                   website_distribution=self.cloudsim_distribution,
+                   force_authentication_type="Basic",
+                   basic_auth_password="tester123")
 
-        launch(self.constellation_name, self.tags)
+    def test_cloudsim(self):
+        print("test_cloudsim")
+        print("CloudSim ip: %s" % self.cloudsim_ip)
 
-        sweep_count = 2
+        sweep_count = 10
         for i in range(sweep_count):
             print("monitoring %s/%s" % (i, sweep_count))
             monitor(self.constellation_name, i)
 
-            time.sleep(1)
-
+    def tearDown(self):
+        print("teardown")
         terminate(self.constellation_name)
+        shutil.rmtree(os.path.dirname(self.cloudsim_distribution))
+        # shutil.rmtree(self.data_dir)
 
 
 if __name__ == "__main__":
+    from launch_utils.testing import get_test_runner
     xmlTestRunner = get_test_runner()
     unittest.main(testRunner=xmlTestRunner)
