@@ -6,21 +6,18 @@ import sys
 import time
 import shutil
 import multiprocessing
-from json import loads
 import redis
 import json
 import logging
-
-from launchers.launch_utils import SshClient
-
-# from common import Machine
-from launchers.launch_utils import get_unique_short_name
-from launchers.launch_utils.launch_db import ConstellationState
-from launchers.launch_utils.launch_db import get_cloudsim_config,\
-    set_cloudsim_config
-
 import traceback
 import datetime
+from json import loads
+
+from launchers.launch_utils import SshClient
+from launchers.launch_utils import get_unique_short_name
+from launchers.launch_utils.launch_db import ConstellationState
+from launchers.launch_utils.launch_db import get_cloudsim_config
+from launchers.launch_utils.launch_db import set_cloudsim_config
 
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
@@ -33,8 +30,8 @@ from launchers.launch_utils.launch_db import log_msg
 from launchers.launch_utils.launch_db import init_constellation_data
 
 # for interactive use
-from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.aws import read_boto_file
+from launchers.launch_utils.launch_db import get_cloudsim_version
 
 
 
@@ -977,7 +974,7 @@ if __name__ == "__main__":
             cloudsim_portal_json_path = os.path.abspath(sys.argv[5])
 
         config = {}
-        config['cloudsim_version'] = '1.5.0'
+        config['cloudsim_version'] = get_cloudsim_version()
         config['boto_path'] = boto_path
         config['softlayer_path'] = softlayer_path
         config['machines_directory'] = root_dir

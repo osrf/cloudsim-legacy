@@ -22,8 +22,7 @@ from launch_utils.monitoring import monitor_cloudsim_ping
 from launch_utils.monitoring import monitor_launch_state
 
 from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
-from launch_utils.launch_db import get_cloudsim_config, log_msg
-from launch_utils.launch_db import set_cloudsim_config
+from launch_utils.launch_db import get_cloudsim_config, log_msg, LaunchException
 
 from vrc_contest import create_private_machine_zip
 from launch_utils import terminate_aws_server
@@ -222,7 +221,31 @@ def upload_cloudsim(constellation_name, website_distribution, key_prefix):
     constellation.set_value(LAUNCH_MSG_KEY, "deploying web app")
 
 
-def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
+def _get_current_authentication_type():
+    """
+    Checks that CloudSim server is installed and determines the
+    authentication method
+    """
+    try:
+        r = commands.getoutput('grep Alias /etc/apache2/apache2.conf')
+        # make sure that cloudsim is installed
+        r.index("cloudsim")
+        r = commands.getoutput('grep AuthType /etc/apache2/apache2.conf')
+        auth_type = r.split("AuthType")[1]
+        return auth_type
+    except:
+        raise LaunchException('CloudSim web app is not installed')
+
+
+def launch(constellation_name,
+           tags,
+           website_distribution=CLOUDSIM_ZIP_PATH,
+           force_authentication_type=None,
+           basic_auth_password=None):
+    """
+    The
+    force_authentication_type can be None, 'OPenID' or 'Basic'
+    """
 
     log("CloudSim launch %s" % constellation_name)
     constellation = ConstellationState(constellation_name)
@@ -417,13 +440,14 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     log("\t%s" % out)
 
     # Add the currently logged-in user to the htpasswd file on the cloudsim
-    # junior.  This file will be copied into the installation location later in
-    # upload_cloudsim().
     psswds = {}
-    psswds.update(users)
-    psswds[username] = "admin%s" % constellation_name
-    psswds['officer'] = "off%s" % constellation_name
-    psswds['user'] = constellation_name
+    psswds[username] = "%s" % constellation_name
+#     psswds['officer'] = "off%s" % constellation_name
+#     psswds['user'] = constellation_name
+#    psswds.update(users)
+
+    if basic_auth_password:
+        psswds[username] = basic_auth_password
 
     ssh_cli.cmd('touch cloudsim_htpasswd')
     for user, psswd in psswds.items():
@@ -512,21 +536,22 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
                                    website_distribution,
                                    key_prefix)
 
-    else:
-        out = ssh_cli.cmd('sudo restart cloudsimd')
-        log("\t%s" % out)
-
-    # Upload the installed apache2.conf from the papa cloudsim so that the
-    # junior cloudsim is configured the same way (e.g., uses basic auth instead
-    # of openid).
-    ssh_cli.upload_file('/etc/apache2/apache2.conf',
-                        'cloudsim/distfiles/apache2.conf')
-
     ssh_cli.cmd('cp /home/ubuntu/cloudsim_users cloudsim/distfiles/users')
+
+    # Deternine the current authentication type, and deploy the same
+    # or use the force_authentication_type
+    auth_type = force_authentication_type
+    if not auth_type:
+        auth_type = _get_current_authentication_type()
+
+    deploy_args = ""  # the default for OpenID
+    if auth_type == "Basic":
+        deploy_args = "-b"
+
     # Deploy
     log("Deploying the cloudsim web app")
-    deploy_script_fname = "/home/ubuntu/cloudsim/deploy.sh -f"
-    out_s = ssh_cli.cmd("bash " + deploy_script_fname)
+    deploy_cmd = "bash /home/ubuntu/cloudsim/deploy.sh -f %s" % deploy_args
+    out_s = ssh_cli.cmd(deploy_cmd)
     log("\t%s" % out_s)
 
     # Copy in the htpasswd file, for use with basic auth.
@@ -554,6 +579,7 @@ def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
     time.sleep(10)
     constellation.set_value(LAUNCH_MSG_KEY, "Complete")
     log("provisioning done")
+    return ip
 
 
 def terminate(constellation_name):
