@@ -206,9 +206,6 @@ def monitor(constellation_name, counter):
         return True  # stop the monitoring loop
 
     constellation = ConstellationState(constellation_name)
-#     launch_stage = constellation.get_value("launch_stage")
-#     if launch_sequence.index(launch_stage) < launch_sequence.index('launch'):
-#         return False  # do it again later
 
     procs = []
     p = multiprocessing.Process(target=monitor_simulator_proc,
