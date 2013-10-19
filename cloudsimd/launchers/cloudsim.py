@@ -38,6 +38,11 @@ from launch_utils.sl_cloud import terminate_dedicated_sl_server
 from launch_utils.aws import acquire_aws_single_server
 from launch_utils.aws import terminate_aws_server
 
+from launch_utils.launch_db import get_unique_short_name
+from launch_utils.launch_db import get_cloudsim_version
+from launch_utils.launch_db import init_constellation_data
+from launch_utils.launch_db import get_cloudsim_version
+
 
 CONFIGURATION = "cloudsim"
 CLOUDSIM_ZIP_PATH = '/var/www-cloudsim-auth/cloudsim.zip'
@@ -633,61 +638,129 @@ def zip_cloudsim():
     return tmp_zip
 
 
-class TestCloudSim(unittest.TestCase):
+def create_cloudsim(username,
+                    credentials_fname,
+                    configuration,
+                    authentication_type,  # "OpenID" or "Basic"
+                    password,
+                    data_dir,
+                    constellation_name):
+    """
+    Launches a CloudSim directly (without using the CloudSimd daemon)
+
+    It returns the ip address of the cloudsim instance created.
+    Supports Google OpenID and Basic Authentication:
+    authentication_type should be "OpenID" or "Basic"
+    and password should not be None when "Basic" authentication is used
+    """
+    config = {}
+    config['cloudsim_version'] = get_cloudsim_version()
+    config['boto_path'] = credentials_fname
+    config['machines_directory'] = data_dir
+
+    data = {}
+    data['username'] = username
+    data['cloud_provider'] = 'aws'
+    data['configuration'] = configuration
+
+    init_constellation_data(constellation_name, data, config)
+
+    cloudzip_fname = zip_cloudsim()
+    # Launch a cloudsim instance
+    cloudsim_ip = launch(constellation_name,
+                         tags=data,
+                         website_distribution=cloudzip_fname,
+                         force_authentication_type=authentication_type,
+                         basic_auth_password=password)
+
+    print("deleting cloudsim.zip")
+    # this is a directory that contains one zip file
+    tmp_dir = os.path.dirname(cloudzip_fname)
+    shutil.rmtree(tmp_dir)
+
+    return cloudsim_ip
+
+
+class TestCreateCloudSim(unittest.TestCase):
 
     def setUp(self):
-        from launch_utils.testing import get_test_path
         from launch_utils.testing import get_boto_path
-        from launch_utils.launch_db import get_unique_short_name
-        from launch_utils.launch_db import get_cloudsim_version
-        from launch_utils.launch_db import init_constellation_data
-        from launch_utils.launch_db import get_cloudsim_version
+        from launch_utils.testing import get_test_path
 
+        self.name = get_unique_short_name('tcc')
+        self.data_dir = get_test_path("create_cs_test")
 
-        print("setup")
-        self.username = 'tester'
-        self.password = "tester123"
-        self.constellation_name = get_unique_short_name("cstest_")
+        self.ip = create_cloudsim(username="test",
+                                  credentials_fname=get_boto_path(),
+                                  configuration="CloudSim",
+                                  authentication_type="Basic",
+                                  password="test123",
+                                  data_dir=self.data_dir,
+                                  constellation_name=self.name)
+        print("cloudsim %s created" % self.ip)
 
-        # zip cloudsim
-        self.cloudsim_distribution = zip_cloudsim()
-        self.data_dir = get_test_path("cstest")
-
-        # setup CloudSim
-        config = {}
-        config['machines_directory'] = self.data_dir
-        config['cloudsim_version'] = get_cloudsim_version()
-        config['boto_path'] = get_boto_path()
-
-        # prepare the launch
-        data = {}
-        data['cloud_provider'] = 'aws'
-        data['configuration'] = 'CloudSim'
-        data['username'] = self.username
-
-        init_constellation_data(self.constellation_name, data, config)
-
-        print("Launch %s: %s" % (self.constellation_name, data))
-        self.cloudsim_ip = launch(self.constellation_name,
-                   tags=data,
-                   website_distribution=self.cloudsim_distribution,
-                   force_authentication_type="Basic",
-                   basic_auth_password="tester123")
-
-    def test_cloudsim(self):
-        print("test_cloudsim")
-        print("CloudSim ip: %s" % self.cloudsim_ip)
-
+    def test(self):
         sweep_count = 10
         for i in range(sweep_count):
             print("monitoring %s/%s" % (i, sweep_count))
-            monitor(self.constellation_name, i)
+            monitor(self.name, i)
 
     def tearDown(self):
-        print("teardown")
-        terminate(self.constellation_name)
-        shutil.rmtree(os.path.dirname(self.cloudsim_distribution))
-        # shutil.rmtree(self.data_dir)
+        print("terminate cloudsim %s" % self.ip)
+        terminate(self.name)
+        constellation = ConstellationState(self.name)
+        constellation.expire(1)
+
+
+# class TestCloudSim():
+#
+#     def setUp(self):
+#         from launch_utils.testing import get_test_path
+#
+#         print("setup")
+#         self.username = 'tester'
+#         self.password = "tester123"
+#         self.constellation_name = get_unique_short_name("cstest_")
+#
+#         # zip cloudsim
+#         self.cloudsim_distribution = zip_cloudsim()
+#         self.data_dir = get_test_path("cstest")
+# 
+#         # setup CloudSim
+#         config = {}
+#         config['machines_directory'] = self.data_dir
+#         config['cloudsim_version'] = get_cloudsim_version()
+#         config['boto_path'] = get_boto_path()
+# 
+#         # prepare the launch
+#         data = {}
+#         data['cloud_provider'] = 'aws'
+#         data['configuration'] = 'CloudSim'
+#         data['username'] = self.username
+# 
+#         init_constellation_data(self.constellation_name, data, config)
+# 
+#         print("Launch %s: %s" % (self.constellation_name, data))
+#         self.cloudsim_ip = launch(self.constellation_name,
+#                    tags=data,
+#                    website_distribution=self.cloudsim_distribution,
+#                    force_authentication_type="Basic",
+#                    basic_auth_password="tester123")
+# 
+#     def test_cloudsim(self):
+#         print("test_cloudsim")
+#         print("CloudSim ip: %s" % self.cloudsim_ip)
+# 
+#         sweep_count = 10
+#         for i in range(sweep_count):
+#             print("monitoring %s/%s" % (i, sweep_count))
+#             monitor(self.constellation_name, i)
+# 
+#     def tearDown(self):
+#         print("teardown")
+#         terminate(self.constellation_name)
+#         shutil.rmtree(os.path.dirname(self.cloudsim_distribution))
+#         # shutil.rmtree(self.data_dir)
 
 
 if __name__ == "__main__":

@@ -13,79 +13,20 @@ import time
 import shutil
 
 
+
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, basepath)
 
-import cloudsimd.launchers.cloudsim as cloudsim
-from cloudsimd.launchers.launch_utils.launch_db import get_cloudsim_version
-from cloudsimd.launchers.launch_utils.launch_db import init_constellation_data
-from cloudsimd.launchers.launch_utils.launch_db import set_cloudsim_config
-from cloudsimd.launchers.launch_utils.launch_db import get_unique_short_name
+from cloudsimd.launchers.cloudsim import create_cloudsim
 from cloudsimd.launchers.launch_utils.launch_db import ConstellationState
+from cloudsimd.launchers.launch_utils.launch_db import get_unique_short_name
 
 #  Modify PYTHONPATH variable with relative directories to basepath
 new_path = os.path.join(basepath, "inside", "cgi-bin")
 sys.path.insert(0, new_path)
 import common
 
-
-def create_cloudsim(username,
-                    key,
-                    secret,
-                    ec2_zone,
-                    configuratio,
-                    authentication_type,
-                    password):
-    """
-    Returns the ip address of the cloudsim instance created. 
-    Supports Google OpenID and Basic Authentication 
-    """
-    # Create temporal BOTO configuration file
-    boto_tmp_file = tempfile.NamedTemporaryFile()
-    boto_tmp_file.close()
-    cred = common.CloudCredentials(key, secret, fname=boto_tmp_file.name,
-                                   ec2_region_name=ec2_zone)
-    cred.save()
-    
-    auto_launch_constellation = None
-    
-    tmp_machine_dir = tempfile.mkdtemp("cloudsim")
-    
-    config = {}
-    config['cloudsim_version'] = get_cloudsim_version()
-    config['boto_path'] = boto_tmp_file.name
-    config['machines_directory'] = tmp_machine_dir
-    constellation_name = get_unique_short_name('c')
-    
-    data = {}
-    data['username'] = username
-    data['cloud_provider'] = 'aws'
-    data['configuration'] = configuration
-    
-    init_constellation_data(constellation_name, data, config)
-     
-    cloudzip_fname = cloudsim.zip_cloudsim()
-    # Launch a cloudsim instance
-    cloudsim_ip = cloudsim.launch( constellation_name,
-                               tags=data,
-                               website_distribution=cloudzip,
-                               force_authentication_type=authentication_type,
-                               basic_auth_password=password)
-    
-    print("deleting AWS credentials")
-    os.remove(boto_tmp_file.name)
-    
-    print("deleting cloudsim.zip")
-    # this is a directory that contains one zip file
-    tmp_dir = os.path.dirname(cloudzip_fname)
-    shutil.rmtree(tmp_dir)
-    
-    print("deleting ssh and vpn keys")
-    shutil.rmtree(tmp_machine_dir)
-    
-    print("temporary files removed")
-    return cloudsim_ip
 
 
 if __name__ == "__main__":
@@ -101,7 +42,6 @@ if __name__ == "__main__":
                         'authentication (or gmail address for Google OpenID)')
     parser.add_argument('-b',
                         '--basic_auth',
-    #                    nargs='?',
                         metavar='ADMIN-PSSWD',
                         help=('Use basic authentication with the supplied '
                         'password (Google OpenID is used by default and does '
@@ -128,24 +68,48 @@ if __name__ == "__main__":
                         nargs='?',
                         metavar='CONFIGURATION',
                         help='configuration (CloudSim-stable is the default)',
+                        default = 'CloudSim-stable',
                         choices= ['CloudSim', 'CloudSim-stable'])
     # Parse command line arguments
     args = parser.parse_args()
-    
+
     username = args.username
     key = args.access_key
     secret = args.secret_key
     ec2_zone = args.ec2_zone
-    configuration = 'CloudSim-Stable'
-    
+    configuration = args.config
+
     authentication_type = "OpenID"
     if args.basic_auth:
         authentication_type = "Basic"
-    
-    create_cloudsim(username=args.username,
-                    key=args.access_key,
-                    secret=args.secret_key,
-                    ec2_zone=args.ec2_zone,
-                    configuration='CloudSim-Stable',
-                    authentication_type=authentication_type,
-                    password=args.basic_auth)
+
+    boto_tmp_file = tempfile.NamedTemporaryFile(delete=False)
+    boto_tmp_file_fname = boto_tmp_file.name
+    boto_tmp_file.close()
+
+    # create a temporary boto credentials file
+    cred = common.CloudCredentials(key, secret, fname=boto_tmp_file_fname,
+                                   ec2_region_name=ec2_zone)
+    cred.save()
+
+    constellation_name = get_unique_short_name('cc')
+    # create a temporary machines directory, to be deleted afterwards
+    data_dir = tempfile.mkdtemp("create_cloudsim")
+
+    try:
+        ip  = create_cloudsim(username=args.username,
+                        credentials_fname=boto_tmp_file_fname,
+                        configuration=configuration,
+                        authentication_type=authentication_type,
+                        password=args.basic_auth,
+                        data_dir=data_dir,
+                        constellation_name=constellation_name)
+    finally:
+        print("deleting AWS credentials")
+        os.remove(boto_tmp_file_fname)
+        print("deleting ssh and vpn keys for %s" % ip)
+        shutil.rmtree(data_dir)
+        print("Cleaning Redis database")
+        constellation = ConstellationState(constellation_name)
+        constellation.expire(1)
+
