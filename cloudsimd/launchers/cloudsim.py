@@ -278,7 +278,7 @@ def launch(constellation_name,
                                      'credentials.txt')
 
     machine_prefix = "cs"
-    cfg = get_cloudsim_config()
+    # cfg = get_cloudsim_config()
 
     log('launch!!! tags = %s' % tags)
 
@@ -298,39 +298,39 @@ def launch(constellation_name,
     constellation.set_value("gazebo", "not running")
     constellation.set_value('sim_glx_state', "not running")
 
-    auto_launch_configuration = None
-    jr_softlayer_path = cfg['softlayer_path']
-    jr_cloudsim_portal_key_path = cfg['cloudsim_portal_key_path']
-    jr_cloudsim_portal_json_path = cfg['cloudsim_portal_json_path']
-    jr_bitbucket_key_path = cfg['cloudsim_bitbucket_key_path']
-    jr_other_users = cfg['other_users']
-    jr_cs_role = cfg['cs_role']
-    jr_cs_admin_users = cfg['cs_admin_users']
+#     auto_launch_configuration = None
+#     jr_softlayer_path = cfg['softlayer_path']
+#     jr_cloudsim_portal_key_path = cfg['cloudsim_portal_key_path']
+#     jr_cloudsim_portal_json_path = cfg['cloudsim_portal_json_path']
+#     jr_bitbucket_key_path = cfg['cloudsim_bitbucket_key_path']
+#     jr_other_users = cfg['other_users']
+#     jr_cs_role = cfg['cs_role']
+#     jr_cs_admin_users = cfg['cs_admin_users']
+# 
+#     if 'args' in tags:
+#         if type(tags['args']) == type(str()):
+#             # Backward compatibility: if args is a string,
+#             # it's the configuration to launch
+#             auto_launch_configuration = tags['args']
+# 
+#         elif type(tags['args']) == type(dict()):
+#             # Otherwise, it should be a dictionary
+#             d = tags['args']
+#             auto_launch_configuration = d['auto_launch_configuration']
+#             # And we pull junior's credential file paths from the provided
+#             # dictionary
+#             jr_softlayer_path = d['softlayer_path']
+#             jr_cloudsim_portal_key_path = d['cloudsim_portal_key_path']
+#             jr_cloudsim_portal_json_path = d['cloudsim_portal_json_path']
+#             jr_bitbucket_key_path = d['cloudsim_bitbucket_key_path']
+#             jr_other_users = d['other_users']
+#             jr_cs_role = d['cs_role']
+#             jr_cs_admin_users = d['cs_admin_users']
+#         else:
+#             log('Error: tags[\'args\'] is neither a string'
+#                 ' nor a dictionary: %s' % (str(tags['args'])))
 
-    if 'args' in tags:
-        if type(tags['args']) == type(str()):
-            # Backward compatibility: if args is a string,
-            # it's the configuration to launch
-            auto_launch_configuration = tags['args']
-
-        elif type(tags['args']) == type(dict()):
-            # Otherwise, it should be a dictionary
-            d = tags['args']
-            auto_launch_configuration = d['auto_launch_configuration']
-            # And we pull junior's credential file paths from the provided
-            # dictionary
-            jr_softlayer_path = d['softlayer_path']
-            jr_cloudsim_portal_key_path = d['cloudsim_portal_key_path']
-            jr_cloudsim_portal_json_path = d['cloudsim_portal_json_path']
-            jr_bitbucket_key_path = d['cloudsim_bitbucket_key_path']
-            jr_other_users = d['other_users']
-            jr_cs_role = d['cs_role']
-            jr_cs_admin_users = d['cs_admin_users']
-        else:
-            log('Error: tags[\'args\'] is neither a string'
-                ' nor a dictionary: %s' % (str(tags['args'])))
-
-    log('auto_launch_configuration %s' % auto_launch_configuration)
+#    log('auto_launch_configuration %s' % auto_launch_configuration)
 
     constellation.set_value(LAUNCH_MSG_KEY,
                             "setting up user accounts and keys")
@@ -367,7 +367,7 @@ def launch(constellation_name,
                               tags=tags)
 
     elif "OpenStack" in cloud_provider:
-        openstack_creds = cfg['openstack']
+        openstack_creds = credentials_fname
         pub_ip, _, key_prefix = acquire_openstack_server(
                                     constellation_name,
                                     openstack_creds,
@@ -427,12 +427,12 @@ def launch(constellation_name,
     empty_ssh_queue([sim_setup_done], sleep=2)
 
     log("Setup admin user %s and friends" % username)
-    users = {"officer": "officer", username: "admin", "user": "user"}
-
-    for u in jr_cs_admin_users:
-        users[u] = "admin"
-    for u in jr_other_users:
-        users[u] = jr_cs_role
+    # users = {"officer": "officer", username: "admin", "user": "user"}
+    users = {username: "admin"}
+#     for u in jr_cs_admin_users:
+#         users[u] = "admin"
+#     for u in jr_other_users:
+#         users[u] = jr_cs_role
 
     fname_users = os.path.join(constellation_directory, "cloudsim_users")
     with open(fname_users, 'w') as f:
@@ -461,8 +461,6 @@ def launch(constellation_name,
         out = ssh_cli.cmd(htpasswd_cmd)
         log("\t%s" % out)
 
-    # fname_zip = os.path.join(constellation_directory, "cs","cs.zip")
-    log("Uploading the key file to the server")
     constellation.set_value(LAUNCH_MSG_KEY,
                             "Uploading the key file to the server")
     remote_fname = "/home/ubuntu/cloudsim/cloudsim_ssh.zip"
@@ -470,19 +468,19 @@ def launch(constellation_name,
     out = ssh_cli.upload_file(fname_zip, remote_fname)
     log("\t%s" % out)
 
-    if jr_softlayer_path is not None and os.path.exists(jr_softlayer_path):
-        constellation.set_value(LAUNCH_MSG_KEY,
-                        "Uploading the SoftLayer credentials to the server")
-        remote_fname = "/home/ubuntu/softlayer.json"
-        log("uploading '%s' to the server to '%s'" % (jr_softlayer_path,
-                                                      remote_fname))
-        out = ssh_cli.upload_file(jr_softlayer_path, remote_fname)
-        log("\t%s" % out)
-    else:
-        constellation.set_value(LAUNCH_MSG_KEY,
-                                "No SoftLayer credentials loaded")
+#     if jr_softlayer_path is not None and os.path.exists(jr_softlayer_path):
+#         constellation.set_value(LAUNCH_MSG_KEY,
+#                         "Uploading the SoftLayer credentials to the server")
+#         remote_fname = "/home/ubuntu/softlayer.json"
+#         log("uploading '%s' to the server to '%s'" % (jr_softlayer_path,
+#                                                       remote_fname))
+#         out = ssh_cli.upload_file(jr_softlayer_path, remote_fname)
+#         log("\t%s" % out)
+#     else:
+#         constellation.set_value(LAUNCH_MSG_KEY,
+#                                 "No SoftLayer credentials loaded")
 
-    ec2_creds_fname = cfg['boto_path']
+    ec2_creds_fname = credentials_fname
     if ec2_creds_fname is not None and os.path.exists(ec2_creds_fname):
         # todo ... set the name, upload both files
         constellation.set_value(LAUNCH_MSG_KEY,
@@ -496,41 +494,41 @@ def launch(constellation_name,
         constellation.set_value(LAUNCH_MSG_KEY,
                                 "No Amazon Web Services credentials loaded")
 
-    if jr_cloudsim_portal_key_path is not None and \
-            os.path.exists(jr_cloudsim_portal_key_path) and \
-            jr_cloudsim_portal_json_path is not None and \
-            os.path.exists(jr_cloudsim_portal_json_path):
-        constellation.set_value(LAUNCH_MSG_KEY,
-                                "Uploading the Portal key to the server")
-        remote_fname = "/home/ubuntu/cloudsim_portal.key"
-        log("uploading '%s' to the server to '%s'" % (
-                                    jr_cloudsim_portal_key_path, remote_fname))
-        out = ssh_cli.upload_file(jr_cloudsim_portal_key_path, remote_fname)
-        log("\t%s" % out)
-
-        constellation.set_value(LAUNCH_MSG_KEY,
-                                "Uploading the Portal JSON file to the server")
-        remote_fname = "/home/ubuntu/cloudsim_portal.json"
-        log("uploading '%s' to the server to '%s'" % (
-                                jr_cloudsim_portal_json_path, remote_fname))
-        out = ssh_cli.upload_file(jr_cloudsim_portal_json_path, remote_fname)
-        log("\t%s" % out)
-    else:
-        constellation.set_value(LAUNCH_MSG_KEY,
-                                "No portal key or json file found")
-
-    if jr_bitbucket_key_path is not None and \
-                        os.path.exists(jr_bitbucket_key_path):
-        constellation.set_value(LAUNCH_MSG_KEY,
-                                "Uploading the bitbucket key to the server")
-        remote_fname = "/home/ubuntu/cloudsim_bitbucket.key"
-        log("uploading '%s' to the server to '%s'" % (jr_bitbucket_key_path,
-                                                                remote_fname))
-        out = ssh_cli.upload_file(jr_bitbucket_key_path, remote_fname)
-        log("\t%s" % out)
-    else:
-        constellation.set_value(LAUNCH_MSG_KEY,
-                                "No bitbucket key uploaded")
+#     if jr_cloudsim_portal_key_path is not None and \
+#             os.path.exists(jr_cloudsim_portal_key_path) and \
+#             jr_cloudsim_portal_json_path is not None and \
+#             os.path.exists(jr_cloudsim_portal_json_path):
+#         constellation.set_value(LAUNCH_MSG_KEY,
+#                                 "Uploading the Portal key to the server")
+#         remote_fname = "/home/ubuntu/cloudsim_portal.key"
+#         log("uploading '%s' to the server to '%s'" % (
+#                                     jr_cloudsim_portal_key_path, remote_fname))
+#         out = ssh_cli.upload_file(jr_cloudsim_portal_key_path, remote_fname)
+#         log("\t%s" % out)
+# 
+#         constellation.set_value(LAUNCH_MSG_KEY,
+#                                 "Uploading the Portal JSON file to the server")
+#         remote_fname = "/home/ubuntu/cloudsim_portal.json"
+#         log("uploading '%s' to the server to '%s'" % (
+#                                 jr_cloudsim_portal_json_path, remote_fname))
+#         out = ssh_cli.upload_file(jr_cloudsim_portal_json_path, remote_fname)
+#         log("\t%s" % out)
+#     else:
+#         constellation.set_value(LAUNCH_MSG_KEY,
+#                                 "No portal key or json file found")
+# 
+#     if jr_bitbucket_key_path is not None and \
+#                         os.path.exists(jr_bitbucket_key_path):
+#         constellation.set_value(LAUNCH_MSG_KEY,
+#                                 "Uploading the bitbucket key to the server")
+#         remote_fname = "/home/ubuntu/cloudsim_bitbucket.key"
+#         log("uploading '%s' to the server to '%s'" % (jr_bitbucket_key_path,
+#                                                                 remote_fname))
+#         out = ssh_cli.upload_file(jr_bitbucket_key_path, remote_fname)
+#         log("\t%s" % out)
+#     else:
+#         constellation.set_value(LAUNCH_MSG_KEY,
+#                                 "No bitbucket key uploaded")
 
     # Not required with any custom AMI
     if not cloudsim_stable:
@@ -566,14 +564,14 @@ def launch(constellation_name,
 
     # For a CloudSim launch, we look at the tags for a configuration to launch
     # at the end.
-    if auto_launch_configuration:
-        msg = ("Launching a constellation"
-               " of type \"%s\"" % auto_launch_configuration)
-        log(msg)
-        constellation.set_value(LAUNCH_MSG_KEY, msg)
-        time.sleep(20)
-        ssh_cli.cmd("/home/ubuntu/cloudsim/launch.py"
-                    " \"%s\" \"%s\"" % (username, auto_launch_configuration))
+#     if auto_launch_configuration:
+#         msg = ("Launching a constellation"
+#                " of type \"%s\"" % auto_launch_configuration)
+#         log(msg)
+#         constellation.set_value(LAUNCH_MSG_KEY, msg)
+#         time.sleep(20)
+#         ssh_cli.cmd("/home/ubuntu/cloudsim/launch.py"
+#                     " \"%s\" \"%s\"" % (username, auto_launch_configuration))
 
     print ("\033[1;32mCloudSim ready. Visit http://%s \033[0m\n" % ip)
     print ("Stop your CloudSim using the AWS console")
@@ -692,7 +690,7 @@ class TestCreateCloudSim(unittest.TestCase):
 
         self.ip = create_cloudsim(username="test",
                                   credentials_fname=get_boto_path(),
-                                  configuration="CloudSim",
+                                  configuration="CloudSim-stable",
                                   authentication_type="Basic",
                                   password="test123",
                                   data_dir=self.data_dir,
@@ -710,57 +708,6 @@ class TestCreateCloudSim(unittest.TestCase):
         terminate(self.name)
         constellation = ConstellationState(self.name)
         constellation.expire(1)
-
-
-# class TestCloudSim():
-#
-#     def setUp(self):
-#         from launch_utils.testing import get_test_path
-#
-#         print("setup")
-#         self.username = 'tester'
-#         self.password = "tester123"
-#         self.constellation_name = get_unique_short_name("cstest_")
-#
-#         # zip cloudsim
-#         self.cloudsim_distribution = zip_cloudsim()
-#         self.data_dir = get_test_path("cstest")
-# 
-#         # setup CloudSim
-#         config = {}
-#         config['machines_directory'] = self.data_dir
-#         config['cloudsim_version'] = get_cloudsim_version()
-#         config['boto_path'] = get_boto_path()
-# 
-#         # prepare the launch
-#         data = {}
-#         data['cloud_provider'] = 'aws'
-#         data['configuration'] = 'CloudSim'
-#         data['username'] = self.username
-# 
-#         init_constellation_data(self.constellation_name, data, config)
-# 
-#         print("Launch %s: %s" % (self.constellation_name, data))
-#         self.cloudsim_ip = launch(self.constellation_name,
-#                    tags=data,
-#                    website_distribution=self.cloudsim_distribution,
-#                    force_authentication_type="Basic",
-#                    basic_auth_password="tester123")
-# 
-#     def test_cloudsim(self):
-#         print("test_cloudsim")
-#         print("CloudSim ip: %s" % self.cloudsim_ip)
-# 
-#         sweep_count = 10
-#         for i in range(sweep_count):
-#             print("monitoring %s/%s" % (i, sweep_count))
-#             monitor(self.constellation_name, i)
-# 
-#     def tearDown(self):
-#         print("teardown")
-#         terminate(self.constellation_name)
-#         shutil.rmtree(os.path.dirname(self.cloudsim_distribution))
-#         # shutil.rmtree(self.data_dir)
 
 
 if __name__ == "__main__":
