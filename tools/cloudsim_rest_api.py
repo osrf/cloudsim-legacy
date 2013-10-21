@@ -13,7 +13,7 @@ class CloudSimRestApi(object):
 
     def __init__(self, url, user, passwd):
         """
-        initialization, only pass the ip as the url
+        Initialization, only pass the ip as the url
         """
         self.url = "http://%s" % url
         self.user = user
@@ -21,7 +21,7 @@ class CloudSimRestApi(object):
 
     def _api_get(self, path):
         """
-        internal http GET boilerplate
+        Internal http GET boilerplate
         """
         theurl = "/".join([self.url, path])
         r = requests.get(theurl, auth=(self.user, self.passwd))
@@ -32,7 +32,7 @@ class CloudSimRestApi(object):
 
     def _api_post(self, path):
         """
-        internal http POST boilerplate
+        Internal http POST boilerplate
         """
         theurl = "/".join([self.url, path])
         r = requests.post(theurl, auth=(self.user, self.passwd))
@@ -43,7 +43,7 @@ class CloudSimRestApi(object):
 
     def _api_put(self, path):
         """
-        internal http PUT boilerplate
+        Internal http PUT boilerplate
         """
         theurl = "/".join([self.url, path])
         r = requests.put(theurl, auth=(self.user, self.passwd))
@@ -54,7 +54,7 @@ class CloudSimRestApi(object):
 
     def _api_delete(self, path):
         """
-        internal http DELETE boilerplate
+        Internal http DELETE boilerplate
         """
         theurl = "/".join([self.url, path])
         r = requests.delete(theurl, auth=(self.user, self.passwd))
@@ -65,7 +65,7 @@ class CloudSimRestApi(object):
 
     def get_constellations(self):
         """
-        returuns the list of constellations for this CLoudSim
+        Returns the list of constellations for this CloudSim
         """
         cs = self._api_get('cloudsim/inside/cgi-bin/constellations')
         valids = [x for x in cs if 'configuration' in x]
@@ -88,7 +88,7 @@ class CloudSimRestApi(object):
 
     def get_constellation_data(self, constellation_name):
         """
-        returns the data for a specific constellation
+        Returns the data for a specific constellation
         """
         constellations = self.get_constellations()
         for c in constellations:
@@ -177,8 +177,10 @@ def launch_for_each_cloudsim(cloudsims, provider, configuration, delay=0.1):
     print("launching %s on %s cloudsims with %s sec delay" % (
                                    configuration, len(cloudsims), delay))
     for cloudsim in cloudsims:
-        print("- launching from %s" % cloudsim)
-        s = cloudsim.launch_constellation(provider, configuration)
-        print(s)
+        try:
+            print("Launching from %s" % (cloudsim))
+            cloudsim.launch_constellation(provider, configuration)
+        except Exception, e:
+            print("   Error: %s" % e)
         time.sleep(delay)
 
