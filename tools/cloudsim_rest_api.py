@@ -1,6 +1,7 @@
 import requests
 import urllib2
 import time
+import urlparse
 
 # this script uses requests
 # http://docs.python-requests.org/en/latest/
@@ -11,11 +12,11 @@ class CloudSimRestApi(object):
     It assumes that the CloudSim uses the Basic Auth mechanism.
     """
 
-    def __init__(self, url, user, passwd):
+    def __init__(self, ip, user, passwd):
         """
         Initialization, only pass the ip as the url
         """
-        self.url = "http://%s" % url
+        self.url = "http://%s" % ip
         self.user = user
         self.passwd = passwd
 
@@ -23,9 +24,9 @@ class CloudSimRestApi(object):
         """
         Internal http GET boilerplate
         """
-        theurl = "/".join([self.url, path])
+        theurl = urlparse.urljoin(self.url, path)
         r = requests.get(theurl, auth=(self.user, self.passwd))
-        if r.status_code != 200:
+        if r.status_code != requests.codes.ok:
             raise Exception("GET request error (code %s)" % r.status_code)
         j = r.json()
         return j
@@ -34,9 +35,9 @@ class CloudSimRestApi(object):
         """
         Internal http POST boilerplate
         """
-        theurl = "/".join([self.url, path])
+        theurl = urlparse.urljoin(self.url, path)
         r = requests.post(theurl, auth=(self.user, self.passwd))
-        if r.status_code != 200:
+        if r.status_code != requests.codes.ok:
             raise Exception("POST request error (code %s)" % r.status_code)
         j = r.json()
         return j
@@ -45,9 +46,9 @@ class CloudSimRestApi(object):
         """
         Internal http PUT boilerplate
         """
-        theurl = "/".join([self.url, path])
+        theurl = urlparse.urljoin(self.url, path)
         r = requests.put(theurl, auth=(self.user, self.passwd))
-        if r.status_code != 200:
+        if r.status_code != requests.codes.ok:
             raise Exception("PUT request error (code %s)" % r.status_code)
         j = r.json()
         return j
@@ -56,9 +57,9 @@ class CloudSimRestApi(object):
         """
         Internal http DELETE boilerplate
         """
-        theurl = "/".join([self.url, path])
+        theurl = urlparse.urljoin(self.url, path)
         r = requests.delete(theurl, auth=(self.user, self.passwd))
-        if r.status_code != 200:
+        if r.status_code != requests.codes.ok:
             raise Exception("DELETE request error (code %s)" % r.status_code)
         j = r.json()
         return j
@@ -102,7 +103,8 @@ class CloudSimRestApi(object):
         """
         p = urllib2.quote(provider)
         c = urllib2.quote(configuration)
-        url = '/cloudsim/inside/cgi-bin/constellations?cloud_provider=' + p
+        url = '/cloudsim/inside/cgi-bin/constellations'
+        url += '?cloud_provider=' + p
         url += '&configuration=' + c;
         s = self._api_post(url)
         return s
@@ -112,17 +114,17 @@ class CloudSimRestApi(object):
         Updates a constellation. Returns an error code 
         or the constellation name
         """
-        url = '/cloudsim/inside/cgi-bin/constellations';
-        url += '/' + constellation_name;
+        url = urlparse.urljoin('/cloudsim/inside/cgi-bin/constellations',
+                constellation_name)
         s = self._api_put(url)
         return s
-    
+
     def terminate_constellation(self, constellation_name):
         """
         Terminates a constellation
         """
-        url = '/cloudsim/inside/cgi-bin/constellations';
-        url += '/' + constellation_name;
+        url = urlparse.urljoin('/cloudsim/inside/cgi-bin/constellations',
+                                constellation_name)
         s = self._api_delete(url)
         return s
 
