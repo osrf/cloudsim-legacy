@@ -27,7 +27,7 @@ def get_baby_cloudsims(papa_cloudsim, user):
     return babies
     
 
-def launch_baby_cloudsims(url, papa_name, count=25, user='admin', delay=10):
+def launch_baby_cloudsims(url, papa_name, count=1, user='admin', delay=10):
     """
     Creates many Cloudsims for a papa cloudsim. It is good practice to wait
     between calls to avoid network clogging.
