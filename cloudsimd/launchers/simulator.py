@@ -528,7 +528,6 @@ def launch(constellation_name, tags):
 
     constellation.set_value("launch_stage", "launch")
 
-    #
     # lets build a list of machines for our constellation
     #
     openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
@@ -694,7 +693,6 @@ def launch(constellation_name, tags):
         constellation.set_value('%s_launch_state' % machine_name, "running")
     constellation.set_value("launch_stage", "running")
 
-    constellation.set_value("launch_stage", "running")
     return ssh_client.ip
 
 

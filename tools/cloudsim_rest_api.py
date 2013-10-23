@@ -114,7 +114,7 @@ class CloudSimRestApi(object):
         Updates a constellation. Returns an error code 
         or the constellation name
         """
-        url = urlparse.urljoin('/cloudsim/inside/cgi-bin/constellations',
+        url = urlparse.urljoin('/cloudsim/inside/cgi-bin/constellations/',
                 constellation_name)
         s = self._api_put(url)
         return s
@@ -123,7 +123,7 @@ class CloudSimRestApi(object):
         """
         Terminates a constellation
         """
-        url = urlparse.urljoin('/cloudsim/inside/cgi-bin/constellations',
+        url = urlparse.urljoin('/cloudsim/inside/cgi-bin/constellations/',
                                 constellation_name)
         s = self._api_delete(url)
         return s

@@ -342,7 +342,7 @@ def _load_cloudsim_configurations_list():
 </ol>
 """
     configs['DRC with FC'] = {'description': desc}
-    desc = """The CloudSim Web App running in the Cloud
+    desc = """CloudSim Web App running in the Cloud
 <ol>
   <li>Hardware: micro</li>
   <li>OS: Ubuntu 12.04 (Precise)</li>
@@ -350,7 +350,8 @@ def _load_cloudsim_configurations_list():
 </ol>
 """     
     configs['CloudSim'] = {'description': desc}
-    configs['CloudSim-stable'] = {'description': desc}
+    configs['CloudSim-stable'] = {'description':
+                                  "Pre installed binary image for " + desc}
     
     desc = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
 <ol>
@@ -366,7 +367,8 @@ def _load_cloudsim_configurations_list():
 </ol>
 """
     configs['Simulator'] = {'description': desc}
-    configs['Simulator-Stable'] = {'description': desc}
+    configs['Simulator-stable'] = {'description':
+                                    "Pre installed binary image for " + desc}
 
     set_cloudsim_configuration_list(configs)
 
@@ -402,9 +404,10 @@ def launch(constellation_name, data):
                                 cloudsim_config)
         constellation_plugin = get_plugin(config)
         log("calling the plugin's launch function")
-        constellation_plugin.launch(constellation_name, data)
         
+        constellation_plugin.launch(constellation_name, data)
         constellation.set_value('constellation_state', 'running')
+        
         log("Launch of constellation %s done" % constellation_name)
     except Exception, e:
         #error_msg = constellation.get_value('error')
