@@ -38,7 +38,7 @@ def launch_baby_cloudsims(url, papa_name, count=25, user='admin', delay=10):
 
 def launch_simulators(papa_url, papa_name, user='admin', delay=0.1):
     """
-    Create a simulator-stable constellation for each Cloudsim
+    Create a simulator-stable constellation for each Cloudsim.
     """
     papa = CloudSimRestApi(papa_url, user, 'admin%s' % papa_name)
     cloudsims = get_baby_cloudsims(papa, user=user)
