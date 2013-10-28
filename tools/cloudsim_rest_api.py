@@ -128,6 +128,29 @@ class CloudSimRestApi(object):
         s = self._api_delete(url)
         return s
 
+    def create_task(self, task_dict):
+        """
+        Adds a simulation task
+        """
+        pass
+    
+#     def read_task(self, task_dict):
+#         pass
+# 
+#     def update_task(self, task_dict):
+#         pass
+# 
+#     def delete_task(self):
+#         pass
+
+    def start_task(self, constellation_name, task_id):
+        """
+        Start a simulation task
+        """
+        pass
+
+    def stop_task(self):
+        pass
 
 def update_children(cloudsim, config=None, delay=10):
     """
