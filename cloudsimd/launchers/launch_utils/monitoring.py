@@ -124,24 +124,20 @@ def update_machine_aws_states(constellation_name,
 
 def constellation_is_terminated(constellation_name):
     constellation = None
-    expire = False
+    expire = True
     try:
         constellation = ConstellationState(constellation_name)
         constellation_state = constellation.get_value("constellation_state")
-        if constellation_state == "terminated":
-            expire = True
+        expire = constellation_state == "terminated"
     except:
         log("Can't access constellation  %s data" % constellation_name)
-        expire = True
 
     if expire:
         try:
             constellation.expire(1)
         except:
             pass
-        return True
-
-    return False
+    return expire
 
 
 def get_ssh_client(constellation_name, machine_state, ip_key, sshkey_key):
