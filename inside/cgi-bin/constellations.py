@@ -26,6 +26,23 @@ def log(msg, channel='constellations'):
     r.publish(channel, msg)
 
 
+def check_time_range(now, t1, t2):
+    """
+    Returns True if now is between t1 and t2. Times are expressed
+    in UTC strings
+    """
+    task_time_valid = False
+
+    task_start = parser.parse(t1)
+    task_stop = parser.parse(t2)
+    start_age = (now - task_start).total_seconds()
+    end_age = (now - task_stop).total_seconds()
+
+    if start_age > 0 and end_age < 0:
+        task_time_valid = True
+    return task_time_valid
+
+
 def get_user_tasks(tasks):
     """
     Returns the next available task
@@ -43,16 +60,12 @@ def get_user_tasks(tasks):
 
     now = datetime.datetime.utcnow()
     for task in tasks:
-        t1 = task['local_start']
-        t2 = task['local_stop']
-        task_start = parser.parse(t1)
-        task_stop = parser.parse(t2)
-
-        start_age = (now - task_start).total_seconds()
-        end_age = (now - task_stop).total_seconds()
-
         if task['task_state'] in ['ready']:
-            if start_age > 0 and end_age < 0:
+            t1 = task['local_start']
+            t2 = task['local_stop']
+            task_time_valid = check_time_range(now, t1, t2)
+
+            if task_time_valid:
                 latest_tasks.append(task)
                 return latest_tasks
 
