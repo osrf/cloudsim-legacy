@@ -225,7 +225,6 @@ def upload_cloudsim(constellation_name,
     constellation.set_value(LAUNCH_MSG_KEY, "deploying web app")
 
 
-
 def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
 
     log("CloudSim launch %s" % constellation_name)
