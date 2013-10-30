@@ -302,11 +302,10 @@ def get_cloudsim_config():
     return config
 
 
-def init_constellation_data(constellation_name,
-                            data,
-                            cloudsim_config):
+def init_constellation_data(constellation_name, data, cloudsim_config):
     """
-    initializes the Redis data for a new constellation, and
+    initializes the Redis data for a new constellation and copies the
+    cloud credentials.
     """
     log('init_constellation_data %s' % constellation_name)
     cloud_provider = data['cloud_provider']

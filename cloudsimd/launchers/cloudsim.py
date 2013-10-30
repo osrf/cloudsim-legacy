@@ -199,7 +199,9 @@ def startup_script(constellation_name):
 def _upload_cloudsim(constellation_name, website_distribution):
     constellation = ConstellationState(constellation_name)
     constellation_dir = constellation.get_value('constellation_directory')
+
     ip_address = constellation.get_value(IP_KEY)
+
     ssh_cli = SshClient(constellation_dir, "key-cs", 'ubuntu', ip_address)
     remote_filename = "/home/ubuntu/cloudsim.zip"
     log("uploading '%s' to the server to '%s'" % (website_distribution,
