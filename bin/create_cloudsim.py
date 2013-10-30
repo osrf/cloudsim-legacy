@@ -18,7 +18,7 @@ import shutil
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, basepath)
 
-from cloudsimd.launchers.cloudsim import create_cloudsim
+import cloudsimd.launchers.cloudsim  as cloudsim
 from cloudsimd.launchers.launch_utils.launch_db import ConstellationState
 from cloudsimd.launchers.launch_utils.launch_db import get_unique_short_name
 
@@ -97,13 +97,16 @@ if __name__ == "__main__":
     data_dir = tempfile.mkdtemp("create_cloudsim")
 
     try:
-        ip  = create_cloudsim(username=args.username,
+        ip  = cloudsim.create_cloudsim(username=args.username,
                         credentials_fname=boto_tmp_file_fname,
                         configuration=configuration,
                         authentication_type=authentication_type,
                         password=args.basic_auth,
                         data_dir=data_dir,
                         constellation_name=constellation_name)
+        cloudsim.update(constellation_name=constellation_name,
+                        force_authentication_type=authentication_type)
+        
     finally:
         print("deleting AWS credentials")
         os.remove(boto_tmp_file_fname)

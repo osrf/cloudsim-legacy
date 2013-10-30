@@ -6,7 +6,7 @@ import sys
 import unittest
 import time
 import datetime
-
+import logging
 
 from cloudsim_rest_api import CloudSimRestApi
 
@@ -24,7 +24,13 @@ from cloudsimd.launchers.launch_utils.testing import get_test_runner
 CLOUDSIM_CONFIG = "CloudSim-stable"
 SIM_CONFIG = "Simulator-stable"
 
-
+try:
+    logging.basicConfig(filename='/tmp/rest_integration_test.log',
+                format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                level=logging.DEBUG)
+except Exception, e:
+    print("Can't enable logging: %s" % e)
+    
 class RestException(Exception):
     pass
 
@@ -153,31 +159,39 @@ def run_task(cloudsim_api, constellation_name, task_id,
             raise RestException("Timeout in start_task"
                                 "%s for %s" % (task_id, constellation_name))    
         task_dict = cloudsim_api.read_task(constellation_name, task_id)
-        print("%s/%s Task %s: %s" % (count, max_count, task_id, task_dict['task_state']))
+        print("%s/%s Task %s: %s" % (count, max_count,
+                                     task_id,
+                                     task_dict['task_state']))
         if task_dict['task_state'] == 'running':
             return
 
-def create_task_dict(launch_file='vrc_taks_1.launch'):
+
+def create_task_dict(title, launch_file='vrc_task_1.launch'):
         task_dict = {}
-        task_dict['task_title'] = 'test task'
+        task_dict['task_title'] = title
         task_dict['ros_package'] = 'atlas_utils'
-        task_dict['launch_file'] = launch_file
+        task_dict['ros_launch'] = launch_file
         task_dict['launch_args'] = ''
         task_dict['timeout'] = '3600'
-        task_dict['latency'] = ''
-        task_dict['uplink_data_cap'] = ''
-        task_dict['downllink_data_cap'] = ''
+        task_dict['latency'] = '0'
+        task_dict['uplink_data_cap'] = '0'
+        task_dict['downlink_data_cap'] = '0'
         task_dict['local_start'] = _get_now_str(-1)  # yesterday
         task_dict['local_stop'] = _get_now_str(1)    # tomorrow
         task_dict['vrc_id'] = 1
         task_dict['vrc_num'] = 1
         return task_dict
 
+
 class RestTest(unittest.TestCase):
 
     def setUp(self):
-        print("setUp")
-        
+        print("########")
+        print("#")
+        print("# setUp")
+        print("#")
+        print("#")
+
         self.cloudsim_api = None
         self.simulator_name = None
         self.papa_cloudsim_name = None
@@ -201,7 +215,12 @@ class RestTest(unittest.TestCase):
         print("papa cloudsim %s created in %s" % (self.ip, self.data_dir))
 
     def test(self):
-        print("test")
+        print("########")
+        print("#")
+        print("# test")
+        print("#")
+        print("#")
+
         self.cloudsim_api = CloudSimRestApi(self.ip, self.user, self.password)    
         self.simulator_name = launch_constellation(self.cloudsim_api, 
                                                    config=SIM_CONFIG)
@@ -209,16 +228,20 @@ class RestTest(unittest.TestCase):
         # wait_for_state(self.cloudsim_api, self.simulator_name)
         wait_for_state(self.cloudsim_api,
                        self.simulator_name,
-                       key="launch_stage", 
+                       key="launch_stage",
                        value="running",
                        max_count=100)
         
-        print("CloudSim %s ready" % self.ip)
-        print("Simulator %s is running" % self.simulator_name)
+        print("\n\nCloudSim %s ready" % self.ip)
+        print('cs = CloudSimRestApi("%s", "%s", "%s")' % (self.ip,
+                                                     self.user,
+                                                     self.password))
+        print('tid = create_task(cs, "%s", '
+              'create_task_dict("test 0"))' % self.simulator_name)
         # the simulator is ready!
         
         # add a task
-        task_dict = create_task_dict()
+        task_dict = create_task_dict("test task 1")
         self.task_id = create_task(self.cloudsim_api,
                                    self.simulator_name,
                                    task_dict)
@@ -227,6 +250,12 @@ class RestTest(unittest.TestCase):
 
 
     def tearDown(self): 
+        print("########")
+        print("#")
+        print("# tearDown")
+        print("#")
+        print("#")
+
         # terminate simulator
         try:
             if self.cloudsim_api and self.simulator_name:

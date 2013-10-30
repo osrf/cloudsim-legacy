@@ -371,7 +371,8 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     
     var form_id = "form_" +task_id;
     var form_div = _create_task_form(form_id);
-
+	console.log("tabs!!")
+	$("#tabs_" + form_id).tabs();
     task_div.appendChild(form_div);
 
     var dlg = document.querySelector( "#" + form_id);
@@ -438,7 +439,6 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                     $( this ).dialog( "close" );
                      }
                    }; 
-    	
     }
     
      $( "#" + form_id ).dialog({

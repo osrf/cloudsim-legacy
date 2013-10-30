@@ -79,7 +79,8 @@ sudo chmod 704 /var/www-cloudsim-auth
 sudo rm -rf /var/cloudsimd
 sudo mkdir -p /var/cloudsimd
 sudo cp -a $DIR/cloudsimd/* /var/cloudsimd
-
+# copy version info so its accessible to the daemon
+sudo cp $DIR/VERSION /var/cloudsimd
 
 sudo cp $DIR/cloudsimd/cloudsimd.conf /etc/init
 sudo initctl reload-configuration
