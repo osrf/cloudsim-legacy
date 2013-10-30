@@ -91,37 +91,6 @@ def record_ping_result(data_str, ping_str, cutoff_time_span):
     return s
 
 
-def update_machine_aws_states(constellation_name,
-                              aws_id_keys_to_state_keys_dict):
-    """
-    Updates the redis database with aws state of machines for a constellation.
-    The dictionnary contains the keys to the aws ids and mapped
-    to the keys of the states
-
-    in the case of {'router_aws_id':'router_aws_state'}, the aws id is
-    read from the 'router_aws_id' value and
-    written to the 'router_aws_state' value
-
-    Some keys may not exist (too early in the launch process)
-    """
-    constellation = ConstellationState(constellation_name)
-    aws_ids = {}
-    for aws_id_key in aws_id_keys_to_state_keys_dict.keys():
-        try:
-            aws_id = constellation.get_value(aws_id_key)
-            if aws_id != None:
-                aws_ids[aws_id_key] = aws_id
-        except:
-            pass  # machine is not up yet
-
-    if len(aws_ids):
-        ec2conn = aws_connect()[0]
-        aws_states = get_aws_states(ec2conn, aws_ids)
-        for aws_id_key, aws_state in  aws_states.iteritems():
-            state_key = aws_id_keys_to_state_keys_dict[aws_id_key]
-            constellation.set_value(state_key, aws_state)
-
-
 def constellation_is_terminated(constellation_name):
     try:
         constellation = ConstellationState(constellation_name)
