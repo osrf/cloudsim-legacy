@@ -4,7 +4,6 @@ from __future__ import print_function
 import os
 import sys
 import time
-import shutil
 import multiprocessing
 from json import loads
 import redis
@@ -18,20 +17,18 @@ from launchers.launch_utils import get_unique_short_name
 from launchers.launch_utils.launch_db import ConstellationState
 from launchers.launch_utils.launch_db import get_cloudsim_config,\
     set_cloudsim_config
-from launchers.launch_utils import get_constellation_names
-from launchers.launch_utils import get_constellation_data
+
 from launchers.launch_utils import aws_connect
 from launchers.launch_utils import LaunchException
-
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch_db import log_msg
-from launchers.launch_utils.launch_db import init_constellation_data
 
 # These imports are here for interactive use (with iPython), not necessarily
 # referenced in this code module. 
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.aws import read_boto_file
-
+from launchers.launch_utils import get_constellation_names
+from launchers.launch_utils import get_constellation_data
 
 
 try:
