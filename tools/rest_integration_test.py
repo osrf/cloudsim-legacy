@@ -133,23 +133,13 @@ def create_task(cloudsim_api, constellation_name, task_dict):
     delta_tasks = diff(new_tasks, previous_tasks)
     new_task_id = delta_tasks[0]
     return new_task_id
-    
-    
-def run_task(cloudsim_api, constellation_name, task_id,
-               max_count=100,
-               sleep_secs=1):
-    """
-    Starts a task and waits for its status to be "running"
-    """
-    # check task
-    task_dict = cloudsim_api.read_task(constellation_name, task_id)
-    state = task_dict['task_state']
-    if state != "ready":
-        raise RestException("Can't start task in state %s" % state)
-    
-    # run task
-    cloudsim_api.start_task(constellation_name, task_id)
-    
+
+
+def wait_for_task_state(cloudsim_api,
+                        constellation_name,
+                        task_id,
+                        max_count=100,
+                        sleep_secs=1):
     # wait until the task is running
     count = 0
     while True:
@@ -165,6 +155,46 @@ def run_task(cloudsim_api, constellation_name, task_id,
         if task_dict['task_state'] == 'running':
             return
 
+
+def run_task(cloudsim_api, constellation_name, task_id,
+               max_count=100,
+               sleep_secs=1):
+    """
+    Starts a task and waits for its status to be "running"
+    """
+    # check task
+    task_dict = cloudsim_api.read_task(constellation_name, task_id)
+    state = task_dict['task_state']
+    if state != "ready":
+        raise RestException("Can't start task in state '%s'" % state)
+    
+    # run task
+    cloudsim_api.start_task(constellation_name, task_id)
+    wait_for_task_state(constellation_name,
+                        task_id,
+                        'running',
+                        max_count,
+                        sleep_secs)
+   
+
+def stop_task(cloudsim_api, constellation_name, task_id, max_count=100,
+               sleep_secs=1):
+    """
+    Stops a task and waits for its status to be "running"
+    """
+    # check task
+    task_dict = cloudsim_api.read_task(constellation_name, task_id)
+    state = task_dict['task_state']
+    if state != "running":
+        raise RestException("Can't stop task in state '%s'" % state)
+    
+    # run task
+    cloudsim_api.stop_task(constellation_name, task_id)
+    wait_for_task_state(constellation_name,
+                        task_id,
+                        'stopped',
+                        max_count,
+                        sleep_secs)    
 
 def create_task_dict(title, launch_file='vrc_task_1.launch'):
         task_dict = {}
