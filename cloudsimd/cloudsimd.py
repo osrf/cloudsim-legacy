@@ -10,18 +10,14 @@ from json import loads
 import redis
 import json
 import logging
+import traceback
+import datetime
 
-from launchers.launch_utils import SshClient
 
-# from common import Machine
 from launchers.launch_utils import get_unique_short_name
 from launchers.launch_utils.launch_db import ConstellationState
 from launchers.launch_utils.launch_db import get_cloudsim_config,\
     set_cloudsim_config
-
-import traceback
-import datetime
-
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils import get_constellation_data
 from launchers.launch_utils import aws_connect
