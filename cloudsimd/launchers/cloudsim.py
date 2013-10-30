@@ -524,6 +524,7 @@ def terminate(constellation_name):
     constellation.set_value('constellation_state', 'terminated')
 
 
+
 def _zip_cloudsim(target_dir, short_fname="cloudsim_src.zip"):
     """
     creates a zipped cloudsim directory and returns
