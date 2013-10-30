@@ -31,7 +31,7 @@ from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch_db import log_msg
 from launchers.launch_utils.launch_db import init_constellation_data
 
-# These imports are herer for interactive use (with iPython), not necessarily
+# These imports are here for interactive use (with iPython), not necessarily
 # referenced in this code module. 
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.aws import read_boto_file
