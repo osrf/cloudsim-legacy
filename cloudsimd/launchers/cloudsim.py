@@ -532,16 +532,21 @@ def _zip_cloudsim(target_dir, short_fname="cloudsim_src.zip"):
     """
     tmp_dir = tempfile.mkdtemp("cloudsim")
     tmp_zip = os.path.join(tmp_dir, short_fname)
+    # locate source files
     p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     full_path_of_cloudsim = os.path.dirname(p)
     cloudsim_dir = os.path.join(tmp_dir, 'cloudsim')
     shutil.copytree(full_path_of_cloudsim, cloudsim_dir)
     os.chdir(tmp_dir)
+    # remove test files if present (this avoids bloat)
+    test_dir = os.path.join(cloudsim_dir, "test-reports")
+    shutil.rmtree(test_dir)
+    # zip files
     commands.getoutput('zip -r %s cloudsim' % (tmp_zip))
-    # remove unzipped files.
-    shutil.rmtree(cloudsim_dir)
+    # move zip file to destination
     target_fname = os.path.join(target_dir, short_fname)
     shutil.move(tmp_zip, target_fname)
+    # remove all temporary files
     shutil.rmtree(tmp_dir)
     return target_fname
 

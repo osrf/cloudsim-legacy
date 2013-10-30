@@ -9,6 +9,7 @@ import datetime
 import logging
 
 from cloudsim_rest_api import CloudSimRestApi
+import traceback
 
 # add cloudsim directory to sytem path
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -19,6 +20,7 @@ import cloudsimd.launchers.cloudsim as cloudsim
 from cloudsimd.launchers.launch_utils.launch_db import ConstellationState
 from cloudsimd.launchers.launch_utils.launch_db import get_unique_short_name
 from cloudsimd.launchers.launch_utils.testing import get_test_runner
+from cloudsimd.launchers.launch_utils.testing import get_boto_path
 
 
 CLOUDSIM_CONFIG = "CloudSim-stable"
@@ -30,11 +32,42 @@ try:
                 level=logging.DEBUG)
 except Exception, e:
     print("Can't enable logging: %s" % e)
+
+
+def create_task_dict(title, launch_file='vrc_task_1.launch'):
+    """
+    Generates a simple task for testing purposes
+    """
+    def _get_now_str(days_offset=0):
+        """
+        Returns a utc string date time format of now, with optional
+        offset.
+        """
+        dt = datetime.timedelta(days=days_offset)
+        now = datetime.datetime.utcnow()
+        t = now - dt
+        s = t.isoformat()
+        return s
+    task_dict = {}
+    task_dict['task_title'] = title
+    task_dict['ros_package'] = 'atlas_utils'
+    task_dict['ros_launch'] = launch_file
+    task_dict['launch_args'] = ''
+    task_dict['timeout'] = '3600'
+    task_dict['latency'] = '0'
+    task_dict['uplink_data_cap'] = '0'
+    task_dict['downlink_data_cap'] = '0'
+    task_dict['local_start'] = _get_now_str(-1)  # yesterday
+    task_dict['local_stop'] = _get_now_str(1)    # tomorrow
+    task_dict['vrc_id'] = 1
+    task_dict['vrc_num'] = 1
+    return task_dict
+    
     
 class RestException(Exception):
     pass
 
-def diff(a, b):
+def _diff_list(a, b):
     """
     Compares 2 lists and returns the elements in list a only  
     """
@@ -43,6 +76,11 @@ def diff(a, b):
 
 
 def launch_constellation(api, config, max_count=100):
+    """
+    Launch a new constellation, waits for it to appear, and
+    returns the new constellation name
+    """
+
     # we're about to create a new constellation... this may not 
     # be the first
     previous_constellations = [x['constellation_name'] \
@@ -63,7 +101,7 @@ def launch_constellation(api, config, max_count=100):
         current_names = [x['constellation_name'] \
                                for x in constellation_list]
         
-        new_constellations = diff(current_names, previous_constellations)
+        new_constellations = _diff_list(current_names, previous_constellations)
         print ("%s/%s) new constellations: %s" % (count,
                                                   max_count,
                                                   new_constellations))
@@ -73,12 +111,47 @@ def launch_constellation(api, config, max_count=100):
     return constellation_name
 
 
-def wait_for_state(api,
+def terminate_constellation(api, constellation_name, max_count=100):
+    """
+    Terminates a constellation and waits until the process is done.
+    """
+    def exists(api, constellation_name):
+        constellation_list = api.get_constellations()
+        current_names = [x['constellation_name'] \
+                               for x in constellation_list]
+        if constellation_name in current_names:
+            return True
+        return False
+
+    constellation_exists = exists(api, constellation_name)
+    if not constellation_exists:
+        raise RestException("terminate_constellation: "
+                        "Constellation '%s' not found" % constellation_name)
+
+    # send the termination signal
+    api.terminate_constellation(constellation_name)
+
+    count = 0
+    constellation_name = None
+    while constellation_exists:
+        count += 1
+        if count > max_count:
+            raise RestException("Timeout in terminate_constellation %s" % (
+                                                          constellation_name))
+        constellation_exists = exists(api, constellation_name)
+        print("%s still exists" % constellation_name)
+
+
+def wait_for_constellation_state(api,
                    constellation_name,
                    key="constellation_state",
                    value="running",
                    max_count=100,
                    sleep_secs=5):
+    """
+    Polls constellation state key until its value matches value. This is used
+    to wait until a constellation is ready to run simulations 
+    """
     count = 0
     while True:
         time.sleep(sleep_secs)
@@ -98,24 +171,6 @@ def wait_for_state(api,
             return  const_data
 
 
-class Testo(unittest.TestCase):
-    
-    def test(self):
-        print("Testo")
-
-
-def _get_now_str(days_offset=0):
-    """
-    Returns a utc string date time format of now, with optional
-    offset.
-    """
-    dt = datetime.timedelta(days=days_offset)
-    now = datetime.datetime.utcnow()
-    t = now - dt
-    s = t.isoformat()
-    return s
-
-
 def create_task(cloudsim_api, constellation_name, task_dict):
     """
     Creates a new task and retrieves the id of the new task. This 
@@ -130,7 +185,7 @@ def create_task(cloudsim_api, constellation_name, task_dict):
     cloudsim_api.create_task(constellation_name, task_dict)
     new_tasks = task_names()
     
-    delta_tasks = diff(new_tasks, previous_tasks)
+    delta_tasks = _diff_list(new_tasks, previous_tasks)
     new_task_id = delta_tasks[0]
     return new_task_id
 
@@ -138,9 +193,12 @@ def create_task(cloudsim_api, constellation_name, task_dict):
 def wait_for_task_state(cloudsim_api,
                         constellation_name,
                         task_id,
+                        target_state,
                         max_count=100,
                         sleep_secs=1):
-    # wait until the task is running
+    """
+    Wait until the task is in a target state (ex "running", or "stopped")
+    """
     count = 0
     while True:
         time.sleep(sleep_secs)
@@ -149,10 +207,11 @@ def wait_for_task_state(cloudsim_api,
             raise RestException("Timeout in start_task"
                                 "%s for %s" % (task_id, constellation_name))    
         task_dict = cloudsim_api.read_task(constellation_name, task_id)
+        current_state = task_dict['task_state']
         print("%s/%s Task %s: %s" % (count, max_count,
                                      task_id,
-                                     task_dict['task_state']))
-        if task_dict['task_state'] == 'running':
+                                     current_state))
+        if current_state == target_state:
             return
 
 
@@ -167,18 +226,19 @@ def run_task(cloudsim_api, constellation_name, task_id,
     state = task_dict['task_state']
     if state != "ready":
         raise RestException("Can't start task in state '%s'" % state)
-    
+
     # run task
     cloudsim_api.start_task(constellation_name, task_id)
-    wait_for_task_state(constellation_name,
+    wait_for_task_state(cloudsim_api,
+                        constellation_name,
                         task_id,
                         'running',
                         max_count,
                         sleep_secs)
-   
+
 
 def stop_task(cloudsim_api, constellation_name, task_id, max_count=100,
-               sleep_secs=1):
+              sleep_secs=1):
     """
     Stops a task and waits for its status to be "running"
     """
@@ -189,39 +249,30 @@ def stop_task(cloudsim_api, constellation_name, task_id, max_count=100,
         raise RestException("Can't stop task in state '%s'" % state)
     
     # run task
-    cloudsim_api.stop_task(constellation_name, task_id)
-    wait_for_task_state(constellation_name,
+    cloudsim_api.stop_task(constellation_name)
+    wait_for_task_state(cloudsim_api,
+                        constellation_name,
                         task_id,
                         'stopped',
                         max_count,
                         sleep_secs)    
 
-def create_task_dict(title, launch_file='vrc_task_1.launch'):
-        task_dict = {}
-        task_dict['task_title'] = title
-        task_dict['ros_package'] = 'atlas_utils'
-        task_dict['ros_launch'] = launch_file
-        task_dict['launch_args'] = ''
-        task_dict['timeout'] = '3600'
-        task_dict['latency'] = '0'
-        task_dict['uplink_data_cap'] = '0'
-        task_dict['downlink_data_cap'] = '0'
-        task_dict['local_start'] = _get_now_str(-1)  # yesterday
-        task_dict['local_stop'] = _get_now_str(1)    # tomorrow
-        task_dict['vrc_id'] = 1
-        task_dict['vrc_num'] = 1
-        return task_dict
-
 
 class RestTest(unittest.TestCase):
 
-    def setUp(self):
-        print("########")
+    def title(self, text):
+        print("")
+        print("#######################################")
         print("#")
-        print("# setUp")
+        print("# %s" % text)
         print("#")
-        print("#")
+        print("#######################################")
+        
 
+    def setUp(self):
+        
+        self.title("setUp")
+        
         self.cloudsim_api = None
         self.simulator_name = None
         self.papa_cloudsim_name = None
@@ -234,81 +285,86 @@ class RestTest(unittest.TestCase):
 
         self.papa_cloudsim_name = get_unique_short_name('rst')
         self.data_dir = get_test_path("rest_test")
-        
+        self.creds_fname = get_boto_path()
+
+    def test(self):
+        self.title("create_cloudsim")
         self.ip = cloudsim.create_cloudsim(username=self.user,
-                                  credentials_fname=get_boto_path(),
+                                  credentials_fname=self.creds_fname,
                                   configuration=CLOUDSIM_CONFIG,
                                   authentication_type="Basic",
                                   password=self.password,
                                   data_dir=self.data_dir,
                                   constellation_name=self.papa_cloudsim_name)
         print("papa cloudsim %s created in %s" % (self.ip, self.data_dir))
-
-    def test(self):
-        print("########")
-        print("#")
-        print("# test")
-        print("#")
-        print("#")
-
+        print("\n\n")
+        print('api = CloudSimRestApi("%s", "%s", "%s")' % (self.ip,
+                                                     self.user,
+                                                     self.password))        
+        self.title("# launch simulator")
         self.cloudsim_api = CloudSimRestApi(self.ip, self.user, self.password)    
         self.simulator_name = launch_constellation(self.cloudsim_api, 
                                                    config=SIM_CONFIG)
-        print("Simulator %s launched" % (self.simulator_name))
-        # wait_for_state(self.cloudsim_api, self.simulator_name)
-        wait_for_state(self.cloudsim_api,
-                       self.simulator_name,
-                       key="launch_stage",
-                       value="running",
-                       max_count=100)
+        print("# Simulator %s launched" % (self.simulator_name))
+        print("api.get_constellation_data('%s')" % self.simulator_name)
+        wait_for_constellation_state(self.cloudsim_api,
+                                       self.simulator_name,
+                                       key="launch_stage",
+                                       value="running",
+                                       max_count=100)
         
-        print("\n\nCloudSim %s ready" % self.ip)
-        print('cs = CloudSimRestApi("%s", "%s", "%s")' % (self.ip,
-                                                     self.user,
-                                                     self.password))
-        print('tid = create_task(cs, "%s", '
-              'create_task_dict("test 0"))' % self.simulator_name)
+        print("# Simulator machine ready")
+
         # the simulator is ready!
-        
-        # add a task
+        self.title("# create task")
+        print('tid = create_task(api, "%s", '
+              'create_task_dict("test 0"))' % self.simulator_name)
+        print("\n\n")
         task_dict = create_task_dict("test task 1")
+        print("%s" % task_dict)
         self.task_id = create_task(self.cloudsim_api,
                                    self.simulator_name,
                                    task_dict)
 
         run_task(self.cloudsim_api,self.simulator_name, self.task_id)
-
+        self.title("# stop task")
+        stop_task(self.cloudsim_api,self.simulator_name, self.task_id)
 
     def tearDown(self): 
-        print("########")
-        print("#")
-        print("# tearDown")
-        print("#")
-        print("#")
+        self.title("tearDown")
 
-        # terminate simulator
+        self.title("terminate simulator")
         try:
             if self.cloudsim_api and self.simulator_name:
-                self.cloudsim_api.terminate_constellation(self.simulator_name)
+                terminate_constellation(self.cloudsim_api, self.simulator_name)
+            else:
+                print("No simulator created")
         except Exception, e:
             print("Error terminating simulator constellation %s: %s" % (
                                                         self.simulator_name,
                                                         e))
-        # terminate baby cloudsim?
-        
-        # terminate papa cloudsim
+            tb = traceback.format_exc()
+            print("traceback:  %s" % tb)
+
+        self.title("terminate papa cloudsim")
         try:
-            if self.papa_cloudsim_name:
-                print("terminate cloudsim %s" % self.ip)
+            if self.papa_cloudsim_name and self.ip:
+                print("terminate cloudsim '%s' %s" % (self.papa_cloudsim_name,
+                                                      self.ip))
                 cloudsim.terminate(self.papa_cloudsim_name)
                 # remove from Redis
                 constellation = ConstellationState(self.papa_cloudsim_name)
                 constellation.expire(1)
+            else:
+                print("papa cloudsim not created")   
         except Exception, e:
-             print("Error terminating papa cloudsim %s" % (
-                                                    self.papa_cloudsim_name))
+             print("Error terminating papa cloudsim '%s' : %s" % (
+                                                    self.papa_cloudsim_name,
+                                                    e))
+             tb = traceback.format_exc()
+             print("traceback:  %s" % tb)
+
 
 if __name__ == "__main__":
-   
     xmlTestRunner = get_test_runner()
     unittest.main(testRunner=xmlTestRunner)

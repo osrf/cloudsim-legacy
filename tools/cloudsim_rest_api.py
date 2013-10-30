@@ -186,7 +186,7 @@ class CloudSimRestApi(object):
         return r
 
 
-    def stop_task(self):
+    def stop_task(self, constellation_name):
         """
         Stop the running simulation task
         """

@@ -93,11 +93,8 @@ sudo apache2ctl restart
 if [ "$basic_auth" == "1" ]; then
   echo ""
   echo "*******************************************************************"
-  echo "Configured to use HTTP Basic Authentication.  If you haven't done so"
-  echo "already, you need to add at least one user to the htpasswd file: "
-  echo "  /var/www-cloudsim-auth/htpasswd"
-  echo "E.g.:"
-  echo "  sudo htpasswd /var/www-cloudsim-auth/htpasswd myusername"
-  echo "Users in htpasswd must match those in /var/www-cloudsim-auth/users."
+  echo "Configured to use HTTP Basic Authentication.
+  echo "Users in /var/www-cloudsim-auth/htpasswd must match those
+  echo "in /var/www-cloudsim-auth/users."
   echo "*******************************************************************"
 fi
