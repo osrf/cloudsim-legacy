@@ -150,7 +150,7 @@ function _create_task_form(form_id)
     var vrc_num = _add_form_textinput(form_div, "Task (1, 2 or 3)", visible);   	
     tabs_div.appendChild(tab3)   
     
-    // default values
+    // Default values
     ros_package.value = "atlas_utils";
     launch_file.value = "vrc_task_1.launch";
     timeout.value = "1800";
@@ -169,9 +169,7 @@ function _create_task_form(form_id)
 
 function create_task_list_widget(const_div, constellation_name)
 { 
-    //
     // create a form for the content 
-    //
     var form_id = constellation_name + "-task-view-form";
     
     var dlg_options = {
@@ -288,7 +286,7 @@ function create_task_list_widget(const_div, constellation_name)
     	reset_tasks_button.style.display='none';
     }
     
-    // add the buttons
+    // Add the buttons
     var widgets_div = tasks_div.querySelector("#widgets");
     var p = widgets_div.parentElement;
     var buttons_div = document.createElement("div");
@@ -303,7 +301,7 @@ function create_task_list_widget(const_div, constellation_name)
 	$("#tabs_" + form_id).tabs();
 	
     p.insertBefore(form_div, widgets_div);
-    
+
     // this is necessary, otherwise the form does not form
     setTimeout(function()
     	{ 	
@@ -350,10 +348,10 @@ function _set_button_state(action_button, task_state)
     action_button.setAttribute();
 }
 
-// add a new task line and widgets. Also subscribes to changes
+// Add a new task line and widgets. Also subscribes to changes
 function add_task_widget(const_div, constellation_name, task_id, state, task_title, task_data )
 {
-    //var const_div = document.getElementById(constellation_name);
+    // var const_div = document.getElementById(constellation_name);
     var tasks_div = const_div.querySelector("#tasks");
     
     var widgets_div = tasks_div.querySelector("#widgets");
@@ -365,9 +363,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
 
     widgets_div.appendChild(task_div);
     
-    //
-    // create a form for the content 
-    //
+    // Create a form for the content 
     
     var form_id = "form_" +task_id;
     var form_div = _create_task_form(form_id);
@@ -503,7 +499,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         }
 
         var readOnly = false;
-        // disable editing for users
+        // Disable editing for users
         if(get_user_info().role == "user")
         {
             readOnly = true;
@@ -600,7 +596,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         var task = _find_task_data(task_id, tasks);
         if(task)
         {
-        	// create a string with the task title and score message
+        	// Create a string with the task title and score message
         	var task_display_msg = "<b>" + task.task_title + "</b>";
         	task_display_msg += " " + task.task_message;
         	
@@ -616,7 +612,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
             	// colors =  ["/js/images/gray_status.png", "/js/images/blue_status.png"];
             	colors =  ["/js/images/blue_status.png", "/js/images/blue_status.png"];
 
-            	// starting up color
+            	// Starting up color
             	if(data.gazebo == "not running")
             	{
             		// colors[1] =  "/js/images/yellow_status.png";
@@ -638,10 +634,10 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 	edit_button.disabled=true;
                 }
                 
-                // constellation is ready
+                // Constellation is ready
                 if(data.constellation_state == "running")
                 {
-                	// no other task running
+                	// No other task running
                 	if(data.current_task == "")
                 	{
                 		action_button.disabled=false;
@@ -680,7 +676,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
 
             // _set_state_widget(state_widget, task.task_state, count);
             
-            // the count is used to blink the status
+            // The count is used to blink the status
             if (count == 100) 
                  count =0;
              else 
@@ -688,7 +684,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         }
         else
         {
-            // task does not exist anymore
+            // Task does not exist anymore
             if(task_div)
             {
                 widgets_div.removeChild(task_div);
@@ -703,5 +699,3 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     };
     $.subscribe("/constellation", cb);
 }
-
-

@@ -8,38 +8,36 @@ import json
 import tempfile
 import shutil
 
+
 from launch_utils import SshClient
 from launch_utils import ConstellationState  # launch_db
-
 from launch_utils.sshclient import clean_local_ssh_key_entry
 from launch_utils.startup_scripts import get_cloudsim_startup_script
-
 from launch_utils.monitoring import constellation_is_terminated
 from launch_utils.monitoring import monitor_cloudsim_ping
 from launch_utils.monitoring import monitor_launch_state
-
 from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
-
 from launch_utils.launch_db import log_msg, get_cloudsim_version
 from launch_utils.launch_db import LaunchException
-
 from vrc_contest import create_private_machine_zip
-
 from launch_utils.openstack import acquire_openstack_server
 from launch_utils.openstack import terminate_openstack_server
 from launch_utils.openstack import get_nova_creds
-
 from launch_utils.sl_cloud import acquire_dedicated_sl_server
 from launch_utils.sl_cloud import terminate_dedicated_sl_server
-
 from launch_utils.aws import acquire_aws_single_server
 from launch_utils.aws import terminate_aws_server
-
 from launch_utils.launch_db import get_unique_short_name
 from launch_utils.launch_db import init_constellation_data
 
 
 CONFIGURATION = "cloudsim"
+
+LAUNCH_MSG_KEY = "cs_launch_msg"
+STATE_KEY = 'cs_state'
+IP_KEY = "cs_public_ip"
+LATENCY_KEY = 'cs_latency'
+ZIP_READY_KEY = 'cs_zip_file'
 
 LAUNCH_MSG_KEY = "cs_launch_msg"
 STATE_KEY = 'cs_state'
@@ -66,12 +64,11 @@ def update(constellation_name, force_authentication_type=None):
         constellation.set_value("%s_launch_msg" % machine, "updating software")
 
     constellation_directory = constellation.get_value(
-                                                    'constellation_directory')
+                                                     'constellation_directory')
     # zip the currently running software
     website_distribution = _zip_cloudsim(constellation_directory)
     # send to cloudsim machine
     _upload_cloudsim(constellation_name, website_distribution)
-
     ip_address = constellation.get_value(IP_KEY)
     ssh_cli = SshClient(constellation_directory,
                         "key-cs",
@@ -201,9 +198,9 @@ def _upload_cloudsim(constellation_name, website_distribution):
     constellation_dir = constellation.get_value('constellation_directory')
 
     ip_address = constellation.get_value(IP_KEY)
-
     ssh_cli = SshClient(constellation_dir, "key-cs", 'ubuntu', ip_address)
     remote_filename = "/home/ubuntu/cloudsim.zip"
+
     log("uploading '%s' to the server to '%s'" % (website_distribution,
                                                   remote_filename))
 
@@ -424,11 +421,11 @@ def launch(constellation_name,
     # Add the currently logged-in user to the htpasswd file on the cloudsim
     psswds = {}
     psswds[username] = "%s" % constellation_name
-
     if basic_auth_password:
         psswds[username] = basic_auth_password
 
     ssh_cli.cmd('touch cloudsim_htpasswd')
+
     for user, psswd in psswds.items():
         htpasswd_cmd = 'htpasswd -b cloudsim_htpasswd %s %s' % (user, psswd)
         log("add current user to htpasswd file: %s" % htpasswd_cmd)
@@ -457,9 +454,7 @@ def launch(constellation_name,
                                 "No Amazon Web Services credentials loaded")
 
     if upload_cloudsim_code:
-        #
-        #  Upload cloudsim.zip
-        #
+        #  Upload source zip
         website_distribution = _zip_cloudsim(constellation_directory)
         _upload_cloudsim(constellation_name,
                                    website_distribution,
@@ -480,7 +475,6 @@ def launch(constellation_name,
     out_s = ssh_cli.cmd('sudo cp /home/ubuntu/cloudsim_htpasswd '
                         '/var/www-cloudsim-auth/htpasswd')
     log("\t%s" % out_s)
-
     print ("\033[1;32mCloudSim ready. Visit http://%s \033[0m\n" % ip)
     print ("Stop your CloudSim using the AWS console")
     print ("     http://aws.amazon.com/console/\n")
@@ -611,6 +605,7 @@ class TestCreateCloudSim(unittest.TestCase):
 
     def test(self):
         sweep_count = 10
+
         for i in range(sweep_count):
             print("monitoring %s/%s" % (i, sweep_count))
             monitor(self.name, i)

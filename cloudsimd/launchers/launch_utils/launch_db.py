@@ -343,11 +343,9 @@ def init_constellation_data(constellation_name, data, cloudsim_config):
     constellation.set_value('error', '')
     constellation.set_value('current_task', "")
     constellation.set_value('tasks', [])
-
     constellation.set_value('constellation_state', 'launching')
     log("CloudSim [%s] init constellation [%s], config [%s] for "
         "user [%s]" % (version, constellation_name, config, username))
-    return constellation_directory
 
 
 if __name__ == '__main__':

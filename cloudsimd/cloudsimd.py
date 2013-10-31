@@ -10,26 +10,57 @@ import json
 import logging
 import traceback
 import datetime
+<<<<<<< local
 from json import loads
+=======
+>>>>>>> other
 
+<<<<<<< local
+=======
+
+>>>>>>> other
 from launchers.launch_utils import get_unique_short_name
 from launchers.launch_utils.launch_db import ConstellationState
+<<<<<<< local
 from launchers.launch_utils.launch_db import get_cloudsim_config
 from launchers.launch_utils.launch_db import set_cloudsim_config
+=======
+from launchers.launch_utils.launch_db import get_cloudsim_config,\
+    set_cloudsim_config
+
+>>>>>>> other
 from launchers.launch_utils import aws_connect
 from launchers.launch_utils import LaunchException
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch_db import log_msg
+<<<<<<< local
 from launchers.launch_utils.launch_db import get_cloudsim_version
-from launchers.launch_utils import get_constellation_names
-from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
-from launchers.launch_utils.launch_db import log_msg
+=======
 from launchers.launch_utils.launch_db import init_constellation_data
 
 # These imports are here for interactive use (with iPython), not necessarily
 # referenced in this code module. 
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.aws import read_boto_file
+>>>>>>> other
+from launchers.launch_utils import get_constellation_names
+<<<<<<< local
+from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
+from launchers.launch_utils.launch_db import log_msg
+from launchers.launch_utils.launch_db import init_constellation_data
+=======
+from launchers.launch_utils import get_constellation_data
+
+>>>>>>> other
+
+<<<<<<< local
+# These imports are here for interactive use (with iPython), not necessarily
+# referenced in this code module. 
+from launchers.launch_utils.softlayer import load_osrf_creds
+from launchers.launch_utils.aws import read_boto_file
+=======
+
+>>>>>>> other
 
 
 try:
@@ -99,7 +130,7 @@ def reset_tasks(name=None):
      - starting
      - running
      - stopping
-    set to stopped, and it can't be run again.
+    set to stopped, and it can't be _run_cloudsim_cmd_loop again.
     Stopped tasks are not affected
     """
     names = []
@@ -116,7 +147,10 @@ def reset_tasks(name=None):
             state = task['task_state']
             if state not in ['ready']:
                 cs.update_task_value(task_id, 'task_state', 'ready')
-                cs.update_task_value(task_id, 'task_message', 'Ready to run')
+                cs.update_task_value(task_id, 'task_message',
+                                     'Ready to _run_cloudsim_cmd_loop')
+
+
 
 
 def gather_cs_credentials():
@@ -134,8 +168,13 @@ def gather_cs_credentials():
             # print('Password: %s'%(const['constellation_name']))
             print('\n\n\n')
         except Exception as e:
+<<<<<<< local
             print('Failed to get information for constellation %s: %s'%(const,
                                                                         e))
+=======
+            print('Failed to get information for constellation %s: %s' % (
+                                                                const, e))
+>>>>>>> other
 
     
 def launch_constellation(username, configuration, args=None):
@@ -372,7 +411,11 @@ def _load_cloudsim_configurations_list():
 def launch_cmd(root_dir, data):
     constellation_name = "c" + get_unique_short_name()
     constellation = ConstellationState(constellation_name)
+<<<<<<< local
     
+=======
+
+>>>>>>> other
     # put the minimum information in Redis so that the monitoring can work
     constellation.set_value('constellation_state', 'launching')
     constellation.set_value('configuration', data['configuration'])
@@ -389,6 +432,10 @@ def launch(constellation_name, data):
     """
     proc = multiprocessing.current_process().name
     log("LAUNCH [%s] from proc %s" % (constellation_name, proc))
+<<<<<<< local
+=======
+
+>>>>>>> other
     constellation = ConstellationState(constellation_name)
     try:
         config = data['configuration']
@@ -397,10 +444,20 @@ def launch(constellation_name, data):
         init_constellation_data(constellation_name, data, cloudsim_config)
         constellation_plugin = get_plugin(config)
         log("calling the plugin's launch function")
-        
+<<<<<<< local
+=======
         constellation_plugin.launch(constellation_name, data)
-        constellation.set_value('constellation_state', 'running')
+>>>>>>> other
         
+<<<<<<< local
+        constellation_plugin.launch(constellation_name, data)
+=======
+>>>>>>> other
+        constellation.set_value('constellation_state', 'running')
+<<<<<<< local
+        
+=======
+>>>>>>> other
         log("Launch of constellation %s done" % constellation_name)
     except Exception, e:
         tb = traceback.format_exc()
@@ -511,7 +568,7 @@ def create_task(constellation_name, data):
         task_id = "t" + get_unique_short_name()
         data['task_id'] = task_id
         data['task_state'] = "ready"
-        data['task_message'] = 'Ready to run'
+        data['task_message'] = 'Ready to _run_cloudsim_cmd_loop'
 
         cs = ConstellationState(constellation_name)
         tasks = cs.get_value('tasks')
@@ -614,7 +671,7 @@ def start_task(constellation_name, task_id):
             else:
                 log("Task is not ready (%s)" % task_state)
         else:
-                log("can't run task %s while tasks %s "
+                log("can't _run_cloudsim_cmd_loop task %s while tasks %s "
                         "is already running" % (task_id, current_task))
     except Exception, e:
         log("start_task error %s" % e)
