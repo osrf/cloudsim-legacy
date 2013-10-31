@@ -78,6 +78,7 @@ if __name__ == "__main__":
     secret = args.secret_key
     ec2_zone = args.ec2_zone
     configuration = args.config
+    password = args.basic_auth
 
     authentication_type = "OpenID"
     if args.basic_auth:
@@ -95,24 +96,28 @@ if __name__ == "__main__":
     constellation_name = get_unique_short_name('cc')
     # create a temporary machines directory, to be deleted afterwards
     data_dir = tempfile.mkdtemp("create_cloudsim")
-
+    ip = None
     try:
-        ip  = cloudsim.create_cloudsim(username=args.username,
+        ip  = cloudsim.create_cloudsim(username=username,
                         credentials_fname=boto_tmp_file_fname,
                         configuration=configuration,
                         authentication_type=authentication_type,
-                        password=args.basic_auth,
+                        password=password,
                         data_dir=data_dir,
                         constellation_name=constellation_name)
-        cloudsim.update(constellation_name=constellation_name,
-                        force_authentication_type=authentication_type)
-        
     finally:
         print("deleting AWS credentials")
         os.remove(boto_tmp_file_fname)
-        print("deleting ssh and vpn keys for %s" % ip)
+       
+        print("deleting ssh and vpn keys")
         shutil.rmtree(data_dir)
         print("Cleaning Redis database")
         constellation = ConstellationState(constellation_name)
         constellation.expire(1)
+    if ip:
+        msg = "CloudSim ready at ip %s, user: %s" % (ip, username)
+        if authentication_type == "Basic":
+            msg += ", password: %s" % password
+        print("%s\n\n" % msg)
 
+                
