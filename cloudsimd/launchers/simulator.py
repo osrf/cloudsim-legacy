@@ -894,12 +894,13 @@ def notify_portal(constellation, task):
 
 
 class MoniCase(unittest.TestCase):
-
+    """
+    Monitors an (existing) constellation. You must read have access to the
+    constellation directory.
+    """
     def xtest_monitorsim(self):
         constellation_name = 'cx9421ebe4'
         monitor(constellation_name, 1)
-#         monitor_launch(constellation_name, "sim")
-#         monitor_launch(constellation_name, "router")
 
     def xtest_ping(self):
         constellation_name = 'cx593c6f5e'
