@@ -297,10 +297,7 @@ function create_task_list_widget(const_div, constellation_name)
     buttons_div.appendChild(stop_current_task_button);
     buttons_div.appendChild(reset_tasks_button);
 
-    var form_div = _create_task_form(form_id);
-	console.log("tabs!!")
-	$("#tabs_" + form_id).tabs();
-	
+    var form_div = _create_task_form(form_id);	
     p.insertBefore(form_div, widgets_div);
 
     // this is necessary, otherwise the form does not form
@@ -363,12 +360,11 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     
 
     widgets_div.appendChild(task_div);
-    
+
     // Create a form for the content 
-    
+
     var form_id = "form_" +task_id;
     var form_div = _create_task_form(form_id);
-
     task_div.appendChild(form_div);
 
     var dlg = document.querySelector( "#" + form_id);
@@ -444,6 +440,11 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
       width: 500,
       modal: true,
       buttons: dlg_buttons,
+
+      open: function() { 
+                    console.log("open!!");
+                    $("#tabs_" + form_id).tabs();
+                },
 
       close: function() {
           console.log("gone");

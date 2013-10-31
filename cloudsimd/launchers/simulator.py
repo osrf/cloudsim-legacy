@@ -611,10 +611,10 @@ def launch(constellation_name, tags):
                                     drcsim_package_name,
                                     ip,
                                     ros_master_ip=ip,
-                                    gpu_driver_list,
-                                    ppa_list,
-                                    OPENVPN_CLIENT_IP,
-                                    OPENVPN_SERVER_IP)
+                                    gpu_driver_list=gpu_driver_list,
+                                    ppa_list=ppa_list,
+                                    OPENVPN_CLIENT_IP=OPENVPN_CLIENT_IP,
+                                    OPENVPN_SERVER_IP=OPENVPN_SERVER_IP)
     else:
         script = ""
 
