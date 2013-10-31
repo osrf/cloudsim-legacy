@@ -205,8 +205,6 @@ def monitor(constellation_name, counter):
         log("monitor done for %s" % (constellation_name))
         return True  # stop the monitoring loop
 
-    constellation = ConstellationState(constellation_name)
-
     procs = []
     p = multiprocessing.Process(target=monitor_simulator_proc,
                             args=(constellation_name, counter))

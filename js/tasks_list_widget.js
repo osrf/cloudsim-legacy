@@ -169,7 +169,8 @@ function _create_task_form(form_id)
 
 function create_task_list_widget(const_div, constellation_name)
 { 
-    // Create a form for the content 
+    //
+    // create a form for the content 
     var form_id = constellation_name + "-task-view-form";
     
     var dlg_options = {
@@ -265,7 +266,7 @@ function create_task_list_widget(const_div, constellation_name)
     
     var reset_tasks_button = document.createElement('input');
     reset_tasks_button.setAttribute('type','button');
-    reset_tasks_button.setAttribute('value','reset tasks');
+    reset_tasks_button.setAttribute('value','Reset tasks');
     reset_tasks_button.onclick = function()
     {
     	var txt  = "This clear the current task and will make all finished tasks ready to run again.";
@@ -301,8 +302,8 @@ function create_task_list_widget(const_div, constellation_name)
 	$("#tabs_" + form_id).tabs();
 	
     p.insertBefore(form_div, widgets_div);
-    
-    // This is necessary, otherwise the form does not form
+
+    // this is necessary, otherwise the form does not form
     setTimeout(function()
     	{ 	
     		$( "#" + form_id ).dialog(dlg_options );
