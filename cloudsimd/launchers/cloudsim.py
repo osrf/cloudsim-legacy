@@ -226,6 +226,7 @@ def upload_cloudsim(constellation_name,
 
 def launch(constellation_name, tags, website_distribution=CLOUDSIM_ZIP_PATH):
 
+    log("CloudSim launch %s" % constellation_name)
     constellation = ConstellationState(constellation_name)
     cloudsim_stable = True
     if constellation.get_value('configuration') == 'CloudSim':

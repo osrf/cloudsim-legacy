@@ -623,7 +623,7 @@ def launch(constellation_name, tags):
 
     cloud_provider = tags['cloud_provider']
     #username = tags['username']
-    config = tags['config']
+    config = tags['configuration']
     constellation_directory = tags['constellation_directory']
     credentials_fname = os.path.join(constellation_directory,
                                      'credentials.txt')

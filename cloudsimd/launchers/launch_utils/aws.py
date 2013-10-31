@@ -1,6 +1,8 @@
 from __future__ import print_function
 
 import time
+import shutil
+import os
 
 import boto.ec2
 from boto.ec2.regioninfo import RegionInfo
@@ -12,8 +14,7 @@ from launch_db import get_cloudsim_config
 from launch_db import log_msg
 from launch_db import ConstellationState
 from sshclient import clean_local_ssh_key_entry
-import shutil
-import os
+from launch_db import LaunchException
 
 
 VPN_PRIVATE_SUBNET = '10.0.0.0/24'
@@ -22,10 +23,6 @@ OPENVPN_CLIENT_IP = '11.8.0.2'
 
 def log(msg, channel=__name__, severity="info"):
     log_msg(msg, channel, severity)
-
-
-class LaunchException(Exception):
-    pass
 
 
 def get_aws_ubuntu_sources_repo(credentials_ec2):

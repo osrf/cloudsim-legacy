@@ -206,9 +206,6 @@ def monitor(constellation_name, counter):
         return True  # stop the monitoring loop
 
     constellation = ConstellationState(constellation_name)
-    launch_stage = constellation.get_value("launch_stage")
-    if launch_sequence.index(launch_stage) < launch_sequence.index('launch'):
-        return False  # do it again later
 
     procs = []
     p = multiprocessing.Process(target=monitor_simulator_proc,
@@ -704,13 +701,15 @@ def launch(constellation_name, tags):
 
 def terminate(constellation_name):
     constellation = ConstellationState(constellation_name)
+    constellation.set_value('constellation_state', 'terminating')
+
     machine_name = constellation.get_value('machine_name')
 
     constellation_directory = constellation.get_value(
                                                     "constellation_directory")
     credentials_fname = os.path.join(constellation_directory,
                                      'credentials.txt')
-    constellation.set_value('constellation_state', 'terminating')
+
     constellation.set_value('sim_glx_state', "not running")
     constellation.set_value('gazebo', "not running")
     constellation.set_value('gz_web', "")
@@ -781,9 +780,9 @@ def notify_portal(constellation, task):
 
         if task_num < '1' or task_num > '3':
             task_num = '1'
-        run = task['vrc_id']
-        if run < '1' or run > '5':
-            run = '1'
+        _run_cloudsim_cmd_loop = task['vrc_id']
+        if _run_cloudsim_cmd_loop < '1' or _run_cloudsim_cmd_loop > '5':
+            _run_cloudsim_cmd_loop = '1'
 
         start_time = task['start_time']
         start_task = dateutil.parser.parse(start_time)
@@ -847,7 +846,7 @@ def notify_portal(constellation, task):
         const.update_task_value(task['task_id'], 'task_message', new_msg)
 
         # Tar all the log content
-        tar_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(run) +
+        tar_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(_run_cloudsim_cmd_loop) +
                     '.tar')
         p = os.path.join(root_log_dir, task_dirname)
         cmd = 'tar cf /tmp/' + tar_name + ' -C ' + p + ' .'

@@ -6,6 +6,8 @@ import json
 import time
 import redis
 import uuid
+import os
+import shutil
 
 
 def log(msg, channel=__name__, severity='debug'):
@@ -31,6 +33,10 @@ def log_msg(msg, channel, severity):
         logger.debug(msg)
     else:
         logger.info(msg)
+
+
+class LaunchException(Exception):
+    pass
 
 
 def get_unique_short_name(prefix='x'):
@@ -275,6 +281,52 @@ def get_cloudsim_config():
     s = r.get(__CONFIG__KEY__)
     config = json.loads(s)
     return config
+
+
+def init_constellation_data(constellation_name, data, cloudsim_config):
+    """
+    initializes the Redis data for a new constellation and copies the
+    cloud credentials.
+    """
+    log('init_constellation_data %s' % constellation_name)
+    cloud_provider = data['cloud_provider']
+    config = data['configuration']
+    username = data['username']
+
+    root_dir = cloudsim_config['machines_directory']
+    constellation_directory = os.path.join(root_dir, constellation_name)
+    os.makedirs(constellation_directory)
+
+    # save a copy of the credentials in the constellation directory
+    credentials_src = None
+    if cloud_provider == "softlayer":
+        credentials_src = cloudsim_config['softlayer_path']
+    elif cloud_provider == "aws":
+        credentials_src = cloudsim_config['boto_path']
+    if not os.path.exists(credentials_src):
+        raise LaunchException(
+            'Cannot find credentials for cloud '
+            'provider "%s"' % cloud_provider)
+
+    credentials_fname = os.path.join(constellation_directory,
+                                     'credentials.txt')
+    shutil.copy(credentials_src, credentials_fname)
+    version = cloudsim_config['cloudsim_version']
+    gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+    data['GMT'] = gmt
+    data['CloudSim'] = version
+    data['constellation_name'] = constellation_name
+    data['constellation_directory'] = constellation_directory
+    constellation = ConstellationState(constellation_name)
+    # copy the data into the Redis database
+    for k, v in data.iteritems():
+        constellation.set_value(k, v)
+    constellation.set_value('error', '')
+    constellation.set_value('current_task', "")
+    constellation.set_value('tasks', [])
+
+    log("CloudSim [%s] init constellation [%s], config [%s] for "
+        "user [%s]" % (version, constellation_name, config, username))
 
 
 if __name__ == '__main__':
