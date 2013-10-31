@@ -4,7 +4,7 @@ project(CloudSim)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 set(MAJOR_VERSION 1)
 set(MINOR_VERSION 7)
-set(PATCH_VERSION 0)
+set(PATCH_VERSION 1)
 
 set(VERSION ${MAJOR_VERSION}.${MINOR_VERSION})
 set(VERSION_FULL ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION})
@@ -32,8 +32,7 @@ include(CPack)
 # Testing
 enable_testing()
 set(TEST_SCRIPTS
-  cloudsimd/launchers/cloudsim.py
-  cloudsimd/launchers/simulator.py
+  tools/rest_integration_test.py
 )
 
 foreach(script ${TEST_SCRIPTS})

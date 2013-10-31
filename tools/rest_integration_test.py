@@ -14,7 +14,6 @@ import traceback
 # add cloudsim directory to sytem path
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, basepath)
-# print("sys.path: %s" % sys.path)
 
 import cloudsimd.launchers.cloudsim as cloudsim
 from cloudsimd.launchers.launch_utils.launch_db import ConstellationState
