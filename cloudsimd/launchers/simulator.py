@@ -908,7 +908,10 @@ class MoniCase(unittest.TestCase):
 
 
 class TestSimulator(unittest.TestCase):
-
+    """
+    Launches a simulator instance, runs the monitor loop 10 times,
+    and terminates it.
+    """
     def setUp(self):
         from launch_utils.testing import get_test_path
         from launch_utils.testing import get_boto_path
