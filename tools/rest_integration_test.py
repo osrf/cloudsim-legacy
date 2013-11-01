@@ -137,7 +137,8 @@ def terminate_constellation(api, constellation_name, max_count=100):
             raise RestException("Timeout in terminate_constellation %s" % (
                                                           constellation_name))
         constellation_exists = exists(api, constellation_name)
-        print("%s still exists" % (constellation_name, constellation_exists))
+        print("%s still exists: %s" % (constellation_name,
+                                       constellation_exists))
 
 
 def wait_for_constellation_state(api,
