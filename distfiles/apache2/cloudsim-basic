@@ -1,0 +1,17 @@
+# apache2 site config file
+
+DocumentRoot /var/www
+Alias /cloudsim /var/www
+
+<Location /cloudsim/inside>
+AuthName CloudSim
+AuthType Basic
+AuthBasicProvider file
+AuthUserFile /var/www-cloudsim-auth/htpasswd
+Require valid-user
+</Location>
+
+<Location /cloudsim/inside/cgi-bin>
+SetHandler cgi-script
+Options +ExecCGI
+</Location>

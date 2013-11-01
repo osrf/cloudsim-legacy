@@ -1,0 +1,16 @@
+# apache2 site config site
+
+DocumentRoot /var/www
+Alias /cloudsim /var/www
+
+<Location /cloudsim/inside>
+AuthType OpenID
+Require valid-user
+AuthOpenIDLoginPage /cloudsim/index.html
+</Location>
+
+<Location /cloudsim/inside/cgi-bin>
+SetHandler cgi-script
+Options +ExecCGI
+</Location>
+

@@ -8,7 +8,7 @@ import traceback
 from launch_db import log_msg
 import redis
 import json
-from aws import aws_connect
+
 
 machine_states = ['terminated', 'terminating', 'stopped' 'stopping',
                   'nothing', 'starting', 'booting',
@@ -310,7 +310,7 @@ def monitor_task(constellation_name, ssh_router):
             #score_str = "No score available."
             tb = traceback.format_exc()
             log("traceback: %s" % tb)
-        log("score %s" % score_str)
+        log("score '%s', score_str '%s'" % (score, score_str))
         net_str = None
 
         try:
