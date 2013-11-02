@@ -14,12 +14,14 @@ import traceback
 # add cloudsim directory to sytem path
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, basepath)
+print (sys.path)
 
 import cloudsimd.launchers.cloudsim as cloudsim
 from cloudsimd.launchers.launch_utils.launch_db import ConstellationState
 from cloudsimd.launchers.launch_utils.launch_db import get_unique_short_name
 from cloudsimd.launchers.launch_utils.testing import get_test_runner
 from cloudsimd.launchers.launch_utils.testing import get_boto_path
+from cloudsimd.launchers.launch_utils.testing import get_test_path
 
 
 CLOUDSIM_CONFIG = "CloudSim-stable"
@@ -110,7 +112,8 @@ def launch_constellation(api, config, max_count=100):
     return constellation_name
 
 
-def terminate_constellation(api, constellation_name,
+def terminate_constellation(api,
+                            constellation_name,
                             sleep_secs=2,
                             max_count=100):
     """
@@ -120,9 +123,7 @@ def terminate_constellation(api, constellation_name,
         constellation_list = api.get_constellations()
         current_names = [x['constellation_name'] \
                                for x in constellation_list]
-        if constellation_name in current_names:
-            return True
-        return False
+        return constellation_name in current_names
 
     constellation_exists = exists(api, constellation_name)
     if not constellation_exists:
@@ -147,11 +148,11 @@ def terminate_constellation(api, constellation_name,
 
 
 def wait_for_constellation_state(api,
-                   constellation_name,
-                   key="constellation_state",
-                   value="running",
-                   max_count=100,
-                   sleep_secs=5):
+                                 constellation_name,
+                                 key="constellation_state",
+                                 value="running",
+                                 max_count=100,
+                                 sleep_secs=5):
     """
     Polls constellation state key until its value matches value. This is used
     to wait until a constellation is ready to run simulations 
@@ -167,10 +168,10 @@ def wait_for_constellation_state(api,
         const_data = api.get_constellation_data(constellation_name)
         state = const_data[key]
         print("%s/%s) %s [%s] = %s" % (count,
-                                     max_count,
-                                     constellation_name,
-                                     key,
-                                     state))
+                                       max_count,
+                                       constellation_name,
+                                       key,
+                                       state))
         if state == value:
             return  const_data
 
@@ -284,9 +285,6 @@ class RestTest(unittest.TestCase):
         self.user = 'admin'
         self.password = 'test123'
         
-        from launch_utils.testing import get_boto_path
-        from launch_utils.testing import get_test_path
-
         self.papa_cloudsim_name = get_unique_short_name('rst')
         self.data_dir = get_test_path("rest_test")
         self.creds_fname = get_boto_path()
@@ -314,10 +312,10 @@ class RestTest(unittest.TestCase):
         print("# Simulator %s launched" % (self.simulator_name))
         print("api.get_constellation_data('%s')" % self.simulator_name)
         wait_for_constellation_state(self.cloudsim_api,
-                                       self.simulator_name,
-                                       key="launch_stage",
-                                       value="running",
-                                       max_count=100)
+                                     self.simulator_name,
+                                     key="launch_stage",
+                                     value="running",
+                                     max_count=100)
         self.assertTrue(True, "simulator not ready")
         print("# Simulator machine ready")
 

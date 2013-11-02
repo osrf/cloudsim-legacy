@@ -925,7 +925,6 @@ class TestSimulator(unittest.TestCase):
 
         print("setup")
         self.username = 'tester'
-        self.password = "tester123"
         self.constellation_name = get_unique_short_name("simtest_")
 
         self.data_dir = get_test_path("simtest")
@@ -965,6 +964,3 @@ if __name__ == "__main__":
     from launch_utils.testing import get_test_runner
     xmlTestRunner = get_test_runner()
     unittest.main(testRunner=xmlTestRunner)
-
-#    monitor('cxceaae4dc', 0)
-#    monitor_gzweb_proc(n)

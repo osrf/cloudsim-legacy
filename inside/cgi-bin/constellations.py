@@ -31,15 +31,14 @@ def check_time_range(now, t1, t2):
     Returns True if now is between t1 and t2. Times are expressed
     in UTC strings
     """
-    task_time_valid = False
 
     task_start = parser.parse(t1)
     task_stop = parser.parse(t2)
     start_age = (now - task_start).total_seconds()
     end_age = (now - task_stop).total_seconds()
 
-    if start_age > 0 and end_age < 0:
-        task_time_valid = True
+    task_time_valid = start_age > 0 and end_age < 0
+
     return task_time_valid
 
 

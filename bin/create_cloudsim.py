@@ -9,9 +9,7 @@ import sys
 import os
 import tempfile
 import argparse
-import time
 import shutil
-
 
 
 # Create the basepath of cloudsim
@@ -26,7 +24,6 @@ from cloudsimd.launchers.launch_utils.launch_db import get_unique_short_name
 new_path = os.path.join(basepath, "inside", "cgi-bin")
 sys.path.insert(0, new_path)
 import common
-
 
 
 if __name__ == "__main__":
@@ -119,5 +116,3 @@ if __name__ == "__main__":
         if authentication_type == "Basic":
             msg += ", password: %s" % password
         print("%s\n\n" % msg)
-
-                
