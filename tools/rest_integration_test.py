@@ -110,7 +110,9 @@ def launch_constellation(api, config, max_count=100):
     return constellation_name
 
 
-def terminate_constellation(api, constellation_name, max_count=100):
+def terminate_constellation(api, constellation_name,
+                            sleep_secs=2,
+                            max_count=100):
     """
     Terminates a constellation and waits until the process is done.
     """
@@ -132,12 +134,15 @@ def terminate_constellation(api, constellation_name, max_count=100):
 
     count = 0
     while constellation_exists:
+        time.sleep(sleep_secs)
         count += 1
         if count > max_count:
             raise RestException("Timeout in terminate_constellation %s" % (
                                                           constellation_name))
         constellation_exists = exists(api, constellation_name)
-        print("%s still exists: %s" % (constellation_name,
+        print("%s/%s %s exists: %s" % (count,
+                                       max_count, 
+                                       constellation_name,
                                        constellation_exists))
 
 
@@ -295,6 +300,7 @@ class RestTest(unittest.TestCase):
                                   password=self.password,
                                   data_dir=self.data_dir,
                                   constellation_name=self.papa_cloudsim_name)
+        self.assertTrue(True, "cloudsim not created")
         print("papa cloudsim %s created in %s" % (self.ip, self.data_dir))
         print("\n\n")
         print('api = CloudSimRestApi("%s", "%s", "%s")' % (self.ip,
@@ -304,6 +310,7 @@ class RestTest(unittest.TestCase):
         self.cloudsim_api = CloudSimRestApi(self.ip, self.user, self.password)    
         self.simulator_name = launch_constellation(self.cloudsim_api, 
                                                    config=SIM_CONFIG)
+        self.assertTrue(True, "simulator not created")
         print("# Simulator %s launched" % (self.simulator_name))
         print("api.get_constellation_data('%s')" % self.simulator_name)
         wait_for_constellation_state(self.cloudsim_api,
@@ -311,7 +318,7 @@ class RestTest(unittest.TestCase):
                                        key="launch_stage",
                                        value="running",
                                        max_count=100)
-        
+        self.assertTrue(True, "simulator not ready")
         print("# Simulator machine ready")
 
         # the simulator is ready!
@@ -324,10 +331,12 @@ class RestTest(unittest.TestCase):
         self.task_id = create_task(self.cloudsim_api,
                                    self.simulator_name,
                                    task_dict)
-
+        self.assertTrue(True, "task not created")
         run_task(self.cloudsim_api,self.simulator_name, self.task_id)
+        self.assertTrue(True, "task not run")
         self.title("# stop task")
         stop_task(self.cloudsim_api,self.simulator_name, self.task_id)
+        self.assertTrue(True, "task not stopped")
 
     def tearDown(self): 
         self.title("tearDown")

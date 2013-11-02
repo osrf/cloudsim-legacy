@@ -260,7 +260,7 @@ def launch(constellation_name,
            basic_auth_password=None):
     """
     The
-    force_authentication_type can be None, 'OPenID' or 'Basic'
+    force_authentication_type can be None, 'OpenID' or 'Basic'
     """
 
     log("CloudSim launch %s" % constellation_name)
@@ -462,7 +462,7 @@ def launch(constellation_name,
 
     ssh_cli.cmd('cp /home/ubuntu/cloudsim_users cloudsim/distfiles/users')
 
-    # Deternine the current authentication type, and deploy the same
+    # Determine the current authentication type, and deploy the same
     # or use the force_authentication_type
 
     # Deploy
@@ -537,6 +537,8 @@ def _zip_cloudsim(target_dir, short_fname="cloudsim_src.zip"):
     # remove test files if present (this avoids bloat)
     test_dir = os.path.join(cloudsim_dir, "test-reports")
     shutil.rmtree(test_dir)
+    hg_dir = os.path.join(cloudsim_dir, ".hg")
+    shutil.rmtree(hg_dir)
     # zip files
     commands.getoutput('zip -r %s cloudsim' % (tmp_zip))
     # move zip file to destination
