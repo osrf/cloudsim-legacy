@@ -9,7 +9,7 @@ import json
 import subprocess
 import dateutil.parser
 import multiprocessing
-
+import sys
 
 from launch_utils.traffic_shaping import  run_tc_command
 
@@ -528,7 +528,6 @@ def launch(constellation_name, tags):
 
     constellation.set_value("launch_stage", "launch")
 
-    #
     # lets build a list of machines for our constellation
     #
     openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
@@ -694,7 +693,7 @@ def launch(constellation_name, tags):
         constellation.set_value('%s_launch_state' % machine_name, "running")
     constellation.set_value("launch_stage", "running")
 
-    constellation.set_value("launch_stage", "running")
+    return ssh_client.ip
 
 
 def terminate(constellation_name):
@@ -778,9 +777,9 @@ def notify_portal(constellation, task):
 
         if task_num < '1' or task_num > '3':
             task_num = '1'
-        _run_cloudsim_cmd_loop = task['vrc_id']
-        if _run_cloudsim_cmd_loop < '1' or _run_cloudsim_cmd_loop > '5':
-            _run_cloudsim_cmd_loop = '1'
+        task_run = task['vrc_id']
+        if task_run < '1' or task_run > '5':
+            task_run = '1'
 
         start_time = task['start_time']
         start_task = dateutil.parser.parse(start_time)
@@ -844,8 +843,9 @@ def notify_portal(constellation, task):
         const.update_task_value(task['task_id'], 'task_message', new_msg)
 
         # Tar all the log content
-        tar_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(_run_cloudsim_cmd_loop) +
-                    '.tar')
+        tar_name = team + '_' + comp + '_' + str(task_num)
+        tar_name += '_' + str(task_run) + '.tar'
+
         p = os.path.join(root_log_dir, task_dirname)
         cmd = 'tar cf /tmp/' + tar_name + ' -C ' + p + ' .'
         subprocess.check_call(cmd.split())
@@ -894,28 +894,73 @@ def notify_portal(constellation, task):
 
 
 class MoniCase(unittest.TestCase):
-
-    def test_monitorsim(self):
+    """
+    Monitors an (existing) constellation. You must read have access to the
+    constellation directory.
+    """
+    def xtest_monitorsim(self):
         constellation_name = 'cx9421ebe4'
         monitor(constellation_name, 1)
-#         monitor_launch(constellation_name, "sim")
-#         monitor_launch(constellation_name, "router")
 
-    def ztest_ping(self):
+    def xtest_ping(self):
         constellation_name = 'cx593c6f5e'
         latency_key = 'sim_latency'
         ssh_ping_proc(constellation_name, '10.0.0.51', latency_key)
 
-if __name__ == "__main__":
-#    xmlTestRunner = get_test_runner()
-#    unittest.main(testRunner=xmlTestRunner)
-    constellation_name = 'cx9421ebe4'
-    c = 0
-    while True:
-        monitor(constellation_name, c)
-        c += 1
 
-#    n = 'cxceaae4dc'
-#    i = 0
-#    monitor(n, i)
-#    monitor_gzweb_proc(n)
+class TestSimulator(unittest.TestCase):
+    """
+    Launches a simulator instance, runs the monitor loop 10 times,
+    and terminates it.
+    """
+    def setUp(self):
+        from launch_utils.testing import get_test_path
+        from launch_utils.testing import get_boto_path
+        from launch_utils.launch_db import get_unique_short_name
+        from launch_utils.launch_db import get_cloudsim_version
+        from launch_utils.launch_db import init_constellation_data
+
+        print("out=%s" % sys.stdout)
+        sys.stdout.flush()
+
+        print("setup")
+        self.username = 'tester'
+        self.constellation_name = get_unique_short_name("simtest_")
+
+        self.data_dir = get_test_path("simtest")
+
+        # setup CloudSim
+        config = {}
+        config['machines_directory'] = self.data_dir
+        config['cloudsim_version'] = get_cloudsim_version()
+        config['boto_path'] = get_boto_path()
+
+        # prepare the launch
+        data = {}
+        data['cloud_provider'] = 'aws'
+        data['configuration'] = 'Simulator-stable'
+        data['username'] = self.username
+
+        init_constellation_data(self.constellation_name, data, config)
+
+        print("Launch %s: %s" % (self.constellation_name, data))
+        self.sim_ip = launch(self.constellation_name, tags=data)
+
+    def test_sim(self):
+        print("test_sim")
+        print("ip: %s" % self.sim_ip)
+        sweep_count = 10
+        for i in range(sweep_count):
+            print("monitoring %s/%s" % (i, sweep_count))
+            monitor(self.constellation_name, i)
+
+    def tearDown(self):
+        print("teardown")
+        terminate(self.constellation_name)
+        # shutil.rmtree(self.data_dir)
+
+
+if __name__ == "__main__":
+    from launch_utils.testing import get_test_runner
+    xmlTestRunner = get_test_runner()
+    unittest.main(testRunner=xmlTestRunner)

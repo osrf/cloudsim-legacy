@@ -5,21 +5,23 @@ import os
 import sys
 import time
 import multiprocessing
-from json import loads
 import redis
 import json
 import logging
 import traceback
 import datetime
-
+from json import loads
 
 from launchers.launch_utils import get_unique_short_name
 from launchers.launch_utils.launch_db import ConstellationState
-from launchers.launch_utils.launch_db import get_cloudsim_config,\
-    set_cloudsim_config
-
+from launchers.launch_utils.launch_db import get_cloudsim_config
+from launchers.launch_utils.launch_db import set_cloudsim_config
 from launchers.launch_utils import aws_connect
 from launchers.launch_utils import LaunchException
+from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
+from launchers.launch_utils.launch_db import log_msg
+from launchers.launch_utils.launch_db import get_cloudsim_version
+from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch_db import log_msg
 from launchers.launch_utils.launch_db import init_constellation_data
@@ -28,11 +30,6 @@ from launchers.launch_utils.launch_db import init_constellation_data
 # referenced in this code module. 
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.aws import read_boto_file
-from launchers.launch_utils import get_constellation_names
-from launchers.launch_utils import get_constellation_data
-
-
-
 
 try:
     logging.basicConfig(filename='/tmp/cloudsimd.log',
@@ -123,6 +120,7 @@ def reset_tasks(name=None):
 
 
 
+
 def gather_cs_credentials():
     """
     Gather the names and IP addresses of all CloudSim constellations
@@ -138,8 +136,8 @@ def gather_cs_credentials():
             # print('Password: %s'%(const['constellation_name']))
             print('\n\n\n')
         except Exception as e:
-            print('Failed to get information for constellation %s: %s' % (
-                                                                const, e))
+            print('Failed to get information for constellation %s: %s'%(const,
+                                                                        e))
 
     
 def launch_constellation(username, configuration, args=None):
@@ -342,7 +340,7 @@ def _load_cloudsim_configurations_list():
 </ol>
 """
     configs['DRC with FC'] = {'description': desc}
-    desc = """The CloudSim Web App running in the Cloud
+    desc = """CloudSim Web App running in the Cloud
 <ol>
   <li>Hardware: micro</li>
   <li>OS: Ubuntu 12.04 (Precise)</li>
@@ -350,7 +348,8 @@ def _load_cloudsim_configurations_list():
 </ol>
 """     
     configs['CloudSim'] = {'description': desc}
-    configs['CloudSim-stable'] = {'description': desc}
+    configs['CloudSim-stable'] = {'description':
+                                  "Pre installed binary image for " + desc}
     
     desc = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
 <ol>
@@ -366,7 +365,8 @@ def _load_cloudsim_configurations_list():
 </ol>
 """
     configs['Simulator'] = {'description': desc}
-    configs['Simulator-Stable'] = {'description': desc}
+    configs['Simulator-stable'] = {'description':
+                                    "Pre installed binary image for " + desc}
 
     set_cloudsim_configuration_list(configs)
 
@@ -374,7 +374,6 @@ def _load_cloudsim_configurations_list():
 def launch_cmd(root_dir, data):
     constellation_name = "c" + get_unique_short_name()
     constellation = ConstellationState(constellation_name)
-
     # put the minimum information in Redis so that the monitoring can work
     constellation.set_value('constellation_state', 'launching')
     constellation.set_value('configuration', data['configuration'])
@@ -391,7 +390,6 @@ def launch(constellation_name, data):
     """
     proc = multiprocessing.current_process().name
     log("LAUNCH [%s] from proc %s" % (constellation_name, proc))
-
     constellation = ConstellationState(constellation_name)
     try:
         config = data['configuration']
@@ -399,9 +397,10 @@ def launch(constellation_name, data):
         log("preparing REDIS and filesystem %s" % constellation_name)
         init_constellation_data(constellation_name, data, cloudsim_config)
         constellation_plugin = get_plugin(config)
+
         log("calling the plugin's launch function")
         constellation_plugin.launch(constellation_name, data)
-        
+
         constellation.set_value('constellation_state', 'running')
         log("Launch of constellation %s done" % constellation_name)
     except Exception, e:
@@ -469,12 +468,13 @@ def terminate(constellation_name):
     This could give the resources back to the cloud provider (AWS), 
     or wipe data.
     """
-
     proc = multiprocessing.current_process().name
     log("terminate '%s' from proc '%s'" % (constellation_name,  proc))
 
     constellation = ConstellationState(constellation_name)
     try:
+        # clear the error message
+        constellation.set_value('error', '')
         config = constellation.get_value('configuration')
         log("    configuration is '%s'" % (config))
         constellation_plugin = get_plugin(config)
@@ -968,7 +968,7 @@ if __name__ == "__main__":
             cloudsim_portal_json_path = os.path.abspath(sys.argv[5])
 
         config = {}
-        config['cloudsim_version'] = '1.5.0'
+        config['cloudsim_version'] = get_cloudsim_version()
         config['boto_path'] = boto_path
         config['softlayer_path'] = softlayer_path
         config['machines_directory'] = root_dir

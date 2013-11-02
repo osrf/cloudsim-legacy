@@ -169,7 +169,6 @@ function _create_task_form(form_id)
 
 function create_task_list_widget(const_div, constellation_name)
 { 
-    //
     // create a form for the content 
     var form_id = constellation_name + "-task-view-form";
     
@@ -431,7 +430,6 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                     $( this ).dialog( "close" );
                      }
                    }; 
-    	
     }
     
      $( "#" + form_id ).dialog({

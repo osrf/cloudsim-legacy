@@ -4,6 +4,7 @@ import json
 from common.constants import update_cloudsim_configuration_list
 import SoftLayer.API
 
+
 class SoftLayerCredentials(object):
     """
     Class that manages the SoftLayer credentials.
@@ -14,23 +15,21 @@ class SoftLayerCredentials(object):
                  api_key,
                  fname):
         self.fname = fname
-        self.osrf_creds = {'user':name, 'api_key': api_key}
- 
+        self.osrf_creds = {'user': name, 'api_key': api_key}
 
     def save(self):
         with open(self.fname, 'w') as f:
             s = json.dumps(self.osrf_creds)
             f.write(s)
         update_cloudsim_configuration_list()
-        
-            
+
     def validate(self):
-        
-        api_username = self.osrf_creds['user'] 
+        api_username = self.osrf_creds['user']
         api_key = self.osrf_creds['api_key']
 
         domain_id = None
-        client = SoftLayer.API.Client('SoftLayer_Account', domain_id, api_username, api_key)
+        client = SoftLayer.API.Client('SoftLayer_Account',
+                                      domain_id, api_username, api_key)
         valid = True
         try:
             x = client['Account'].getObject()
@@ -39,6 +38,7 @@ class SoftLayerCredentials(object):
             valid = False
             print("not valid: %s" % e)
         return valid
+
 
 class CloudCredentials(object):
     """
@@ -63,11 +63,11 @@ class CloudCredentials(object):
         @param fname: boto config file name
         @type fname: string
         """
-        
-        ec2_region_endpoint='ec2.amazonaws.com'
+
+        ec2_region_endpoint = 'ec2.amazonaws.com'
         if ec2_region_name.startswith('eu-west'):
             ec2_region_endpoint = 'ec2.eu-west-1.amazonaws.com'
-            
+
         self.fname = fname
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
@@ -95,7 +95,8 @@ ec2_region_endpoint = %s
         """
         from boto.ec2.connection import EC2Connection
         try:
-            conn = EC2Connection(self.aws_access_key_id, self.aws_secret_access_key)
+            conn = EC2Connection(self.aws_access_key_id,
+                                 self.aws_secret_access_key)
             conn.get_all_zones()
             return True
         except:
@@ -108,17 +109,13 @@ class Testotronics(unittest.TestCase):
     Run unit tests of CloudCredentials
     """
 
-#    def test_acredentials(self):
-#        cloud = CloudCredentials('', '', 'us-east-1b',  fname='toto.cfg' )
-#        valid = cloud.validate()
-#        self.assert_(valid, "yo")
-
     def test_credentials(self):
         """
         Check if a wrong credential file is correctly not validated.
         Check if a wrong credential file is saved on disk after save()
         """
-        cloud = CloudCredentials('key', 'secret', 'us-east-1d', fname='toto.cfg')
+        cloud = CloudCredentials('key', 'secret', 'us-east-1d',
+                                 fname='toto.cfg')
         valid = cloud.validate()
         self.assert_(not valid, "error: 'key' is not a valid key")
         cloud.save()
