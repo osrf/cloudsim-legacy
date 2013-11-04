@@ -288,6 +288,7 @@ class RestTest(unittest.TestCase):
         self.papa_cloudsim_name = get_unique_short_name('rst')
         self.data_dir = get_test_path("rest_test")
         self.creds_fname = get_boto_path()
+        self.ip = None
 
     def test(self):
         self.title("create_cloudsim")
