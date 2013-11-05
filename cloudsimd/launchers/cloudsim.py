@@ -395,9 +395,6 @@ def launch(constellation_name,
     log("%s simulation machine ip %s" % (constellation_name, ip))
     ssh_cli = SshClient(constellation_directory, key_prefix, 'ubuntu', ip)
 
-    xx = ssh_cli.cmd("ls cloudsim/setup/done")
-    log("xxx %s" % xx)
-
     constellation.set_value(LAUNCH_MSG_KEY, "waiting for network")
 
     sim_setup_done = get_ssh_cmd_generator(ssh_cli, "ls cloudsim/setup/done",
