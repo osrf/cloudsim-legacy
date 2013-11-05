@@ -404,28 +404,22 @@ def launch(constellation_name,
                                            'packages_setup',
                                            max_retries=100)
     empty_ssh_queue([sim_setup_done], sleep=2)
-
     log("Setup admin user %s and friends" % username)
     users = {username: "admin"}
-
     fname_users = os.path.join(constellation_directory, "cloudsim_users")
     with open(fname_users, 'w') as f:
         s = json.dumps(users)
         f.write(s)
-
     remote_fname = "/home/ubuntu/cloudsim_users"
     log("uploading '%s' to the server to '%s'" % (fname_users, remote_fname))
     out = ssh_cli.upload_file(fname_users, remote_fname)
     log("\t%s" % out)
-
     # Add the currently logged-in user to the htpasswd file on the cloudsim
     psswds = {}
     psswds[username] = "%s" % constellation_name
     if basic_auth_password:
         psswds[username] = basic_auth_password
-
     ssh_cli.cmd('touch cloudsim_htpasswd')
-
     for user, psswd in psswds.items():
         htpasswd_cmd = 'htpasswd -b cloudsim_htpasswd %s %s' % (user, psswd)
         log("add current user to htpasswd file: %s" % htpasswd_cmd)
