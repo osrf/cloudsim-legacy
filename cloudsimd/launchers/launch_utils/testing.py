@@ -30,11 +30,11 @@ def get_test_runner():
         import xmlrunner
         path = get_test_dir()
         runner = xmlrunner.XMLTestRunner(output=path)
-        sys.stderr.flush = flush
-        sys.stdout.flush = flush
+        #sys.stderr.flush = flush
+        #print("%s" % sys.stdout)#  = flush
         return runner
-    
-    except:
+    except Exception, e:
+        print("get_test_runner error: %s" % e)
         return None
 
 

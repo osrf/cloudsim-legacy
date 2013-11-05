@@ -262,8 +262,22 @@ def stop_task(cloudsim_api, constellation_name, task_id, max_count=100,
                         max_count,
                         sleep_secs)    
 
+def flush():
+    pass
 
-class RestTest(unittest.TestCase):
+class RestTest2(unittest.TestCase):
+    def setUp(self):
+        sys.stdout.flush = flush
+        sys.stderr.flush = flush
+    
+    def test(self):
+        
+        print("hello")
+        sys.stdout.flush()
+        print("hello")
+        self.assertTrue(True)
+    
+class RestTest: # (unittest.TestCase):
 
     def title(self, text):
         print("")
@@ -275,7 +289,7 @@ class RestTest(unittest.TestCase):
         
 
     def setUp(self):
-        
+            
         self.title("setUp")
         
         self.cloudsim_api = None
@@ -378,3 +392,5 @@ class RestTest(unittest.TestCase):
 if __name__ == "__main__":
     xmlTestRunner = get_test_runner()
     unittest.main(testRunner=xmlTestRunner)
+#    import nose
+#    nose.main()
