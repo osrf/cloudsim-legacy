@@ -289,6 +289,10 @@ class RestTest(unittest.TestCase):
         self.data_dir = get_test_path("rest_test")
         self.creds_fname = get_boto_path()
         self.ip = None
+        
+        print("data dir: %s" % self.data_dir)
+        print("cloudsim constellation: %s" % self.papa_cloudsim_name)
+        print("user: %s, password: %s" % (self.user, self.password))
 
     def test(self):
         self.title("create_cloudsim")

@@ -520,6 +520,8 @@ def _zip_cloudsim(target_dir, short_fname="cloudsim_src.zip"):
     a path to a cloudsim.zip in a temp directory. This is the
     CloudSim rouce tarball that gets deployed in launched instances.
     """
+    log("_zip_cloudsim")
+    log("/tmp exists: %s" % os.path.exists("/tmp"))
     tmp_dir = tempfile.mkdtemp("cloudsim")
     tmp_zip = os.path.join(tmp_dir, short_fname)
     # locate source files
@@ -535,10 +537,12 @@ def _zip_cloudsim(target_dir, short_fname="cloudsim_src.zip"):
     shutil.rmtree(hg_dir)
     # zip files
     commands.getoutput('zip -r %s cloudsim' % (tmp_zip))
+    log("file %s exists: %s" % (tmp_zip, os.path.exists(tmp_zip)))
     # move zip file to destination
     target_fname = os.path.join(target_dir, short_fname)
+    log("moving [%s] to [%s]" % (tmp_zip, target_fname))
     shutil.move(tmp_zip, target_fname)
-    # remove all temporary files
+    log("remove all temporary files in [%s]" % tmp_dir)
     shutil.rmtree(tmp_dir)
     return target_fname
 
