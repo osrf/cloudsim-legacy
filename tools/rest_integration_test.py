@@ -288,6 +288,7 @@ class RestTest: # (unittest.TestCase):
     def setUp(self):
             
         self.title("setUp")
+        # provide no op flush to avoid crashes
         sys.stdout.flush = flush
         sys.stderr.flush = flush
         
