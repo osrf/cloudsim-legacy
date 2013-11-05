@@ -358,12 +358,11 @@ class RestTest(unittest.TestCase):
             if self.papa_cloudsim_name and self.ip:
                 print("terminate cloudsim '%s' %s" % (self.papa_cloudsim_name,
                                                       self.ip))
-                cloudsim.terminate(self.papa_cloudsim_name)
-                # remove from Redis
-                constellation = ConstellationState(self.papa_cloudsim_name)
-                constellation.expire(1)
-            else:
-                print("papa cloudsim not created")   
+            cloudsim.terminate(self.papa_cloudsim_name)
+            # remove from Redis
+            constellation = ConstellationState(self.papa_cloudsim_name)
+            constellation.expire(1)
+      
         except Exception, e:
              print("Error terminating papa cloudsim '%s' : %s" % (
                                                     self.papa_cloudsim_name,
