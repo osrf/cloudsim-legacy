@@ -263,22 +263,19 @@ def stop_task(cloudsim_api, constellation_name, task_id, max_count=100,
                         sleep_secs)    
 
 def flush():
+    """
+    Fake method to avoid crashes, because flush is not present on Delegate_io
+    class used by XMLTestRunner.
+    """
     pass
 
-class RestTest2(unittest.TestCase):
-    def setUp(self):
-        sys.stdout.flush = flush
-        sys.stderr.flush = flush
-    
-    def test(self):
-        
-        print("hello")
-        sys.stdout.flush()
-        print("hello")
-        self.assertTrue(True)
     
 class RestTest: # (unittest.TestCase):
-
+    """
+    Test that Creates a CloudSim on AWS. A simulator is then launched
+    from that CloudSim and a simulation task is run.
+    This test is run by Jenkins when CloudSim code is modified.
+    """
     def title(self, text):
         print("")
         print("#######################################")
@@ -291,6 +288,8 @@ class RestTest: # (unittest.TestCase):
     def setUp(self):
             
         self.title("setUp")
+        sys.stdout.flush = flush
+        sys.stderr.flush = flush
         
         self.cloudsim_api = None
         self.simulator_name = None
@@ -392,5 +391,4 @@ class RestTest: # (unittest.TestCase):
 if __name__ == "__main__":
     xmlTestRunner = get_test_runner()
     unittest.main(testRunner=xmlTestRunner)
-#    import nose
-#    nose.main()
+
