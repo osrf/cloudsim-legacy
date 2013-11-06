@@ -270,18 +270,7 @@ def flush():
     pass
 
 
-class SimpleTest(unittest.TestCase):
-
-    def setUp(self):
-        sys.stdout.flush = flush
-        sys.stderr.flush = flush
-
-    def test(self):
-        print("\0 \033[1;32mCloudSim ready. Visit http://xxx \033[0m\n ")
-        self.assertTrue(True)
- 
-   
-class RestTest(object): #  (unittest.TestCase):
+class RestTest(unittest.TestCase):
     """
     Test that Creates a CloudSim on AWS. A simulator is then launched
     from that CloudSim and a simulation task is run.
