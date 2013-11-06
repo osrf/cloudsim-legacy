@@ -665,7 +665,7 @@ def _get_amazon_amis(availability_zone):
     if availability_zone.startswith('eu-west'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
         amis['ubuntu_1204_x64'] = 'ami-f2191786'
-        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-26dd3a51'
+        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-19ec0e6e'
         amis['ubuntu_1204_x64_drc_router'] = 'ami-bcd235cb'
         amis['ubuntu_1204_x64_drc_simulator'] = 'ami-bad235cd'
         amis['ubuntu_1204_x64_simulator'] = 'ami-d4d532a3'
@@ -673,7 +673,7 @@ def _get_amazon_amis(availability_zone):
     elif availability_zone.startswith('us-east'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
         amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
-        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-0d0a5e64'
+        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-ade3bbc4'
         amis['ubuntu_1204_x64_drc_router'] = 'ami-8d0155e4'
         amis['ubuntu_1204_x64_drc_simulator'] = 'ami-8f0155e6'
         amis['ubuntu_1204_x64_simulator'] = 'ami-1f1b4f76'

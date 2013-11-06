@@ -236,7 +236,7 @@ def __get_deploy_cmd(force_authentication_type=None, reset_db=False):
             # make sure that cloudsim is installed
             r.index("cloudsim")
             r = commands.getoutput('grep AuthType /etc/apache2/apache2.conf')
-            auth_type = r.split("AuthType")[1]
+            auth_type = r.split("AuthType")[1].strip()
             return auth_type
         except:
             raise LaunchException('CloudSim web app is not installed')
@@ -247,9 +247,9 @@ def __get_deploy_cmd(force_authentication_type=None, reset_db=False):
 
     deploy_args = ""  # the default for OpenID
     if auth_type == "Basic":
-        deploy_args = "-b"
+        deploy_args = " -b"
     if reset_db:
-        deploy_args = "-f " + deploy_args
+        deploy_args = deploy_args + " -f " 
     deploy_cmd = "bash /home/ubuntu/cloudsim/deploy.sh %s" % deploy_args
     return deploy_cmd
 
@@ -456,9 +456,7 @@ def launch(constellation_name,
     if upload_cloudsim_code:
         #  Upload source zip
         website_distribution = _zip_cloudsim(constellation_directory)
-        _upload_cloudsim(constellation_name,
-                                   website_distribution,
-                                   key_prefix)
+        _upload_cloudsim(constellation_name, website_distribution)
 
     ssh_cli.cmd('cp /home/ubuntu/cloudsim_users cloudsim/distfiles/users')
 
@@ -586,37 +584,44 @@ def create_cloudsim(username,
         update(constellation_name, authentication_type)
     return cloudsim_ip
 
+force_authentication_type = None
+reset_db = True
+s = __get_deploy_cmd(force_authentication_type, reset_db)
+
 
 class TestCreateCloudSim(unittest.TestCase):
 
-    def setUp(self):
-        from launch_utils.testing import get_boto_path
-        from launch_utils.testing import get_test_path
-
-        self.name = get_unique_short_name('tcc')
-        self.data_dir = get_test_path("create_cs_test")
-
-        self.ip = create_cloudsim(username="test",
-                                  credentials_fname=get_boto_path(),
-                                  configuration="CloudSim-stable",
-                                  authentication_type="Basic",
-                                  password="test123",
-                                  data_dir=self.data_dir,
-                                  constellation_name=self.name)
-        print("cloudsim %s created" % self.ip)
-
     def test(self):
-        sweep_count = 10
-
-        for i in range(sweep_count):
-            print("monitoring %s/%s" % (i, sweep_count))
-            monitor(self.name, i)
-
-    def tearDown(self):
-        print("terminate cloudsim %s" % self.ip)
-        terminate(self.name)
-        constellation = ConstellationState(self.name)
-        constellation.expire(1)
+        print(s)
+#     def setUp(self):
+#         from launch_utils.testing import get_test_path
+#
+#         self.name = get_unique_short_name('tcc')
+#         self.data_dir = get_test_path("create_cs_test")
+#         self.ip = None
+#
+#     def test(self):
+#         from launch_utils.testing import get_boto_path
+#         self.ip = create_cloudsim(username="test",
+#                                   credentials_fname=get_boto_path(),
+#                                   configuration="CloudSim",
+#                                   authentication_type="Basic",
+#                                   password="test123",
+#                                   data_dir=self.data_dir,
+#                                   constellation_name=self.name)
+#         print("cloudsim %s created" % self.ip)
+#
+#         sweep_count = 10
+#
+#         for i in range(sweep_count):
+#             print("monitoring %s/%s" % (i, sweep_count))
+#             monitor(self.name, i)
+#
+#     def tearDown(self):
+#         print("terminate cloudsim %s" % self.ip)
+#         terminate(self.name)
+#         constellation = ConstellationState(self.name)
+#         constellation.expire(1)
 
 
 if __name__ == "__main__":
