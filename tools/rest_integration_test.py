@@ -270,7 +270,7 @@ def flush():
     pass
 
     
-class RestTest: # (unittest.TestCase):
+class RestTest(unittest.TestCase):
     """
     Test that Creates a CloudSim on AWS. A simulator is then launched
     from that CloudSim and a simulation task is run.
