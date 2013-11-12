@@ -26,15 +26,17 @@ def flush():
 
 
 def get_test_runner():
+    """
+    Returns a test runner instance for unittest.main. This object captures
+    the test output and saves it as an xml file. 
+    """
     try:
         import xmlrunner
         path = get_test_dir()
         runner = xmlrunner.XMLTestRunner(output=path)
-        sys.stderr.flush = flush
-        sys.stdout.flush = flush
         return runner
-    
-    except:
+    except Exception, e:
+        print("get_test_runner error: %s" % e)
         return None
 
 

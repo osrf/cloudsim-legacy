@@ -55,9 +55,6 @@ sudo cp -f $DIR/../softlayer.json /var/www-cloudsim-auth/softlayer.json
 sudo cp -f $DIR/../cloudsim_portal.key /var/www-cloudsim-auth/cloudsim_portal.key
 sudo cp -f $DIR/../cloudsim_bitbucket.key /var/www-cloudsim-auth/cloudsim_bitbucket.key
 
-cd $DIR/..
-zip -r cloudsim.zip cloudsim
-sudo mv -f cloudsim.zip /var/www-cloudsim-auth
 cd $DIR
 
 if sudo test ! -f /var/www-cloudsim-auth/cloudsim_portal.json -o $force -eq 1

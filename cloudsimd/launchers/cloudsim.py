@@ -404,28 +404,22 @@ def launch(constellation_name,
                                            'packages_setup',
                                            max_retries=100)
     empty_ssh_queue([sim_setup_done], sleep=2)
-
     log("Setup admin user %s and friends" % username)
     users = {username: "admin"}
-
     fname_users = os.path.join(constellation_directory, "cloudsim_users")
     with open(fname_users, 'w') as f:
         s = json.dumps(users)
         f.write(s)
-
     remote_fname = "/home/ubuntu/cloudsim_users"
     log("uploading '%s' to the server to '%s'" % (fname_users, remote_fname))
     out = ssh_cli.upload_file(fname_users, remote_fname)
     log("\t%s" % out)
-
     # Add the currently logged-in user to the htpasswd file on the cloudsim
     psswds = {}
     psswds[username] = "%s" % constellation_name
     if basic_auth_password:
         psswds[username] = basic_auth_password
-
     ssh_cli.cmd('touch cloudsim_htpasswd')
-
     for user, psswd in psswds.items():
         htpasswd_cmd = 'htpasswd -b cloudsim_htpasswd %s %s' % (user, psswd)
         log("add current user to htpasswd file: %s" % htpasswd_cmd)
@@ -524,8 +518,9 @@ def _zip_cloudsim(target_dir, short_fname="cloudsim_src.zip"):
     """
     creates a zipped cloudsim directory and returns
     a path to a cloudsim.zip in a temp directory. This is the
-    CloudSim rouce tarball that gets deployed in launched instances.
+    CloudSim source tarball that gets deployed in launched instances.
     """
+    log("_zip_cloudsim")
     tmp_dir = tempfile.mkdtemp("cloudsim")
     tmp_zip = os.path.join(tmp_dir, short_fname)
     # locate source files
@@ -533,18 +528,19 @@ def _zip_cloudsim(target_dir, short_fname="cloudsim_src.zip"):
     full_path_of_cloudsim = os.path.dirname(p)
     cloudsim_dir = os.path.join(tmp_dir, 'cloudsim')
     shutil.copytree(full_path_of_cloudsim, cloudsim_dir)
-    os.chdir(tmp_dir)
     # remove test files if present (this avoids bloat)
     test_dir = os.path.join(cloudsim_dir, "test-reports")
     shutil.rmtree(test_dir)
+
     hg_dir = os.path.join(cloudsim_dir, ".hg")
-    shutil.rmtree(hg_dir)
+    if os.path.exists(hg_dir):
+        shutil.rmtree(hg_dir)
     # zip files
+    os.chdir(tmp_dir)
     commands.getoutput('zip -r %s cloudsim' % (tmp_zip))
     # move zip file to destination
     target_fname = os.path.join(target_dir, short_fname)
     shutil.move(tmp_zip, target_fname)
-    # remove all temporary files
     shutil.rmtree(tmp_dir)
     return target_fname
 

@@ -538,7 +538,7 @@ def launch(constellation_name, tags):
 
     ip = "127.0.0.1"
     machines = {}
-    machines['sim'] = {'hardware': 'cg1.4xlarge',
+    machines['sim'] = {'hardware': 'cg1.4xlarge',  # 'g2.2xlarge'
                       'software': simulator_image_key,
                       'ip': ip,
                       'security_group': [{'name': 'openvpn',
