@@ -115,7 +115,7 @@ def go(configuration, admin_email, max_hours, gmail_user, gmail_passwd):
             if i.state == 'running':
                 is_excluded = False
                 for prefix in excluded_prefix:
-                    if i.tags['Name'].startswith(prefix):
+                    if 'Name' in i.tags and i.tags['Name'].startswith(prefix):
                         is_excluded = True
 
                 if not is_excluded:
