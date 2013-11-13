@@ -208,7 +208,7 @@ function _get_task_url(constellation,
     console.log("task_id " + task_id)
     console.log("task_title " + task_title)
     console.log("ros_package " + ros_package)
-    console.log("launch_file " + launch_file)
+    console.log("ros_launch " + launch_file)
     console.log("launch_args " + launch_args)
     console.log("timeout " + timeout)
     console.log("latency " + latency)

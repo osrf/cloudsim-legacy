@@ -1,6 +1,7 @@
 import requests
 import urllib2
 import time
+import urlparse
 
 # this script uses requests
 # http://docs.python-requests.org/en/latest/
@@ -11,61 +12,78 @@ class CloudSimRestApi(object):
     It assumes that the CloudSim uses the Basic Auth mechanism.
     """
 
-    def __init__(self, url, user, passwd):
+    def __init__(self, ip, user, passwd):
         """
-        initialization, only pass the ip as the url
+        Initialization, only pass the ip as the url
         """
-        self.url = "http://%s" % url
+        self.url = "http://%s" % ip
         self.user = user
         self.passwd = passwd
 
-    def _api_get(self, path):
+    def _api_get(self, url):
         """
-        internal http GET boilerplate
+        Internal http GET boilerplate
         """
-        theurl = "/".join([self.url, path])
+        theurl = urlparse.urljoin(self.url, url)
         r = requests.get(theurl, auth=(self.user, self.passwd))
-        if r.status_code != 200:
+        if r.status_code != requests.codes.ok:
             raise Exception("GET request error (code %s)" % r.status_code)
         j = r.json()
         return j
 
-    def _api_post(self, path):
+    def _api_post(self, url):
         """
-        internal http POST boilerplate
+        Internal http POST boilerplate
         """
-        theurl = "/".join([self.url, path])
+        theurl = urlparse.urljoin(self.url, url)
         r = requests.post(theurl, auth=(self.user, self.passwd))
-        if r.status_code != 200:
+        if r.status_code != requests.codes.ok:
             raise Exception("POST request error (code %s)" % r.status_code)
         j = r.json()
         return j
 
-    def _api_put(self, path):
+    def _api_put(self, url):
         """
-        internal http PUT boilerplate
+        Internal http PUT boilerplate
         """
-        theurl = "/".join([self.url, path])
+        theurl = urlparse.urljoin(self.url, url)
         r = requests.put(theurl, auth=(self.user, self.passwd))
-        if r.status_code != 200:
+        if r.status_code != requests.codes.ok:
             raise Exception("PUT request error (code %s)" % r.status_code)
         j = r.json()
         return j
 
-    def _api_delete(self, path):
+    def _api_delete(self, url):
         """
-        internal http DELETE boilerplate
+        Internal http DELETE boilerplate
         """
-        theurl = "/".join([self.url, path])
+        theurl = urlparse.urljoin(self.url, url)
         r = requests.delete(theurl, auth=(self.user, self.passwd))
-        if r.status_code != 200:
+        if r.status_code != requests.codes.ok:
             raise Exception("DELETE request error (code %s)" % r.status_code)
         j = r.json()
         return j
 
+    def _get_query_param_str(self, param_dict):
+        """
+        Internal function to generate query parameter values for url
+        """
+        if len(param_dict) == 0:
+            return ""
+
+        params = ''
+        for k,v in param_dict.iteritems():
+            if v not in ['', None]:
+                param = urllib2.quote(k)
+                val = urllib2.quote("%s" % v)
+                params +=  "&%s=%s" % (param, val)
+        # replace first & with ?
+        r = '?' + params[1:]
+        return r
+
     def get_constellations(self):
         """
-        returuns the list of constellations for this CLoudSim
+        Returns the list of constellations for this CloudSim
         """
         cs = self._api_get('cloudsim/inside/cgi-bin/constellations')
         valids = [x for x in cs if 'configuration' in x]
@@ -88,7 +106,7 @@ class CloudSimRestApi(object):
 
     def get_constellation_data(self, constellation_name):
         """
-        returns the data for a specific constellation
+        Returns the data for a specific constellation
         """
         constellations = self.get_constellations()
         for c in constellations:
@@ -102,7 +120,8 @@ class CloudSimRestApi(object):
         """
         p = urllib2.quote(provider)
         c = urllib2.quote(configuration)
-        url = '/cloudsim/inside/cgi-bin/constellations?cloud_provider=' + p
+        url = '/cloudsim/inside/cgi-bin/constellations'
+        url += '?cloud_provider=' + p
         url += '&configuration=' + c;
         s = self._api_post(url)
         return s
@@ -112,19 +131,72 @@ class CloudSimRestApi(object):
         Updates a constellation. Returns an error code 
         or the constellation name
         """
-        url = '/cloudsim/inside/cgi-bin/constellations';
-        url += '/' + constellation_name;
+        url = urlparse.urljoin('/cloudsim/inside/cgi-bin/constellations/',
+                constellation_name)
         s = self._api_put(url)
         return s
-    
+
     def terminate_constellation(self, constellation_name):
         """
         Terminates a constellation
         """
-        url = '/cloudsim/inside/cgi-bin/constellations';
-        url += '/' + constellation_name;
+        url = urlparse.urljoin('/cloudsim/inside/cgi-bin/constellations/',
+                                constellation_name)
         s = self._api_delete(url)
         return s
+
+    def create_task(self, constellation_name, task_dict):
+        """
+        Adds a simulation task
+        """
+        url = urlparse.urljoin('/cloudsim/inside/cgi-bin/tasks/',
+                               constellation_name);
+        url += self._get_query_param_str(task_dict)
+        r = self._api_post(url)
+        return r
+
+    def read_task(self, constellation_name, task_id):
+        """
+        Returns task information
+        """ 
+        url = urlparse.urljoin('/cloudsim/inside/cgi-bin/tasks/',
+                               constellation_name + '/')
+        url = urlparse.urljoin(url, task_id)
+        r = self._api_get(url)
+        return r
+
+# 
+#     def update_task(self, task_dict):
+#         pass
+# 
+#     def delete_task(self):
+#         pass
+
+    def start_task(self, constellation_name, task_id):
+        """
+        Start a simulation task
+        """
+        url = '/cloudsim/inside/cgi-bin/cloudsim_cmd' 
+
+        param_dict = {'command' : 'start_task', 
+                      'constellation' : constellation_name,
+                      'task_id' : task_id}
+        url += self._get_query_param_str(param_dict)
+        r = self._api_get(url)
+        return r
+
+
+    def stop_task(self, constellation_name):
+        """
+        Stop the running simulation task
+        """
+        url = '/cloudsim/inside/cgi-bin/cloudsim_cmd' 
+        
+        param_dict = {'command' : 'stop_task', 
+                      'constellation' : constellation_name}
+        url += self._get_query_param_str(param_dict)
+        r = self._api_get(url)
+        return r
 
 
 def update_children(cloudsim, config=None, delay=10):
@@ -177,8 +249,10 @@ def launch_for_each_cloudsim(cloudsims, provider, configuration, delay=0.1):
     print("launching %s on %s cloudsims with %s sec delay" % (
                                    configuration, len(cloudsims), delay))
     for cloudsim in cloudsims:
-        print("- launching from %s" % cloudsim)
-        s = cloudsim.launch_constellation(provider, configuration)
-        print(s)
+        try:
+            print("Launching from %s" % (cloudsim))
+            cloudsim.launch_constellation(provider, configuration)
+        except Exception, e:
+            print("   Error: %s" % e)
         time.sleep(delay)
 

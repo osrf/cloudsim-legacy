@@ -55,9 +55,13 @@ sudo cp -f $DIR/../softlayer.json /var/www-cloudsim-auth/softlayer.json
 sudo cp -f $DIR/../cloudsim_portal.key /var/www-cloudsim-auth/cloudsim_portal.key
 sudo cp -f $DIR/../cloudsim_bitbucket.key /var/www-cloudsim-auth/cloudsim_bitbucket.key
 
+#
+# create a zip of the current source tree
+#
 cd $DIR/..
 zip -r cloudsim.zip cloudsim
 sudo mv -f cloudsim.zip /var/www-cloudsim-auth
+
 cd $DIR
 
 if sudo test ! -f /var/www-cloudsim-auth/cloudsim_portal.json -o $force -eq 1
@@ -79,7 +83,8 @@ sudo chmod 704 /var/www-cloudsim-auth
 sudo rm -rf /var/cloudsimd
 sudo mkdir -p /var/cloudsimd
 sudo cp -a $DIR/cloudsimd/* /var/cloudsimd
-
+# copy version info so its accessible to the daemon
+sudo cp $DIR/VERSION /var/cloudsimd
 
 sudo cp $DIR/cloudsimd/cloudsimd.conf /etc/init
 sudo initctl reload-configuration
@@ -92,11 +97,8 @@ sudo apache2ctl restart
 if [ "$basic_auth" == "1" ]; then
   echo ""
   echo "*******************************************************************"
-  echo "Configured to use HTTP Basic Authentication.  If you haven't done so"
-  echo "already, you need to add at least one user to the htpasswd file: "
-  echo "  /var/www-cloudsim-auth/htpasswd"
-  echo "E.g.:"
-  echo "  sudo htpasswd /var/www-cloudsim-auth/htpasswd myusername"
-  echo "Users in htpasswd must match those in /var/www-cloudsim-auth/users."
+  echo "Configured to use HTTP Basic Authentication.
+  echo "Users in /var/www-cloudsim-auth/htpasswd must match those
+  echo "in /var/www-cloudsim-auth/users."
   echo "*******************************************************************"
 fi

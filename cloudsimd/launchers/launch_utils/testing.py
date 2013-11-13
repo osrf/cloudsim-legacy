@@ -3,6 +3,7 @@ from __future__ import print_function
 
 
 import os
+import sys
 
 
 def get_test_dir():
@@ -20,13 +21,22 @@ def get_test_path(fname):
     return abs_path
 
 
+def flush():
+    pass
+
+
 def get_test_runner():
+    """
+    Returns a test runner instance for unittest.main. This object captures
+    the test output and saves it as an xml file. 
+    """
     try:
         import xmlrunner
         path = get_test_dir()
         runner = xmlrunner.XMLTestRunner(output=path)
         return runner
-    except:
+    except Exception, e:
+        print("get_test_runner error: %s" % e)
         return None
 
 
