@@ -485,7 +485,6 @@ def terminate(constellation_name):
 
     constellation = ConstellationState(constellation_name)
     constellation.set_value(LAUNCH_MSG_KEY, "terminating")
-    constellation.set_value('constellation_state', 'terminating')
     constellation.set_value(STATE_KEY, 'terminating')
 
     log("terminate %s [constellation_name=%s]" % (CONFIGURATION,
@@ -511,7 +510,6 @@ def terminate(constellation_name):
 
     constellation.set_value(STATE_KEY, "terminated")
     constellation.set_value(LAUNCH_MSG_KEY, "terminated")
-    constellation.set_value('constellation_state', 'terminated')
 
 
 def zip_cloudsim_src(target_fname):

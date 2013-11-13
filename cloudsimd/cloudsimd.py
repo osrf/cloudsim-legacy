@@ -481,7 +481,9 @@ def terminate(constellation_name):
         config = constellation.get_value('configuration')
         log("    configuration is '%s'" % (config))
         constellation_plugin = get_plugin(config)
+        constellation.set_value('constellation_state', 'terminating')
         constellation_plugin.terminate(constellation_name)
+        constellation.set_value('constellation_state', 'terminated')
     except Exception, e:
         tb = traceback.format_exc()
         constellation.set_value('error', 'Terminate aborted with exception: '
