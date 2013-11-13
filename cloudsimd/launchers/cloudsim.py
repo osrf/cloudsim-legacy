@@ -450,9 +450,7 @@ def launch(constellation_name,
         #  Upload source zip
         website_distribution = _get_cloudsim_src_tarball(
                                                        constellation_directory)
-        _upload_cloudsim(constellation_name,
-                                   website_distribution,
-                                   key_prefix)
+        _upload_cloudsim(constellation_name, website_distribution)
 
     ssh_cli.cmd('cp /home/ubuntu/cloudsim_users cloudsim/distfiles/users')
 
