@@ -398,10 +398,11 @@ def launch(constellation_name, data):
         init_constellation_data(constellation_name, data, cloudsim_config)
         constellation_plugin = get_plugin(config)
 
+        constellation.set_value('constellation_state', 'launching')
         log("calling the plugin's launch function")
         constellation_plugin.launch(constellation_name, data)
-
         constellation.set_value('constellation_state', 'running')
+        
         log("Launch of constellation %s done" % constellation_name)
     except Exception, e:
         tb = traceback.format_exc()
@@ -422,7 +423,9 @@ def update_constellation(constellation_name):
     try:
         config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
+        constellation.set_value('constellation_state', 'updating')
         constellation_plugin.update(constellation_name)
+        constellation.set_value('constellation_state', 'running')
     except:
         tb = traceback.format_exc()
         log("UPDATE ERROR traceback:  %s" % tb)
