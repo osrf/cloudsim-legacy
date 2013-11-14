@@ -373,7 +373,6 @@ touch /home/ubuntu/cloudsim/setup/deploy_ready
 """ + _send_to_portal_generator() + """
 """ + _load_gazebo_models_generator() + """
 
-
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
 touch /home/ubuntu/cloudsim/setup/done
 
@@ -546,11 +545,11 @@ sudo service ssh restart
 
 
 def _robotics_packages_install_generator(drc_package_name):
-    s = """# At least in some cases, we need to explicitly install graphviz before ROS to avoid apt-get dependency problems.
+    s = """
+# At least in some cases, we need to explicitly install graphviz before ROS
+# to avoid apt-get dependency problems.
 sudo apt-get install -y graphviz
-# That could be removed if ros-comm becomes a dependency of cloudsim-client-tools
-apt-get install -y ros-fuerte-ros-comm
-# We need atlas_msgs, which is in drcsim
+
 apt-get install -y """ + drc_package_name + """
 
 # Answer the postfix questions
@@ -558,6 +557,7 @@ sudo debconf-set-selections <<< "postfix postfix/mailname string `hostname`"
 sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
 
 sudo apt-get install -y cloudsim-client-tools
+
 """
     return s
 
@@ -761,6 +761,10 @@ exec vrc_wrapper.sh vrc_netwatcher.py -o -m replace -d /tmp -p vrc_netwatcher_us
 
 DELIM
 # ----------------------------------------------------------------------------
+
+# append to /etc/environment
+# this is used by services (vrc_netwatcher) to get ROS access
+sh -c 'echo source /usr/share/drcsim/setup.sh >> /etc/environment'
 
 # start vrc_sniffer and vrc_controllers
 sudo start vrc_sniffer || true
@@ -1379,10 +1383,6 @@ def get_simulator_deploy_script(cloudsim_dir="/home/ubuntu/cloudsim"):
 
 """ + _get_score_deploy_generator(cloudsim_dir) + """
 """ + _get_network_usage_deploy_generator(cloudsim_dir) + """
-
-# append to /etc/environment
-# this is used by services (vrc_netwatcher) to get ROS access
-sudo sh -c 'echo source /usr/share/drcsim/setup.sh >> /etc/environment'
 
 # configure openvpn
 sudo cp /home/ubuntu/cloudsim/deploy/openvpn.key /etc/openvpn/static.key
