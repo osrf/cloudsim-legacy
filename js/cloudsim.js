@@ -88,7 +88,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
     }
 
 
-    if(configuration.indexOf("Simulator") == 0)
+    if(configuration.indexOf("Simulator") == 0 || configuration.indexOf("Sim-x") ==0)
     {
         create_task_list_widget(constellation_div, constellation);
         var machine_name = "simulator";

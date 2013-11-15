@@ -289,6 +289,16 @@ def get_plugin(configuration):
                                      c.stop_task,
                                      c.start_gzweb,
                                      c.stop_gzweb)
+    elif configuration.startswith('Sim-x'):
+        from launchers import sim_x as c
+        plugin = ConstellationPlugin(c.launch,
+                                     c.terminate,
+                                     c.update,
+                                     c.monitor,
+                                     c.start_task,
+                                     c.stop_task,
+                                     c.start_gzweb,
+                                     c.stop_gzweb)
 
     else:
         raise UnknownConfig('Invalid configuration "%s"' % (configuration,))
@@ -367,7 +377,8 @@ def _load_cloudsim_configurations_list():
     configs['Simulator'] = {'description': desc}
     configs['Simulator-stable'] = {'description':
                                     "Pre installed binary image for " + desc}
-
+    
+    configs['Sim-x'] = {'description': "Puppet version of" + desc}
     set_cloudsim_configuration_list(configs)
 
 
