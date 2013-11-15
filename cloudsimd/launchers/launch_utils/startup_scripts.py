@@ -550,6 +550,8 @@ def _robotics_packages_install_generator(drc_package_name):
 # to avoid apt-get dependency problems.
 sudo apt-get install -y graphviz
 
+# aswer hddtemp setup question (a pr2 dependency)
+sudo debconf-set-selections <<< "hddtemp hddtemp/daemon boolean false"
 apt-get install -y """ + drc_package_name + """
 
 # Answer the postfix questions
@@ -1140,10 +1142,12 @@ DELIM
 
 def _load_gazebo_models_generator():
     s = """
-    
+
 cat <<DELIM > /home/ubuntu/cloudsim/load_gazebo_models.bash
 
 #!/bin/bash
+logfile=/home/ubuntu/cloudsim/load_gazebo_models.bash.log
+exec >> \$logfile 2>&1
 
 # Set the private environment for testing the VRC contest
 
@@ -1167,7 +1171,7 @@ install ()
 
     echo -n "Downloading \$1..."
     hg clone https://bitbucket.org/osrf/\$1
-    cd $1; hg up cloudsim_release
+    cd \$1; hg up cloudsim_release
 
     echo "Done"
     cd \$1
