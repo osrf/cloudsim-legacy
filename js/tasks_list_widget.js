@@ -140,7 +140,7 @@ function _create_task_form(form_id)
     var uplink_data_cap=  _add_form_textinput(tab2, "Uplink data cap (bits, 0 for unlimited)", visible);
     var downlink_data_cap = _add_form_textinput(tab2, "Downlink data cap (bits, 0 for unlimited)", visible)
     tabs_div.appendChild(tab2)
- 
+
     var tab3 = document.createElement("div");
     tab3.id = 'tab-calendar';
     var local_start = _add_form_textinput(tab3, "Valid from (UTC)", visible);
@@ -149,9 +149,9 @@ function _create_task_form(form_id)
     var vrc_id = _add_form_textinput(form_div, "Run (1, 2, 3, 4 or 5)", visible);
     var vrc_num = _add_form_textinput(form_div, "Task (1, 2 or 3)", visible);   	
     tabs_div.appendChild(tab3)   
-    
+
     // Default values
-    ros_package.value = "atlas_utils";
+    ros_package.value = "drcsim_gazebo";
     launch_file.value = "vrc_task_1.launch";
     timeout.value = "1800";
     launch_arguments.value = "";
@@ -160,10 +160,10 @@ function _create_task_form(form_id)
     downlink_data_cap.value = "0";
     vrc_id.value = "1";
     vrc_num.value = "1";
-    
+
     local_start.value = '2013-01-01T00:00:00.0';
     local_stop.value  = '2014-01-01T00:00:00.0';
-    
+
     return form_div;  
 }
 

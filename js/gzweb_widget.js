@@ -8,10 +8,6 @@ function create_gzweb_widget(machine_div,
 							 gz_web_key,
 							 ip_key)
 {
-	// roslaunch atlas_utils atlas_position_controllers.launch
-    var package_name = "atlas_utils";//"drc_robot_utils";
-    var launch_file = "vrc_task_1.launch"; // "drc_robot.launch";
-    var launch_args = "";
     var widget_div = _create_empty_widget(machine_div, "gzweb");
 
     var status = status_img("gray");
