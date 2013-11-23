@@ -32,6 +32,8 @@ def get_aws_ubuntu_sources_repo(credentials_ec2):
         return "http://eu-west-1.ec2.archive.ubuntu.com/ubuntu/"
     elif availability_zone.startswith('us-east'):
         return "http://us-east-1.ec2.archive.ubuntu.com/ubuntu/"
+    elif availability_zone.startswith('us-west-2'):
+        return "http://us-west-2.ec2.archive.ubuntu.com/ubuntu/"
     else:
         return "http://us.archive.ubuntu.com/ubuntu/"
 
@@ -93,7 +95,7 @@ def acquire_aws_single_server(constellation_name,
             block_device_map=bdm)
         roles_to_reservations['simulation_state'] = res.id
     except:
-        log("ouch!")
+        log("acquire_aws_single_server: ouch!")
         raise
 
     aws_id = None
@@ -139,7 +141,8 @@ def terminate_aws_server(constellation_name, credentials_fname):
     machine_prefix = constellation.get_value('machine_name')
     try:
         constellation.set_value('%s_state' % machine_prefix, "terminating")
-        constellation.set_value('%s_launch_msg' % machine_prefix, "terminating")
+        constellation.set_value('%s_launch_msg' % machine_prefix,
+                                "terminating")
 
         log("Terminate machine_prefix: %s" % machine_prefix)
         aws_id = constellation.get_value('%s_aws_id' % machine_prefix)
@@ -662,6 +665,11 @@ def _get_amazon_amis(availability_zone):
 #     availability_zone = boto.config.get('Boto', 'ec2_region_name')
 
     amis = {}
+
+    if availability_zone.startswith('us-west-2'):
+        amis['ubuntu_1204_x64'] = 'ami-a84ad298'
+
+
     if availability_zone.startswith('eu-west'):
         amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
         amis['ubuntu_1204_x64'] = 'ami-f2191786'
@@ -798,7 +806,7 @@ def wait_for_multiple_machines_to_terminate(ec2conn,
     while len(aws_ids_to_roles) > 0:
         done = False
         while not done:
-            time.sleep(1)
+            time.sleep(5)
             count = count - 1
             if count < 0:
                 msg = "timeout while terminating EC2 machine(s) %s"
@@ -811,7 +819,7 @@ def wait_for_multiple_machines_to_terminate(ec2conn,
                 if aws_id in aws_ids_to_roles:
                     state = instance.state
                     constellation.set_value("%s_aws_state" % role, state)
-                    if instance.state == 'terminated':
+                    if state == 'terminated':
                         role = aws_ids_to_roles[aws_id]
                         aws_ids_to_roles.pop(aws_id)
                         log('Terminated %s (AWS %s)' % (role, aws_id))

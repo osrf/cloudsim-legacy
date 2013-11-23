@@ -334,6 +334,45 @@ echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
     return s
 
 
+def get_puppet_install_script(ubuntu_sources_repo, machine_name):
+
+    s = """#!/bin/bash
+# Exit on error
+set -ex
+exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
+
+echo `date`
+
+""" + _cloudsim_dir_find_file_and_dpkg_generator(machine_name) + """
+
+""" + _packagage_sources_update_generator(ubuntu_sources_repo) + """
+
+# get the distribution info (precise, quantal, etc...)
+. /etc/lsb-release
+
+echo 'installing puppet for '$DISTRIB_CODENAME
+
+wget -O puppetlabs-release-$DISTRIB_CODENAME.deb http://apt.puppetlabs.com/puppetlabs-release-$DISTRIB_CODENAME.deb
+dpkg -i puppetlabs-release-$DISTRIB_CODENAME.deb
+
+apt-get update
+apt-get -y install puppet-common
+apt-get -y install puppet
+apt-get -y install ruby-odbc
+apt-get -y install ruby1.9
+apt-get -y install vim
+apt-get -y install ipython
+
+
+touch /home/ubuntu/cloudsim/setup/deploy_ready
+
+chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
+echo `date`
+touch /home/ubuntu/cloudsim/setup/done
+"""
+    return s
+
+
 def get_simulator_script(ubuntu_sources_repo,
                          drc_package_name,
                    machine_ip,
