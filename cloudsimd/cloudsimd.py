@@ -18,8 +18,6 @@ from launchers.launch_utils.launch_db import get_cloudsim_config
 from launchers.launch_utils.launch_db import set_cloudsim_config
 from launchers.launch_utils import aws_connect
 from launchers.launch_utils import LaunchException
-from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
-from launchers.launch_utils.launch_db import log_msg
 from launchers.launch_utils.launch_db import get_cloudsim_version
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
@@ -98,7 +96,7 @@ def reset_tasks(name=None):
      - starting
      - running
      - stopping
-    set to stopped, and it can't be _run_cloudsim_cmd_loop again.
+    set to stopped, and it can't be run again.
     Stopped tasks are not affected
     """
     names = []
@@ -116,7 +114,7 @@ def reset_tasks(name=None):
             if state not in ['ready']:
                 cs.update_task_value(task_id, 'task_state', 'ready')
                 cs.update_task_value(task_id, 'task_message',
-                                     'Ready to _run_cloudsim_cmd_loop')
+                                     'Ready to run')
 
 
 
@@ -398,10 +396,11 @@ def launch(constellation_name, data):
         init_constellation_data(constellation_name, data, cloudsim_config)
         constellation_plugin = get_plugin(config)
 
+        constellation.set_value('constellation_state', 'launching')
         log("calling the plugin's launch function")
         constellation_plugin.launch(constellation_name, data)
-
         constellation.set_value('constellation_state', 'running')
+        
         log("Launch of constellation %s done" % constellation_name)
     except Exception, e:
         tb = traceback.format_exc()
@@ -422,7 +421,9 @@ def update_constellation(constellation_name):
     try:
         config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
+        constellation.set_value('constellation_state', 'updating')
         constellation_plugin.update(constellation_name)
+        constellation.set_value('constellation_state', 'running')
     except:
         tb = traceback.format_exc()
         log("UPDATE ERROR traceback:  %s" % tb)
@@ -478,7 +479,9 @@ def terminate(constellation_name):
         config = constellation.get_value('configuration')
         log("    configuration is '%s'" % (config))
         constellation_plugin = get_plugin(config)
+        constellation.set_value('constellation_state', 'terminating')
         constellation_plugin.terminate(constellation_name)
+        constellation.set_value('constellation_state', 'terminated')
     except Exception, e:
         tb = traceback.format_exc()
         constellation.set_value('error', 'Terminate aborted with exception: '
@@ -512,7 +515,7 @@ def create_task(constellation_name, data):
         task_id = "t" + get_unique_short_name()
         data['task_id'] = task_id
         data['task_state'] = "ready"
-        data['task_message'] = 'Ready to _run_cloudsim_cmd_loop'
+        data['task_message'] = 'Ready to run'
 
         cs = ConstellationState(constellation_name)
         tasks = cs.get_value('tasks')
@@ -615,7 +618,7 @@ def start_task(constellation_name, task_id):
             else:
                 log("Task is not ready (%s)" % task_state)
         else:
-                log("can't _run_cloudsim_cmd_loop task %s while tasks %s "
+                log("can't run task %s while tasks %s "
                         "is already running" % (task_id, current_task))
     except Exception, e:
         log("start_task error %s" % e)

@@ -66,7 +66,7 @@ def update(constellation_name, force_authentication_type=None):
     constellation_directory = constellation.get_value(
                                                      'constellation_directory')
     # zip the currently running software
-    website_distribution = _zip_cloudsim(constellation_directory)
+    website_distribution = _get_cloudsim_src_tarball(constellation_directory)
     # send to cloudsim machine
     _upload_cloudsim(constellation_name, website_distribution)
     ip_address = constellation.get_value(IP_KEY)
@@ -236,7 +236,7 @@ def __get_deploy_cmd(force_authentication_type=None, reset_db=False):
             # make sure that cloudsim is installed
             r.index("cloudsim")
             r = commands.getoutput('grep AuthType /etc/apache2/apache2.conf')
-            auth_type = r.split("AuthType")[1]
+            auth_type = r.split("AuthType")[1].strip()
             return auth_type
         except:
             raise LaunchException('CloudSim web app is not installed')
@@ -301,7 +301,6 @@ def launch(constellation_name,
     constellation.set_value("launch_stage", "nothing")
     constellation.set_value(LATENCY_KEY, '[]')
 
-    constellation.set_value('constellation_state', 'launching')
     constellation.set_value(STATE_KEY, 'network_setup')
 
     constellation.set_value(LAUNCH_MSG_KEY, "starting")
@@ -449,10 +448,9 @@ def launch(constellation_name,
 
     if upload_cloudsim_code:
         #  Upload source zip
-        website_distribution = _zip_cloudsim(constellation_directory)
-        _upload_cloudsim(constellation_name,
-                                   website_distribution,
-                                   key_prefix)
+        website_distribution = _get_cloudsim_src_tarball(
+                                                       constellation_directory)
+        _upload_cloudsim(constellation_name, website_distribution)
 
     ssh_cli.cmd('cp /home/ubuntu/cloudsim_users cloudsim/distfiles/users')
 
@@ -485,7 +483,6 @@ def terminate(constellation_name):
 
     constellation = ConstellationState(constellation_name)
     constellation.set_value(LAUNCH_MSG_KEY, "terminating")
-    constellation.set_value('constellation_state', 'terminating')
     constellation.set_value(STATE_KEY, 'terminating')
 
     log("terminate %s [constellation_name=%s]" % (CONFIGURATION,
@@ -511,37 +508,57 @@ def terminate(constellation_name):
 
     constellation.set_value(STATE_KEY, "terminated")
     constellation.set_value(LAUNCH_MSG_KEY, "terminated")
-    constellation.set_value('constellation_state', 'terminated')
 
 
-def _zip_cloudsim(target_dir, short_fname="cloudsim_src.zip"):
+def zip_cloudsim_src(target_fname):
+    """
+    Create a zip file of the current source tree. This function cannot
+    be called from an installed CloudSim, since the web app source is not
+    present
+    """
+    full_path_of_cloudsim = os.path.dirname(
+                                    os.path.dirname(
+                                    os.path.dirname(
+                                    os.path.abspath(__file__))))
+
+    tmp_dir = tempfile.mkdtemp("cloudsim")
+    cloudsim_dir = os.path.join(tmp_dir, 'cloudsim')
+    shutil.copytree(full_path_of_cloudsim, cloudsim_dir)
+    # remove test files if present (this avoids bloat)
+    test_dir = os.path.join(cloudsim_dir, "test-reports")
+    if os.path.isdir(test_dir):
+        shutil.rmtree(test_dir)
+    hg_dir = os.path.join(cloudsim_dir, ".hg")
+    if os.path.isdir(hg_dir):
+        shutil.rmtree(hg_dir)
+    # zip files
+    os.chdir(tmp_dir)
+    commands.getoutput('zip -r cloudsim.zip cloudsim')
+    # move zip file to destination
+    shutil.move(os.path.join(tmp_dir, "cloudsim.zip"), target_fname)
+    shutil.rmtree(tmp_dir)
+
+
+def _get_cloudsim_src_tarball(target_dir, short_fname="cloudsim_src.zip"):
     """
     creates a zipped cloudsim directory and returns
     a path to a cloudsim.zip in a temp directory. This is the
     CloudSim source tarball that gets deployed in launched instances.
     """
-    log("_zip_cloudsim")
-    tmp_dir = tempfile.mkdtemp("cloudsim")
-    tmp_zip = os.path.join(tmp_dir, short_fname)
-    # locate source files
-    p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    full_path_of_cloudsim = os.path.dirname(p)
-    cloudsim_dir = os.path.join(tmp_dir, 'cloudsim')
-    shutil.copytree(full_path_of_cloudsim, cloudsim_dir)
-    # remove test files if present (this avoids bloat)
-    test_dir = os.path.join(cloudsim_dir, "test-reports")
-    shutil.rmtree(test_dir)
-
-    hg_dir = os.path.join(cloudsim_dir, ".hg")
-    if os.path.exists(hg_dir):
-        shutil.rmtree(hg_dir)
-    # zip files
-    os.chdir(tmp_dir)
-    commands.getoutput('zip -r %s cloudsim' % (tmp_zip))
-    # move zip file to destination
     target_fname = os.path.join(target_dir, short_fname)
-    shutil.move(tmp_zip, target_fname)
-    shutil.rmtree(tmp_dir)
+    # locate source files
+    # in the case that this call is made from a running cloudsim, the zip
+    # file already exists (created by deploy.sh)
+    # this is likely a baby cloudsim launch
+    if __file__.startswith("/var/"):
+        src = "/var/www-cloudsim-auth/cloudsim.zip"
+        log("_get_cloudsim_src_tarball copying %s to %s" % (src, target_fname))
+        shutil.copy2(src, target_fname)
+    # if the call is made from the source tree, the zipping must be done
+    # this is likely a create_cloudsim call
+    else:
+        log("_get_cloudsim_src_tarball creating zip %s" % (target_fname))
+        zip_cloudsim_src(target_fname)
     return target_fname
 
 
