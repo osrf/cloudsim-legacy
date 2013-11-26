@@ -90,7 +90,7 @@ def provision(constellation_directory, ip, ssh_key_fname, configuration):
             sudo('librarian-puppet install --clean')  # y
     else:
         with cd('/etc/puppet'):
-            sudo('librarian-puppet update') 
+            sudo('librarian-puppet update')
 
     timestamp = int(time.time())
     username = getpass.getuser()
@@ -108,6 +108,9 @@ def provision(constellation_directory, ip, ssh_key_fname, configuration):
     run('tar xzf %s.tar.gz' % puppet_bundle)
 
     the_host = ip
+    module_path = '%s/puppet/modules' % puppet_bundle
+    pp_file = '%s/puppet/manifests/site.pp' % (puppet_bundle, )
+
     cmd = 'FACTER_fqdn=%s puppet apply --verbose --debug ' \
          '--modulepath=/etc/puppet/modules:/usr/share/puppet/modules:' \
          '%s/puppet/modules %s/puppet/manifests/site.pp' % (the_host,

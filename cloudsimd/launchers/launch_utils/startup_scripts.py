@@ -363,7 +363,6 @@ apt-get -y install ruby1.9
 apt-get -y install vim
 apt-get -y install ipython
 
-
 touch /home/ubuntu/cloudsim/setup/deploy_ready
 
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
