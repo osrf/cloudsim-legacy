@@ -60,7 +60,7 @@ sudo cp -f $DIR/../cloudsim_bitbucket.key /var/www-cloudsim-auth/cloudsim_bitbuc
 #
 cd $DIR/..
 zip -r cloudsim.zip cloudsim
-sudo mv -f cloudsim.zip /var/www-cloudsim-auth
+sudo mv cloudsim.zip /var/www-cloudsim-auth
 
 cd $DIR
 

@@ -526,9 +526,10 @@ def zip_cloudsim_src(target_fname):
     shutil.copytree(full_path_of_cloudsim, cloudsim_dir)
     # remove test files if present (this avoids bloat)
     test_dir = os.path.join(cloudsim_dir, "test-reports")
-    shutil.rmtree(test_dir)
+    if os.path.isdir(test_dir):
+        shutil.rmtree(test_dir)
     hg_dir = os.path.join(cloudsim_dir, ".hg")
-    if os.path.exists(hg_dir):
+    if os.path.isdir(hg_dir):
         shutil.rmtree(hg_dir)
     # zip files
     os.chdir(tmp_dir)
@@ -549,7 +550,7 @@ def _get_cloudsim_src_tarball(target_dir, short_fname="cloudsim_src.zip"):
     # in the case that this call is made from a running cloudsim, the zip
     # file already exists (created by deploy.sh)
     # this is likely a baby cloudsim launch
-    if __file__.startswith("/var/"):
+    if __file__.startswith("/var/cloudsimd/"):
         src = "/var/www-cloudsim-auth/cloudsim.zip"
         log("_get_cloudsim_src_tarball copying %s to %s" % (src, target_fname))
         shutil.copy2(src, target_fname)

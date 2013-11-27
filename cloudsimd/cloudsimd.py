@@ -18,8 +18,6 @@ from launchers.launch_utils.launch_db import get_cloudsim_config
 from launchers.launch_utils.launch_db import set_cloudsim_config
 from launchers.launch_utils import aws_connect
 from launchers.launch_utils import LaunchException
-from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
-from launchers.launch_utils.launch_db import log_msg
 from launchers.launch_utils.launch_db import get_cloudsim_version
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
