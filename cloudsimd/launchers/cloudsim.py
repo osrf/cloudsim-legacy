@@ -526,9 +526,10 @@ def zip_cloudsim_src(target_fname):
     shutil.copytree(full_path_of_cloudsim, cloudsim_dir)
     # remove test files if present (this avoids bloat)
     test_dir = os.path.join(cloudsim_dir, "test-reports")
-    shutil.rmtree(test_dir)
+    if os.path.isdir(test_dir):
+        shutil.rmtree(test_dir)
     hg_dir = os.path.join(cloudsim_dir, ".hg")
-    if os.path.exists(hg_dir):
+    if os.path.isdir(hg_dir):
         shutil.rmtree(hg_dir)
     # zip files
     os.chdir(tmp_dir)
