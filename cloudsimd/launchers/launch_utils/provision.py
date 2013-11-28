@@ -109,11 +109,10 @@ def provision(constellation_directory, ip, ssh_key_fname, configuration):
 
     the_host = ip
     module_path = '%s/puppet/modules' % puppet_bundle
-    pp_file = '%s/puppet/manifests/site.pp' % (puppet_bundle, )
+    pp_file = '%s/puppet/manifests/%s.pp' % (puppet_bundle, configuration)
 
     cmd = 'FACTER_fqdn=%s puppet apply --verbose --debug ' \
-         '--modulepath=/etc/puppet/modules:/usr/share/puppet/modules:' \
-         '%s/puppet/modules %s/puppet/manifests/site.pp' % (the_host,
-         puppet_bundle, puppet_bundle)
+         '--modulepath=/etc/puppet/modules:/usr/share/puppet/modules:%s' \
+         ' %s' % (the_host, module_path, pp_file)
     log(cmd)
     sudo(cmd)

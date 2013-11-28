@@ -908,6 +908,13 @@ class MoniCase(unittest.TestCase):
         ssh_ping_proc(constellation_name, '10.0.0.51', latency_key)
 
 
+def flush():
+    """
+    Fake method to avoid crashes, because flush is not present on Delegate_io
+    class used by XMLTestRunner.
+    """
+    pass
+
 class TestSimulator(unittest.TestCase):
     """
     Launches a simulator instance, runs the monitor loop 10 times,
@@ -919,6 +926,10 @@ class TestSimulator(unittest.TestCase):
         from launch_utils.launch_db import get_unique_short_name
         from launch_utils.launch_db import get_cloudsim_version
         from launch_utils.launch_db import init_constellation_data
+
+        # provide no op flush to avoid crashes
+        sys.stdout.flush = flush
+        sys.stderr.flush = flush
 
         print("out=%s" % sys.stdout)
         sys.stdout.flush()

@@ -25,6 +25,58 @@ def log(msg, channel=__name__, severity="info"):
     log_msg(msg, channel, severity)
 
 
+def _get_amazon_amis(availability_zone):
+    """
+    AMIs are the Amazon disk images. They have unique ids, and those ids vary
+    in different regions
+    """
+
+#     config = get_cloudsim_config()
+#     credentials_ec2 = config['boto_path']
+#     boto.config = BotoConfig(credentials_ec2)
+#     availability_zone = boto.config.get('Boto', 'ec2_region_name')
+
+    amis = {}
+
+    if availability_zone.startswith('us-west-2'):
+        # amis['ubuntu_1204_x64'] = 'ami-a84ad298' # OTOY
+        amis['ubuntu_1204_x64'] = 'ami-52b22962'
+
+
+    if availability_zone.startswith('eu-west'):
+        amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
+        amis['ubuntu_1204_x64'] = 'ami-f2191786'
+        # cloudsim 1.7.2
+        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-0f3ed378'
+        amis['ubuntu_1204_x64_drc_router'] = 'ami-bcd235cb'
+        amis['ubuntu_1204_x64_drc_simulator'] = 'ami-bad235cd'
+        # simulator 1.7.2
+        amis['ubuntu_1204_x64_simulator'] = 'ami-dd3fd2aa'
+
+    elif availability_zone.startswith('us-east'):
+        amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
+        amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
+        # cloudsim 1.7.2
+        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-f55f7b9c'
+        amis['ubuntu_1204_x64_drc_router'] = 'ami-8d0155e4'
+        amis['ubuntu_1204_x64_drc_simulator'] = 'ami-8f0155e6'
+        # simulator 1.7.2
+        amis['ubuntu_1204_x64_simulator'] = 'ami-8b5377e2'
+
+    elif availability_zone.startswith('nova'):
+        # TODO: we might want to move image ids to a configuration file
+        ec2conn, _ = aws_connect()
+        images = ec2conn.get_all_images(
+            filters={'name': ['ubuntu-12.04.2-server-cloudimg-amd64-disk1']})
+        for image in images:
+            if image.name == 'ubuntu-12.04.2-server-cloudimg-amd64-disk1':
+                amis['ubuntu_1204_x64_cluster'] = image.id
+                amis['ubuntu_1204_x64'] = image.id
+
+    return amis
+
+
+
 def get_aws_ubuntu_sources_repo(credentials_ec2):
     aws_connect(credentials_ec2)
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
@@ -651,56 +703,6 @@ def aws_connect(creds_fname=None):
                                    aws_secret_access_key,
                                    region=region)
     return ec2conn, vpcconn
-
-
-def _get_amazon_amis(availability_zone):
-    """
-    AMIs are the Amazon disk images. They have unique ids, and those ids vary
-    in different regions
-    """
-
-#     config = get_cloudsim_config()
-#     credentials_ec2 = config['boto_path']
-#     boto.config = BotoConfig(credentials_ec2)
-#     availability_zone = boto.config.get('Boto', 'ec2_region_name')
-
-    amis = {}
-
-    if availability_zone.startswith('us-west-2'):
-        amis['ubuntu_1204_x64'] = 'ami-a84ad298'
-
-
-    if availability_zone.startswith('eu-west'):
-        amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
-        amis['ubuntu_1204_x64'] = 'ami-f2191786'
-        # cloudsim 1.7.2
-        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-0f3ed378'
-        amis['ubuntu_1204_x64_drc_router'] = 'ami-bcd235cb'
-        amis['ubuntu_1204_x64_drc_simulator'] = 'ami-bad235cd'
-        # simulator 1.7.2
-        amis['ubuntu_1204_x64_simulator'] = 'ami-dd3fd2aa'
-
-    elif availability_zone.startswith('us-east'):
-        amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
-        amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
-        # cloudsim 1.7.2
-        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-f55f7b9c'
-        amis['ubuntu_1204_x64_drc_router'] = 'ami-8d0155e4'
-        amis['ubuntu_1204_x64_drc_simulator'] = 'ami-8f0155e6'
-        # simulator 1.7.2
-        amis['ubuntu_1204_x64_simulator'] = 'ami-8b5377e2'
-
-    elif availability_zone.startswith('nova'):
-        # TODO: we might want to move image ids to a configuration file
-        ec2conn, _ = aws_connect()
-        images = ec2conn.get_all_images(
-            filters={'name': ['ubuntu-12.04.2-server-cloudimg-amd64-disk1']})
-        for image in images:
-            if image.name == 'ubuntu-12.04.2-server-cloudimg-amd64-disk1':
-                amis['ubuntu_1204_x64_cluster'] = image.id
-                amis['ubuntu_1204_x64'] = image.id
-
-    return amis
 
 
 def get_ec2_instance(ec2conn, mid):
