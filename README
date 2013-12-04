@@ -1,3 +1,10 @@
 This is CloudSim.
 
-CloudSim offers ready to run Gazebo and ROS systems to run in the cloud.
+CloudSim Gazebo and ROS systems that are configured and ready to run in the (mostly AWS) cloud.
+
+
+Tutorial and stup instructions can be found here:
+http://gazebosim.org/wiki/Tutorials/CloudSim/setup
+
+The changelog can be found here:
+http://cloudsim.io/Change_log
