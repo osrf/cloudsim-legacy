@@ -16,7 +16,7 @@ node default {
         'ipython' : provider => pip, ensure  => latest;
     }
 
-    cloudsim::install { "cloudsim": version => "1.7.2"; }
+    cloudsim::install { "cloudsim": version => "1.7.3"; }
 
 }
 

@@ -652,7 +652,7 @@ echo `date`
                        "cloudsim/setup/done",
                        "packages_setup")
     # do the puppet magic
-    provision(constellation_directory, ip, ssh_key_fname, "Sim-x")
+    provision(constellation_directory, ip, ssh_key_fname, "sim-x")
 
     # Setup the VPN
     ssh_client = _get_ssh_client(constellation_name)
