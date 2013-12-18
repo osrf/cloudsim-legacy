@@ -25,56 +25,136 @@ def log(msg, channel=__name__, severity="info"):
     log_msg(msg, channel, severity)
 
 
-def _get_amazon_amis(availability_zone):
+def get_hardware_software(availability_zone, configuration, machine_name):
+    """
+    Returns the server type and
+    """
+
+    region = None
+    if availability_zone.find('us-west-2') >= 0:
+        region = 'us-west-2'
+    if availability_zone.find('us-east') >= 0:
+        region = 'us-east'
+    if availability_zone.find('eu-west') >= 0:
+        region = 'eu-west'
+
+    aws_amis = get_amazon_amis()
+    local_amis = aws_amis[region]
+    config = local_amis[configuration]
+    machine = config[machine_name]
+    hardware = machine['type']
+    software = machine['ami']
+    return hardware, software
+
+
+def get_amazon_amis():
     """
     AMIs are the Amazon disk images. They have unique ids, and those ids vary
     in different regions
     """
+    aws_amis = {'us-west-2': {'Simulator-g2': {'sim': {'type': 'cg1.4xlarge',
+                                                       'ami': 'ami-52b22962'}},
+                      'CloudSim': {'cs': {'type': 'small',
+                                          'ami': 'ami-52b22962'}},
+                      'CloudSim-stable': {'cs': {'type': 'small',
+                                                 'ami': None}},
+                      'Simulator-stable-g2': {'sim': {'type': 'g2.2xlarge',
+                                                      'ami': 'ami-d00561e0'}},
+                       },
+            'us-east': {'DRC': {'router': {'type': 'small',
+                                           'ami': 'ami-137bcf7a'},
+                                'sim': {'type': 'cg1.4xlarge',
+                                        'ami': 'ami-98fa58f1'},
+                                'fc': {'type': 'cg1.4xlarge',
+                                       'ami': 'ami-98fa58f1'},
+                                },
+                   'CloudSim': {'cs': {'type': 'small',
+                                       'ami':  'ami-137bcf7a'}},
+                   'Simulator-cg1': {'sim': {'type': 'cg1.4xlarge',
+                                             'ami': 'ami-98fa58f1'}},
+                   'Simulator-g2': {'sim': {'type': 'g2.2xlarge',
+                                            'ami': 'ami-dfa98cb6'}},
+                   'CloudSim-stable': {'cs': {'type': 'small',
+                                              'ami': 'ami-f55f7b9c'}},
+                   'Simulator-stable-cg1': {'sim': {'type': 'cg1.4xlarge',
+                                                    'ami': 'ami-8f0155e6'}},
+                   'Simulator-stable-g2':  {'sim': {'type': 'g2.2xlarge',
+                                                    'ami': None}},
+                   'DRC-stable': {'router': {'type': 'small',
+                                             'ami': 'ami-8d0155e4'},
+                                  'sim': {'type': 'cg1.4xlarge',
+                                          'ami': 'ami-8f0155e6'},
+                                  'fc': {'type': 'cg1.4xlarge',
+                                         'ami': 'ami-8f0155e6'},
+                                  }
+                        },
+            'eu-west': {'DRC': {'router': {'type': 'small',
+                                           'ami': 'ami-f2191786'},
+                                'sim': {'type': 'cg1.4xlarge',
+                                        'ami': 'ami-fc191788'},
+                                'fc': {'type': 'cg1.4xlarge',
+                                       'ami': 'ami-fc191788'},
+                                },
+                   'CloudSim': {'cs': {'type': 'small',
+                                       'ami': 'ami-f2191786'}},
+                   'Simulator, cg1': {'sim': {'type': 'cg1.4xlarge',
+                                              'ami': 'ami-fc191788'}},
+                   'Simulator, g2': {'sim': {'type': 'g2.2xlarge',
+                                             'ami': None}},
+                   'CloudSim-stable': {'cs': {'type': 'small',
+                                              'ami': 'ami-0f3ed378'}},
+                   'Simulator-stable, cg1': {'sim': {'type': 'cg1.4xlarge',
+                                                     'ami': 'ami-dd3fd2aa'}},
+                   'Simulator-stable, g2':  {'sim': {'type': 'g2.2xlarge',
+                                                     'ami': None}},
+                   'DRC-stable': {'router': {'type': 'small',
+                                             'ami': 'ami-bcd235cb'},
+                                  'sim': {'type':'cg1.4xlarge',
+                                          'ami': 'ami-bad235cd'},
+                                  'fc': {'type': 'cg1.4xlarge',
+                                          'ami': 'ami-bad235cd'},
+                                  }
+                        },
+           }
+    return aws_amis
 
-#     config = get_cloudsim_config()
-#     credentials_ec2 = config['boto_path']
-#     boto.config = BotoConfig(credentials_ec2)
-#     availability_zone = boto.config.get('Boto', 'ec2_region_name')
-
-    amis = {}
-
-    if availability_zone.startswith('us-west-2'):
-        # amis['ubuntu_1204_x64'] = 'ami-a84ad298' # OTOY
-        amis['ubuntu_1204_x64'] = 'ami-52b22962'
-
-
-    if availability_zone.startswith('eu-west'):
-        amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
-        amis['ubuntu_1204_x64'] = 'ami-f2191786'
-        # cloudsim 1.7.2
-        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-0f3ed378'
-        amis['ubuntu_1204_x64_drc_router'] = 'ami-bcd235cb'
-        amis['ubuntu_1204_x64_drc_simulator'] = 'ami-bad235cd'
-        # simulator 1.7.2
-        amis['ubuntu_1204_x64_simulator'] = 'ami-dd3fd2aa'
-
-    elif availability_zone.startswith('us-east'):
-        amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
-        amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
-        # cloudsim 1.7.2
-        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-f55f7b9c'
-        amis['ubuntu_1204_x64_drc_router'] = 'ami-8d0155e4'
-        amis['ubuntu_1204_x64_drc_simulator'] = 'ami-8f0155e6'
-        # simulator 1.7.2
-        amis['ubuntu_1204_x64_simulator'] = 'ami-8b5377e2'
-
-    elif availability_zone.startswith('nova'):
-        # TODO: we might want to move image ids to a configuration file
-        ec2conn, _ = aws_connect()
-        images = ec2conn.get_all_images(
-            filters={'name': ['ubuntu-12.04.2-server-cloudimg-amd64-disk1']})
-        for image in images:
-            if image.name == 'ubuntu-12.04.2-server-cloudimg-amd64-disk1':
-                amis['ubuntu_1204_x64_cluster'] = image.id
-                amis['ubuntu_1204_x64'] = image.id
-
-    return amis
-
+#     if availability_zone.startswith('us-west-2'):
+#         # g2 compatible ami
+#         amis['ubuntu_1204_x64_small'] = 'ami-4ac9437a'
+#         amis['ubuntu_1204_x64_g2'] = 'ami-52b22962'
+#         amis['ubuntu_1204_x64_simulator_g2'] = 'ami-d00561e0'  # ami-4e22467e'
+# 
+#     if availability_zone.startswith('eu-west'):
+#         amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
+#         amis['ubuntu_1204_x64'] = 'ami-f2191786'
+#         # cloudsim 1.7.2
+#         amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-0f3ed378'
+#         amis['ubuntu_1204_x64_drc_router'] = 'ami-bcd235cb'
+#         amis['ubuntu_1204_x64_drc_simulator'] = 'ami-bad235cd'
+#         # simulator 1.7.2
+#         amis['ubuntu_1204_x64_simulator'] = 'ami-dd3fd2aa'
+# 
+#     elif availability_zone.startswith('us-east'):
+#         amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
+#         amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
+#         # cloudsim 1.7.2
+#         amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-f55f7b9c'
+#         amis['ubuntu_1204_x64_drc_router'] = 'ami-8d0155e4'
+#         amis['ubuntu_1204_x64_drc_simulator'] = 'ami-8f0155e6'
+#         # simulator 1.7.2
+#         amis['ubuntu_1204_x64_simulator'] = 'ami-8b5377e2'
+# 
+#     elif availability_zone.startswith('nova'):
+#         # TODO: we might want to move image ids to a configuration file
+#         ec2conn, _ = aws_connect()
+#         images = ec2conn.get_all_images(
+#             filters={'name': ['ubuntu-12.04.2-server-cloudimg-amd64-disk1']})
+#         for image in images:
+#             if image.name == 'ubuntu-12.04.2-server-cloudimg-amd64-disk1':
+#                 amis['ubuntu_1204_x64_cluster'] = image.id
+#                 amis['ubuntu_1204_x64'] = image.id
+#
+#     return amis
 
 
 def get_aws_ubuntu_sources_repo(credentials_ec2):
@@ -101,11 +181,12 @@ def acquire_aws_single_server(constellation_name,
 
     ec2conn, _ = aws_connect(credentials_ec2)
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
-    amis = _get_amazon_amis(availability_zone)
+
+    # amis = _get_amazon_amis(availability_zone)
     soft = machine_data['software']
     aws_image = amis[soft]
-    aws_instance = machine_data['hardware']
 
+    aws_instance = machine_data['hardware']
     bdm = __get_block_device_mapping(aws_instance)
 
     constellation = ConstellationState(constellation_name)
@@ -613,13 +694,13 @@ def __get_block_device_mapping(aws_instance):
     Resize the available disk space to 50 gig on certain instance types
     """
     bdm = None
-    if aws_instance == 'cg1.4xlarge':
+    if aws_instance in ['cg1.4xlarge', 'g2.2xlarge']:
         dev_sda1 = boto.ec2.blockdevicemapping.EBSBlockDeviceType()
-        dev_sda1.size = 50  # size in Gigabytes
+        dev_sda1.size = 16  # size in Gigabytes
+        log("hard disk: setting block to %s Gigabytes" % dev_sda1.size)
         bdm = boto.ec2.blockdevicemapping.BlockDeviceMapping()
         bdm['/dev/sda1'] = dev_sda1
-    #return bdm
-    return None
+    return bdm
 
 
 def _acquire_vpc_server(constellation_name,
@@ -631,13 +712,15 @@ def _acquire_vpc_server(constellation_name,
                         security_group_id,
                         availability_zone,
                         ec2conn):
-    amis = _get_amazon_amis(availability_zone)
     constellation = ConstellationState(constellation_name)
     try:
         constellation.set_value('%s_launch_msg' % machine_prefix, "booting")
         soft = machine_data['software']
+
+        amis = _get_amazon_amis(availability_zone)
         aws_image = amis[soft]
         aws_instance = machine_data['hardware']
+
         ip = machine_data['ip']
         bdm = __get_block_device_mapping(aws_instance)
         constellation_directory = constellation.get_value(
@@ -833,3 +916,7 @@ def wait_for_multiple_machines_to_terminate(ec2conn,
                                     instance.state,
                                     count,
                                     max_retries))
+
+if __name__ == "__main__":
+    hard, soft = get_hardware_software('us-east', 'CloudSim', 'cs')
+    print ("%s, %s" % (hard, soft))

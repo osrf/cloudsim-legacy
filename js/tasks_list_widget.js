@@ -12,7 +12,7 @@ local_stop: 2013-06-14 18:00:00.0
 timeout: 1800
 task_num: 1
 task_tag: Drive
-ros_package: atlas_utils
+ros_package: drcsim_gazebo
 ros_launch: vrc_task_1.launch
 */
 

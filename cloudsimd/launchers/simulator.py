@@ -5,11 +5,7 @@ import os
 import time
 import zipfile
 import shutil
-import json
-import subprocess
-import dateutil.parser
 import multiprocessing
-import sys
 
 from launch_utils.traffic_shaping import  run_tc_command
 
@@ -18,23 +14,25 @@ from launch_utils.monitoring import constellation_is_terminated,\
     monitor_launch_state,  monitor_ssh_ping,\
     monitor_task, monitor_simulator, TaskTimeOut, monitor_gzweb
 
-from launch_utils.softlayer import create_openvpn_key
 
-from launch_utils.launch_db import get_constellation_data, ConstellationState,\
-    get_cloudsim_config, log_msg
+from launch_utils.launch_db import ConstellationState, log_msg, LaunchException
 
 from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
     create_vpc_vpn_connect_file, create_ros_connect_file,\
-    create_ssh_connect_file, get_simulator_script,\
-    get_simulator_deploy_script
+    create_ssh_connect_file, get_simulator_deploy_script, get_simulator_script
 
 from launch_utils.sshclient import SshClient
-from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
 
-from launch_utils.aws import acquire_aws_single_server, terminate_aws_server,\
-    get_aws_ubuntu_sources_repo
-
-from launch_utils import LaunchException
+from launch_utils.aws import get_hardware_software, get_aws_ubuntu_sources_repo,\
+    acquire_aws_single_server, terminate_aws_server
+from launch_utils.softlayer import create_openvpn_key
+from launch_utils.ssh_queue import empty_ssh_queue, get_ssh_cmd_generator
+from common.constants import get_cloudsim_config
+import dateutil
+from common.machine_configuration import get_constellation_data
+import json
+import subprocess
+import sys
 
 
 OPENVPN_SERVER_IP = '11.8.0.1'
@@ -513,8 +511,11 @@ def launch(constellation_name, tags):
     Called by cloudsimd when it receives a launch message
     """
     constellation = ConstellationState(constellation_name)
-    use_latest_version = \
-        constellation.get_value('configuration') == 'Simulator'
+    use_latest_version = True
+
+    conf = constellation.get_value('configuration')
+    if conf.find("stable") >= 0:
+        use_latest_version = False
 
     scripts = {}
     scripts['sim'] = ''
@@ -531,15 +532,13 @@ def launch(constellation_name, tags):
     # lets build a list of machines for our constellation
     #
     openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
-    if use_latest_version:
-        simulator_image_key = 'ubuntu_1204_x64_cluster'
-    else:
-        simulator_image_key = 'ubuntu_1204_x64_simulator'
 
+    availability_zone = "us-east"
+    hardware, software = get_hardware_software(availability_zone, conf, 'sim')
     ip = "127.0.0.1"
     machines = {}
-    machines['sim'] = {'hardware': 'cg1.4xlarge',  # 'g2.2xlarge'
-                      'software': simulator_image_key,
+    machines['sim'] = {'hardware': hardware,  # 'g2.2xlarge',  # 'cg1.4xlarge'
+                      'software': software,
                       'ip': ip,
                       'security_group': [{'name': 'openvpn',
                                           'protocol': 'udp',
@@ -594,9 +593,9 @@ def launch(constellation_name, tags):
     if use_latest_version:
 
         drcsim_package_name = "drcsim"
-        ppa_list = []  # ['ubuntu-x-swat/x-updates']
-        gpu_driver_list = ['nvidia-current',
-                           'nvidia-settings',
+        ppa_list = ['ubuntu-x-swat/x-updates']  # []
+        gpu_driver_list = ['nvidia-331',  # 'nvidia-current',
+                           'nvidia-settings-331',  # 'nvidia-settings',
                            'nvidia-current-dev',
                            'nvidia-cg-toolkit']
 
@@ -915,6 +914,7 @@ def flush():
     """
     pass
 
+
 class TestSimulator(unittest.TestCase):
     """
     Launches a simulator instance, runs the monitor loop 10 times,
@@ -949,7 +949,7 @@ class TestSimulator(unittest.TestCase):
         # prepare the launch
         data = {}
         data['cloud_provider'] = 'aws'
-        data['configuration'] = 'Simulator-stable'
+        data['configuration'] = 'Simulator-g2'  # 'Simulator-stable'
         data['username'] = self.username
 
         init_constellation_data(self.constellation_name, data, config)

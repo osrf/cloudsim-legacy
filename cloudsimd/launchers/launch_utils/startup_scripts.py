@@ -382,6 +382,10 @@ def get_simulator_script(ubuntu_sources_repo,
                    OPENVPN_SERVER_IP
                    ):
 
+    ppa_string = ""
+    for ppa in ppa_list:
+        ppa_string += "apt-add-repository -y ppa:%s\n" % ppa
+
     s = """#!/bin/bash
 # Exit on error
 set -ex
@@ -389,6 +393,12 @@ exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
 """ + _cloudsim_dir_find_file_and_dpkg_generator("sim") + """
 """ + _packagage_sources_update_generator(ubuntu_sources_repo) + """
+
+""" + ppa_string + """
+
+# afer ad-apt-repository, we need update
+apt-get update
+
 """ + _openvpn_install_and_conf_generator(OPENVPN_SERVER_IP,
                                           OPENVPN_CLIENT_IP) + """
 """ + _install_ntp_vim_sshhpn_generator() + """
@@ -397,7 +407,6 @@ exec >/home/ubuntu/launch_stdout_stderr.log 2>&1
 
 apt-get install -y unzip
 touch /home/ubuntu/cloudsim/setup/deploy_ready
-
 
 """ + _robotics_packages_install_generator(drc_package_name) + """
 
@@ -611,7 +620,7 @@ apt-get install -y libjansson-dev
 apt-get install -y nodejs npm
 apt-get install -y python-matplotlib
 
-npm install -g http-server
+npm install -g http-server@0.5.5
 npm install -g node-gyp
 npm install websocket
 
@@ -848,7 +857,9 @@ exec > $logfile 2>&1
 #
 apt-get update
 
-apt-get install -y python-software-properties
+# not needed? ppa_string uses it!!
+#  apt-get install -y python-software-properties
+
 apt-get install -y zip
 apt-get install -y vim
 apt-get install -y ipython
@@ -940,7 +951,7 @@ apt-get install -y x11-xserver-utils
 
 # Have the NVIDIA tools create the xorg configuration file for us, retrieiving the PCI BusID for the current system.
 # The BusID can vary from machine to machine.  The || true at the end is to allow this line to succeed on fc2, which doesn't have a GPU.
-if ! nvidia-xconfig --busid `nvidia-xconfig --query-gpu-info | grep BusID | head -n 1 | sed 's/PCI BusID : PCI:/PCI:/'`; then
+if ! nvidia-xconfig --use-display-device=None --virtual=1280x1024 --busid `nvidia-xconfig --query-gpu-info | grep BusID | head -n 1 | sed 's/PCI BusID : PCI:/PCI:/'`; then
   echo "nvidia-xconfig failed; probably no GPU installed.  Proceeding." >> /home/ubuntu/setup.log
 else
   echo "nvidia-xconfig succeeded." >> /home/ubuntu/setup.log
