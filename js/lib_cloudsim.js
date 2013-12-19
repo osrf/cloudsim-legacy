@@ -109,6 +109,11 @@ function change_osrf_credentials(nuser, napi_key)
     return jmsg;
 }
 
+function add_aws_credentials(account_name, access, secret_access, us_east_az, eu_west_az)
+{
+	alert(account_name);
+}
+
 function change_aws_credentials(access_key, secret_access_key, availability_zone)
 {
     var key = encodeURIComponent(access_key);

@@ -73,7 +73,7 @@ def get_amazon_amis():
                    'Simulator-cg1': {'sim': {'type': 'cg1.4xlarge',
                                              'ami': 'ami-98fa58f1'}},
                    'Simulator-g2': {'sim': {'type': 'g2.2xlarge',
-                                            'ami': 'ami-dfa98cb6'}},
+                                            'ami': 'ami-b93264d0'}},
                    'CloudSim-stable': {'cs': {'type': 'small',
                                               'ami': 'ami-f55f7b9c'}},
                    'Simulator-stable-cg1': {'sim': {'type': 'cg1.4xlarge',
@@ -181,13 +181,13 @@ def acquire_aws_single_server(constellation_name,
 
     ec2conn, _ = aws_connect(credentials_ec2)
     availability_zone = boto.config.get('Boto', 'ec2_region_name')
+    reg = boto.config.get('CloudSim', 'us_east')
+#    print("reg %s" % reg)
 
     # amis = _get_amazon_amis(availability_zone)
-    soft = machine_data['software']
-    aws_image = amis[soft]
-
-    aws_instance = machine_data['hardware']
-    bdm = __get_block_device_mapping(aws_instance)
+    aws_image = machine_data['software']
+    aws_instance_type = machine_data['hardware']
+    bdm = __get_block_device_mapping(aws_instance_type)
 
     constellation = ConstellationState(constellation_name)
     constellation.set_value('%s_launch_msg' % machine_prefix,
@@ -203,7 +203,7 @@ def acquire_aws_single_server(constellation_name,
 
     constellation.set_value('machine_name', machine_prefix)
     security_group_data = machine_data['security_group']
-    security_group_name, security_group_id = _acquire_security_group(
+    security_group_name, _ = _acquire_security_group(
                                     constellation_name,
                                     machine_prefix,
                                     security_group_data,
@@ -219,7 +219,7 @@ def acquire_aws_single_server(constellation_name,
         constellation.set_value('%s_launch_msg' % machine_prefix,
                                 "requesting machine")
         res = ec2conn.run_instances(image_id=aws_image,
-            instance_type=aws_instance,
+            instance_type=aws_instance_type,
             #subnet_id      = subnet_id,
             #private_ip_address=SIM_IP,
             security_groups=[security_group_name],

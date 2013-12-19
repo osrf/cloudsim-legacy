@@ -14,8 +14,10 @@ from launch_utils.monitoring import constellation_is_terminated,\
     monitor_launch_state,  monitor_ssh_ping,\
     monitor_task, monitor_simulator, TaskTimeOut, monitor_gzweb
 
-
-from launch_utils.launch_db import ConstellationState, log_msg, LaunchException
+from launch_utils.launch_db import ConstellationState, get_constellation_data
+from launch_utils.aws import LaunchException
+from launch_utils.aws import log_msg
+from launch_utils.launch_db import get_cloudsim_config
 
 from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
     create_vpc_vpn_connect_file, create_ros_connect_file,\
@@ -23,13 +25,16 @@ from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
 
 from launch_utils.sshclient import SshClient
 
-from launch_utils.aws import get_hardware_software, get_aws_ubuntu_sources_repo,\
-    acquire_aws_single_server, terminate_aws_server
+from launch_utils.aws import get_hardware_software
+from launch_utils.aws import get_aws_ubuntu_sources_repo
+from launch_utils.aws import acquire_aws_single_server
+from launch_utils.aws import terminate_aws_server
+
 from launch_utils.softlayer import create_openvpn_key
 from launch_utils.ssh_queue import empty_ssh_queue, get_ssh_cmd_generator
-from common.constants import get_cloudsim_config
+
 import dateutil
-from common.machine_configuration import get_constellation_data
+
 import json
 import subprocess
 import sys
