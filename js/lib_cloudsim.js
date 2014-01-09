@@ -1,3 +1,9 @@
+function get_default_aws_az()
+{
+	var default_azs = {};
+	return default_azs;
+}    	
+
 function get_configurations()
 {
 	var url = "/cloudsim/inside/cgi-bin/machine_configs";

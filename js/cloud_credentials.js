@@ -16,13 +16,14 @@ function add_cloud_default_az_widget(div_name)
     var title = document.createTextNode("Amazon Web Services default availability zones");
     title_div.appendChild(title);
     
+    widget.appendChild(title_div);
     widget.appendChild(document.createElement('br'));
-
     
     var default_azs = {"us_east_1":"us_east_1b"};
     try
     {
-    		
+    	var default_azs = get_default_aws_az();	
+    	
     }
     catch(e)
     {
