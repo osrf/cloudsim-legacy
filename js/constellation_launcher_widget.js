@@ -4,6 +4,7 @@ function create_constellation_launcher_widget(div_name)
     var div = document.getElementById(div_name);
     var widget = document.createElement("div");
     widget.className = "top_level_container";
+
     var title_div = document.createElement("div");
     widget.appendChild(title_div);
     title_div.className = "top_level_title";
