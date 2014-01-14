@@ -564,6 +564,7 @@ def _get_cloudsim_src_tarball(target_dir, short_fname="cloudsim_src.zip"):
 
 def create_cloudsim(username,
                     credentials_fname,
+                    region,
                     configuration,
                     authentication_type,  # "OpenID" or "Basic"
                     password,
@@ -586,6 +587,7 @@ def create_cloudsim(username,
     data['username'] = username
     data['cloud_provider'] = 'aws'
     data['configuration'] = configuration
+    data['region'] = region
 
     init_constellation_data(constellation_name, data, config)
 

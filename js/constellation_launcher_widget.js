@@ -20,7 +20,6 @@ function create_constellation_launcher_widget(div_name)
     widget.appendChild(cloud_service_select);
 
     var cloud_providers = { "Amazon Web Services" : ["aws"],
-    						"SoftLayer" : ["softlayer"],
     						"OpenStack" : ["openstack"]};
 
     for(var provider_name in cloud_providers)
@@ -35,9 +34,7 @@ function create_constellation_launcher_widget(div_name)
         	cloud_service_select.add(option, null);
         }
 	}
-
-
-	widget.appendChild(document.createElement('br'));
+    widget.appendChild(document.createElement('br'));
 
 	var machine_configurations = [];
     try
@@ -49,6 +46,26 @@ function create_constellation_launcher_widget(div_name)
     {
         console.log(err);
     }
+    
+	var region_title = document.createElement('b');
+	region_title.innerHTML = "Region:";
+	widget.appendChild(region_title);
+	var region_select = document.createElement('select');
+    widget.appendChild(region_select);
+
+    var regions = {"US East (N. Virginia)" : "us-east-1",
+    			   "US West (Oregon)" : "us-west-2",
+    			   "EU (Ireland)" : "eu-west-1"}
+
+    for(var region_name in regions)
+    {
+    	var option = document.createElement("option");
+    	var region = regions[region_name];
+    	option.text = region_name;
+    	region_select.add(option, null);
+    }
+    widget.appendChild(document.createElement('br'));
+
     var config_title = document.createElement('b');
 	config_title.innerHTML = "Configuration:";
 	widget.appendChild(config_title);

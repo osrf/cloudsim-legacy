@@ -823,3 +823,30 @@ def wait_for_multiple_machines_to_terminate(ec2conn,
                                     instance.state,
                                     count,
                                     max_retries))
+
+
+def copy_aws_credentials(src_fname, dst_fname, region):
+    """
+    Opens a Boto file, changes the region and saves it to a new file, changing
+    the ec2 region.
+    """
+    ec2_region_endpoint = {"us-east-1": "ec2.us-east-1.amazonaws.com",
+            "us-west-2": "ec2.us-west-2.amazonaws.com",
+            "us-west-1": "ec2.us-west-1.amazonaws.com",
+            "eu-west-1": "ec2.eu-west-1.amazonaws.com",
+            "ap-southeast-1": "ec2.ap-southeast-1.amazonaws.com",
+            "ap-southeast-2": "ec2.ap-southeast-2.amazonaws.com",
+            "ap-northeast-1": "ec2.ap-northeast-1.amazonaws.com",
+            "sa-east-1": "ec2.sa-east-1.amazonaws.com"}[region]
+    creds = BotoConfig(src_fname)
+
+    # check for AZ override in the CloudSim section
+    az = creds.get('CloudSim', region)
+    if az in ['any', None]:
+        az = region  # use region without a specific AZ
+    print(src_fname, dst_fname, region)
+    creds.set('Boto', 'ec2_region_name', az)
+    creds.set('Boto', 'ec2_region_endpoint', ec2_region_endpoint)
+    with open(dst_fname, 'w') as f:
+        creds.write(f)
+
