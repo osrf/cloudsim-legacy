@@ -76,9 +76,29 @@ if __name__ == "__main__":
                                   'us-east-1a',
                                   'us-east-1b',
                                   'us-east-1c',
-                                  'us-east-1d',],
+                                  'us-east-1d',
+                                  ],
                          help=msg)
-
+    msg = 'Default availability zone for AWS region EU (Ireland)'
+    parser.add_argument('eu_west1_az',
+                         metavar='EU-WEST1-AZ',
+                         default='any',
+                         choices=['any',
+                                  'eu-west-1a',
+                                  'eu-west-1b',
+                                  'eu-east-1c',
+                                  ],
+                         help=msg)
+    msg = 'Default availability zone for AWS region US West (Oregon)'    
+    parser.add_argument('us_west2_az',
+                         metavar='US-WEST2-AZ',
+                         default='any',
+                         choices=['any',
+                                  'us-west-2a',
+                                  'us-west-2b',
+                                  'us-east-2c',
+                                  ],
+                         help=msg)   
 
     # Parse command line arguments
     args = parser.parse_args()
@@ -99,8 +119,12 @@ if __name__ == "__main__":
     boto_tmp_file.close()
 
     # create a temporary boto credentials file
-    cred = common.CloudCredentials(key, secret, fname=boto_tmp_file_fname,
-                                   ec2_region_name=ec2_zone)
+    cred = common.CloudCredentials(key,
+                                   secret,
+                                   us_east1_az=args.us_east1_az,
+                                   eu_west_az=args.eu_west1_az,
+                                   us_west2_az=args.us_west2_az,
+                                   fname=boto_tmp_file_fname,)
     cred.save()
 
     constellation_name = get_unique_short_name('cc')

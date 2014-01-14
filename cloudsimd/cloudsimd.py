@@ -946,7 +946,7 @@ if __name__ == "__main__":
 
         tick_interval = 5
     
-        boto_path = '/var/www-cloudsim-auth/boto-useast'
+        boto_path = '/var/www-cloudsim-auth/boto.ini'
         softlayer_path = '/var/www-cloudsim-auth/softlayer.json'
         root_dir = '/var/www-cloudsim-auth/machines'
         cloudsim_portal_key_path = ('/var/www-cloudsim-auth/' 

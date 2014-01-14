@@ -48,30 +48,39 @@ class CloudCredentials(object):
     def __init__(self,
                  aws_access_key_id,
                  aws_secret_access_key,
-                 ec2_region_name,
+                 us_east1_az,
+                 eu_west_az,
+                 us_west2_az,
                  fname):
         """
         Constructor.
         @param aws_access_key_id: uniquely identifies user who owns account
-        @type aws_access_key_id: string
         @param aws_secret_access_key: password
-        @type aws_secret_access_key: string
-        @param ec2_region_name: geographic area
-        @type ec2_region_name: string
-        @param ec2_region_endpoint: End point to direct the requests
-        @type ec2_region_endpoint: string
-        @param fname: boto config file name
-        @type fname: string
+        @param fname: boto config file name of file
         """
-
-        ec2_region_endpoint = 'ec2.amazonaws.com'
-        if ec2_region_name.startswith('eu-west'):
-            ec2_region_endpoint = 'ec2.eu-west-1.amazonaws.com'
+        self.us_east1_az = us_east1_az
+        self.eu_west_az = eu_west_az
+        self.us_west2_az = us_west2_az
 
         self.fname = fname
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
-        self.config_text = """
+
+    def save(self, ec2_region_name="us-east-1"):
+        """
+        Save the current credentials on a given file.
+        """
+        endpoints = {"us-east-1": "ec2.us-east-1.amazonaws.com",
+                    "us-west-2": "ec2.us-west-2.amazonaws.com",
+                    "us-west-1": "ec2.us-west-1.amazonaws.com",
+                    "eu-west-1": "ec2.eu-west-1.amazonaws.com",
+                    "ap-southeast-1": "ec2.ap-southeast-1.amazonaws.com",
+                    "ap-southeast-2": "ec2.ap-southeast-2.amazonaws.com",
+                    "ap-northeast-1": "ec2.ap-northeast-1.amazonaws.com",
+                    "sa-east-1": "ec2.sa-east-1.amazonaws.com"}
+
+        ec2_region_endpoint = endpoints[ec2_region_name]
+        config_text = """
 [Credentials]
 aws_access_key_id = %s
 aws_secret_access_key = %s
@@ -79,15 +88,19 @@ aws_secret_access_key = %s
 [Boto]
 ec2_region_name = %s
 ec2_region_endpoint = %s
-""" % (aws_access_key_id, self.aws_secret_access_key,
-       ec2_region_name, ec2_region_endpoint)
 
-    def save(self):
-        """
-        Save the current credentials on a given file.
-        """
+[CloudSim]
+us-east-1 = %s
+us-west-2 = %s
+eu-west-1 = %s
+
+""" % (self.aws_access_key_id, self.aws_secret_access_key,
+       ec2_region_name, ec2_region_endpoint, self.us_east1_az,
+       self.eu_west_az,
+       self.us_west2_az)
+
         with open(self.fname, 'w') as f:
-            f.write(self.config_text)
+            f.write(config_text)
 
     def validate(self):
         """
