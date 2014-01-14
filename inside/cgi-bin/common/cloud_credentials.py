@@ -3,7 +3,7 @@ import os
 import json
 from common.constants import update_cloudsim_configuration_list
 import SoftLayer.API
-
+from boto.pyami.config import Config as BotoConfig
 
 class SoftLayerCredentials(object):
     """
@@ -80,6 +80,18 @@ class CloudCredentials(object):
                     "sa-east-1": "ec2.sa-east-1.amazonaws.com"}
 
         ec2_region_endpoint = endpoints[ec2_region_name]
+        # check for a default availability zone in that region
+        az = ec2_region_name
+        if ec2_region_name == "us-east-1":
+            if self.us_east1_az != "any":
+                az = self.us_east1_az
+        if ec2_region_name == "eu-west-1":
+            if self.eu_west_az != "any":
+                az = self.eu_west_az
+        if ec2_region_name == "us-west-2":
+            if self.us_west2_az != "any":
+                az = self.us_west2_az
+
         config_text = """
 [Credentials]
 aws_access_key_id = %s
@@ -95,7 +107,7 @@ us-west-2 = %s
 eu-west-1 = %s
 
 """ % (self.aws_access_key_id, self.aws_secret_access_key,
-       ec2_region_name, ec2_region_endpoint, self.us_east1_az,
+       az, ec2_region_endpoint, self.us_east1_az,
        self.eu_west_az,
        self.us_west2_az)
 
