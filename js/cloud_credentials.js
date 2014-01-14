@@ -29,7 +29,7 @@ function add_cloud_default_az_widget(div_name)
     {
     	console.log("can't get default values for availability zones: " + e);
     }
-    
+   
     var us_east1_az_select = az_select(widget, "US East (N. Virginia): ",
     		["any", "us_east_1a", "us_east_1b", "us_east_1c", "us_east_1d"],
     		default_azs["us_east_1"]);
@@ -53,7 +53,7 @@ function add_cloud_default_az_widget(div_name)
         
         alert(us_east1 + ", " + eu_west + ", " + us_west1);
     }
-    
+
     // widget.appendChild(document.createElement('br'));
     widget.appendChild(override_btn);
     widget.appendChild(document.createElement('br'));

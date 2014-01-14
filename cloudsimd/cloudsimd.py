@@ -16,13 +16,14 @@ from launchers.launch_utils import get_unique_short_name
 from launchers.launch_utils.launch_db import ConstellationState
 from launchers.launch_utils.launch_db import get_cloudsim_config
 from launchers.launch_utils.launch_db import set_cloudsim_config
-from launchers.launch_utils import aws_connect
 from launchers.launch_utils import LaunchException
 from launchers.launch_utils.launch_db import get_cloudsim_version
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch_db import log_msg
 from launchers.launch_utils.launch_db import init_constellation_data
+
+from launchers.launch_utils.aws import aws_connect
 
 # These imports are here for interactive use (with iPython), not necessarily
 # referenced in this code module. 
@@ -304,70 +305,95 @@ def _load_cloudsim_configurations_list():
      (After credentials are overwritten by the web app, for example)
     """
 
-    configs = {}
-    desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
-<ol>
-  <li>Hardware:
-      <ol>
-          <li>Router: large server</li>
-          <li>Simulator: GPU cluster instance</li>
-      </ol>
-  </li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>ROS: Fuerte</li>
-  <li>Simulator: Gazebo (latest)</li>
-  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-</ol>
-"""
-    configs['DRC'] = {'description': desc}
-    configs['DRC-stable'] = {'description': desc}
+#     configs = {}
+#     desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
+# <ol>
+#   <li>Hardware:
+#       <ol>
+#           <li>Router: large server</li>
+#           <li>Simulator: GPU cluster instance</li>
+#       </ol>
+#   </li>
+#   <li>OS: Ubuntu 12.04 (Precise)</li>
+#   <li>ROS: Fuerte</li>
+#   <li>Simulator: Gazebo (latest)</li>
+#   <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+# </ol>
+# """
+#     configs['DRC'] = {'description': desc}
+#     configs['DRC-stable'] = {'description': desc}
+# 
+#     desc = """DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages
+# <ol>
+#     <li>Hardware:
+#       <ol>
+#           <li>Router: large server</li>
+#           <li>Simulator: GPU cluster instance</li>
+#           <li>Field computer: GPU cluster instance</li>
+#       </ol>
+#   </li>
+#   <li>OS: Ubuntu 12.04 (Precise)</li>
+#   <li>ROS: Fuerte</li>
+#   <li>Simulator: Gazebo (latest)</li>
+#   <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+# </ol>
+# """
+#     configs['DRC with FC'] = {'description': desc}
+#     desc = """CloudSim Web App running in the Cloud
+# <ol>
+#   <li>Hardware: micro</li>
+#   <li>OS: Ubuntu 12.04 (Precise)</li>
+#   <li>Web server: Apache</li>
+# </ol>
+# """     
+#     configs['CloudSim'] = {'description': desc}
+#     configs['CloudSim-stable'] = {'description':
+#                                   "Pre installed binary image for " + desc}
+#     
+#     desc = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
+# <ol>
+#   <li>Hardware:
+#       <ol>
+#           <li>Simulator: GPU cluster instance</li>
+#       </ol>
+#   </li>
+#   <li>OS: Ubuntu 12.04 (Precise)</li>
+#   <li>ROS: Fuerte</li>
+#   <li>Simulator: Gazebo (latest)</li>
+#   <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+# </ol>
+# """
+#     configs['Simulator'] = {'description': desc}
+#     configs['Simulator-stable'] = {'description':
+#                                     "Pre installed binary image for " + desc}
+# 
+#     set_cloudsim_configuration_list(configs)
 
-    desc = """DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages
-<ol>
-    <li>Hardware:
-      <ol>
-          <li>Router: large server</li>
-          <li>Simulator: GPU cluster instance</li>
-          <li>Field computer: GPU cluster instance</li>
-      </ol>
-  </li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>ROS: Fuerte</li>
-  <li>Simulator: Gazebo (latest)</li>
-  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-</ol>
-"""
-    configs['DRC with FC'] = {'description': desc}
-    desc = """CloudSim Web App running in the Cloud
-<ol>
-  <li>Hardware: micro</li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>Web server: Apache</li>
-</ol>
-"""     
-    configs['CloudSim'] = {'description': desc}
-    configs['CloudSim-stable'] = {'description':
-                                  "Pre installed binary image for " + desc}
-    
-    desc = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
-<ol>
-  <li>Hardware:
-      <ol>
-          <li>Simulator: GPU cluster instance</li>
-      </ol>
-  </li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>ROS: Fuerte</li>
-  <li>Simulator: Gazebo (latest)</li>
-  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-</ol>
-"""
-    configs['Simulator'] = {'description': desc}
-    configs['Simulator-stable'] = {'description':
-                                    "Pre installed binary image for " + desc}
-
+    configs = {
+                "Amazon Web Services" : 
+                {
+                    "US East (N. Virginia)" : 
+                    [
+                      {
+                        "name": "CloudSim",
+                        "description":"Description",
+                      },
+                      {
+                        "name": "Simulator g1",
+                        "description": "Sim G1 description",
+                      }
+                    ],
+                },
+                                         
+                "OpenStack" : 
+                {
+                    "nova": 
+                    [
+                    ]
+                }
+            }
+                                        
     set_cloudsim_configuration_list(configs)
-
 
 def launch_cmd(root_dir, data):
     constellation_name = "c" + get_unique_short_name()
