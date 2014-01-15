@@ -339,36 +339,54 @@ def _load_cloudsim_configurations_list():
 # </ol>
 # """
 #     configs['DRC with FC'] = {'description': desc}
-#     desc = """CloudSim Web App running in the Cloud
-# <ol>
-#   <li>Hardware: micro</li>
-#   <li>OS: Ubuntu 12.04 (Precise)</li>
-#   <li>Web server: Apache</li>
-# </ol>
-# """     
+
 #     configs['CloudSim'] = {'description': desc}
 #     configs['CloudSim-stable'] = {'description':
 #                                   "Pre installed binary image for " + desc}
 #     
-#     desc = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
-# <ol>
-#   <li>Hardware:
-#       <ol>
-#           <li>Simulator: GPU cluster instance</li>
-#       </ol>
-#   </li>
-#   <li>OS: Ubuntu 12.04 (Precise)</li>
-#   <li>ROS: Fuerte</li>
-#   <li>Simulator: Gazebo (latest)</li>
-#   <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-# </ol>
-# """
+
 #     configs['Simulator'] = {'description': desc}
 #     configs['Simulator-stable'] = {'description':
 #                                     "Pre installed binary image for " + desc}
 # 
 #     set_cloudsim_configuration_list(configs)
 
+    cloudsim_description = """CloudSim Web App running in the Cloud
+<ol>
+  <li>Hardware: micro</li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>Web server: Apache</li>
+</ol>
+"""
+
+    sim_g1_description = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
+<ol>
+  <li>Hardware:
+      <ol>
+          <li>Simulator machine type: cg1.4xlarge</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Groovy</li>
+  <li>Simulator: Gazebo (current)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+
+    sim_g2_description = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
+<ol>
+  <li>Hardware:
+      <ol>
+          <li>Simulator machine type: g2.2xlarge</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Groovy</li>
+  <li>Simulator: Gazebo (current)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+   
     configs = {
                 "Amazon Web Services" : 
                 {
@@ -376,18 +394,22 @@ def _load_cloudsim_configurations_list():
                     [
                       {
                         "name": "CloudSim",
-                        "description":"Description",
+                        "description": cloudsim_description,
                       },
                       {
-                        "name": "Simulator g1",
-                        "description": "Sim G1 description",
-                      }
+                        "name": "Simulator (cg1.4xlarge)",
+                        "description": sim_g1_description ,
+                      },
+                      {
+                        "name": "Simulator (g2.2xlarge)",
+                        "description": sim_g2_description ,
+                      },                    
                     ],
                     "US West (Oregon)":
                     [
                       {
-                        "name": "Simulator",
-                        "description": "Simulator Description"
+                        "name": "Simulator (g2.2xlarge)",
+                        "description": sim_g2_description,
                       }
                      ]
                 },
