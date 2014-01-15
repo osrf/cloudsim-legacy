@@ -1,7 +1,18 @@
 
 function create_constellation_launcher_widget(div_name)
 {
-    var div = document.getElementById(div_name);
+	var machine_configurations = {};
+    try
+    {
+        machine_configurations = get_configurations();
+
+    }
+    catch(err)
+    {
+        console.log(err);
+    }
+
+	var div = document.getElementById(div_name);
     var widget = document.createElement("div");
     widget.className = "top_level_container";
 
@@ -19,75 +30,78 @@ function create_constellation_launcher_widget(div_name)
 	var cloud_service_select = document.createElement('select');
     widget.appendChild(cloud_service_select);
 
-    var cloud_providers = { "Amazon Web Services" : ["aws"],
-    						"OpenStack" : ["openstack"]};
+//    var cloud_providers = { "Amazon Web Services" : ["aws"],
+//    						"OpenStack" : ["openstack"]};
+   for(var provider_name in cloud_providers)
+   {
+	   var provider =  machine_configurations[provider_name];
+	   var option = document.createElement("option");
+	   option.text = provider;
+	   option.value = provider;
+	   cloud_service_select.add(option, null);
+   }
+//    	for (var i=0; i < provider.length; i++)
+//    	{
+//    		var account = provider[i];
+//        	var option = document.createElement("option");
+//        	option.text = provider_name;
+//        	option.value = account;
+//        	cloud_service_select.add(option, null);
+//        }
+//	}
 
-    for(var provider_name in cloud_providers)
-    {
-    	var provider =  cloud_providers[provider_name];
-    	for (var i=0; i < provider.length; i++)
-    	{
-    		var account = provider[i];
-        	var option = document.createElement("option");
-        	option.text = provider_name;
-        	option.value = account;
-        	cloud_service_select.add(option, null);
-        }
-	}
     widget.appendChild(document.createElement('br'));
 
-	var machine_configurations = [];
-    try
-    {
-        machine_configurations = get_configurations();
-
-    }
-    catch(err)
-    {
-        console.log(err);
-    }
-    
 	var region_title = document.createElement('b');
 	region_title.innerHTML = "Region:";
 	widget.appendChild(region_title);
 	var region_select = document.createElement('select');
     widget.appendChild(region_select);
 
-    var regions = {"US East (N. Virginia)" : "us-east-1",
-    			   "US West (Oregon)" : "us-west-2",
-    			   "EU (Ireland)" : "eu-west-1"}
-
-    for(var region_name in regions)
-    {
-    	var option = document.createElement("option");
-    	var region = regions[region_name];
-    	option.text = region_name;
-    	region_select.add(option, null);
-    }
-    widget.appendChild(document.createElement('br'));
+//    var regions = {"US East (N. Virginia)" : "us-east-1",
+//    			   "US West (Oregon)" : "us-west-2",
+//    			   "EU (Ireland)" : "eu-west-1"}
+//
+//    for(var region_name in regions)
+//    {
+//    	var option = document.createElement("option");
+//    	var region = regions[region_name];
+//    	option.text = region_name;
+//    	region_select.add(option, null);
+//    }
+//    widget.appendChild(document.createElement('br'));
 
     var config_title = document.createElement('b');
 	config_title.innerHTML = "Configuration:";
 	widget.appendChild(config_title);
     var configs_select = document.createElement('select');
     widget.appendChild(configs_select);
-    for(var configuration in machine_configurations)
-    {
-        var option=document.createElement("option");
-        option.text=configuration;
-        configs_select.add(option,null);
-	}
+
+//    for(var configuration in machine_configurations)
+//    {
+//        var option=document.createElement("option");
+//        option.text=configuration;
+//        configs_select.add(option,null);
+//	}
 
 	var desc = document.createElement("div");
-    configs_select.onchange = function()
+    
+	
+    cloud_service_select.onchange = function()
+    {
+    	update_regions(region_select, machine_configurations);
+    }
+	
+	configs_select.onchange = function()
     {
     	var i = configs_select.selectedIndex;
         var config = configs_select.options[i].text;
         var description = machine_configurations[config].description;
-
         desc.innerHTML = "<br>"+description;
     }
 
+    
+    
     var launch_button= document.createElement('input');
     widget.appendChild(launch_button);
     launch_button.setAttribute('type','button');
