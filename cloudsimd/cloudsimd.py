@@ -383,8 +383,14 @@ def _load_cloudsim_configurations_list():
                         "description": "Sim G1 description",
                       }
                     ],
+                    "US West (Oregon)":
+                    [
+                      {
+                        "name": "Simulator",
+                        "description": "Simulator Description"
+                      }
+                     ]
                 },
-                                         
                 "OpenStack" : 
                 {
                     "nova": 
