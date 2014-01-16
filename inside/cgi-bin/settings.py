@@ -28,7 +28,7 @@ user = {'user': email,
         'role': role,
         'auth_type': auth}
 
- 
+
 user_info = json.dumps(user)
 scripts = get_javascripts(['jquery-1.8.3.min.js'])
 
@@ -37,17 +37,14 @@ print_http_header()
 page = """<!DOCTYPE html>
 <html>
  <head>
- 
+
    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
    <title>Settings</title>
 
-    
    <link href="/js/layout.css" rel="stylesheet" type="text/css">
    <link rel="stylesheet" href="/js/jquery-ui.css" />
 
    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-
-
 
 """ + scripts + """
 
@@ -56,7 +53,7 @@ page = """<!DOCTYPE html>
     function get_user_info()
     {
        var user_info = """ + user_info + """;
-       return user_info; 
+       return user_info;
     }
 
     function on_load_page()
@@ -68,7 +65,6 @@ page = """<!DOCTYPE html>
             $('.admin_only').show();
             // add_osrf_cloud_credentials_widget("osrf_credentials_div");
             add_cloud_credentials_widget("amazon_credentials_div");
-            add_cloud_default_az_widget("amazon_az_div");
             add_portal_settings_widget("portal_settings_div");
         }
         add_users_admin_widget("users_div", user_info.auth_type);

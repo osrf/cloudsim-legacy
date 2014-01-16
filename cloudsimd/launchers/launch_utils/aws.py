@@ -139,7 +139,8 @@ def terminate_aws_server(constellation_name, credentials_fname):
     machine_prefix = constellation.get_value('machine_name')
     try:
         constellation.set_value('%s_state' % machine_prefix, "terminating")
-        constellation.set_value('%s_launch_msg' % machine_prefix, "terminating")
+        constellation.set_value('%s_launch_msg' % machine_prefix,
+                                "terminating")
 
         log("Terminate machine_prefix: %s" % machine_prefix)
         aws_id = constellation.get_value('%s_aws_id' % machine_prefix)

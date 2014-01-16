@@ -118,8 +118,6 @@ def reset_tasks(name=None):
                                      'Ready to run')
 
 
-
-
 def gather_cs_credentials():
     """
     Gather the names and IP addresses of all CloudSim constellations
@@ -306,20 +304,7 @@ def _load_cloudsim_configurations_list():
     """
 
 #     configs = {}
-#     desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
-# <ol>
-#   <li>Hardware:
-#       <ol>
-#           <li>Router: large server</li>
-#           <li>Simulator: GPU cluster instance</li>
-#       </ol>
-#   </li>
-#   <li>OS: Ubuntu 12.04 (Precise)</li>
-#   <li>ROS: Fuerte</li>
-#   <li>Simulator: Gazebo (latest)</li>
-#   <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-# </ol>
-# """
+
 #     configs['DRC'] = {'description': desc}
 #     configs['DRC-stable'] = {'description': desc}
 # 
@@ -351,7 +336,29 @@ def _load_cloudsim_configurations_list():
 # 
 #     set_cloudsim_configuration_list(configs)
 
+    vrc_desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
+<ol>
+  <li>Hardware:
+      <ol>
+          <li>Router: m1.large (large server)</li>
+          <li>Simulator: cg1.4xlarge (Single tenant GPU cluster instance)</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Groovy</li>
+  <li>Simulator: Gazebo (current)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+
     cloudsim_description = """CloudSim Web App running in the Cloud
+<ol>
+  <li>Hardware: micro</li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>Web server: Apache</li>
+</ol>
+"""
+    cloudsim_stable_description = """CloudSim Web App running in the Cloud.
 <ol>
   <li>Hardware: micro</li>
   <li>OS: Ubuntu 12.04 (Precise)</li>
@@ -386,36 +393,97 @@ def _load_cloudsim_configurations_list():
   <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
 </ol>
 """
-   
+    stable = "This is a stable version running from saved disk images"
+    stable += " that contain preinstalled software."
+    
+    install = "All software will be downloaded and installed while you wait, "
+    install += "from basic OS images, using current software packages."
+    
     configs = {
                 "Amazon Web Services" : 
                 {
                     "US East (N. Virginia)" : 
                     [
                       {
-                        "name": "CloudSim",
-                        "description": cloudsim_description,
+                        "name": "Simulator (cg1.4xlarge)",
+                        "description": sim_g1_description + install,
                       },
+                      {
+                        "name": "Simulator-stable (cg1.4xlarge)",
+                        "description": sim_g1_description + stable,
+                      },
+                      {
+                        "name": "CloudSim (m1.small)",
+                        "description": cloudsim_description + install,                
+                      },
+                      {
+                        "name": "CloudSim-stable (m1.small)",
+                        "description": cloudsim_stable_description + stable,
+                      },
+#                       {
+#                         "name": "Simulator (g2.2xlarge)",
+#                         "description": sim_g2_description + install,
+#                       },
+#                       {
+#                         "name": "Simulator-stable (g2.2xlarge)",
+#                         "description": sim_g2_description + stable,
+#                       },    
+                      { "name": "VRC (Virtual Robotics Challenge)",
+                        "description": vrc_desc + install,
+                      },
+                      { "name": "VRC-stable (Virtual Robotics Challenge)",
+                        "description": vrc_desc + stable,
+                      }
+                    ],
+                    "EU (Ireland)":
+                    [
+                     {
+                        "name": "CloudSim (m1.small)",
+                        "description": cloudsim_description + install,
+                      },
+                      {
+                        "name": "CloudSim-stable (m1.small)",
+                        "description": cloudsim_description + stable,
+                        
+                      },
+#                       {
+#                         "name": "Simulator (g2.2xlarge)",
+#                         "description": sim_g2_description + install,
+#                       },
                       {
                         "name": "Simulator (cg1.4xlarge)",
-                        "description": sim_g1_description ,
+                        "description": sim_g1_description + install,
                       },
-                      {
-                        "name": "Simulator (g2.2xlarge)",
-                        "description": sim_g2_description ,
-                      },                    
-                    ],
-                    "US West (Oregon)":
-                    [
-                      {
-                        "name": "Simulator (g2.2xlarge)",
-                        "description": sim_g2_description,
-                      }
-                     ]
+                      { "name": "VRC (Virtual Robotics Challenge)",
+                        "description": vrc_desc + install,
+                      },
+                      { "name": "VRC-stable (Virtual Robotics Challenge)",
+                        "description": vrc_desc + stable,
+                      }  
+                     ],                   
+                     "US West (Oregon)":
+                     [
+#                      {
+#                         "name": "CloudSim (m1.small)",
+#                         "description": cloudsim_description + install,
+#                       },
+#                       {
+#                         "name": "CloudSim-stable (m1.small)",
+#                         "description": cloudsim_description + stable,
+#                       },
+#                       {
+#                         "name": "Simulator (g2.2xlarge)",
+#                         "description": sim_g2_description + install,
+#                       },
+#                       {
+#                         "name": "Simulator-stable (g2.2xlarge)",
+#                         "description": sim_g2_description + stable,
+#                       },
+                      ],
                 },
                 "OpenStack" : 
                 {
-                    "nova": 
+                    "nova":
                     [
                     ]
                 }
