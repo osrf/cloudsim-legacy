@@ -163,10 +163,8 @@ if method == 'GET':
     print("%s" % s)
     exit(0)
 
-
 d = {}
 d['username'] = email
-
 
 if role not in ['admin']:
     d['role'] = role
@@ -179,15 +177,14 @@ if method == 'DELETE':
     d['command'] = 'terminate'
     d['constellation'] = get_constellation_from_path()
 
-
 if method == 'PUT':
     d['command'] = 'update'
     d['constellation'] = get_constellation_from_path()
 
-
 if method == 'POST':
     d['command'] = 'launch'
     d['cloud_provider'] = get_query_param('cloud_provider')
+    d['region'] = get_query_param('region')
     d['configuration'] = get_query_param('configuration')
 
 

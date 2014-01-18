@@ -52,14 +52,14 @@ function create_constellation_launcher_widget(div_name)
     launch_button.setAttribute('value','Deploy');
 
     // description (and options in the future) pane
-    var desc = document.createElement("div");
-    widget.appendChild(desc);
+    var desc_div = document.createElement("div");
+    widget.appendChild(desc_div);
 	
     cloud_service_select.onchange = function()
     {
         // find the current cloud creds account
     	var i = cloud_service_select.selectedIndex;
-        var service = cloud_service_select.options[i].text;
+        var service = cloud_service_select.options[i].value;
         console.log("service: " + service);
         
         // clear regions and list all regions for that creds.
@@ -70,11 +70,12 @@ function create_constellation_launcher_widget(div_name)
         }
         // add regions for selected cloud provider
         var service_data = machine_configurations[service];
-        for (var region in service_data)
+        for (var region in service_data.regions)
         {
         	console.log(region);
+        	var desc = service_data.regions[region]['description'];
         	var option=document.createElement("option");
-        	option.text=region;
+        	option.text = desc;
         	option.value = region;
         	region_select.add(option,null);
         }
@@ -90,12 +91,12 @@ function create_constellation_launcher_widget(div_name)
         	config_select.options.remove(0);
         }
 
-        var service = cloud_service_select.options[cloud_service_select.selectedIndex].text;
+        var service = cloud_service_select.options[cloud_service_select.selectedIndex].value;
         // add configurations available in this region
         var current_region = region_select.selectedIndex;
-        var region = region_select.options[current_region].text;
+        var region = region_select.options[current_region].value;
                 
-        var configuration_list = machine_configurations[service][region];
+        var configuration_list = machine_configurations[service].regions[region].configurations;
         for(var i=0; i < configuration_list.length; i++)
         {
         	var config = configuration_list[i];
@@ -117,13 +118,13 @@ function create_constellation_launcher_widget(div_name)
             var config_name = config_select.options[i].text;
             var description = config_select.options[i].value; 
             console.log("DESC " + description);
-            desc.innerHTML = "<br>"+description;
+            desc_div.innerHTML = "<br>"+description;
             launch_button.disabled = false;
     	}
     	else
     	{
     		// nothing available
-    		desc.innerHTML = "";
+    		desc_div.innerHTML = "";
     		launch_button.disabled = true;
     	}
     }
@@ -131,21 +132,25 @@ function create_constellation_launcher_widget(div_name)
    // set the list of credentials 
    for(var provider_name in machine_configurations)
    {
+	   var desc = machine_configurations[provider_name]['description'];
        var option = document.createElement("option");
-       option.text = provider_name;
-       option.value = machine_configurations[provider_name];
+       option.text = desc;
+       option.value = provider_name;
        cloud_service_select.add(option, null); 
    }
    // trigger the updates
    cloud_service_select.onchange();
-   
 
-   
    launch_button.onclick =  function() {
-            var i = configs_select.selectedIndex;
-            var config = configs_select.options[i].text;
-            var j = cloud_service_select.selectedIndex;
-            var cloud_provider = cloud_service_select.options[j].value;
+            
+            var i = cloud_service_select.selectedIndex;
+            var cloud_provider = cloud_service_select.options[i].value;
+            
+            var j = region_select.selectedIndex;
+            var region = region_select.options[j].value;
+            
+            var k = config_select.selectedIndex;
+            var config = config_select.options[k].text;
 
             var msg = 'Deploy a new "' + config + '" constellation?';
             msg += "\n\n";
@@ -160,7 +165,7 @@ function create_constellation_launcher_widget(div_name)
             setTimeout( function(){
                 launch_button.disabled = false;
                 }, 3000); // setTimeOut
-             launch_constellation(cloud_provider, config);
+             launch_constellation(cloud_provider, region, config);
               // add everything to the page
           };
     div.appendChild(widget);

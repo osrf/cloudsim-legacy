@@ -33,12 +33,18 @@ function get_configurations()
     return machine_configurations;
 }
 
-function launch_constellation(cloud_provider, configuration)
+function launch_constellation(cloud_provider, region, configuration)
 {
-
+    var msg= "LAUNCH: provider: " + cloud_provider + ", region: " + region
+    msg += ", config: " + configuration;
+    console.log(msg );
+    
     var p = encodeURIComponent(cloud_provider);
     var c = encodeURIComponent(configuration);
-    var url = '/cloudsim/inside/cgi-bin/constellations?cloud_provider=' + p + '&configuration=' + c;
+    var r = encodeURIComponent(region);
+    var url = '/cloudsim/inside/cgi-bin/constellations?cloud_provider=' + p;
+    url += '&region=' + r;
+    url += '&configuration=' + c;
 
     console.log("[POST]" + url);
     var msg = httpPost(url);

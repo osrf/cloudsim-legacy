@@ -315,7 +315,7 @@ def init_constellation_data(constellation_name, data, cloudsim_config):
     """
     from aws import copy_aws_credentials
 
-    log('init_constellation_data %s' % constellation_name)
+    log('init_constellation_data %s, %s' % (constellation_name, data))
     cloud_provider = data['cloud_provider']
     config = data['configuration']
     username = data['username']
@@ -329,18 +329,17 @@ def init_constellation_data(constellation_name, data, cloudsim_config):
     credentials_src = None
     credentials_fname = os.path.join(constellation_directory,
                                    'credentials.txt')
-    if cloud_provider == "softlayer":
-        credentials_src = cloudsim_config['softlayer_path']
-        shutil.copy(credentials_src, credentials_fname)
-
-    elif cloud_provider == "aws":
-        credentials_src = cloudsim_config['boto_path']
-        copy_aws_credentials(credentials_src, credentials_fname, region)
-
+#     if cloud_provider == "softlayer":
+#         credentials_src = cloudsim_config['softlayer_path']
+#         shutil.copy(credentials_src, credentials_fname)
+    credentials_src = cloudsim_config['boto_path']
+    log("#$REW %s" % credentials_src)
     if not os.path.exists(credentials_src):
         raise LaunchException(
             'Cannot find credentials for cloud '
             'provider "%s"' % cloud_provider)
+
+    copy_aws_credentials(credentials_src, credentials_fname, region)
 
     version = cloudsim_config['cloudsim_version']
     gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
