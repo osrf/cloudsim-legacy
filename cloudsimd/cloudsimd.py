@@ -11,6 +11,7 @@ import logging
 import traceback
 import datetime
 from json import loads
+import unittest
 
 from launchers.launch_utils import get_unique_short_name
 from launchers.launch_utils.launch_db import ConstellationState
@@ -22,14 +23,16 @@ from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch_db import log_msg
 from launchers.launch_utils.launch_db import init_constellation_data
-
 from launchers.launch_utils.aws import aws_connect
 
 # These imports are here for interactive use (with iPython), not necessarily
 # referenced in this code module. 
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.aws import read_boto_file
-import unittest
+
+from launchers.simulator import register_configurations as add_configs_sim
+from launchers.vrc_contest import register_configurations as add_configs_vrc
+from launchers.cloudsim import register_configurations as add_configs_cs
 
 try:
     logging.basicConfig(filename='/tmp/cloudsimd.log',
@@ -294,378 +297,22 @@ def get_plugin(configuration):
     log("get_plugin: [%s] %s" % (configuration, plugin))
     return plugin
 
-ROUTER_IP = '10.0.0.50'
-SIM_IP = '10.0.0.51'
-FC1_IP = '10.0.0.52'
-FC2_IP = '10.0.0.53'
-OPENVPN_SERVER_IP = '11.8.0.1'
-OPENVPN_CLIENT_IP = '11.8.0.2'
-def config_derscription_vrc(cloud_provider, region):
-    
-    def _get_config(config_name, config_description, router_ami, sim_ami):
-        has_fc1 = False
-        has_fc2 = False
-        router_public_network_itf = "eth0"
-        router_private_network_itf = None
-#         if cloud_provider == "softlayer":
-#             router_public_network_itf = "bond1"
-#             router_private_network_itf = "bond0"
-        openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
-        private_subnet = '10.0.0.0/24'
-        machines = {}
-        machines['router'] = {'hardware': 'm1.large',    # 't1.micro',
-                      'software': router_ami,
-                      'ip': ROUTER_IP,   # 'startup_script': router_script,
-                      'public_network_itf': router_public_network_itf,
-                      'private_network_itf': router_private_network_itf,
-                      'security_group': [{'name': 'openvpn',
-                                          'protocol': 'udp',
-                                          'from_port': 1194,
-                                          'to_port': 1194,
-                                          'cidr': '0.0.0.0/0', },
-                                          {'name': 'ping',
-                                           'protocol': 'icmp',
-                                          'from_port': -1,
-                                          'to_port': -1,
-                                          'cidr': '0.0.0.0/0', },
-                                          {'name': 'ssh',
-                                           'protocol': 'tcp',
-                                          'from_port': 22,   # ssh
-                                          'to_port': 22,
-                                          'cidr': '0.0.0.0/0', },
-                                          {'name': 'all udp on private sub',
-                                           'protocol': 'udp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': private_subnet, },
-                                          {'name': 'all tcp on private sub',
-                                          'protocol': 'tcp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': private_subnet, },
-                                         {'name': 'gzweb',
-                                          'protocol': 'tcp',
-                                          'from_port': 8080,
-                                          'to_port': 8080,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'name': 'gzweb websocket',
-                                          'protocol': 'tcp',
-                                          'from_port': 7681,
-                                          'to_port': 7681,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'name': 'python notebook',
-                                          'protocol': 'tcp',
-                                          'from_port': 8888,
-                                          'to_port': 8888,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'name': 'robot web tools',
-                                          'protocol': 'tcp',
-                                          'from_port': 9090,
-                                          'to_port': 9090,
-                                          'cidr': '0.0.0.0/0', },
-                                         ]}
-        machines['sim'] = {'hardware': 'cg1.4xlarge',
-                  'software': sim_ami,
-                  'ip': SIM_IP,
-                      'security_group': [{'protocol': 'icmp',  # ping
-                                          'from_port': -1,
-                                          'to_port': -1,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'protocol': 'udp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': private_subnet, },
-                                         {'protocol': 'tcp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': private_subnet, },
-                                         {'protocol': 'tcp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': openvpn_client_addr, },
-                                         {'protocol': 'udp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': openvpn_client_addr, }]
-                    }
-
-        if has_fc1:
-            machines['fc1'] = {'hardware': 'cg1.4xlarge',
-                      'software': 'ubuntu_1204_x64_cluster',
-                      'ip': FC1_IP,
-                        }
-        if has_fc2:
-            machines['fc2'] = {'hardware': 'cg1.4xlarge',
-                      'software': 'ubuntu_1204_x64_cluster',
-                      'ip': FC2_IP,
-                        }
-        
-        config = {"name": config_name,
-                  "description": config_description,
-                  "machines" : machines
-                  }
-        return config
-    
-    configurations = []
-    vrc_desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
-<ol>
-  <li>Hardware:
-      <ol>
-          <li>Router: m1.large (large server)</li>
-          <li>Simulator: cg1.4xlarge (Single tenant GPU cluster instance)</li>
-      </ol>
-  </li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>ROS: Groovy</li>
-  <li>Simulator: Gazebo (current)</li>
-  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-</ol>
-"""
-    stable = "This is a stable version running from saved disk images"
-    stable += " that contain preinstalled software."
-    
-    install = "All software will be downloaded and installed while you wait, "
-    install += "from basic OS images, using current software packages."
-    
-    ubuntu_ami_router = None
-    stable_ami_router = None
-    ubuntu_ami_sim = None
-    stable_ami_sim = None
-
-    if region == "us-east-1":
-        ubuntu_ami_router = 'ami-137bcf7a' 
-        stable_ami_router = 'ami-8d0155e4' 
-        ubuntu_ami_sim = 'ami-98fa58f1' 
-        stable_ami_sim = 'ami-8f0155e6'
-            
-    if region == "eu-west-1":
-        ubuntu_ami_router = 'ami-f2191786'
-        stable_ami_router = 'ami-bcd235cb' 
-        ubuntu_ami_sim = 'ami-fc191788'
-        stable_ami_sim = 'ami-bad235cd'        
-    
-    configurations = []
-    if ubuntu_ami_router:
-        vrc = _get_config(config_name="VRC (Virtual Robotics Challenge)",
-                          config_description=vrc_desc+install,
-                          router_ami=ubuntu_ami_router,
-                          sim_ami=ubuntu_ami_sim)
-    if stable_ami_router:
-        vrc_stable = _get_config(config_name="VRC-stable (Virtual Robotics Challenge)",
-                          config_description=vrc_desc+install,
-                          router_ami=stable_ami_router,
-                          sim_ami=stable_ami_sim)
-        configurations = [vrc, vrc_stable]
-    return configurations
-
-OPENVPN_CLIENT_IP = '11.8.0.2'
-def config_derscription_sim(cloud_provider, region):
-    
-    def _get_config(config_name, config_description, hardware, image_key):
-        openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
-        config = {
-                 "name": config_name,
-                 "description": config_description, 
-                 'machines': {'sim' : {'hardware':  hardware,  # 'cg1.4xlarge'  'g2.2xlarge'
-                      'software': image_key,
-                      'ip': "127.0.0.1",
-                      'security_group': [{'name': 'openvpn',
-                                          'protocol': 'udp',
-                                          'from_port': 1194,
-                                          'to_port': 1194,
-                                          'cidr': '0.0.0.0/0', },
-                                          {'name': 'ping',
-                                           'protocol': 'icmp',
-                                          'from_port': -1,
-                                          'to_port': -1,
-                                          'cidr': '0.0.0.0/0', },
-                                          {'name': 'ssh',
-                                           'protocol': 'tcp',
-                                          'from_port': 22,
-                                          'to_port': 22,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'name': 'gzweb',
-                                          'protocol': 'tcp',
-                                          'from_port': 8080,
-                                          'to_port': 8080,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'name': 'gzweb websocket',
-                                          'protocol': 'tcp',
-                                          'from_port': 7681,
-                                          'to_port': 7681,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'name': 'python notebook',
-                                          'protocol': 'tcp',
-                                          'from_port': 8888,
-                                          'to_port': 8888,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'name': 'robot web tools',
-                                          'protocol': 'tcp',
-                                          'from_port': 9090,
-                                          'to_port': 9090,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'name': 'all tcp on vpn',
-                                          'protocol': 'tcp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': openvpn_client_addr, },
-                                         {'name': 'all udp on vpn',
-                                          'protocol': 'udp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': openvpn_client_addr, }
-                                         ]}}}
-        return config
-   
-
-    sim_g1_description = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
-<ol>
-  <li>Hardware:
-      <ol>
-          <li>Simulator machine type: cg1.4xlarge</li>
-      </ol>
-  </li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>ROS: Groovy</li>
-  <li>Simulator: Gazebo (current)</li>
-  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-</ol>
-"""
-    stable = "This is a stable version running from saved disk images"
-    stable += " that contain preinstalled software."
-    
-    install = "All software will be downloaded and installed while you wait, "
-    install += "from basic OS images, using current software packages."
-
-    configurations = [] 
-    if cloud_provider != "Amazon Web Services":
-        return configurations
-
-    ubuntu_ami_g1 = None
-    stable_ami_g1 = None
-    
-    hardware = 'cg1.4xlarge'
-    
-    if region == "us-east-1":
-        ubuntu_ami_g1 = 'ami-98fa58f1'
-        stable_ami_g1 = 'ami-8f0155e6'
-    if region == "eu-west-1":
-        ubuntu_ami_g1 = 'ami-fc191788'
-        stable_ami_g1 = 'ami-dd3fd2aa'
-    
-    if ubuntu_ami_g1:
-        sim_cg1 = _get_config(config_name="Simulator-stable (cg1.4xlarge)",
-                              config_description=sim_g1_description + install,
-                              hardware='cg1.4xlarge',
-                              image_key=ubuntu_ami_g1)
-        
-        sim_cg1_stable = _get_config(config_name="Simulator-stable (cg1.4xlarge)",
-                              config_description=sim_g1_description + stable,
-                              hardware='cg1.4xlarge',
-                              image_key=stable_ami_g1)       
-        configurations = [sim_cg1, sim_cg1_stable]
-    return configurations
-    
-def config_derscription_cs(cloud_provider, region):
-
-    def _get_config(config_name, config_description, image_key):
-            config  = {
-        "name": config_name,
-        "description": config_description,
-        "machines":{
-            "cs":{'hardware': 'm1.small',
-              'ip': "127.0.0.1",
-              'software': image_key,
-              'security_group': [{'name': 'ping',
-                                   'protocol': 'icmp',
-                                  'from_port': -1,
-                                  'to_port': -1,
-                                  'cidr': '0.0.0.0/0', },
-                                  {'name': 'ssh',
-                                   'protocol': 'tcp',
-                                  'from_port': 22,
-                                  'to_port': 22,
-                                  'cidr': '0.0.0.0/0', },
-                                  {'name': 'http',
-                                  'protocol': 'tcp',
-                                  'from_port': 80,
-                                  'to_port':80,
-                                  'cidr': '0.0.0.0/0', }, ]}}}
-            return config
-
-    cloudsim_description = """CloudSim Web App running in the Cloud
-<ol>
-  <li>Hardware: micro</li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>Web server: Apache</li>
-</ol>
-"""
-
-    stable = "This is a stable version running from saved disk images"
-    stable += " that contain preinstalled software."
-    
-    install = "All software will be downloaded and installed while you wait, "
-    install += "from basic OS images, using current software packages."
-
-    configurations = []
-    if cloud_provider != "Amazon Web Services":
-        return configurations
-
-    ubuntu_ami = None
-    stable_ami = None
-    
-    if region == "us-east-1":
-        ubuntu_ami = 'ami-137bcf7a'
-        stable_ami = 'ami-f55f7b9c'
-    if region == "eu-west-1":
-        ubuntu_ami = 'ami-f2191786'
-        stable_ami = 'ami-0f3ed378'
-    if region == "us-west-2":
-        ubuntu_ami = 'ami-52b22962'
-        stable_ami = None
-
-
-    if ubuntu_ami:
-        config_name = "CloudSim (m1.small)"
-        config_description = cloudsim_description + install
-        
-        config = _get_config("CloudSim (m1.small)",
-                             cloudsim_description + install,
-                             ubuntu_ami)
-    if stable_ami:      
-        config_stable = _get_config("CloudSim-stable (m1.small)",
-                                    config_description + stable,
-                                    stable_ami)
-        configurations = [config, config_stable]
-    return configurations
-
 
 def _get_all_configurations():
-
-    regions = ["US East (N. Virginia)", "EU (Ireland)", "US West (Oregon)"]
     configs = {}
-
-    configs["aws"] = {"description": "Amazon Web Services",
-             "regions": {
-                         "us-east-1" : {"description":"US East (N. Virginia)",
-                                        "configurations": []},
-                         "eu-west-1" : {"description":"EU (Ireland)",
-                                        "configurations": []},
-                         "us-west-2" : {"description":"US West (Oregon)",
-                                        "configurations": []},                         
-                         }
-                }
-
-    for region in ["us-east-1", "eu-west-1", "us-west-2"]:
-        config_list = configs["aws"]["regions"][region]["configurations"]
-        config_list += config_derscription_sim("aws", region)
-        config_list += config_derscription_cs("aws", region)
-        config_list += config_derscription_vrc("aws", region)
-        
     configs["OpenStack"] = {"description": "OpenStack",
                             "regions": {"nova": {"description":"N/A", 
-                                                 "configurations": []}
-                                        }}
+                                                 "configurations": []}}}
+    configs["aws"] = {"description": "Amazon Web Services",
+                      "regions": {
+                        "us-east-1":{"description":"US East (N. Virginia)",
+                                               "configurations":[]}, 
+                        "eu-west-1":{"description":"EU (Ireland)",
+                                               "configurations":[]}}
+                      }
+    add_configs_cs(configs)
+    add_configs_sim(configs)
+    add_configs_vrc(configs)
     return configs
 
 
@@ -701,15 +348,26 @@ def launch(constellation_name, data):
     log("LAUNCH [%s] from proc %s" % (constellation_name, proc))
     constellation = ConstellationState(constellation_name)
     try:
-        config = data['configuration']
+        configs = _get_all_configurations()
+        provider = data['cloud_provider']
+        region_name = data['region']
+        config_name = data['configuration']
+        
         cloudsim_config = get_cloudsim_config()
+        log("region: %s" % region_name)
+
+        configurations = configs[provider]['regions'][region_name]\
+         ['configurations']
+
+        cfg = [x for x in configurations if x['name'] == config_name][0]  
+        
+        log("configuration: %s" % cfg)
         log("preparing REDIS and filesystem %s" % constellation_name)
         init_constellation_data(constellation_name, data, cloudsim_config)
-        constellation_plugin = get_plugin(config)
-
+        constellation_plugin = get_plugin(config_name)
         constellation.set_value('constellation_state', 'launching')
         log("calling the plugin's launch function")
-        constellation_plugin.launch(constellation_name, data)
+        constellation_plugin.launch(cfg, constellation_name, data)
         constellation.set_value('constellation_state', 'running')
         
         log("Launch of constellation %s done" % constellation_name)
@@ -1198,7 +856,6 @@ def _run_cloudsim_cmd_loop(root_dir, tick_interval):
             elif cmd == 'update':
                 constellation = data['constellation']
                 async_update(constellation)
-
             #
             # tasks stuff
             #
@@ -1249,18 +906,13 @@ def _run_cloudsim_cmd_loop(root_dir, tick_interval):
             log("traceback:  %s" % tb)
 
 
-class Configs_test(unittest.TestCase):
-    
-    def test(self):
-        import pprint
-        configs = _get_all_configurations()
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(configs)
-
 if __name__ == "__main__":
-#     from launchers.launch_utils.testing import get_test_runner
-#     xmlTestRunner = get_test_runner()
-#     unittest.main(testRunner=xmlTestRunner)
+
+    import pprint
+    configs = _get_all_configurations()
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(configs)
+
     try:
         log("Cloudsim daemon started pid %s" % os.getpid())
         log("args: %s" % sys.argv)
@@ -1299,9 +951,9 @@ if __name__ == "__main__":
         config['cloudsim_portal_key_path'] = cloudsim_portal_key_path
         config['cloudsim_portal_json_path'] = cloudsim_portal_json_path
         config['cloudsim_bitbucket_key_path'] = cloudsim_bitbucket_key_path
-        config ['other_users'] = []
-        config ['cs_role'] = "admin"
-        config ['cs_admin_users'] = []
+        config['other_users'] = []
+        config['cs_role'] = "admin"
+        config['cs_admin_users'] = []
         # openstack
         config['openstack'] ={'username' : 'admin',
                               'api_key' : 'cloudsim',
