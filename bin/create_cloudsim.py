@@ -112,7 +112,7 @@ if __name__ == "__main__":
     key = args.access_key
     secret = args.secret_key
     
-    configuration = args.config
+    configuration = args.config + " (m1.small)"
     password = args.basic_auth
 
     authentication_type = "OpenID"
