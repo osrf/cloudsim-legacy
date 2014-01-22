@@ -8,7 +8,9 @@ import traceback
 from launch_db import log_msg
 import redis
 import json
-from aws import aws_connect
+
+
+MONITOR_PATH = "/home/ubuntu/launch_stdout_stderr.log"  # "/var/log/dpkg.log"
 
 machine_states = ['terminated', 'terminating', 'stopped' 'stopping',
                   'nothing', 'starting', 'booting',
@@ -40,7 +42,7 @@ def get_aws_states(ec2conn, machine_names_to_ids):
 
 def parse_dpkg_line(s):
     """
-    takes a line from /var/log/dpkg.log
+    takes a line from monitoring file
     removes the date part of the file for readability
     """
     r = s.split("status ")[1]

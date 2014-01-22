@@ -620,6 +620,21 @@ def create_cloudsim(username,
     authentication_type should be "OpenID" or "Basic"
     and password should not be None when "Basic" authentication is used
     """
+    cfg = None
+    try:
+        configs = {}
+        configs["aws"] = {"description": "Amazon Web Services",
+                      "regions": {
+                        "us-east-1": {"description": "US East (N. Virginia)",
+                                               "configurations": []},
+                        "eu-west-1": {"description": "EU (Ireland)",
+                                               "configurations": []}}
+                          }
+        register_configurations(configs)
+        cfg = configs['aws']['regions']['us-east-1']['configurations'][0]
+    except:
+        raise Exception("configuration %s not found" % configuration)
+
     config = {}
     config['cloudsim_version'] = get_cloudsim_version()
     config['boto_path'] = credentials_fname
@@ -634,7 +649,8 @@ def create_cloudsim(username,
     init_constellation_data(constellation_name, data, config)
 
     # Launch a cloudsim instance
-    cloudsim_ip = launch(constellation_name,
+    cloudsim_ip = launch(cfg,
+                         constellation_name,
                          tags=data,
                          force_authentication_type=authentication_type,
                          basic_auth_password=password)
