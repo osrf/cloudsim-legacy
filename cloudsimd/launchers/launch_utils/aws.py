@@ -46,10 +46,7 @@ def acquire_aws_single_server(constellation_name,
     sim_machine_name = "%s_%s" % (machine_prefix, constellation_name)
 
     ec2conn, _ = aws_connect(credentials_ec2)
-    availability_zone = boto.config.get('Boto', 'ec2_region_name')
-    amis = _get_amazon_amis(availability_zone)
-    soft = machine_data['software']
-    aws_image = amis[soft]
+    aws_image = machine_data['software']
     aws_instance = machine_data['hardware']
 
     bdm = __get_block_device_mapping(aws_instance)
@@ -68,7 +65,7 @@ def acquire_aws_single_server(constellation_name,
 
     constellation.set_value('machine_name', machine_prefix)
     security_group_data = machine_data['security_group']
-    security_group_name, security_group_id = _acquire_security_group(
+    security_group_name, _ = _acquire_security_group(
                                     constellation_name,
                                     machine_prefix,
                                     security_group_data,
@@ -139,7 +136,8 @@ def terminate_aws_server(constellation_name, credentials_fname):
     machine_prefix = constellation.get_value('machine_name')
     try:
         constellation.set_value('%s_state' % machine_prefix, "terminating")
-        constellation.set_value('%s_launch_msg' % machine_prefix, "terminating")
+        constellation.set_value('%s_launch_msg' % machine_prefix,
+                                "terminating")
 
         log("Terminate machine_prefix: %s" % machine_prefix)
         aws_id = constellation.get_value('%s_aws_id' % machine_prefix)
@@ -177,11 +175,8 @@ def acquire_aws_constellation(constellation_name,
     constellation.set_value('machines', machines)
 
     ec2conn, vpcconn = aws_connect(credentials_ec2)
-    availability_zone = boto.config.get('Boto', 'ec2_region_name')
-
     vpc_id, subnet_id = _acquire_vpc(constellation_name,
-                                     vpcconn,
-                                     availability_zone)
+                                     vpcconn)
     log("VPC %s" % vpc_id)
     roles_to_reservations = {}
     for machine_name, machine_data in machines.iteritems():
@@ -202,7 +197,6 @@ def acquire_aws_constellation(constellation_name,
                                              startup_srcript,
                                              subnet_id,
                                              security_group_id,
-                                             availability_zone,
                                              ec2conn)
         roles_to_reservations[machine_name] = reservation_id
 
@@ -352,7 +346,7 @@ def _release_vpc_elastic_ip(constellation_name, machine_name_prefix, ec2conn):
         print("error cleaning up %s elastic ip: %s" % (machine_name_prefix, e))
 
 
-def _acquire_vpc(constellation_name, vpcconn, availability_zone):
+def _acquire_vpc(constellation_name, vpcconn):
     constellation = ConstellationState(constellation_name)
     vpc_id = None
     subnet_id = None
@@ -363,8 +357,21 @@ def _acquire_vpc(constellation_name, vpcconn, availability_zone):
         vpc_id = aws_vpc.id
         constellation.set_value('vpc_id', vpc_id)
 
-        aws_subnet = vpcconn.create_subnet(vpc_id, VPN_PRIVATE_SUBNET,
-                                        availability_zone=availability_zone)
+        # this operation fails on AWS end for no good reason sometimes
+        aws_subnet = None
+        time.sleep(5)
+        max_ = 20
+        i = 0
+        while i < max_:
+            try:
+                time.sleep(i * 2)
+                aws_subnet = vpcconn.create_subnet(vpc_id, VPN_PRIVATE_SUBNET)
+                i = max_  # leave the loop
+            except:
+                i += 1
+                if i == max_:
+                    raise
+
         subnet_id = aws_subnet.id
         constellation.set_value('subnet_id', subnet_id)
 
@@ -574,14 +581,11 @@ def _acquire_vpc_server(constellation_name,
                         startup_script,
                         subnet_id,
                         security_group_id,
-                        availability_zone,
                         ec2conn):
-    amis = _get_amazon_amis(availability_zone)
     constellation = ConstellationState(constellation_name)
     try:
         constellation.set_value('%s_launch_msg' % machine_prefix, "booting")
-        soft = machine_data['software']
-        aws_image = amis[soft]
+        aws_image = machine_data['software']
         aws_instance = machine_data['hardware']
         ip = machine_data['ip']
         bdm = __get_block_device_mapping(aws_instance)
@@ -648,51 +652,6 @@ def aws_connect(creds_fname=None):
                                    aws_secret_access_key,
                                    region=region)
     return ec2conn, vpcconn
-
-
-def _get_amazon_amis(availability_zone):
-    """
-    AMIs are the Amazon disk images. They have unique ids, and those ids vary
-    in different regions
-    """
-
-#     config = get_cloudsim_config()
-#     credentials_ec2 = config['boto_path']
-#     boto.config = BotoConfig(credentials_ec2)
-#     availability_zone = boto.config.get('Boto', 'ec2_region_name')
-
-    amis = {}
-    if availability_zone.startswith('eu-west'):
-        amis['ubuntu_1204_x64_cluster'] = 'ami-fc191788'
-        amis['ubuntu_1204_x64'] = 'ami-f2191786'
-        # cloudsim 1.7.2
-        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-0f3ed378'
-        amis['ubuntu_1204_x64_drc_router'] = 'ami-bcd235cb'
-        amis['ubuntu_1204_x64_drc_simulator'] = 'ami-bad235cd'
-        # simulator 1.7.2
-        amis['ubuntu_1204_x64_simulator'] = 'ami-dd3fd2aa'
-
-    elif availability_zone.startswith('us-east'):
-        amis['ubuntu_1204_x64_cluster'] = 'ami-98fa58f1'
-        amis['ubuntu_1204_x64'] = 'ami-137bcf7a'
-        # cloudsim 1.7.2
-        amis['ubuntu_1204_x64_cloudsim_stable'] = 'ami-f55f7b9c'
-        amis['ubuntu_1204_x64_drc_router'] = 'ami-8d0155e4'
-        amis['ubuntu_1204_x64_drc_simulator'] = 'ami-8f0155e6'
-        # simulator 1.7.2
-        amis['ubuntu_1204_x64_simulator'] = 'ami-8b5377e2'
-
-    elif availability_zone.startswith('nova'):
-        # TODO: we might want to move image ids to a configuration file
-        ec2conn, _ = aws_connect()
-        images = ec2conn.get_all_images(
-            filters={'name': ['ubuntu-12.04.2-server-cloudimg-amd64-disk1']})
-        for image in images:
-            if image.name == 'ubuntu-12.04.2-server-cloudimg-amd64-disk1':
-                amis['ubuntu_1204_x64_cluster'] = image.id
-                amis['ubuntu_1204_x64'] = image.id
-
-    return amis
 
 
 def get_ec2_instance(ec2conn, mid):
@@ -823,3 +782,35 @@ def wait_for_multiple_machines_to_terminate(ec2conn,
                                     instance.state,
                                     count,
                                     max_retries))
+
+
+def copy_aws_credentials(src_fname, dst_fname, region):
+    """
+    Opens a Boto file, changes the region and saves it to a new file, changing
+    the ec2 region.
+    """
+    log("copy_aws_credentials from src[%s] to [%s] in region [%s]" % (
+                                                                src_fname,
+                                                                dst_fname,
+                                                                region))
+
+    ec2_region_endpoint = {"us-east-1": "ec2.us-east-1.amazonaws.com",
+            "us-west-2": "ec2.us-west-2.amazonaws.com",
+            "us-west-1": "ec2.us-west-1.amazonaws.com",
+            "eu-west-1": "ec2.eu-west-1.amazonaws.com",
+            "ap-southeast-1": "ec2.ap-southeast-1.amazonaws.com",
+            "ap-southeast-2": "ec2.ap-southeast-2.amazonaws.com",
+            "ap-northeast-1": "ec2.ap-northeast-1.amazonaws.com",
+            "sa-east-1": "ec2.sa-east-1.amazonaws.com"}[region]
+    creds = BotoConfig(src_fname)
+
+    # check for AZ override in the CloudSim section
+    az = creds.get('CloudSim', region)
+    if az in ['any', None]:
+        az = region  # use region without a specific AZ
+    print(src_fname, dst_fname, region)
+    creds.set('Boto', 'ec2_region_name', az)
+    log("copy_aws_credentials: using Availability Zone: %s" % az)
+    creds.set('Boto', 'ec2_region_endpoint', ec2_region_endpoint)
+    with open(dst_fname, 'w') as f:
+        creds.write(f)

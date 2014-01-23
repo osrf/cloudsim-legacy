@@ -1,3 +1,29 @@
+function get_default_aws_az()
+{
+    var url = "/cloudsim/inside/cgi-bin/cloud_credentials";
+	console.log("[GET]" + url);
+	var x = httpGet(url);
+    var default_azs = eval( '(' + x + ')' );
+    return default_azs;
+}
+
+function set_aws_default_az(defaults)
+{
+    var key = encodeURIComponent(access_key);
+    var secret = encodeURIComponent(secret_access_key);
+    var url = '/cloudsim/inside/cgi-bin/cloud_credentials?'
+    
+    url += 'us_east_1=' + defaults['us_east_1'];
+    url += 'us_west_2=' + defaults['us_west_2'];
+    url += 'eu_west_1=' + defaults['eu_west_1'];
+    console.log("[PUT] " + url);
+    var msg = httpPut(url);
+
+    var jmsg = eval('(' + msg + ')');
+    console.log("change_aws_default_az: " + msg);
+    return jmsg;
+}
+
 function get_configurations()
 {
 	var url = "/cloudsim/inside/cgi-bin/machine_configs";
@@ -7,18 +33,23 @@ function get_configurations()
     return machine_configurations;
 }
 
-function launch_constellation(cloud_provider, configuration)
+function launch_constellation(cloud_provider, region, configuration)
 {
-
+    var msg= "LAUNCH: provider: " + cloud_provider + ", region: " + region
+    msg += ", config: " + configuration;
+    console.log(msg );
+    
     var p = encodeURIComponent(cloud_provider);
     var c = encodeURIComponent(configuration);
-    var url = '/cloudsim/inside/cgi-bin/constellations?cloud_provider=' + p + '&configuration=' + c;
+    var r = encodeURIComponent(region);
+    var url = '/cloudsim/inside/cgi-bin/constellations?cloud_provider=' + p;
+    url += '&region=' + r;
+    url += '&configuration=' + c;
 
     console.log("[POST]" + url);
-    msg = httpPost(url);
+    var msg = httpPost(url);
     console.log(msg);
 }
-
 
 function update_constellation(constellation_name)
 {
@@ -26,7 +57,7 @@ function update_constellation(constellation_name)
     url += '/' + constellation_name;
 
     console.log("[PUT (update)]" + url);
-    msg = httpPut(url);
+    var msg = httpPut(url);
     console.log(msg);
     return msg;
 }
@@ -37,7 +68,7 @@ function terminate_constellation(constellation_name)
     url += '/' + constellation_name;
 
     console.log("[DELETE] " + url);
-    msg = httpDelete(url);
+    var msg = httpDelete(url);
     console.log( msg);
 }
 
@@ -109,13 +140,19 @@ function change_osrf_credentials(nuser, napi_key)
     return jmsg;
 }
 
-function change_aws_credentials(access_key, secret_access_key, availability_zone)
+function change_aws_credentials(access_key, secret_access_key, us_east_1_az,
+		us_west_2_az, eu_west_1_az)
 {
     var key = encodeURIComponent(access_key);
     var secret = encodeURIComponent(secret_access_key);
-    var url = '/cloudsim/inside/cgi-bin/cloud_credentials?access_key=';
-    url += key+'&secret_access_key=' + secret;
-    url += "&availability_zone="+availability_zone;
+    var url = '/cloudsim/inside/cgi-bin/cloud_credentials?';
+    url += 'access_key=' + key;
+    url += '&secret_access_key=' + secret;
+
+    url += '&us_east_1_az=' + us_east_1_az;
+    url += '&us_west_2_az=' + us_west_2_az;
+    url += '&eu_west_1_az=' + eu_west_1_az;
+
     console.log("[PUT] " + url);
     var msg = httpPut(url);
 
@@ -139,7 +176,7 @@ function start_simulator(constellation_name, machine_name, package_name, launch_
     }
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -152,7 +189,7 @@ function stop_simulator(constellation_name, machine_name)
     url += '&machine=' + machine_name;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -165,7 +202,7 @@ function update_traffic_shaper(_constellationName, _machineName, _targetPacketLa
     url += '&targetPacketLatency=' + _targetPacketLatency;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -185,7 +222,7 @@ function get_constellation(constellation)
     var url = '/cloudsim/inside/cgi-bin/constellations/';
     url += constellation;
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -284,7 +321,7 @@ function create_task(constellation,
                   vrc_num)
 
     console.log("[POST (create)]" + url);
-    msg = httpPost(url);
+    var msg = httpPost(url);
     console.log(msg);
     return msg;
 }
@@ -293,7 +330,7 @@ function read_task(constellation, task_id)
 {
     var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
     console.log("[GET] "+ url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     var jmsg = eval('(' + msg + ')');
     return jmsg;
@@ -332,7 +369,7 @@ function update_task(constellation,
 
 
     console.log("[PUT (update)]" + url);
-    msg = httpPut(url);
+    var msg = httpPut(url);
     console.log(msg);
     return msg;
 }
@@ -341,7 +378,7 @@ function delete_task(constellation, task_id)
 {
     var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
     console.log("[DELETE] "+ url);
-    msg = httpDelete(url);
+    var msg = httpDelete(url);
     console.log(msg);
     return msg;
 }
@@ -353,7 +390,7 @@ function start_task(constellation_name, task_id)
     url += '&task_id=' +task_id
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -365,7 +402,7 @@ function stop_task(constellation_name)
     url += '&constellation=' + constellation_name;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -376,7 +413,7 @@ function reset_tasks(constellation_name)
     url += '&constellation=' + constellation_name;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -387,7 +424,7 @@ function start_web_tools(constellation_name)
     url += '&constellation=' + constellation_name;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -398,7 +435,7 @@ function stop_web_tools(constellation_name)
     url += '&constellation=' + constellation_name;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }

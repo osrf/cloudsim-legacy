@@ -19,14 +19,14 @@ try:
     d['username'] = email
     d['constellation'] = form.getfirst('constellation')
     d['machine'] = form.getfirst('machine')
-    
+
     if d['command'] == 'update_tc':
         d['targetPacketLatency'] = form.getfirst('targetPacketLatency')
     else:
         print ('tc_cmd.py Incorrect command (%s)' % (d['command']))
 except Exception, e:
     print ("Error processing traffic shaping commands [%s]" % d)   
-        
+
 s = dumps(d)
 
 redis_client = redis.Redis()

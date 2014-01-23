@@ -15,6 +15,10 @@ import shutil
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, basepath)
+# sys.path.insert(0, os.path.join(basepath,
+#                                 'cloudsimd',
+#                                 'launchers',
+#                                 'launch_utils') )
 
 import cloudsimd.launchers.cloudsim  as cloudsim
 from cloudsimd.launchers.launch_utils.launch_db import ConstellationState
@@ -50,31 +54,65 @@ if __name__ == "__main__":
     parser.add_argument('secret_key',
                         metavar='SECRET-KEY',
                         help='AWS secret key')
-    parser.add_argument('ec2_zone',
-                        metavar='EC2-AVAILABILITY-ZONE',
+
+    parser.add_argument('ec2_region',
+                        metavar='EC2-REGION',
                         help='Amazon EC2 availability zone',
                         choices=['nova',
-                                 'us-east-1a',
-                                 'us-east-1b',
-                                 'us-east-1c',
-                                 'us-east-1d',
-                                 'eu-west-1a',
-                                 'eu-west-1b',
-                                 'eu-west-1c',])
+                                 'us-east-1',
+                                 'eu-west-1',
+                                 'us-west-2',
+                                 ])
     parser.add_argument('config',
                         nargs='?',
                         metavar='CONFIGURATION',
                         help='configuration (CloudSim-stable is the default)',
                         default = 'CloudSim-stable',
                         choices= ['CloudSim', 'CloudSim-stable'])
+  
+    msg = 'Default availability zone for AWS region US East (N. Virginia)'
+    parser.add_argument('us_east1_az',
+                         nargs='?',
+                         metavar='US-EAST1-AZ',
+                         default='any',
+                         choices=['any',
+                                  'us-east-1a',
+                                  'us-east-1b',
+                                  'us-east-1c',
+                                  'us-east-1d',
+                                  ],
+                         help=msg)
+    msg = 'Default availability zone for AWS region EU (Ireland)'
+    parser.add_argument('eu_west1_az',
+                         nargs='?',
+                         metavar='EU-WEST1-AZ',
+                         default='any',
+                         choices=['any',
+                                  'eu-west-1a',
+                                  'eu-west-1b',
+                                  'eu-east-1c',
+                                  ],
+                         help=msg)
+    msg = 'Default availability zone for AWS region US West (Oregon)'    
+    parser.add_argument('us_west2_az',
+                         nargs='?',
+                         metavar='US-WEST2-AZ',
+                         default='any',
+                         choices=['any',
+                                  'us-west-2a',
+                                  'us-west-2b',
+                                  'us-east-2c',
+                                  ],
+                         help=msg)   
+
     # Parse command line arguments
     args = parser.parse_args()
 
     username = args.username
     key = args.access_key
     secret = args.secret_key
-    ec2_zone = args.ec2_zone
-    configuration = args.config
+    
+    configuration = args.config + " (m1.small)"
     password = args.basic_auth
 
     authentication_type = "OpenID"
@@ -86,8 +124,12 @@ if __name__ == "__main__":
     boto_tmp_file.close()
 
     # create a temporary boto credentials file
-    cred = common.CloudCredentials(key, secret, fname=boto_tmp_file_fname,
-                                   ec2_region_name=ec2_zone)
+    cred = common.CloudCredentials(key,
+                                   secret,
+                                   us_east1_az=args.us_east1_az,
+                                   eu_west_az=args.eu_west1_az,
+                                   us_west2_az=args.us_west2_az,
+                                   fname=boto_tmp_file_fname,)
     cred.save()
 
     constellation_name = get_unique_short_name('cc')
@@ -97,6 +139,7 @@ if __name__ == "__main__":
     try:
         ip  = cloudsim.create_cloudsim(username=username,
                         credentials_fname=boto_tmp_file_fname,
+                        region=args.ec2_region,
                         configuration=configuration,
                         authentication_type=authentication_type,
                         password=password,
@@ -105,7 +148,7 @@ if __name__ == "__main__":
     finally:
         print("deleting AWS credentials")
         os.remove(boto_tmp_file_fname)
-       
+   
         print("deleting ssh and vpn keys")
         shutil.rmtree(data_dir)
         print("Cleaning Redis database")
