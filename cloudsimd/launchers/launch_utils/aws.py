@@ -65,7 +65,7 @@ def acquire_aws_single_server(constellation_name,
 
     constellation.set_value('machine_name', machine_prefix)
     security_group_data = machine_data['security_group']
-    security_group_name, security_group_id = _acquire_security_group(
+    security_group_name, _ = _acquire_security_group(
                                     constellation_name,
                                     machine_prefix,
                                     security_group_data,
@@ -357,7 +357,21 @@ def _acquire_vpc(constellation_name, vpcconn):
         vpc_id = aws_vpc.id
         constellation.set_value('vpc_id', vpc_id)
 
-        aws_subnet = vpcconn.create_subnet(vpc_id, VPN_PRIVATE_SUBNET)
+        # this operation fails on AWS end for no good reason sometimes
+        aws_subnet = None
+        time.sleep(5)
+        max_ = 20
+        i = 0
+        while i < max_:
+            try:
+                time.sleep(i * 2)
+                aws_subnet = vpcconn.create_subnet(vpc_id, VPN_PRIVATE_SUBNET)
+                i = max_  # leave the loop
+            except:
+                i += 1
+                if i == max_:
+                    raise
+
         subnet_id = aws_subnet.id
         constellation.set_value('subnet_id', subnet_id)
 
@@ -775,6 +789,11 @@ def copy_aws_credentials(src_fname, dst_fname, region):
     Opens a Boto file, changes the region and saves it to a new file, changing
     the ec2 region.
     """
+    log("copy_aws_credentials from src[%s] to [%s] in region [%s]" % (
+                                                                src_fname,
+                                                                dst_fname,
+                                                                region))
+
     ec2_region_endpoint = {"us-east-1": "ec2.us-east-1.amazonaws.com",
             "us-west-2": "ec2.us-west-2.amazonaws.com",
             "us-west-1": "ec2.us-west-1.amazonaws.com",
@@ -791,7 +810,7 @@ def copy_aws_credentials(src_fname, dst_fname, region):
         az = region  # use region without a specific AZ
     print(src_fname, dst_fname, region)
     creds.set('Boto', 'ec2_region_name', az)
+    log("copy_aws_credentials: using Availability Zone: %s" % az)
     creds.set('Boto', 'ec2_region_endpoint', ec2_region_endpoint)
     with open(dst_fname, 'w') as f:
         creds.write(f)
-

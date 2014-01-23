@@ -269,7 +269,7 @@ def get_plugin(configuration):
                                      c.monitor,
                               None, None, None, None)
 
-    elif configuration.startswith('DRC'):
+    elif configuration.startswith('VRC'):
         from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch,
                                      c.terminate,

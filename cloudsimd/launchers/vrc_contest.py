@@ -743,8 +743,8 @@ def register_configurations(configs):
     us_east_cfgs.append(_get_config(
                          config_name="VRC-stable (Virtual Robotics Challenge)",
                          config_description=vrc_desc + stable,
-                         router_ami='ami-8d0155e4',
-                         sim_ami='ami-8f0155e6'))
+                         router_ami='ami-75e4d91c',
+                         sim_ami='ami-4de4d924'))
 
     eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
     eu_west_cfgs.append(_get_config(
@@ -755,8 +755,8 @@ def register_configurations(configs):
     eu_west_cfgs.append(_get_config(
                          config_name="VRC-stable (Virtual Robotics Challenge)",
                          config_description=vrc_desc + stable,
-                         router_ami='ami-bcd235cb',
-                         sim_ami='ami-bad235cd'))
+                         router_ami='ami-3c02f64b',
+                         sim_ami='ami-3a02f64d'))
     return configs
 
 
@@ -765,8 +765,11 @@ def launch(configuration, constellation_name, tags):
     Called by cloudsimd when it receives a launch message
     """
     constellation = ConstellationState(constellation_name)
-    use_latest_version = constellation.get_value('configuration') == 'DRC' or \
-        constellation.get_value('configuration') == 'DRC with FC'
+
+    stable = constellation.get_value('configuration').find('stable') >= 0
+    use_latest_version = stable == False
+    has_fc1 = False
+    has_fc2 = False
 
     scripts = {}
     scripts['router'] = ''
@@ -780,16 +783,6 @@ def launch(configuration, constellation_name, tags):
     constellation_directory = tags['constellation_directory']
     credentials_fname = os.path.join(constellation_directory,
                                      'credentials.txt')
-
-#   if credentials_override:
-#       credentials_fname = credentials_override
-
-    has_fc1 = False
-    has_fc2 = False
-
-    if "FC" in config:
-        has_fc1 = True
-
     router_public_network_itf = "eth0"
     router_private_network_itf = None
 

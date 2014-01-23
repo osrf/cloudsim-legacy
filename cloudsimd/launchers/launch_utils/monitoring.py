@@ -45,10 +45,11 @@ def parse_dpkg_line(s):
     takes a line from monitoring file
     removes the date part of the file for readability
     """
-    r = s.split("status ")[1]
-    if len(r) == 0:
+    try:
+        r = s.split("status ")[1]
+        return r.strip()
+    except:
         return s
-    return r.strip()
 
 
 def _parse_ping_data(ping_str):
