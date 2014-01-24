@@ -594,6 +594,16 @@ def register_configurations(configs):
                             config_description=sim_g1_description + stable,
                             hardware='cg1.4xlarge',
                             image_key='ami-d14479b8'))  # v 2.0
+    us_east_cfgs.append(_get_config(
+                            config_name="Simulator (g2.2xlarge)",
+                            config_description=sim_g1_description + install,
+                            hardware='g2.2xlarge',
+                            image_key='ami-dfa98cb6'))
+    us_east_cfgs.append(_get_config(
+                            config_name="Simulator-stable (g2.2xlarge)",
+                            config_description=sim_g1_description + stable,
+                            hardware='g2.2xlarge',
+                            image_key='ami-a51e22cc'))
 
     eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
     eu_west_cfgs.append(_get_config(
@@ -606,6 +616,28 @@ def register_configurations(configs):
                             config_description=sim_g1_description + stable,
                             hardware='cg1.4xlarge',
                             image_key='ami-ca26d2bd'))  # v 2.0
+    eu_west_cfgs.append(_get_config(
+                            config_name="Simulator (g2.2xlarge)",
+                            config_description=sim_g1_description + install,
+                            hardware='g2.2xlarge',
+                            image_key='ami-05cb2672'))
+    eu_west_cfgs.append(_get_config(
+                            config_name="Simulator-stable (g2.2xlarge)",
+                            config_description=sim_g1_description + stable,
+                            hardware='g2.2xlarge',
+                            image_key='ami-e0b24597'))
+
+    us_west_cfgs = configs["aws"]["regions"]["us-west-2"]["configurations"]
+    us_west_cfgs.append(_get_config(
+                            config_name="Simulator (g2.2xlarge)",
+                            config_description=sim_g1_description + install,
+                            hardware='g2.2xlarge',
+                            image_key='ami-52b22962'))
+    us_west_cfgs.append(_get_config(
+                            config_name="Simulator-stable (g2.2xlarge)",
+                            config_description=sim_g1_description + stable,
+                            hardware='g2.2xlarge',
+                            image_key='ami-0e7b1b3e'))
     return configs
 
 
@@ -794,7 +826,7 @@ def __wait_for_find_file(constellation_name,
                     constellation,
                     key_name,
                     end_state,
-                    max_retries=500))
+                    max_retries=600))
     empty_ssh_queue(q, sleep=2)
 
 

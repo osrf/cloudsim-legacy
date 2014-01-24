@@ -308,8 +308,10 @@ def _get_all_configurations():
                         "us-east-1":{"description":"US East (N. Virginia)",
                                                "configurations":[]}, 
                         "eu-west-1":{"description":"EU (Ireland)",
-                                               "configurations":[]}}
-                      }
+                                               "configurations":[]},
+                        "us-west-2":{"description":"US West (Oregon)",
+                                               "configurations":[]},
+                      }}
     add_configs_cs(configs)
     add_configs_sim(configs)
     add_configs_vrc(configs)

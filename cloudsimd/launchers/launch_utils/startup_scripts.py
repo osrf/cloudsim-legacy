@@ -903,7 +903,7 @@ apt-get install -y x11-xserver-utils
 
 # Have the NVIDIA tools create the xorg configuration file for us, retrieiving the PCI BusID for the current system.
 # The BusID can vary from machine to machine.  The || true at the end is to allow this line to succeed on fc2, which doesn't have a GPU.
-if ! nvidia-xconfig --busid `nvidia-xconfig --query-gpu-info | grep BusID | head -n 1 | sed 's/PCI BusID : PCI:/PCI:/'`; then
+if ! nvidia-xconfig --use-display-device=None --virtual=1280x1024 --busid `nvidia-xconfig --query-gpu-info | grep BusID | head -n 1 | sed 's/PCI BusID : PCI:/PCI:/'`; then
   echo "nvidia-xconfig failed; probably no GPU installed.  Proceeding." >> /home/ubuntu/setup.log
 else
   echo "nvidia-xconfig succeeded." >> /home/ubuntu/setup.log
@@ -1143,7 +1143,7 @@ DELIM
 
 def _load_gazebo_models_generator():
     s = """
-
+set -ex
 cat <<DELIM > /home/ubuntu/cloudsim/load_gazebo_models.bash
 
 #!/bin/bash

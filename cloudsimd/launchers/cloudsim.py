@@ -8,6 +8,7 @@ import json
 import tempfile
 import shutil
 
+from pprint import pprint
 
 from launch_utils import SshClient
 from launch_utils import ConstellationState  # launch_db
@@ -288,7 +289,6 @@ def register_configurations(configs):
   <li>Web server: Apache</li>
 </ol>
 """
-
     stable = "This is a stable version running from saved disk images"
     stable += " that contain preinstalled software."
 
@@ -310,6 +310,15 @@ def register_configurations(configs):
     eu_west_cfgs.append(_get_config("CloudSim-stable (m1.small)",
                                     cloudsim_description + stable,
                                     'ami-0f3ed378'))
+
+    us_west_cfgs = configs["aws"]["regions"]["us-west-2"]["configurations"]
+    us_west_cfgs.append(_get_config("CloudSim (m1.small)",
+                                    cloudsim_description + install,
+                                    'ami-52b22962'))
+    eu_west_cfgs.append(_get_config("CloudSim-stable (m1.small)",
+                                    cloudsim_description + stable,
+                                    'ami-xxxx'))
+
     return configs
 
 
@@ -326,22 +335,17 @@ def launch(configuration,
     log("CloudSim launch %s" % constellation_name)
     constellation = ConstellationState(constellation_name)
 
-    cloudsim_stable = True
-    if constellation.get_value('configuration') == 'CloudSim':
-        cloudsim_stable = False
+    cloudsim_stable = False
+    config_name = configuration['name']
+    if config_name.find('stable') >= 0:
+        cloudsim_stable = True
 
     # we won't upload the CloudSim code if we're launching a stable version
     upload_cloudsim_code = cloudsim_stable == False
 
-    script = None
-    image_key = None
-
+    script = ''
     if not cloudsim_stable:
         script = script = get_cloudsim_startup_script()
-        image_key = 'ubuntu_1204_x64'
-    else:
-        script = ''
-        image_key = 'ubuntu_1204_x64_cloudsim_stable'
 
     log("cloudsim launch tags %s" % (tags))
     cloud_provider = tags['cloud_provider']
@@ -350,7 +354,6 @@ def launch(configuration,
     constellation_directory = tags['constellation_directory']
     credentials_fname = os.path.join(constellation_directory,
                                      'credentials.txt')
-
     machine_prefix = "cs"
     # cfg = get_cloudsim_config()
 
@@ -360,17 +363,13 @@ def launch(configuration,
     constellation.set_value(STATE_KEY, 'starting')
     constellation.set_value("launch_stage", "nothing")
     constellation.set_value(LATENCY_KEY, '[]')
-
     constellation.set_value(STATE_KEY, 'network_setup')
-
     constellation.set_value(LAUNCH_MSG_KEY, "starting")
     constellation.set_value(LATENCY_KEY, '[]')
     constellation.set_value(ZIP_READY_KEY, 'not ready')
     constellation.set_value("error", "")
-
     constellation.set_value("gazebo", "not running")
     constellation.set_value('sim_glx_state', "not running")
-
     constellation.set_value(LAUNCH_MSG_KEY,
                             "setting up user accounts and keys")
     pub_ip = None
@@ -631,7 +630,7 @@ def create_cloudsim(username,
                                                "configurations": []}}
                           }
         register_configurations(configs)
-        cfg = configs['aws']['regions']['us-east-1']['configurations'][0]
+        cfg = configs['aws']['regions'][region]['configurations'][0]
     except:
         raise Exception("configuration %s not found" % configuration)
 
@@ -645,6 +644,16 @@ def create_cloudsim(username,
     data['cloud_provider'] = 'aws'
     data['configuration'] = configuration
     data['region'] = region
+
+    pprint(configs)
+    log("\n\nCreate CloudSim")
+    log("authentication type %s" % authentication_type)
+    if authentication_type == "Basic":
+        log("password: %s" % password)
+    log("username: %s" % username)
+    log("region: %s" % region)
+    log("configuration %s" % configuration)
+    pprint(cfg)
 
     init_constellation_data(constellation_name, data, config)
 

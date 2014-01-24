@@ -101,7 +101,7 @@ if __name__ == "__main__":
                          choices=['any',
                                   'us-west-2a',
                                   'us-west-2b',
-                                  'us-east-2c',
+                                  'us-west-2c',
                                   ],
                          help=msg)   
 
