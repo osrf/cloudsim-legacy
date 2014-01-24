@@ -598,7 +598,7 @@ def register_configurations(configs):
                             config_name="Simulator (g2.2xlarge)",
                             config_description=sim_g1_description + install,
                             hardware='g2.2xlarge',
-                            image_key='ami-dfa98cb6'))
+                            image_key='ami-b93264d0'))
     us_east_cfgs.append(_get_config(
                             config_name="Simulator-stable (g2.2xlarge)",
                             config_description=sim_g1_description + stable,
