@@ -1,6 +1,66 @@
 
+function create_sim_service(machine_div,
+							constellation_name,
+							machine_name,
+							title,
+							run_msg,
+							service_state_key,
+							start_func,
+							stop_func,
+							start_timeout)
+{
+	var glx_key = "sim_glx_state";
+	var simulator_key = "gazebo";
+	var ip_key = "sim_public_ip";
+
+	console.log("create_sim_service '" + title + "' for " + constellation_name);
+	
+    var widget_div = _create_empty_widget(machine_div, "gzweb");
+    var status = status_img("gray");
+    widget_div.innerHTML = status + "<b>" + title +"</b>";
+
+    var start_button = document.createElement('input');
+    start_button.setAttribute('type','button');
+    start_button.setAttribute('value','Start');
+    start_button.onclick =  function()
+    {
+    	start_func(constellation_name);
+    	start_button.disabled = true;
+        setTimeout( function(){
+        	start_button.disabled = false;
+            }, 10000); // setTimeOut
+    }
+    widget_div.appendChild(start_button);
+
+    var stop_button = document.createElement('input');
+    stop_button.setAttribute('type','button');
+    stop_button.setAttribute('value','Stop');
+    stop_button.onclick =  function()
+    {
+    	stop_func(constellation_name);
+    	stop_button.disabled = true;
+        setTimeout( function(){
+        	stop_button.disabled = false;
+         }, 5000); // setTimeOut
+    }
+    widget_div.appendChild(stop_button);
+
+}
 
 function create_gzweb_widget(machine_div,
+	     constellation_name,
+	     machine_name,
+		 glx_key,
+		 simulator_key,
+		 gz_web_key,
+		 ip_key)
+{
+	create_sim_service(machine_div, constellation_name, machine_name,
+			"WebGL interface",
+			);
+}
+
+function create_gzweb_widget2(machine_div,
 						     constellation_name,
 						     machine_name,
 							 glx_key,
@@ -8,8 +68,9 @@ function create_gzweb_widget(machine_div,
 							 gz_web_key,
 							 ip_key)
 {
+	console.log("create_gzweb_widget for " + constellation_name);
+	
     var widget_div = _create_empty_widget(machine_div, "gzweb");
-
     var status = status_img("gray");
     widget_div.innerHTML = status + "<b>WebGL interface</b>";
 
