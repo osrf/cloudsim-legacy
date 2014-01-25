@@ -8,8 +8,17 @@ function create_gzweb_widget(machine_div,
 							 gz_web_key,
 							 ip_key)
 {
-    var widget_div = _create_empty_widget(machine_div, "gzweb");
+	var start_func = function()
+	{
+		start_web_tools(constellation_name);
+	}
 
+	var stop_func = function()
+	{
+		stop_web_tools(constellation_name);
+	}
+	
+	var widget_div = _create_empty_widget(machine_div, "gzweb");
     var status = status_img("gray");
     widget_div.innerHTML = status + "<b>WebGL interface</b>";
 
@@ -18,7 +27,8 @@ function create_gzweb_widget(machine_div,
     start_button.setAttribute('value','Start');
     start_button.onclick =  function()
     {
-    	start_web_tools(constellation_name);
+    	// start_web_tools(constellation_name);
+    	start_func();
     	start_button.disabled = true;
         setTimeout( function(){
         	start_button.disabled = false;
@@ -31,7 +41,8 @@ function create_gzweb_widget(machine_div,
     stop_button.setAttribute('value','Stop');
     stop_button.onclick =  function()
     {
-    	stop_web_tools(constellation_name);
+    	// stop_web_tools(constellation_name);
+    	stop_func();
     	stop_button.disabled = true;
         setTimeout( function(){
         	stop_button.disabled = false;

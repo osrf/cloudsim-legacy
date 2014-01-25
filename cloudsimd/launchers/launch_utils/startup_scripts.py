@@ -327,8 +327,8 @@ EOF
 
 sudo service ssh restart
 
-touch /home/ubuntu/cloudsim/setup/done
 echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
+touch /home/ubuntu/cloudsim/setup/done
 """
 
     return s
@@ -1172,21 +1172,20 @@ install ()
 
     echo -n "Downloading \$1..."
     hg clone https://bitbucket.org/osrf/\$1
-    cd \$1; hg up cloudsim_release
-
-    echo "Done"
     cd \$1
+    hg up cloudsim_release
+    echo "download done"
     mkdir build
     cd build
     echo -n "Installing \$1..."
     cmake .. -DCMAKE_INSTALL_PREFIX=\$2
     make install > /dev/null 2>&1
-    echo "Done"
+    echo "install done"
 
     # Remove temp dir
     rm -rf \$TMP_DIR
+    echo "tmp dir removed"
 }
-
 
 KEY=\$1
 
@@ -1197,6 +1196,8 @@ install \$GAZEBO_MODELS_NAME \$GAZEBO_INSTALL_DIR
 if [ -n "\$KEY" ]; then
   install \$VRC_ARENAS_NAME \$VRC_ARENA_INSTALL_DIR \$KEY
 fi
+
+echo "load_gazebo_models Done"
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/load_gazebo_models.bash
