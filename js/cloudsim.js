@@ -62,7 +62,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
 
     		if (machine_name == "router")
     		{
-    			create_gzweb_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo", "gzweb", "router_public_ip");
+    			create_gzweb_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo", "gzweb", machine_data["router_public_ip"]);
     		}
     		
     		create_latency_widget(machine_div, constellation, machine_name, latency_key, latency_msg, max_latency);
@@ -98,7 +98,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
         create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "sim_launch_msg", "sim_state");
         create_machine_state_widget(machine_div, constellation, machine_name,"sim_aws_state");
         create_simulator_state_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo");
-        create_gzweb_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo", "gzweb", "sim_public_ip");
+        create_gzweb_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo", "gzweb", machine_data["sim_public_ip"]);
         create_latency_widget(machine_div, constellation, machine_name, "sim_latency", "RTT latency between the simulator and OCU over the VPN", 1.1);
     }
 
