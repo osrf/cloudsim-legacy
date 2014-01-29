@@ -117,23 +117,49 @@ function create_start_stop_service(machine_div,
     });
 }
 
+
+function create_cloudsim_notebook_widget(machine_div,
+									     constellation_name,
+									     machine_name,
+										 ip_address)
+{
+	var title = "iPython Notebook";
+	var service_state_key = "gzweb";
+	var service_state_key = "cloudsim_notebook";  // gz_web_key
+	var btn_timeout = 10000;
+	var link_txt = '<a href=http://' + ip_address + ":8888" + ' target="_blank" >Python notebook</a>' ;
+
+	var start_func = function(){
+		start_cloudsim_notebook(constellation_name);
+	}
+	
+	var stop_func = function(){
+		stop_cloudsim_notebook(constellation_name);
+	}    
+	create_start_stop_service( machine_div,
+			constellation_name,
+			machine_name,
+			title,
+			link_txt,
+			service_state_key,
+			start_func,
+			stop_func,
+			btn_timeout,
+			false);
+}
+
+
 function create_gzweb_widget(machine_div,
 	     constellation_name,
 	     machine_name,
-		 glx_key,
-		 simulator_key,
-		 gz_web_key,
 		 ip_address)
 {
 	var title = "WebGL interface";
 	var service_state_key = "gzweb"; // gz_web_key
 	var btn_timeout = 10000;
 
-    var web_url = ip_address + ":8080";
-    var notebook_url = ip_address + ":8888";
-    var link_txt = '<a href=http://' + web_url + ' target="_blank" >3D view</a> ' ;
-    link_txt += '<a href=http://' + notebook_url + ' target="_blank" >Python notebook</a>' ;
-
+    var link_txt = '<a href=http://' + ip_address + ":8888" + ' target="_blank" >3D view</a> ' ;
+    
 	var start_func = function(){
 		start_web_tools(constellation_name);
 	}

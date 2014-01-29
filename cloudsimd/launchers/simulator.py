@@ -16,7 +16,8 @@ from launch_utils.traffic_shaping import  run_tc_command
 
 from launch_utils.monitoring import constellation_is_terminated,\
     monitor_launch_state,  monitor_ssh_ping,\
-    monitor_task, monitor_simulator, TaskTimeOut, monitor_gzweb
+    monitor_task, monitor_simulator, TaskTimeOut, monitor_gzweb,\
+    monitor_cloudsim_notebook, GZWEB_KEY, CLOUDSIM_NOTEBOOK_KEY
 
 from launch_utils.softlayer import create_openvpn_key
 
@@ -183,6 +184,13 @@ def monitor_simulator_proc(constellation_name, counter):
     log("monitor_simulator_proc() ENDS %s" % counter)
 
 
+def monitor_notebook_proc(constellation_name, counter):
+    # monitor_cloudsim_notebook
+    ssh_client = _get_ssh_client(constellation_name)
+    monitor_cloudsim_notebook(constellation_name, ssh_client)
+    log("monitor_notebook_prop() ENDS %s" % counter)
+
+
 def monitor_gzweb_proc(constellation_name, counter):
     ssh_client = _get_ssh_client(constellation_name)
     monitor_gzweb(constellation_name, ssh_client, "sim_state")
@@ -218,6 +226,10 @@ def monitor(constellation_name, counter):
                             args=(constellation_name, counter))
     procs.append(p)
 
+    p = multiprocessing.Process(target=monitor_notebook_proc,
+                            args=(constellation_name, counter))
+    procs.append(p)
+
     p = multiprocessing.Process(target=ssh_ping_proc,
                     args=(constellation_name, OPENVPN_CLIENT_IP,
                           'sim_latency', counter))
@@ -237,14 +249,14 @@ def monitor(constellation_name, counter):
 def _init_computer_data(constellation_name, machines):
 
     constellation = ConstellationState(constellation_name)
-
     # init the redis db info
     constellation.set_value("gazebo", "not running")
     constellation.set_value("sim_glx_state", "not running")
     constellation.set_value("constellation_state", "launching")
     constellation.set_value("error", "")
     constellation.set_value("gazebo", "not running")
-    constellation.set_value("gzweb", "")
+    constellation.set_value(GZWEB_KEY, "")
+    constellation.set_value(CLOUDSIM_NOTEBOOK_KEY, "")
 
     for prefix in machines:
         machine = machines[prefix]

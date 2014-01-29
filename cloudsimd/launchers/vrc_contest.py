@@ -16,7 +16,8 @@ from launch_utils.traffic_shaping import  run_tc_command
 
 from launch_utils.monitoring import constellation_is_terminated,\
     monitor_launch_state,  monitor_ssh_ping,\
-    monitor_task, monitor_simulator, TaskTimeOut, monitor_gzweb
+    monitor_task, monitor_simulator, TaskTimeOut, monitor_gzweb,\
+    monitor_cloudsim_notebook
 
 from launch_utils.softlayer import load_osrf_creds,\
     get_softlayer_path, get_machine_login_info, create_openvpn_key
@@ -200,6 +201,13 @@ def monitor_gzweb_proc(constellation_name, counter):
     log("monitor_gzweb_proc() ENDS %s" % counter)
 
 
+def monitor_notebook_proc(constellation_name, counter):
+    # monitor_cloudsim_notebook
+    ssh_client = _get_ssh_router(constellation_name)
+    monitor_cloudsim_notebook(constellation_name, ssh_client)
+    log("monitor_notebook_prop() ENDS %s" % counter)
+
+
 def monitor_launch(constellation_name, machine_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     constellation = ConstellationState(constellation_name)
@@ -236,6 +244,10 @@ def monitor(constellation_name, counter):
     procs.append(p)
 
     p = multiprocessing.Process(target=monitor_gzweb_proc,
+                            args=(constellation_name, counter))
+    procs.append(p)
+
+    p = multiprocessing.Process(target=monitor_notebook_proc,
                             args=(constellation_name, counter))
     procs.append(p)
 

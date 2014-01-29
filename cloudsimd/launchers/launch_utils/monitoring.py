@@ -15,7 +15,10 @@ machine_states = ['terminated', 'terminating', 'stopped' 'stopping',
                   'network_setup', 'packages_setup', 'rebooting',
                   'running',  'simulation_running']
 constellation_states = ['terminated', 'terminating', 'launching', 'running']
+
 LATENCY_TIME_BUFFER = 60
+GZWEB_KEY = "gzweb"
+CLOUDSIM_NOTEBOOK_KEY = "cloudsim_notebook"
 
 
 def log(msg, channel=__name__, severity="debug"):
@@ -184,12 +187,22 @@ def monitor_simulator(constellation_name,
     return True
 
 
+def monitor_cloudsim_notebook(constellation_name, ssh_client):
+    constellation = ConstellationState(constellation_name)
+    try:
+        out = ssh_client.cmd("bash cloudsim/ping_cloudsim_notebook.bash")
+        constellation.set_value(CLOUDSIM_NOTEBOOK_KEY, "running")
+    except Exception, e:
+        log("monitor: cloudsim/ping_cloudsim_notebook.bash error: %s" % e)
+        constellation.set_value(CLOUDSIM_NOTEBOOK_KEY, "")
+
+
 def monitor_gzweb(constellation_name, ssh_client, sim_state):
     """
     Detects if the gzweb is running and writes the
     url into the "gzweb" dictionary key
     """
-    gzweb_key = "gzweb"
+
     constellation = ConstellationState(constellation_name)
     simulation_state = constellation.get_value('sim_state')
     if machine_states.index(simulation_state) >= \
@@ -197,18 +210,18 @@ def monitor_gzweb(constellation_name, ssh_client, sim_state):
         gl_state = constellation.get_value("gazebo")
         if gl_state == "running":
             try:
-                # current_state = constellation.get_value(gzweb_key)
+                # current_state = constellation.get_value(GZWEB_KEY)
                 out = ssh_client.cmd("bash cloudsim/ping_gzweb.bash")
                 log("ping_gzweb returned [%s]" % out)
                 if out == "":
-                    constellation.set_value(gzweb_key, "not running")
+                    constellation.set_value(GZWEB_KEY, "not running")
                     return False
                 else:
-                    constellation.set_value(gzweb_key, "running")
+                    constellation.set_value(GZWEB_KEY, "running")
                     return True
             except Exception, e:
                 log("monitor: cloudsim/ping_gzweb.bash error: %s" % e)
-                constellation.set_value(gzweb_key, "")
+                constellation.set_value(GZWEB_KEY, "")
                 return False
     return False
 

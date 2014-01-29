@@ -1236,7 +1236,7 @@ date
 
 """ + cloudsim_dir + """/gzweb/start_gzweb.sh &
 
-sudo start cloudsim_notebook
+# sudo start cloudsim_notebook
 
 DELIM
 chmod +x """ + cloudsim_dir + """/start_gzweb.bash
@@ -1253,7 +1253,7 @@ date
 
 """ + cloudsim_dir + """/gzweb/stop_gzweb.sh
 
-sudo stop cloudsim_notebook
+# sudo stop cloudsim_notebook
 
 DELIM
 
@@ -1268,6 +1268,48 @@ ps aux | grep ws_server  | grep -v grep
 
 DELIM
 chmod +x """ + cloudsim_dir + """/ping_gzweb.bash
+
+
+# ----------------------------------------------------------------------------
+cat <<DELIM > """ + cloudsim_dir + """/start_cloudsim_notebook.bash
+#!/bin/bash
+
+sudo start cloudsim_notebook
+
+DELIM
+chmod +x """ + cloudsim_dir + """/start_cloudsim_notebook.bash
+
+# ----------------------------------------------------------------------------
+cat <<DELIM > """ + cloudsim_dir + """/stop_cloudsim_notebook.bash
+#!/bin/bash
+
+sudo stop cloudsim_notebook
+
+DELIM
+chmod +x """ + cloudsim_dir + """/stop_cloudsim_notebook.bash
+
+# ----------------------------------------------------------------------------
+cat <<DELIM > """ + cloudsim_dir + """/ping_cloudsim_notebook.bash
+#!/bin/bash
+
+# Fails with 1 if cloudsimd is not running
+# exits with 0 if cloudsimd is running
+
+check_upstart_service(){
+    status \$1 | grep -q "^\$1 start" > /dev/null
+    return \$?
+}
+
+if check_upstart_service cloudsimd; then
+    echo "RUNNING"
+    exit 0
+else
+    echo "STOPPED"
+    exit 1
+fi
+
+DELIM
+chmod +x """ + cloudsim_dir + """/ping_cloudsim_notebook.bash
 
     """
     return s

@@ -117,8 +117,6 @@ def reset_tasks(name=None):
                                      'Ready to run')
 
 
-
-
 def gather_cs_credentials():
     """
     Gather the names and IP addresses of all CloudSim constellations
