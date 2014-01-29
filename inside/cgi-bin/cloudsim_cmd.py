@@ -25,15 +25,12 @@ if d['command'] == 'stop_task':
     d['constellation'] = form.getfirst('constellation')
     # d['task_id'] = form.getfirst('task_id')
 
-if d['command'] == 'reset_tasks':
+if d['command'] in ['reset_tasks',
+                    'start_gzweb',
+                    'stop_gzweb',
+                    'start_cloudsim_notebook',
+                    'stop_cloudsim_notebook']:
     d['constellation'] = form.getfirst('constellation')
-
-if d['command'] == 'start_gzweb':
-    d['constellation'] = form.getfirst('constellation')
-
-if d['command'] == 'stop_gzweb':
-    d['constellation'] = form.getfirst('constellation')
-
 
 s = dumps(d)
 redis_client = redis.Redis()

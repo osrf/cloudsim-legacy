@@ -407,7 +407,8 @@ function stop_web_tools(constellation_name)
 
 function start_cloudsim_notebook(constellation_name)
 {
-    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=start_gzweb';
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py';
+    url += '?command=start_cloudsim_notebook';
     url += '&constellation=' + constellation_name;
 
     console.log(url);
@@ -419,7 +420,8 @@ function start_cloudsim_notebook(constellation_name)
 
 function stop_cloudsim_notebook(constellation_name)
 {
-    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=stop_gzweb';
+    var url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?';
+    url += 'command=stop_cloudsim_notebook';
     url += '&constellation=' + constellation_name;
 
     console.log(url);

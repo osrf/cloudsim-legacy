@@ -28,6 +28,8 @@ from launchers.launch_utils.launch_db import init_constellation_data
 # referenced in this code module. 
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.aws import read_boto_file
+from launchers.launch_utils.monitoring import GZWEB_KEY
+from launchers.launch_utils.monitoring import CLOUDSIM_NOTEBOOK_KEY
 
 try:
     logging.basicConfig(filename='/tmp/cloudsimd.log',
@@ -236,7 +238,9 @@ class ConstellationPlugin(object):
                  start_task,
                  stop_task,
                  start_gzweb_server,
-                 stop_gzweb_server):
+                 stop_gzweb_server,
+                 start_cloudsim_notebook,
+                 stop_cloudsim_notebook):
         self.launch = launch
         self.terminate = terminate
         self.update = update
@@ -245,6 +249,8 @@ class ConstellationPlugin(object):
         self.stop_task = stop_task
         self.start_gzweb = start_gzweb_server
         self.stop_gzweb = stop_gzweb_server
+        self.start_cloudsim_notebook = start_cloudsim_notebook
+        self.stop_cloudsim_notebook = stop_cloudsim_notebook
 
 
 def get_plugin(configuration):
@@ -262,7 +268,7 @@ def get_plugin(configuration):
                                      c.terminate,
                                      c.update,
                                      c.monitor,
-                              None, None, None, None)
+                              None, None, None, None, None, None)
 
     elif configuration.startswith('DRC'):
         from launchers import vrc_contest as c
@@ -273,7 +279,9 @@ def get_plugin(configuration):
                                      c.start_task,
                                      c.stop_task,
                                      c.start_gzweb,
-                                     c.stop_gzweb)
+                                     c.stop_gzweb,
+                                     c.start_cloudsim_notebook,
+                                     c.stop_cloudsim_notebook)
     
     elif configuration.startswith('Simulator'):
         from launchers import simulator as c
@@ -284,8 +292,9 @@ def get_plugin(configuration):
                                      c.start_task,
                                      c.stop_task,
                                      c.start_gzweb,
-                                     c.stop_gzweb)
-
+                                     c.stop_gzweb,
+                                     c.start_cloudsim_notebook,
+                                     c.stop_cloudsim_notebook)
     else:
         raise UnknownConfig('Invalid configuration "%s"' % (configuration,))
     
@@ -449,18 +458,54 @@ def stop_gzweb(constellation_name):
     Stops the gzweb server 
     """
     proc = multiprocessing.current_process().name
-    log("stop_gzweb '%s' from proc '%s'" % (constellation_name,  proc))
+    log("stop_gzweb '%s' from proc '%s'" % (constellation_name,
+                                            proc))
     constellation = ConstellationState(constellation_name)
     try:
         config = constellation.get_value('configuration')
         constellation_plugin = get_plugin(config)
-        constellation.set_value("gzweb", 'stopping')
+        constellation.set_value(GZWEB_KEY, 'stopping')
         constellation_plugin.stop_gzweb(constellation_name)
     except:
         tb = traceback.format_exc()
         log("STOP_GZWEB ERROR traceback:  %s" % tb)
 
-             
+
+def start_cloudsim_notebook(constellation_name):
+    """
+    Starts the cloudsim_notebook service
+    """
+    proc = multiprocessing.current_process().name
+    log("start_cloudsim_notebook '%s' from proc '%s'" % (constellation_name,
+                                                         proc))
+    constellation = ConstellationState(constellation_name)
+    try:
+        config = constellation.get_value('configuration')
+        constellation_plugin = get_plugin(config)
+        constellation.set_value(CLOUDSIM_NOTEBOOK_KEY, 'starting')
+        constellation_plugin.start_cloudsim_notebook(constellation_name)
+    except:
+        tb = traceback.format_exc()
+        log("START_cloudsim_notebook ERROR traceback:  %s" % tb)
+
+
+def stop_cloudsim_notebook(constellation_name):
+    """
+    Stops the gzweb server 
+    """
+    proc = multiprocessing.current_process().name
+    log("stop_gzweb '%s' from proc '%s'" % (constellation_name,  proc))
+    constellation = ConstellationState(constellation_name)
+    try:
+        config = constellation.get_value('configuration')
+        constellation_plugin = get_plugin(config)
+        constellation.set_value(CLOUDSIM_NOTEBOOK_KEY, 'stopping')
+        constellation_plugin.stop_cloudsim_notebook(constellation_name)
+    except:
+        tb = traceback.format_exc()
+        log("STOP_cloudsim_notebook ERROR traceback:  %s" % tb)
+
+
 def terminate(constellation_name):
     """
     Terminates the constellation via the cloud interface.
@@ -847,6 +892,18 @@ def _async_stop_gzweb(constellation_name):
                                 args=(constellation_name,))
     p.start()
 
+
+def _async_start_cloudsim_notebook(constellation_name):
+    p = multiprocessing.Process(target=start_cloudsim_notebook,
+                                args=(constellation_name,))
+    p.start()
+
+
+def _async_stop_cloudsim_notebook(constellation_name):
+    p = multiprocessing.Process(target=stop_cloudsim_notebook,
+                                args=(constellation_name,))
+    p.start()
+
     
 def _run_cloudsim_cmd_loop(root_dir, tick_interval):
 
@@ -929,7 +986,16 @@ def _run_cloudsim_cmd_loop(root_dir, tick_interval):
             elif cmd == 'stop_gzweb':
                 constellation = data['constellation']
                 _async_stop_gzweb(constellation)
+            
+            # ipython notebook commands
+            elif cmd == 'start_cloudsim_notebook':
+                constellation = data['constellation']
+                _async_start_cloudsim_notebook(constellation)
 
+            elif cmd == 'stop_cloudsim_notebook':
+                constellation = data['constellation']
+                _async_stop_cloudsim_notebook(constellation)          
+            
         except Exception:
             log("Error processing message [%s]" % msg)
             tb = traceback.format_exc()

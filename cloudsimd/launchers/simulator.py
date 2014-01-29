@@ -51,6 +51,20 @@ def log(msg, channel=__name__, severity="info"):
     log_msg(msg, channel, severity)
 
 
+def start_cloudsim_notebook(constellation_name):
+    log("start_gzweb for %s" % (constellation_name))
+    ssh_client = _get_ssh_client(constellation_name)
+    o = ssh_client.cmd("cloudsim/start_cloudsim_notebook.bash")
+    log("cloudsim_notebook started for %s: %s" % (constellation_name, o))
+
+
+def stop_cloudsim_notebook(constellation_name):
+    log("stop_gzweb for %s" % (constellation_name))
+    ssh_client = _get_ssh_client(constellation_name)
+    o = ssh_client.cmd("cloudsim/stop_cloudsim_notebook.bash")
+    log("cloudsim_notebook stopped for %s: %s" % (constellation_name, o))
+
+
 def start_gzweb(constellation_name):
     log("start_gzweb for %s" % (constellation_name))
     ssh_client = _get_ssh_client(constellation_name)
