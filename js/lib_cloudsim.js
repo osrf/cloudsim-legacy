@@ -15,7 +15,7 @@ function launch_constellation(cloud_provider, configuration)
     var url = '/cloudsim/inside/cgi-bin/constellations?cloud_provider=' + p + '&configuration=' + c;
 
     console.log("[POST]" + url);
-    msg = httpPost(url);
+    var msg = httpPost(url);
     console.log(msg);
 }
 
@@ -26,7 +26,7 @@ function update_constellation(constellation_name)
     url += '/' + constellation_name;
 
     console.log("[PUT (update)]" + url);
-    msg = httpPut(url);
+    var msg = httpPut(url);
     console.log(msg);
     return msg;
 }
@@ -37,7 +37,7 @@ function terminate_constellation(constellation_name)
     url += '/' + constellation_name;
 
     console.log("[DELETE] " + url);
-    msg = httpDelete(url);
+    var msg = httpDelete(url);
     console.log( msg);
 }
 
@@ -139,7 +139,7 @@ function start_simulator(constellation_name, machine_name, package_name, launch_
     }
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -152,7 +152,7 @@ function stop_simulator(constellation_name, machine_name)
     url += '&machine=' + machine_name;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -165,7 +165,7 @@ function update_traffic_shaper(_constellationName, _machineName, _targetPacketLa
     url += '&targetPacketLatency=' + _targetPacketLatency;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -185,7 +185,7 @@ function get_constellation(constellation)
     var url = '/cloudsim/inside/cgi-bin/constellations/';
     url += constellation;
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -284,7 +284,7 @@ function create_task(constellation,
                   vrc_num)
 
     console.log("[POST (create)]" + url);
-    msg = httpPost(url);
+    var msg = httpPost(url);
     console.log(msg);
     return msg;
 }
@@ -293,7 +293,7 @@ function read_task(constellation, task_id)
 {
     var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
     console.log("[GET] "+ url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     var jmsg = eval('(' + msg + ')');
     return jmsg;
@@ -332,7 +332,7 @@ function update_task(constellation,
 
 
     console.log("[PUT (update)]" + url);
-    msg = httpPut(url);
+    var msg = httpPut(url);
     console.log(msg);
     return msg;
 }
@@ -341,7 +341,7 @@ function delete_task(constellation, task_id)
 {
     var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + '/' + task_id;
     console.log("[DELETE] "+ url);
-    msg = httpDelete(url);
+    var msg = httpDelete(url);
     console.log(msg);
     return msg;
 }
@@ -353,7 +353,7 @@ function start_task(constellation_name, task_id)
     url += '&task_id=' +task_id
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -365,7 +365,7 @@ function stop_task(constellation_name)
     url += '&constellation=' + constellation_name;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -376,7 +376,7 @@ function reset_tasks(constellation_name)
     url += '&constellation=' + constellation_name;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -387,7 +387,7 @@ function start_web_tools(constellation_name)
     url += '&constellation=' + constellation_name;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
@@ -398,7 +398,7 @@ function stop_web_tools(constellation_name)
     url += '&constellation=' + constellation_name;
 
     console.log(url);
-    msg = httpGet(url);
+    var msg = httpGet(url);
     console.log(msg);
     return msg;
 }
