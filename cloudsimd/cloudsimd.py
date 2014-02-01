@@ -141,9 +141,10 @@ def gather_cs_credentials():
                                                                         e))
 
     
-def launch_constellation(username, configuration, args=None):
+def launch_constellation(username, configuration, region, args=None):
     """
-    Launches one (or count) constellation of a given configuration
+    Launches one (or count) constellation of a given configuration.
+    This is an interactive command.
     """
     r = redis.Redis()
 
@@ -151,6 +152,7 @@ def launch_constellation(username, configuration, args=None):
     d['username'] = username
     d['command'] = 'launch'
     d['configuration'] = configuration
+    d['region'] = region
     if args:
         d['args'] = args
 
@@ -359,8 +361,12 @@ def launch(constellation_name, data):
         configurations = configs[provider]['regions'][region_name]\
          ['configurations']
 
-        cfg = [x for x in configurations if x['name'] == config_name][0]  
-        
+        cfg = None
+        try:
+            cfg = [x for x in configurations if x['name'] == config_name][0]  
+        except:
+            raise Exception(config_name + " is not a invalid configuration",
+                            "for this provider/region" )
         log("configuration: %s" % cfg)
         log("preparing REDIS and filesystem %s" % constellation_name)
         init_constellation_data(constellation_name, data, cloudsim_config)
