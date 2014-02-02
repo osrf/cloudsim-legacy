@@ -370,7 +370,6 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
     var inputs = dlg.querySelectorAll("input");
     var title_input = inputs[0];
 
-
     var dlg_buttons = {
             "Update": function() {
                 var title = inputs[0].value;
