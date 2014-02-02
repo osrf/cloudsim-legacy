@@ -4,6 +4,7 @@ import unittest
 from testing import get_test_runner
 import os
 
+MONITOR_PATH = "/home/ubuntu/launch_stdout_stderr.log"  # "/var/log/dpkg.log"
 
 '''
 def get_open_vpn_single(client_ip,
@@ -35,7 +36,6 @@ echo "openvpn setup complete" >> /home/ubuntu/setup.log
 """
     return s
 '''
-
 
 
 def create_vpn_connect_file(openvpn_client_ip):
@@ -232,7 +232,7 @@ DELIM
 cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_sim.bash
 #!/bin/bash
 
-tail -1 /var/log/dpkg.log
+tail -1 """ + MONITOR_PATH + """
 DELIM
 
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
@@ -327,8 +327,8 @@ EOF
 
 sudo service ssh restart
 
-touch /home/ubuntu/cloudsim/setup/done
 echo "STARTUP COMPLETE" >> /home/ubuntu/setup.log
+touch /home/ubuntu/cloudsim/setup/done
 """
 
     return s
@@ -450,7 +450,7 @@ chmod +x /home/ubuntu/cloudsim/find_file_""" + machine_name + """.bash
 cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_""" + machine_name + """.bash
 #!/bin/bash
 
-tail -1 /var/log/dpkg.log
+tail -1 """ + MONITOR_PATH + """
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/dpkg_log_""" + machine_name + """.bash
@@ -573,6 +573,7 @@ apt-get install -y libjansson-dev
 apt-get install -y nodejs npm
 apt-get install -y python-matplotlib
 
+npm config set registry http://registry.npmjs.org/
 npm install -g http-server
 npm install -g node-gyp
 npm install websocket
@@ -902,7 +903,7 @@ apt-get install -y x11-xserver-utils
 
 # Have the NVIDIA tools create the xorg configuration file for us, retrieiving the PCI BusID for the current system.
 # The BusID can vary from machine to machine.  The || true at the end is to allow this line to succeed on fc2, which doesn't have a GPU.
-if ! nvidia-xconfig --busid `nvidia-xconfig --query-gpu-info | grep BusID | head -n 1 | sed 's/PCI BusID : PCI:/PCI:/'`; then
+if ! nvidia-xconfig --use-display-device=None --virtual=1280x1024 --busid `nvidia-xconfig --query-gpu-info | grep BusID | head -n 1 | sed 's/PCI BusID : PCI:/PCI:/'`; then
   echo "nvidia-xconfig failed; probably no GPU installed.  Proceeding." >> /home/ubuntu/setup.log
 else
   echo "nvidia-xconfig succeeded." >> /home/ubuntu/setup.log
@@ -1154,7 +1155,7 @@ DELIM
 
 def _load_gazebo_models_generator():
     s = """
-
+set -ex
 cat <<DELIM > /home/ubuntu/cloudsim/load_gazebo_models.bash
 
 #!/bin/bash
@@ -1183,21 +1184,20 @@ install ()
 
     echo -n "Downloading \$1..."
     hg clone https://bitbucket.org/osrf/\$1
-    cd \$1; hg up cloudsim_release
-
-    echo "Done"
     cd \$1
+    hg up cloudsim_release
+    echo "download done"
     mkdir build
     cd build
     echo -n "Installing \$1..."
     cmake .. -DCMAKE_INSTALL_PREFIX=\$2
     make install > /dev/null 2>&1
-    echo "Done"
+    echo "install done"
 
     # Remove temp dir
     rm -rf \$TMP_DIR
+    echo "tmp dir removed"
 }
-
 
 KEY=\$1
 
@@ -1208,6 +1208,8 @@ install \$GAZEBO_MODELS_NAME \$GAZEBO_INSTALL_DIR
 if [ -n "\$KEY" ]; then
   install \$VRC_ARENAS_NAME \$VRC_ARENA_INSTALL_DIR \$KEY
 fi
+
+echo "load_gazebo_models Done"
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/load_gazebo_models.bash
@@ -1437,7 +1439,7 @@ chmod +x """ + cloudsim_dir + """/ssh-""" + machine_name + """.bash
 #
 cat <<DELIM > """ + cloudsim_dir + """/dpkg_log_""" + machine_name + """.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "tail -1 /var/log/dpkg.log"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip  + " \"tail -1 " + MONITOR_PATH + "\"" + """
 DELIM
 chmod +x """ + cloudsim_dir + """/dpkg_log_""" + machine_name + """.bash
 # --------------------------------------------

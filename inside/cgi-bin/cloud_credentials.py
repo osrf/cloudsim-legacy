@@ -41,8 +41,10 @@ try:
     r['msg'] = "Undefined"
     r['aws_access_key_id'] = d['access_key'][0]
     r['aws_secret_access_key'] = d['secret_access_key'][0]
-    r['aws_availablity_zone'] = d['availability_zone'][0]
-    #
+    r['us_east_1_az'] = d['us_east_1_az'][0]
+    r['us_west_2_az'] = d['us_west_2_az'][0]
+    r['eu_west_1_az'] = d['eu_west_1_az'][0]
+
     print('Content-type: application/json')
     print("\n")
 
@@ -50,14 +52,12 @@ try:
         log("new credentials")
         cloud = CloudCredentials(r['aws_access_key_id'],
                                  r['aws_secret_access_key'],
-                                 ec2_region_name=r['aws_availablity_zone'],
                                  fname=boto_file)
 
         if cloud.validate():
             cloud.save()
             r['success'] = True
             r['msg'] = 'The credentials have been changed.'
-
         else:
             r['msg'] = "The credentials are not valid."
 

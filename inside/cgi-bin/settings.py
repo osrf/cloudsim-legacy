@@ -28,7 +28,7 @@ user = {'user': email,
         'role': role,
         'auth_type': auth}
 
- 
+
 user_info = json.dumps(user)
 scripts = get_javascripts(['jquery-1.8.3.min.js'])
 
@@ -37,17 +37,14 @@ print_http_header()
 page = """<!DOCTYPE html>
 <html>
  <head>
- 
+
    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
    <title>Settings</title>
 
-    
    <link href="/js/layout.css" rel="stylesheet" type="text/css">
    <link rel="stylesheet" href="/js/jquery-ui.css" />
 
    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-
-
 
 """ + scripts + """
 
@@ -56,7 +53,7 @@ page = """<!DOCTYPE html>
     function get_user_info()
     {
        var user_info = """ + user_info + """;
-       return user_info; 
+       return user_info;
     }
 
     function on_load_page()
@@ -66,7 +63,7 @@ page = """<!DOCTYPE html>
         if(user_info.role == "admin")
         {
             $('.admin_only').show();
-            add_osrf_cloud_credentials_widget("osrf_credentials_div");
+            // add_osrf_cloud_credentials_widget("osrf_credentials_div");
             add_cloud_credentials_widget("amazon_credentials_div");
             add_portal_settings_widget("portal_settings_div");
         }
@@ -121,30 +118,38 @@ Welcome, """ + email + """ <br>
 
 </div>
 
+<div><br><hr><br></div>
+    
+<div class="admin_only" style="display: none;" >
+    <div id="amazon_credentials_div">
+    </div>
+    <div id="amazon_az_div">
+    </div>
+</div>
 
-<div style="width:100%; float:left;"><br><hr><br></div>
+
 
     <div class="admin_only" style="display: none;" >
-
-        <div id="osrf_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
+         <!--
+         
+         <div id="osrf_credentials_div" class="settings_widget">
         </div>
 
-        <div id="amazon_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
+       
+        <div id="amazon_credentials_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding-left: 10px; padding-top: 10px; padding-bottom: 10px; padding-right: 0px; margin-bottom:20px; background-color:#f1f1f2; ">            
         </div>
+        -->
 
-        <div id="portal_settings_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2; ">            
+        <div id="portal_settings_div" class="settings_widget">
         </div>
-
     </div>
 
-        <div id="users_div" style="width:100%; float:left; border-radius: 15px; border: 1px solid black; padding: 10px; margin-bottom:20px; background-color:#f1f1f2;">
+        <div id="users_div" class="settings_widget">
         </div>
+        
 
 
-<div id="footer" style="width:100%; float:left; ">
 
-    <br>
-    <hr>
 
     <div style="width:50%; float:left; margin-top:5px;">
             CloudSim Version """ + version + """

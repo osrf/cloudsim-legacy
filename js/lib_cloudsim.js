@@ -1,3 +1,29 @@
+function get_default_aws_az()
+{
+    var url = "/cloudsim/inside/cgi-bin/cloud_credentials";
+	console.log("[GET]" + url);
+	var x = httpGet(url);
+    var default_azs = eval( '(' + x + ')' );
+    return default_azs;
+}
+
+function set_aws_default_az(defaults)
+{
+    var key = encodeURIComponent(access_key);
+    var secret = encodeURIComponent(secret_access_key);
+    var url = '/cloudsim/inside/cgi-bin/cloud_credentials?'
+    
+    url += 'us_east_1=' + defaults['us_east_1'];
+    url += 'us_west_2=' + defaults['us_west_2'];
+    url += 'eu_west_1=' + defaults['eu_west_1'];
+    console.log("[PUT] " + url);
+    var msg = httpPut(url);
+
+    var jmsg = eval('(' + msg + ')');
+    console.log("change_aws_default_az: " + msg);
+    return jmsg;
+}
+
 function get_configurations()
 {
 	var url = "/cloudsim/inside/cgi-bin/machine_configs";
@@ -7,18 +33,23 @@ function get_configurations()
     return machine_configurations;
 }
 
-function launch_constellation(cloud_provider, configuration)
+function launch_constellation(cloud_provider, region, configuration)
 {
-
+    var msg= "LAUNCH: provider: " + cloud_provider + ", region: " + region
+    msg += ", config: " + configuration;
+    console.log(msg );
+    
     var p = encodeURIComponent(cloud_provider);
     var c = encodeURIComponent(configuration);
-    var url = '/cloudsim/inside/cgi-bin/constellations?cloud_provider=' + p + '&configuration=' + c;
+    var r = encodeURIComponent(region);
+    var url = '/cloudsim/inside/cgi-bin/constellations?cloud_provider=' + p;
+    url += '&region=' + r;
+    url += '&configuration=' + c;
 
     console.log("[POST]" + url);
     var msg = httpPost(url);
     console.log(msg);
 }
-
 
 function update_constellation(constellation_name)
 {
@@ -109,13 +140,19 @@ function change_osrf_credentials(nuser, napi_key)
     return jmsg;
 }
 
-function change_aws_credentials(access_key, secret_access_key, availability_zone)
+function change_aws_credentials(access_key, secret_access_key, us_east_1_az,
+		us_west_2_az, eu_west_1_az)
 {
     var key = encodeURIComponent(access_key);
     var secret = encodeURIComponent(secret_access_key);
-    var url = '/cloudsim/inside/cgi-bin/cloud_credentials?access_key=';
-    url += key+'&secret_access_key=' + secret;
-    url += "&availability_zone="+availability_zone;
+    var url = '/cloudsim/inside/cgi-bin/cloud_credentials?';
+    url += 'access_key=' + key;
+    url += '&secret_access_key=' + secret;
+
+    url += '&us_east_1_az=' + us_east_1_az;
+    url += '&us_west_2_az=' + us_west_2_az;
+    url += '&eu_west_1_az=' + eu_west_1_az;
+
     console.log("[PUT] " + url);
     var msg = httpPut(url);
 

@@ -8,6 +8,7 @@ import json
 import tempfile
 import shutil
 
+from pprint import pprint
 
 from launch_utils import SshClient
 from launch_utils import ConstellationState  # launch_db
@@ -254,7 +255,75 @@ def __get_deploy_cmd(force_authentication_type=None, reset_db=False):
     return deploy_cmd
 
 
-def launch(constellation_name,
+def register_configurations(configs):
+
+    def _get_config(config_name, config_description, image_key):
+            config = {
+        "name": config_name,
+        "description": config_description,
+        "machines": {
+            "cs": {'hardware': 'm1.small',
+              'ip': "127.0.0.1",
+              'software': image_key,
+              'security_group': [{'name': 'ping',
+                                   'protocol': 'icmp',
+                                  'from_port': -1,
+                                  'to_port': -1,
+                                  'cidr': '0.0.0.0/0', },
+                                  {'name': 'ssh',
+                                   'protocol': 'tcp',
+                                  'from_port': 22,
+                                  'to_port': 22,
+                                  'cidr': '0.0.0.0/0', },
+                                  {'name': 'http',
+                                  'protocol': 'tcp',
+                                  'from_port': 80,
+                                  'to_port':80,
+                                  'cidr': '0.0.0.0/0', }, ]}}}
+            return config
+
+    cloudsim_description = """CloudSim Web App running in the Cloud
+<ol>
+  <li>Hardware: micro</li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>Web server: Apache</li>
+</ol>
+"""
+    stable = "This is a stable version running from saved disk images"
+    stable += " that contain preinstalled software."
+
+    install = "All software will be downloaded and installed while you wait, "
+    install += "from basic OS images, using current software packages."
+
+    us_east_cfgs = configs["aws"]["regions"]["us-east-1"]["configurations"]
+    us_east_cfgs.append(_get_config("CloudSim (m1.small)",
+                                    cloudsim_description + install,
+                                    'ami-137bcf7a'))
+    us_east_cfgs.append(_get_config("CloudSim-stable (m1.small)",
+                                    cloudsim_description + stable,
+                                    'ami-f55f7b9c'))
+
+    eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
+    eu_west_cfgs.append(_get_config("CloudSim (m1.small)",
+                                    cloudsim_description + install,
+                                    'ami-f2191786'))
+    eu_west_cfgs.append(_get_config("CloudSim-stable (m1.small)",
+                                    cloudsim_description + stable,
+                                    'ami-0f3ed378'))
+
+    us_west_cfgs = configs["aws"]["regions"]["us-west-2"]["configurations"]
+    us_west_cfgs.append(_get_config("CloudSim (m1.small)",
+                                    cloudsim_description + install,
+                                    'ami-86b328b6'))
+    eu_west_cfgs.append(_get_config("CloudSim-stable (m1.small)",
+                                    cloudsim_description + stable,
+                                    'ami-xxxx'))
+
+    return configs
+
+
+def launch(configuration,
+           constellation_name,
            tags,
            force_authentication_type=None,
            basic_auth_password=None):
@@ -266,22 +335,17 @@ def launch(constellation_name,
     log("CloudSim launch %s" % constellation_name)
     constellation = ConstellationState(constellation_name)
 
-    cloudsim_stable = True
-    if constellation.get_value('configuration') == 'CloudSim':
-        cloudsim_stable = False
+    cloudsim_stable = False
+    config_name = configuration['name']
+    if config_name.find('stable') >= 0:
+        cloudsim_stable = True
 
     # we won't upload the CloudSim code if we're launching a stable version
     upload_cloudsim_code = cloudsim_stable == False
 
-    script = None
-    image_key = None
-
+    script = ''
     if not cloudsim_stable:
         script = script = get_cloudsim_startup_script()
-        image_key = 'ubuntu_1204_x64'
-    else:
-        script = ''
-        image_key = 'ubuntu_1204_x64_cloudsim_stable'
 
     log("cloudsim launch tags %s" % (tags))
     cloud_provider = tags['cloud_provider']
@@ -290,7 +354,6 @@ def launch(constellation_name,
     constellation_directory = tags['constellation_directory']
     credentials_fname = os.path.join(constellation_directory,
                                      'credentials.txt')
-
     machine_prefix = "cs"
     # cfg = get_cloudsim_config()
 
@@ -300,41 +363,19 @@ def launch(constellation_name,
     constellation.set_value(STATE_KEY, 'starting')
     constellation.set_value("launch_stage", "nothing")
     constellation.set_value(LATENCY_KEY, '[]')
-
     constellation.set_value(STATE_KEY, 'network_setup')
-
     constellation.set_value(LAUNCH_MSG_KEY, "starting")
     constellation.set_value(LATENCY_KEY, '[]')
     constellation.set_value(ZIP_READY_KEY, 'not ready')
     constellation.set_value("error", "")
-
     constellation.set_value("gazebo", "not running")
     constellation.set_value('sim_glx_state', "not running")
-
     constellation.set_value(LAUNCH_MSG_KEY,
                             "setting up user accounts and keys")
     pub_ip = None
     key_prefix = "key-cs"
     if cloud_provider == "aws":
-        machine = {'hardware': 'm1.small',
-                      'ip': "127.0.0.1",
-                      'software': image_key,
-                      'security_group': [{'name': 'ping',
-                                           'protocol': 'icmp',
-                                          'from_port': -1,
-                                          'to_port': -1,
-                                          'cidr': '0.0.0.0/0', },
-                                          {'name': 'ssh',
-                                           'protocol': 'tcp',
-                                          'from_port': 22,
-                                          'to_port': 22,
-                                          'cidr': '0.0.0.0/0', },
-                                          {'name': 'http',
-                                          'protocol': 'tcp',
-                                          'from_port': 80,
-                                          'to_port':80,
-                                          'cidr': '0.0.0.0/0', }, ]
-                        }
+        machine = configuration['machines']['cs']
 
         pub_ip, _, _ = acquire_aws_single_server(constellation_name,
                               credentials_ec2=credentials_fname,
@@ -564,6 +605,7 @@ def _get_cloudsim_src_tarball(target_dir, short_fname="cloudsim_src.zip"):
 
 def create_cloudsim(username,
                     credentials_fname,
+                    region,
                     configuration,
                     authentication_type,  # "OpenID" or "Basic"
                     password,
@@ -577,6 +619,21 @@ def create_cloudsim(username,
     authentication_type should be "OpenID" or "Basic"
     and password should not be None when "Basic" authentication is used
     """
+    cfg = None
+    try:
+        configs = {}
+        configs["aws"] = {"description": "Amazon Web Services",
+                      "regions": {
+                        "us-east-1": {"description": "US East (N. Virginia)",
+                                               "configurations": []},
+                        "eu-west-1": {"description": "EU (Ireland)",
+                                               "configurations": []}}
+                          }
+        register_configurations(configs)
+        cfg = configs['aws']['regions'][region]['configurations'][0]
+    except:
+        raise Exception("configuration %s not found" % configuration)
+
     config = {}
     config['cloudsim_version'] = get_cloudsim_version()
     config['boto_path'] = credentials_fname
@@ -586,11 +643,23 @@ def create_cloudsim(username,
     data['username'] = username
     data['cloud_provider'] = 'aws'
     data['configuration'] = configuration
+    data['region'] = region
+
+    pprint(configs)
+    log("\n\nCreate CloudSim")
+    log("authentication type %s" % authentication_type)
+    if authentication_type == "Basic":
+        log("password: %s" % password)
+    log("username: %s" % username)
+    log("region: %s" % region)
+    log("configuration %s" % configuration)
+    pprint(cfg)
 
     init_constellation_data(constellation_name, data, config)
 
     # Launch a cloudsim instance
-    cloudsim_ip = launch(constellation_name,
+    cloudsim_ip = launch(cfg,
+                         constellation_name,
                          tags=data,
                          force_authentication_type=authentication_type,
                          basic_auth_password=password)
@@ -600,7 +669,7 @@ def create_cloudsim(username,
     return cloudsim_ip
 
 
-class TestCreateCloudSim(unittest.TestCase):
+class TestCreateCloudSim(object):  # (unittest.TestCase):
 
     def setUp(self):
         from launch_utils.testing import get_boto_path
@@ -630,6 +699,25 @@ class TestCreateCloudSim(unittest.TestCase):
         terminate(self.name)
         constellation = ConstellationState(self.name)
         constellation.expire(1)
+
+
+class Classy(unittest.TestCase):
+    def test(self):
+        print("Yoyo")
+        configs = {}
+        configs["OpenStack"] = {"description": "OpenStack",
+                                "regions": {"nova": {"description":"N/A", 
+                                                     "configurations": []}}}
+        configs["aws"] = {"description": "Amazon Web Services",
+                              "regions": {
+                                "us-east-1":{"description":"US East (N. Virginia)",
+                                                       "configurations":[]}, 
+                                "eu-west-1":{"description":"EU (Ireland)",
+                                                       "configurations":[]}}
+                              }
+        register_configurations(configs)
+        cfg = configs['aws']['regions']['us-east-1']['configurations'][0]
+        print(cfg['machines']['cs'])
 
 
 if __name__ == "__main__":

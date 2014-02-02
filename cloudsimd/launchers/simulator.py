@@ -12,8 +12,6 @@ import multiprocessing
 import sys
 
 from launch_utils.traffic_shaping import  run_tc_command
-
-
 from launch_utils.monitoring import constellation_is_terminated,\
     monitor_launch_state,  monitor_ssh_ping,\
     monitor_task, monitor_simulator, TaskTimeOut, monitor_gzweb
@@ -508,39 +506,16 @@ def deploy_constellation(constellation_name, cloud_provider, machines,
                          "running")
 
 
-def launch(constellation_name, tags):
-    """
-    Called by cloudsimd when it receives a launch message
-    """
-    constellation = ConstellationState(constellation_name)
-    use_latest_version = \
-        constellation.get_value('configuration') == 'Simulator'
+def register_configurations(configs):
 
-    scripts = {}
-    scripts['sim'] = ''
-
-    cloud_provider = tags['cloud_provider']
-    constellation_directory = tags['constellation_directory']
-    credentials_fname = os.path.join(constellation_directory,
-                                     'credentials.txt')
-
-    log("launch constellation name: %s" % constellation_name)
-
-    constellation.set_value("launch_stage", "launch")
-
-    # lets build a list of machines for our constellation
-    #
-    openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
-    if use_latest_version:
-        simulator_image_key = 'ubuntu_1204_x64_cluster'
-    else:
-        simulator_image_key = 'ubuntu_1204_x64_simulator'
-
-    ip = "127.0.0.1"
-    machines = {}
-    machines['sim'] = {'hardware': 'cg1.4xlarge',  # 'g2.2xlarge'
-                      'software': simulator_image_key,
-                      'ip': ip,
+    def _get_config(config_name, config_description, hardware, image_key):
+        openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
+        config = {
+                 "name": config_name,
+                 "description": config_description,
+                 'machines': {'sim' : {'hardware':  hardware,  # 'cg1.4xlarge'  'g2.2xlarge'
+                      'software': image_key,
+                      'ip': "127.0.0.1",
                       'security_group': [{'name': 'openvpn',
                                           'protocol': 'udp',
                                           'from_port': 1194,
@@ -586,8 +561,107 @@ def launch(constellation_name, tags):
                                           'from_port': 0,
                                           'to_port': 65535,
                                           'cidr': openvpn_client_addr, }
-                                         ]
-                        }
+                                         ]}}}
+        return config
+
+    sim_g1_description = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
+<ol>
+  <li>Hardware:
+      <ol>
+          <li>Simulator machine type: cg1.4xlarge</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Groovy</li>
+  <li>Simulator: Gazebo (current)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+    stable = "This is a stable version running from saved disk images"
+    stable += " that contain preinstalled software."
+
+    install = "All software will be downloaded and installed while you wait, "
+    install += "from basic OS images, using current software packages."
+
+    us_east_cfgs = configs["aws"]["regions"]["us-east-1"]["configurations"]
+    us_east_cfgs.append(_get_config(
+                            config_name="Simulator (cg1.4xlarge)",
+                            config_description=sim_g1_description + install,
+                            hardware='cg1.4xlarge',
+                            image_key='ami-98fa58f1'))
+    us_east_cfgs.append(_get_config(
+                            config_name="Simulator-stable (cg1.4xlarge)",
+                            config_description=sim_g1_description + stable,
+                            hardware='cg1.4xlarge',
+                            image_key='ami-d14479b8'))  # v 2.0
+    us_east_cfgs.append(_get_config(
+                            config_name="Simulator (g2.2xlarge)",
+                            config_description=sim_g1_description + install,
+                            hardware='g2.2xlarge',
+                            image_key='ami-b93264d0'))
+    us_east_cfgs.append(_get_config(
+                            config_name="Simulator-stable (g2.2xlarge)",
+                            config_description=sim_g1_description + stable,
+                            hardware='g2.2xlarge',
+                            image_key='ami-a51e22cc'))
+
+    eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
+    eu_west_cfgs.append(_get_config(
+                            config_name="Simulator (cg1.4xlarge)",
+                            config_description=sim_g1_description + install,
+                            hardware='cg1.4xlarge',
+                            image_key='ami-fc191788'))
+    eu_west_cfgs.append(_get_config(
+                            config_name="Simulator-stable (cg1.4xlarge)",
+                            config_description=sim_g1_description + stable,
+                            hardware='cg1.4xlarge',
+                            image_key='ami-ca26d2bd'))  # v 2.0
+    eu_west_cfgs.append(_get_config(
+                            config_name="Simulator (g2.2xlarge)",
+                            config_description=sim_g1_description + install,
+                            hardware='g2.2xlarge',
+                            image_key='ami-05cb2672'))
+    eu_west_cfgs.append(_get_config(
+                            config_name="Simulator-stable (g2.2xlarge)",
+                            config_description=sim_g1_description + stable,
+                            hardware='g2.2xlarge',
+                            image_key='ami-e0b24597'))
+
+    us_west_cfgs = configs["aws"]["regions"]["us-west-2"]["configurations"]
+    us_west_cfgs.append(_get_config(
+                            config_name="Simulator (g2.2xlarge)",
+                            config_description=sim_g1_description + install,
+                            hardware='g2.2xlarge',
+                            image_key='ami-52b22962'))
+    us_west_cfgs.append(_get_config(
+                            config_name="Simulator-stable (g2.2xlarge)",
+                            config_description=sim_g1_description + stable,
+                            hardware='g2.2xlarge',
+                            image_key='ami-0e7b1b3e'))
+    return configs
+
+
+def launch(configuration, constellation_name, tags):
+    """
+    Called by cloudsimd when it receives a launch message
+    """
+    constellation = ConstellationState(constellation_name)
+    use_latest_version = configuration['name'].find('stable') == -1
+
+    scripts = {}
+    scripts['sim'] = ''
+
+    cloud_provider = tags['cloud_provider']
+    constellation_directory = tags['constellation_directory']
+    credentials_fname = os.path.join(constellation_directory,
+                                     'credentials.txt')
+
+    log("launch constellation name: %s" % constellation_name)
+
+    constellation.set_value("launch_stage", "launch")
+
+    ip = "127.0.0.1"
+    machines = configuration['machines']
     constellation.set_value('machines', machines)
     _init_computer_data(constellation_name, machines)
     # Required only if we are not using a prepolated AMI
@@ -752,7 +826,7 @@ def __wait_for_find_file(constellation_name,
                     constellation,
                     key_name,
                     end_state,
-                    max_retries=500))
+                    max_retries=600))
     empty_ssh_queue(q, sleep=2)
 
 
