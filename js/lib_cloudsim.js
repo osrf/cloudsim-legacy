@@ -240,7 +240,8 @@ function _get_task_url(constellation,
                         local_start,
                         local_stop,
                         vrc_id,
-                        vrc_num)
+                        vrc_num,
+                        bash_src)
 {
     console.log("task_id " + task_id)
     console.log("task_title " + task_title)
@@ -255,6 +256,7 @@ function _get_task_url(constellation,
     console.log("local_stop " + local_stop)
     console.log("vrc_id " + vrc_id)
     console.log("vrc_num " + vrc_num)
+    console.log("bash src " + bash_src)
 
     var url = '/cloudsim/inside/cgi-bin/tasks/' + constellation + "?";
 
@@ -285,7 +287,8 @@ function _get_task_url(constellation,
         url += '&vrc_id=' + encodeURIComponent(vrc_id);
     if( vrc_num != "")
         url += '&vrc_num=' + encodeURIComponent(vrc_num);
-
+    if( bash_src != "")
+    	url += '&bash_src=' + encodeURIComponent(bash_src);
     return url;
 }
 
@@ -301,7 +304,8 @@ function create_task(constellation,
                   local_start,
                   local_stop,
                   vrc_id,
-                  vrc_num)
+                  vrc_num,
+                  bash_src)
 {
 
 
@@ -318,7 +322,8 @@ function create_task(constellation,
                   local_start,
                   local_stop,
                   vrc_id,
-                  vrc_num)
+                  vrc_num,
+                  bash_src)
 
     console.log("[POST (create)]" + url);
     var msg = httpPost(url);
@@ -349,7 +354,8 @@ function update_task(constellation,
                     local_start,
                     local_stop,
                     vrc_id,
-                    vrc_num)
+                    vrc_num,
+                    bash_src)
 {
 
     var url = _get_task_url(constellation,
@@ -365,8 +371,8 @@ function update_task(constellation,
                   local_start,
                   local_stop,
                   vrc_id,
-                  vrc_num)
-
+                  vrc_num,
+                  bash_src);
 
     console.log("[PUT (update)]" + url);
     var msg = httpPut(url);

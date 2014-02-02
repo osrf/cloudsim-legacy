@@ -33,6 +33,7 @@ from launch_utils.aws import acquire_aws_single_server, terminate_aws_server,\
     get_aws_ubuntu_sources_repo
 
 from launch_utils import LaunchException
+from launch_utils.task import stop_task, stop_ssh_task, start_ssh_task
 
 
 OPENVPN_SERVER_IP = '11.8.0.1'
@@ -89,66 +90,19 @@ def get_ping_data(ping_str):
     return (mini, avg, maxi, mdev)
 
 
-def _start_simulator(constellation_name,
-                    package_name,
-                    launch_file_name,
-                    launch_args,
-                    task_timeout):
-    ssh_client = _get_ssh_client(constellation_name)
-    c = "bash cloudsim/start_sim.bash %s %s %s" % (package_name,
-                                                   launch_file_name,
-                                                   launch_args)
-    cmd = c.strip()
-    r = ssh_client.cmd(cmd)
-    log('_start_simulator %s' % r)
-
-
-def _stop_simulator(constellation_name):
-    cmd = "bash cloudsim/stop_sim.bash"
-    ssh_client = _get_ssh_client(constellation_name)
-    r = ssh_client.cmd(cmd)
-    log('_stop_simulator %s' % r)
-
-
 def start_task(constellation_name, task):
-
-    log("START TASK %s for %s" % (constellation_name, task))
-
-    latency = task['latency']
-    up = task['uplink_data_cap']
-    down = task['downlink_data_cap']
-
-    log("** TC COMMAND ***")
-    run_tc_command(constellation_name,
-                   'sim_machine_name',
-                   'key-sim',
-                   'sim_public_ip',
-                   latency, up, down)
-
-    log("** START SIMULATOR ***")
-    try:
-        _start_simulator(constellation_name,
-                    task['ros_package'],
-                    task['ros_launch'],
-                    task['ros_args'],
-                    task['timeout'])
-    finally:
-        log("START TASK  DONE %s for %s" % (constellation_name, task))
+    ssh_client = _get_ssh_client(constellation_name)
+    start_ssh_task(ssh_client,
+                   constellation_name,
+                   machine_name_key='sim_machine_name',
+                   keyPairName='key-sim',
+                   ip_address_key='sim_public_ip',
+                   task)
 
 
-def stop_task(constellation, task):
-
-    log("** CONSTELLATION %s *** STOP TASK %s ***" % (constellation,
-                                                      task['task_id']))
-    _stop_simulator(constellation)
-
-    log("** Notify portal ***")
-    notify_portal(constellation, task)
-
-
-def check_for_end_of_task(constellation_name, ssh_client):
-    if monitor_task(constellation_name, ssh_client):
-        raise TaskTimeOut()
+def stop_task(constellation_name, task):
+    ssh_client = _get_ssh_client(constellation_name)
+    stop_ssh_task(ssh_client, constellation_name, task)
 
 
 def _get_ssh_client(constellation_name):

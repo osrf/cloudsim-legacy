@@ -962,7 +962,6 @@ export VRC_CHEATS_ENABLED=1
 
 
 DELIM
-chmod +x """ + source_sim_fname + """
 # ----------------------------------------------------------------------------
 
 cat <<DELIM > """ + start_sim_fname + """
