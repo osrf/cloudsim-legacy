@@ -660,7 +660,7 @@ def create_cloudsim(username,
     return cloudsim_ip
 
 
-class TestCreateCloudSim(object):  # (unittest.TestCase):
+class TestCreateCloudSim(unittest.TestCase):
 
     def setUp(self):
         from launch_utils.testing import get_boto_path
@@ -671,6 +671,7 @@ class TestCreateCloudSim(object):  # (unittest.TestCase):
 
         self.ip = create_cloudsim(username="test",
                                   credentials_fname=get_boto_path(),
+                                  region="us-east-1",
                                   configuration="CloudSim-stable",
                                   authentication_type="Basic",
                                   password="test123",

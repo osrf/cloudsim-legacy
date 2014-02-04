@@ -914,11 +914,6 @@ def _run_cloudsim_cmd_loop(root_dir, tick_interval):
 
 if __name__ == "__main__":
 
-    import pprint
-    configs = _get_all_configurations()
-    pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(configs)
-
     try:
         log("Cloudsim daemon started pid %s" % os.getpid())
         log("args: %s" % sys.argv)
@@ -939,16 +934,16 @@ if __name__ == "__main__":
  
         if len(sys.argv) > 2:
             softlayer_path = os.path.abspath(sys.argv[2])
- 
+
         if len(sys.argv) > 3:
             root_dir = os.path.abspath(sys.argv[3])
- 
+
         if len(sys.argv) > 4:
             cloudsim_portal_key_path = os.path.abspath(sys.argv[4])
- 
+
         if len(sys.argv) > 5:
             cloudsim_portal_json_path = os.path.abspath(sys.argv[5])
- 
+
         config = {}
         config['cloudsim_version'] = get_cloudsim_version()
         config['boto_path'] = boto_path
@@ -968,9 +963,9 @@ if __name__ == "__main__":
                               'service_type' : 'compute'}
         set_cloudsim_config(config)
         _load_cloudsim_configurations_list()
- 
+
         _run_cloudsim_cmd_loop(root_dir, tick_interval)
- 
+
     except Exception, e:
         log("cloudsimd.py error: %s" % e)
         tb = traceback.format_exc()
