@@ -26,7 +26,7 @@ from launch_utils.launch_db import get_constellation_data, ConstellationState,\
 from launch_utils.startup_scripts import create_openvpn_client_cfg_file,\
     create_vpc_vpn_connect_file, create_ros_connect_file,\
     create_ssh_connect_file, get_simulator_script,\
-    get_simulator_deploy_script
+    get_simulator_deploy_script, create_vpn_connect_file
 
 from launch_utils.sshclient import SshClient
 from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
@@ -300,21 +300,23 @@ def create_private_machine_zip(machine_name_prefix,
     os.chmod(vpnkey_fname, 0600)
 
     # create open vpn config file
-    file_content = create_openvpn_client_cfg_file(machine_ip,
-                    client_ip=OPENVPN_CLIENT_IP, server_ip=OPENVPN_SERVER_IP)
+    file_content = create_openvpn_client_cfg_file(hostname=machine_ip,
+                                                  client_ip=OPENVPN_CLIENT_IP,
+                                                  server_ip=OPENVPN_SERVER_IP)
     fname_vpn_cfg = os.path.join(machine_dir, "openvpn.config")
     with open(fname_vpn_cfg, 'w') as f:
         f.write(file_content)
 
     fname_start_vpn = os.path.join(machine_dir, "start_vpn.bash")
-    file_content = create_vpc_vpn_connect_file(OPENVPN_CLIENT_IP)
+    #file_content = create_vpc_vpn_connect_file(OPENVPN_CLIENT_IP)
+    file_content = create_vpn_connect_file(OPENVPN_CLIENT_IP)
     with open(fname_start_vpn, 'w') as f:
         f.write(file_content)
     os.chmod(fname_start_vpn, 0755)
 
     fname_ros = os.path.join(machine_dir, "ros.bash")
     file_content = create_ros_connect_file(machine_ip=OPENVPN_CLIENT_IP,
-                                           master_ip=SIM_IP)
+                                        master_ip=OPENVPN_SERVER_IP)  # SIM_IP
 
     with open(fname_ros, 'w') as f:
         f.write(file_content)
@@ -631,7 +633,7 @@ def launch(constellation_name, tags):
                               'provider "%s"' % cloud_provider)
 
     # Setup the VPN
-    ssh_client = _get_ssh_client(constellation_name)
+
     openvpn_fname = os.path.join(constellation_directory, 'openvpn.key')
     create_openvpn_key(openvpn_fname)
 
@@ -640,6 +642,7 @@ def launch(constellation_name, tags):
     deploy_constellation(constellation_name, cloud_provider, machines,
                              openvpn_fname)
 
+    ssh_client = _get_ssh_client(constellation_name)
     # Required only if we are not using a prepolated AMI
     if use_latest_version:
         # reboot all machines but not router
