@@ -1,4 +1,6 @@
 
+var GZWEB_PORT = 8888;
+
 function create_start_stop_service(machine_div,
 							constellation_name,
 							machine_name,
@@ -119,33 +121,33 @@ function create_start_stop_service(machine_div,
 
 
 function create_cloudsim_notebook_widget(machine_div,
-									     constellation_name,
-									     machine_name,
-										 ip_address)
+                                         constellation_name,
+                                         machine_name,
+                                         ip_address)
 {
-	var title = "iPython Notebook";
-	var service_state_key = "gzweb";
-	var service_state_key = "cloudsim_notebook";  // gz_web_key
-	var btn_timeout = 10000;
-	var link_txt = '<a href=http://' + ip_address + ":8888" + ' target="_blank" >Python notebook</a>' ;
+    var title = "iPython Notebook";
+    var service_state_key = "gzweb";
+    var service_state_key = "cloudsim_notebook";  // gz_web_key
+    var btn_timeout = 10000;
+    var link_txt = '<a href=http://' + ip_address + ':' + GZWEB_PORT;
+    link_txt += ' target="_blank" >Python notebook</a>';
+    var start_func = function(){
+        start_cloudsim_notebook(constellation_name);
+    }
 
-	var start_func = function(){
-		start_cloudsim_notebook(constellation_name);
-	}
-	
-	var stop_func = function(){
-		stop_cloudsim_notebook(constellation_name);
-	}    
-	create_start_stop_service( machine_div,
-			constellation_name,
-			machine_name,
-			title,
-			link_txt,
-			service_state_key,
-			start_func,
-			stop_func,
-			btn_timeout,
-			false);
+    var stop_func = function(){
+        stop_cloudsim_notebook(constellation_name);
+    }
+    create_start_stop_service(machine_div,
+                              constellation_name,
+                              machine_name,
+                              title,
+                              link_txt,
+                              service_state_key,
+                              start_func,
+                              stop_func,
+                              btn_timeout,
+                              false);
 }
 
 
