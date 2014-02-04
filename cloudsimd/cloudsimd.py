@@ -507,21 +507,7 @@ def create_task(constellation_name, data):
 
 def update_task(constellation_name, data):
     """
-    Updates a task to a constellation simulation ask list. The data is a
-    dictionary. The keys are:
-    - task_title
-    - ros_package
-    - launch_file
-    - launch_args
-    - timeout
-    - latency
-    - uplink_data_cap
-    - downllink_data_cap
-    - local_start
-    - local_stop
-    - vrc_id
-    - vrc_num
-    - task_id
+    Updates a task to a constellation simulation ask list.
     """
     try:
         task_id = data['task_id']
