@@ -55,23 +55,21 @@ function add_cloud_credentials_widget(place_holder_div_name)
 
     override_az_btn.onclick = function()
     {
-    	var i = us_east_1_select.selectedIndex;
-    	var j = eu_west_1_select.selectedIndex;
-    	var k = us_west_2_select.selectedIndex;
-    	
-    	var us_east_1_az = us_east_1_select.options[i].value;
-    	var us_west_2_az = eu_west_1_select.options[j].value;
-    	var eu_west_1_az = us_west_2_select.options[k].value;
-    	
+       var i = us_east_1_select.selectedIndex;
+       var j = eu_west_1_select.selectedIndex;
+       var k = us_west_2_select.selectedIndex;
+
+       var us_east_1_az = us_east_1_select.options[i].value;
+       var us_west_2_az = eu_west_1_select.options[j].value;
+       var eu_west_1_az = us_west_2_select.options[k].value;
+
         var access = access_key_input.value;
         var secret_access = secret_key_input.value;
         var r = change_aws_credentials(access,
-        								secret_access,
-        								us_east_1_az,
-        								us_west_2_az,
-        								eu_west_1_az); 
-        
-    	
+                                       secret_access,
+                                       us_east_1_az,
+                                       us_west_2_az,
+                                       eu_west_1_az);
     }
 }
 

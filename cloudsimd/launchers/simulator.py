@@ -564,7 +564,7 @@ def register_configurations(configs):
                                          ]}}}
         return config
 
-    sim_g1_description = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
+    sim_g1_description = """VRC Atlas simulator: GPU simulator using gazebo and drcsim packages
 <ol>
   <li>Hardware:
       <ol>
