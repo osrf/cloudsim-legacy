@@ -33,7 +33,7 @@ from launch_utils.aws import acquire_aws_single_server, terminate_aws_server,\
     get_aws_ubuntu_sources_repo
 
 from launch_utils import LaunchException
-from launch_utils.task import stop_task, stop_ssh_task, start_ssh_task
+from launch_utils.task import stop_ssh_task, start_ssh_task
 
 
 OPENVPN_SERVER_IP = '11.8.0.1'
@@ -97,7 +97,7 @@ def start_task(constellation_name, task):
                    machine_name_key='sim_machine_name',
                    keyPairName='key-sim',
                    ip_address_key='sim_public_ip',
-                   task)
+                   task=task)
 
 
 def stop_task(constellation_name, task):
@@ -591,7 +591,9 @@ def register_configurations(configs):
                             config_name="Simulator-stable (g2.2xlarge)",
                             config_description=sim_g1_description + stable,
                             hardware='g2.2xlarge',
-                            image_key='ami-0e7b1b3e'))
+                            image_key='ami-6a482b5a'))
+                            # Simulator (g2.2xlarge) 2.0.1
+
     return configs
 
 

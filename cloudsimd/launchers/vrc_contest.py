@@ -5,13 +5,7 @@ import os
 import time
 import zipfile
 import shutil
-import json
-import subprocess
-import dateutil.parser
-
 from shutil import copyfile
-
-from launch_utils.traffic_shaping import  run_tc_command
 
 
 from launch_utils.monitoring import constellation_is_terminated,\
@@ -109,7 +103,7 @@ def start_task(constellation_name, task):
                    machine_name_key='sim_machine_name',
                    keyPairName='key-router',
                    ip_address_key='router_public_ip',
-                   task)
+                   task=task)
 
 
 def stop_task(constellation_name, task):

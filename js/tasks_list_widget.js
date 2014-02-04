@@ -146,15 +146,15 @@ function _create_task_form(form_id)
     tab3.id = 'tab-calendar';
     var local_start = _add_form_textinput(tab3, "Valid from (UTC)", visible);
     var local_stop = _add_form_textinput(tab3, "Valid until (UTC)", visible);
-    visible = false;
-    var vrc_id = _add_form_textinput(form_div, "Run (1, 2, 3, 4 or 5)", visible);
-    var vrc_num = _add_form_textinput(form_div, "Task (1, 2 or 3)", visible);   	
     tabs_div.appendChild(tab3)
     
     var tab4 = document.createElement("div");
     tab4.id = 'tab-bash';
     visible = true;
     var bash_source =  _add_form_textinput(tab4, "Bash script to source environment", visible);
+    var vrc_id = _add_form_textinput(tab4, "Tag 1 (Misc info for external use)", visible);
+    var vrc_num = _add_form_textinput(tab4, "Tag 2 (Misc info for external use)", visible);   	
+
     tabs_div.appendChild(tab4)
 
     // Default values
@@ -166,8 +166,8 @@ function _create_task_form(form_id)
     latency.value ="0";
     uplink_data_cap.value =   "0";
     downlink_data_cap.value = "0";
-    vrc_id.value = "1";
-    vrc_num.value = "1";
+    vrc_id.value = "";
+    vrc_num.value = "";
 
     local_start.value = '2013-01-01T00:00:00.0';
     local_stop.value  = '2014-01-01T00:00:00.0';
@@ -199,9 +199,9 @@ function create_task_list_widget(const_div, constellation_name)
 	               var downlink_data_cap = inputs[7].value;
 	               var local_start = inputs[8].value;
 	               var local_stop = inputs[9].value;
-	               var vrc_id = inputs[10].value;
-	               var vrc_num = inputs[11].value;
-	               
+	               var bash_src = inputs[10].value;
+	               var vrc_id = inputs[11].value;
+	               var vrc_num = inputs[12].value;
 	               console.log( "create_task_list_widget #" + form_id);
 	               create_task(constellation_name, 
 	            		   	   title, 
@@ -215,7 +215,8 @@ function create_task_list_widget(const_div, constellation_name)
 	                           local_start,
 	                           local_stop,
 	                           vrc_id,
-	                           vrc_num);
+	                           vrc_num,
+	                           bash_src);
 	               
 	               $( this ).dialog( "close" );
                 }
@@ -390,9 +391,9 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                 var downlink_data_cap = inputs[7].value;
                 var local_start = inputs[8].value;
                 var local_stop = inputs[9].value;
-                var vrc_id = inputs[10].value;
-                var vrc_num = inputs[11].value;
-                var bash_src = inputs[12].value
+                var bash_src = inputs[10].value
+                var vrc_id = inputs[11].value;
+                var vrc_num = inputs[12].value;
     			console.log("Update " + constellation_name + "/" + task_id);
                 update_task(constellation_name, task_id,
                        title, ros_package,launch, timeout, args, latency, 
@@ -401,7 +402,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
                        local_stop,
                        vrc_id,
                        vrc_num,
-                       bash_src); 
+                       bash_src);
                 
                 $( this ).dialog( "close" );
                  },
@@ -416,9 +417,9 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         	    var downlink_data_cap = inputs[7].value;
         	    var local_start = inputs[8].value;
         	    var local_stop = inputs[9].value;
-        	    var vrc_id = inputs[10].value;
-        	    var vrc_num = inputs[11].value;
-        	    var bash_src = inputs[12].value;
+        	    var bash_src = inputs[10].value;
+        	    var vrc_id = inputs[11].value;
+        	    var vrc_num = inputs[12].value;
                 console.log("Create duplicate task " + constellation_name + "/" + task_id);
                 create_task(constellation_name, 
                        title, ros_package,launch, timeout, args, latency, 
@@ -499,9 +500,11 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         
         var local_start = inputs[8];
         var local_stop = inputs[9];
-        var vrc_id = inputs[10];
-        var vrc_num = inputs[11];
-        
+        var bash_src = inputs[10];
+        var vrc_id = inputs[11];
+        var vrc_num = inputs[12];
+
+
         task = read_task(constellation_name, task_id);
         if (task == "Unauthorized")
         {
@@ -521,7 +524,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
             readOnly = true;
         }
 
-        for (var i=0; i< 12; i++)
+        for (var i=0; i< inputs.length; i++)
         {
             inputs[i].readOnly = readOnly;
         }
@@ -537,6 +540,7 @@ function add_task_widget(const_div, constellation_name, task_id, state, task_tit
         
         local_start.value = task.local_start;
         local_stop.value = task.local_stop;
+        bash_src.value = task.bash_src;
         vrc_id.value = task.vrc_id;
         vrc_num.value = task.vrc_num;
         

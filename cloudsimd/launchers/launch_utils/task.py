@@ -1,13 +1,14 @@
 from __future__ import print_function
 
-from launch_utils.traffic_shaping import run_tc_command
-from launch_utils.launch_db import log_msg, get_cloudsim_config,\
-    ConstellationState, get_constellation_data
 import json
 import dateutil
 import os
 import subprocess
-from launch_utils.sshclient import SshClient
+
+from traffic_shaping import run_tc_command
+from launch_db import log_msg, get_cloudsim_config,\
+    ConstellationState, get_constellation_data
+from sshclient import SshClient
 
 
 def log(msg, channel=__name__, severity="info"):
@@ -64,7 +65,7 @@ def stop_ssh_task(ssh_client, constellation, task):
 
     log("** CONSTELLATION %s *** STOP TASK %s ***" % (constellation,
                                                       task['task_id']))
-    _stop_simulator(constellation)
+    _stop_simulator(ssh_client)
 
     log("** Notify portal ***")
     _notify_portal(constellation, task)
