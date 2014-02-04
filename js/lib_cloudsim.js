@@ -40,9 +40,11 @@ function launch_constellation(cloud_provider, region, configuration)
     console.log(msg );
     
     var p = encodeURIComponent(cloud_provider);
-    var c = encodeURIComponent(configuration);
     var r = encodeURIComponent(region);
-    var url = '/cloudsim/inside/cgi-bin/constellations?cloud_provider=' + p;
+    var c = encodeURIComponent(configuration);
+
+    var url = '/cloudsim/inside/cgi-bin/constellations';
+    url += '?cloud_provider=' + p;
     url += '&region=' + r;
     url += '&configuration=' + c;
 
