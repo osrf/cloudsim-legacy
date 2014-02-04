@@ -713,7 +713,7 @@ def register_configurations(configs):
                   }
         return config
 
-    vrc_desc = """DRC Atlas simulator:
+    vrc_desc = """VRC Atlas simulator:
  a router and a GPU simulator, using gazebo and drcsim packages
 <ol>
   <li>Hardware:
