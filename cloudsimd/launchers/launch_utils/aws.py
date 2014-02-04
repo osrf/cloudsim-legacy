@@ -370,7 +370,7 @@ def _acquire_vpc(constellation_name, vpcconn):
             except:
                 i += 1
                 if i == max_:
-                    raise
+                    raise  # raise EC2 original error
 
         subnet_id = aws_subnet.id
         constellation.set_value('subnet_id', subnet_id)
