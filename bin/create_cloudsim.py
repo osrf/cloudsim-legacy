@@ -15,10 +15,6 @@ import shutil
 # Create the basepath of cloudsim
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, basepath)
-# sys.path.insert(0, os.path.join(basepath,
-#                                 'cloudsimd',
-#                                 'launchers',
-#                                 'launch_utils') )
 
 import cloudsimd.launchers.cloudsim  as cloudsim
 from cloudsimd.launchers.launch_utils.launch_db import ConstellationState
@@ -111,8 +107,10 @@ if __name__ == "__main__":
     username = args.username
     key = args.access_key
     secret = args.secret_key
-    
-    configuration = args.config + " (m1.small)"
+
+    # The real configuration names have spaces in it, so we 
+    # use a shorter version for the cmd line options
+    configuration = "%s (m1.small)" % args.config 
     password = args.basic_auth
 
     authentication_type = "OpenID"

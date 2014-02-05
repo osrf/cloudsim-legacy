@@ -6,18 +6,12 @@ import time
 import redis
 import uuid
 import os
-import shutil
-
 import logging
 import testing
 
-import sys
-
-# print("%s" % sys.path)
 
 def log(msg, channel=__name__, severity='debug'):
     log_msg(msg, channel, severity)
-    #print("cloudsim log> %s" % msg)
 
 
 def log_msg(msg, channel, severity):
@@ -326,14 +320,9 @@ def init_constellation_data(constellation_name, data, cloudsim_config):
     os.makedirs(constellation_directory)
 
     # save a copy of the credentials in the constellation directory
-    credentials_src = None
     credentials_fname = os.path.join(constellation_directory,
                                    'credentials.txt')
-#     if cloud_provider == "softlayer":
-#         credentials_src = cloudsim_config['softlayer_path']
-#         shutil.copy(credentials_src, credentials_fname)
     credentials_src = cloudsim_config['boto_path']
-    log("#$REW %s" % credentials_src)
     if not os.path.exists(credentials_src):
         raise LaunchException(
             'Cannot find credentials for cloud '

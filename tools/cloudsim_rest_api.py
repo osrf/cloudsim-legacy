@@ -81,6 +81,14 @@ class CloudSimRestApi(object):
         r = '?' + params[1:]
         return r
 
+    def get_machine_configs(self):
+        """
+        Returns the configurations for each provider and region.
+        """
+        r = self._api_get('cloudsim/inside/cgi-bin/machine_configs')
+        return r
+        
+
     def get_constellations(self):
         """
         Returns the list of constellations for this CloudSim
@@ -114,14 +122,20 @@ class CloudSimRestApi(object):
                 return c
         raise Exception('constellation "%s" not found' % constellation_name)
 
+    def get_tasks(self, constellation_name):
+        constellation = self.get_constellation_data(constellation_name)
+        return constellation['tasks']
+
     def launch_constellation(self, provider, configuration):
         """
         Creates a new constellation with the specified configuration
         """
         p = urllib2.quote(provider)
         c = urllib2.quote(configuration)
+        r = urllib2.quote(region)
         url = '/cloudsim/inside/cgi-bin/constellations'
         url += '?cloud_provider=' + p
+        url += '&region=' + r;
         url += '&configuration=' + c;
         s = self._api_post(url)
         return s
@@ -226,7 +240,7 @@ def terminate_children(cloudsim, config=None, delay=1):
         time.sleep(delay)
 
 
-def multi_launch(papa, provider, configuration, count, delay=10):
+def multi_launch(papa, provider, region, configuration, count, delay=10):
     """
     Launches multiple constellations of the specified configuration
     inside a the CloudsimRestApi papa. 
@@ -236,11 +250,15 @@ def multi_launch(papa, provider, configuration, count, delay=10):
                                    count, configuration, papa.url, delay))
     for i in range(count):
         print (" launching %s" % i)
-        papa.launch_constellation(provider, configuration)
+        papa.launch_constellation(provider, region, configuration)
         time.sleep(delay)
      
      
-def launch_for_each_cloudsim(cloudsims, provider, configuration, delay=0.1):
+def launch_for_each_cloudsim(cloudsims,
+                             provider,
+                             region,
+                             configuration,
+                             delay=0.1):
     """
     Launches a constellation of specific configuration for each 
     CloudSimRestApi in the cloudsims list.
@@ -251,7 +269,7 @@ def launch_for_each_cloudsim(cloudsims, provider, configuration, delay=0.1):
     for cloudsim in cloudsims:
         try:
             print("Launching from %s" % (cloudsim))
-            cloudsim.launch_constellation(provider, configuration)
+            cloudsim.launch_constellation(provider, region, configuration)
         except Exception, e:
             print("   Error: %s" % e)
         time.sleep(delay)
