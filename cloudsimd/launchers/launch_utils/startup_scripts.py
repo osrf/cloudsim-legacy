@@ -98,7 +98,7 @@ secret openvpn.key
     return s
 
 
-def create_ros_connect_file(machine_ip, master_ip ):
+def create_ros_connect_file(machine_ip, master_ip):
 
     s = """
 # To connect via ROS:

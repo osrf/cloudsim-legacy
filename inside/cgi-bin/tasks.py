@@ -27,7 +27,7 @@ def refuse_authorization():
 
 
 def process_http_get(role, constellation, task_id):
-    if method == 'GET':
+    if task_id != None:
         s = None
         log("GET task %s, role %s" % (task_id, role))
         try:
