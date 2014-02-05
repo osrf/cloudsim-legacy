@@ -11,23 +11,28 @@ import logging
 import traceback
 import datetime
 from json import loads
+import unittest
 
 from launchers.launch_utils import get_unique_short_name
 from launchers.launch_utils.launch_db import ConstellationState
 from launchers.launch_utils.launch_db import get_cloudsim_config
 from launchers.launch_utils.launch_db import set_cloudsim_config
-from launchers.launch_utils import aws_connect
 from launchers.launch_utils import LaunchException
 from launchers.launch_utils.launch_db import get_cloudsim_version
 from launchers.launch_utils import get_constellation_names
 from launchers.launch_utils.launch_db import set_cloudsim_configuration_list
 from launchers.launch_utils.launch_db import log_msg
 from launchers.launch_utils.launch_db import init_constellation_data
+from launchers.launch_utils.aws import aws_connect
 
 # These imports are here for interactive use (with iPython), not necessarily
 # referenced in this code module. 
 from launchers.launch_utils.softlayer import load_osrf_creds
 from launchers.launch_utils.aws import read_boto_file
+
+from launchers.simulator import register_configurations as add_configs_sim
+from launchers.vrc_contest import register_configurations as add_configs_vrc
+from launchers.cloudsim import register_configurations as add_configs_cs
 
 try:
     logging.basicConfig(filename='/tmp/cloudsimd.log',
@@ -117,8 +122,6 @@ def reset_tasks(name=None):
                                      'Ready to run')
 
 
-
-
 def gather_cs_credentials():
     """
     Gather the names and IP addresses of all CloudSim constellations
@@ -138,9 +141,10 @@ def gather_cs_credentials():
                                                                         e))
 
     
-def launch_constellation(username, configuration, args=None):
+def launch_constellation(username, configuration, region, args=None):
     """
-    Launches one (or count) constellation of a given configuration
+    Launches one (or count) constellation of a given configuration.
+    This is an interactive command.
     """
     r = redis.Redis()
 
@@ -148,6 +152,7 @@ def launch_constellation(username, configuration, args=None):
     d['username'] = username
     d['command'] = 'launch'
     d['configuration'] = configuration
+    d['region'] = region
     if args:
         d['args'] = args
 
@@ -266,7 +271,7 @@ def get_plugin(configuration):
                                      c.monitor,
                               None, None, None, None)
 
-    elif configuration.startswith('DRC'):
+    elif configuration.startswith('VRC'):
         from launchers import vrc_contest as c
         plugin = ConstellationPlugin(c.launch,
                                      c.terminate,
@@ -295,6 +300,24 @@ def get_plugin(configuration):
     return plugin
 
 
+def _get_all_configurations():
+    configs = {}
+    configs["OpenStack"] = {"description": "OpenStack",
+                            "regions": {"nova": {"description":"N/A", 
+                                                 "configurations": []}}}
+    configs["aws"] = {"description": "Amazon Web Services",
+                      "regions": {
+                        "us-east-1":{"description":"US East (N. Virginia)",
+                                               "configurations":[]}, 
+                        "eu-west-1":{"description":"EU (Ireland)",
+                                               "configurations":[]}}
+                      }
+    add_configs_cs(configs)
+    add_configs_sim(configs)
+    add_configs_vrc(configs)
+    return configs
+
+
 def _load_cloudsim_configurations_list():
     """
     Loads the available configurations depending on the credentials. 
@@ -303,71 +326,8 @@ def _load_cloudsim_configurations_list():
      This function is called upon CloudSim startup, and as a redis command
      (After credentials are overwritten by the web app, for example)
     """
-
-    configs = {}
-    desc = """DRC Atlas simulator: a router and a GPU simulator, using gazebo and drcsim packages
-<ol>
-  <li>Hardware:
-      <ol>
-          <li>Router: large server</li>
-          <li>Simulator: GPU cluster instance</li>
-      </ol>
-  </li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>ROS: Fuerte</li>
-  <li>Simulator: Gazebo (latest)</li>
-  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-</ol>
-"""
-    configs['DRC'] = {'description': desc}
-    configs['DRC-stable'] = {'description': desc}
-
-    desc = """DRC Atlas simulator with Field computer: a router and 2 GPU machines, using gazebo and drcsim packages
-<ol>
-    <li>Hardware:
-      <ol>
-          <li>Router: large server</li>
-          <li>Simulator: GPU cluster instance</li>
-          <li>Field computer: GPU cluster instance</li>
-      </ol>
-  </li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>ROS: Fuerte</li>
-  <li>Simulator: Gazebo (latest)</li>
-  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-</ol>
-"""
-    configs['DRC with FC'] = {'description': desc}
-    desc = """CloudSim Web App running in the Cloud
-<ol>
-  <li>Hardware: micro</li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>Web server: Apache</li>
-</ol>
-"""     
-    configs['CloudSim'] = {'description': desc}
-    configs['CloudSim-stable'] = {'description':
-                                  "Pre installed binary image for " + desc}
-    
-    desc = """DRC Atlas simulator: GPU simulator using gazebo and drcsim packages
-<ol>
-  <li>Hardware:
-      <ol>
-          <li>Simulator: GPU cluster instance</li>
-      </ol>
-  </li>
-  <li>OS: Ubuntu 12.04 (Precise)</li>
-  <li>ROS: Fuerte</li>
-  <li>Simulator: Gazebo (latest)</li>
-  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
-</ol>
-"""
-    configs['Simulator'] = {'description': desc}
-    configs['Simulator-stable'] = {'description':
-                                    "Pre installed binary image for " + desc}
-
+    configs = _get_all_configurations()                                  
     set_cloudsim_configuration_list(configs)
-
 
 def launch_cmd(root_dir, data):
     constellation_name = "c" + get_unique_short_name()
@@ -390,15 +350,30 @@ def launch(constellation_name, data):
     log("LAUNCH [%s] from proc %s" % (constellation_name, proc))
     constellation = ConstellationState(constellation_name)
     try:
-        config = data['configuration']
+        configs = _get_all_configurations()
+        provider = data['cloud_provider']
+        region_name = data['region']
+        config_name = data['configuration']
+        
         cloudsim_config = get_cloudsim_config()
+        log("region: %s" % region_name)
+
+        configurations = configs[provider]['regions'][region_name]\
+         ['configurations']
+
+        cfg = None
+        try:
+            cfg = [x for x in configurations if x['name'] == config_name][0]  
+        except:
+            raise Exception(config_name + " is not a invalid configuration",
+                            "for this provider/region" )
+        log("configuration: %s" % cfg)
         log("preparing REDIS and filesystem %s" % constellation_name)
         init_constellation_data(constellation_name, data, cloudsim_config)
-        constellation_plugin = get_plugin(config)
-
+        constellation_plugin = get_plugin(config_name)
         constellation.set_value('constellation_state', 'launching')
         log("calling the plugin's launch function")
-        constellation_plugin.launch(constellation_name, data)
+        constellation_plugin.launch(cfg, constellation_name, data)
         constellation.set_value('constellation_state', 'running')
         
         log("Launch of constellation %s done" % constellation_name)
@@ -611,7 +586,7 @@ def start_task(constellation_name, task_id):
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
 
-    
+
 def stop_task(constellation_name):
     """
     Stops the current running tasks on a constellation. If no simulation task
@@ -873,7 +848,6 @@ def _run_cloudsim_cmd_loop(root_dir, tick_interval):
             elif cmd == 'update':
                 constellation = data['constellation']
                 async_update(constellation)
-
             #
             # tasks stuff
             #
@@ -929,10 +903,10 @@ if __name__ == "__main__":
     try:
         log("Cloudsim daemon started pid %s" % os.getpid())
         log("args: %s" % sys.argv)
-
+ 
         tick_interval = 5
-    
-        boto_path = '/var/www-cloudsim-auth/boto-useast'
+     
+        boto_path = '/var/www-cloudsim-auth/boto.ini'
         softlayer_path = '/var/www-cloudsim-auth/softlayer.json'
         root_dir = '/var/www-cloudsim-auth/machines'
         cloudsim_portal_key_path = ('/var/www-cloudsim-auth/' 
@@ -943,7 +917,7 @@ if __name__ == "__main__":
                                        'cloudsim_bitbucket.key')
         if len(sys.argv) > 1:
             boto_path = os.path.abspath(sys.argv[1])
-
+ 
         if len(sys.argv) > 2:
             softlayer_path = os.path.abspath(sys.argv[2])
 
@@ -964,10 +938,10 @@ if __name__ == "__main__":
         config['cloudsim_portal_key_path'] = cloudsim_portal_key_path
         config['cloudsim_portal_json_path'] = cloudsim_portal_json_path
         config['cloudsim_bitbucket_key_path'] = cloudsim_bitbucket_key_path
-        config ['other_users'] = []
-        config ['cs_role'] = "admin"
-        config ['cs_admin_users'] = []
-        #openstack
+        config['other_users'] = []
+        config['cs_role'] = "admin"
+        config['cs_admin_users'] = []
+        # openstack
         config['openstack'] ={'username' : 'admin',
                               'api_key' : 'cloudsim',
                               'auth_url' : 'http://172.16.0.201:5000/v2.0',
@@ -982,3 +956,5 @@ if __name__ == "__main__":
         log("cloudsimd.py error: %s" % e)
         tb = traceback.format_exc()
         log("traceback:  %s" % tb)
+
+
