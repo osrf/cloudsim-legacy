@@ -88,7 +88,9 @@ if __name__ == "__main__":
     if step == 1:
         # launch a cloudsim
         grandpa_cloudsim = CloudSimRestApi('localhost', 'admin', 'admin')
-        grandpa_cloudsim.launch_constellation("aws", "CloudSim-stable")
+        grandpa_cloudsim.launch_constellation("aws",
+                                              "us-east-1",
+                                              "CloudSim-stable")
         # now wait for it...
         
     papa_url='54.237.100.112'

@@ -4,6 +4,7 @@ import unittest
 from testing import get_test_runner
 import os
 
+MONITOR_PATH = "/home/ubuntu/launch_stdout_stderr.log"  # "/var/log/dpkg.log"
 
 '''
 def get_open_vpn_single(client_ip,
@@ -35,7 +36,6 @@ echo "openvpn setup complete" >> /home/ubuntu/setup.log
 """
     return s
 '''
-
 
 
 def create_vpn_connect_file(openvpn_client_ip):
@@ -232,7 +232,7 @@ DELIM
 cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_sim.bash
 #!/bin/bash
 
-tail -1 /var/log/dpkg.log
+tail -1 """ + MONITOR_PATH + """
 DELIM
 
 chown -R ubuntu:ubuntu /home/ubuntu/cloudsim
@@ -450,7 +450,7 @@ chmod +x /home/ubuntu/cloudsim/find_file_""" + machine_name + """.bash
 cat <<DELIM > /home/ubuntu/cloudsim/dpkg_log_""" + machine_name + """.bash
 #!/bin/bash
 
-tail -1 /var/log/dpkg.log
+tail -1 """ + MONITOR_PATH + """
 
 DELIM
 chmod +x /home/ubuntu/cloudsim/dpkg_log_""" + machine_name + """.bash
@@ -573,6 +573,7 @@ apt-get install -y libjansson-dev
 apt-get install -y nodejs npm
 apt-get install -y python-matplotlib
 
+npm config set registry http://registry.npmjs.org/
 npm install -g http-server
 npm install -g node-gyp
 npm install websocket
@@ -1467,7 +1468,7 @@ chmod +x """ + cloudsim_dir + """/ssh-""" + machine_name + """.bash
 #
 cat <<DELIM > """ + cloudsim_dir + """/dpkg_log_""" + machine_name + """.bash
 #!/bin/bash
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip + """  "tail -1 /var/log/dpkg.log"
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i """ + cloudsim_dir + """/key-""" + machine_name + """.pem ubuntu@""" + ip  + " \"tail -1 " + MONITOR_PATH + "\"" + """
 DELIM
 chmod +x """ + cloudsim_dir + """/dpkg_log_""" + machine_name + """.bash
 # --------------------------------------------

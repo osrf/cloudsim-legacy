@@ -41,7 +41,7 @@ import multiprocessing
 from launch_utils.sl_cloud import acquire_softlayer_constellation,\
  terminate_softlayer_constellation
 
-from launch_utils.aws import acquire_aws_constellation, aws_connect,\
+from launch_utils.aws import acquire_aws_constellation,\
     get_aws_ubuntu_sources_repo
 from launch_utils.aws import terminate_aws_constellation
 
@@ -633,62 +633,21 @@ def deploy_constellation(constellation_name, cloud_provider, machines,
                          "running")
 
 
-def launch(constellation_name, tags):
-    """
-    Called by cloudsimd when it receives a launch message
-    """
-    constellation = ConstellationState(constellation_name)
-    use_latest_version = constellation.get_value('configuration') == 'DRC' or \
-        constellation.get_value('configuration') == 'DRC with FC'
+def register_configurations(configs):
 
-    scripts = {}
-    scripts['router'] = ''
-    scripts['sim'] = ''
-    scripts['fc1'] = ''
-    scripts['fc2'] = ''
-
-    cloud_provider = tags['cloud_provider']
-    #username = tags['username']
-    config = tags['configuration']
-    constellation_directory = tags['constellation_directory']
-    credentials_fname = os.path.join(constellation_directory,
-                                     'credentials.txt')
-
-#   if credentials_override:
-#       credentials_fname = credentials_override
-
-    has_fc1 = False
-    has_fc2 = False
-
-    if "FC" in config:
-        has_fc1 = True
-
-    router_public_network_itf = "eth0"
-    router_private_network_itf = None
-
-    if cloud_provider == "softlayer":
-        router_public_network_itf = "bond1"
-        router_private_network_itf = "bond0"
-    log("launch constellation name: %s" % constellation_name)
-
-    constellation.set_value("launch_stage", "launch")
-
-    #
-    # lets build a list of machines for our constellation
-    #
-    openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
-    private_subnet = '10.0.0.0/24'
-
-    if use_latest_version:
-        router_image_key = 'ubuntu_1204_x64'
-        simulator_image_key = 'ubuntu_1204_x64_cluster'
-    else:
-        router_image_key = 'ubuntu_1204_x64_drc_router'
-        simulator_image_key = 'ubuntu_1204_x64_drc_simulator'
-
-    machines = {}
-    machines['router'] = {'hardware': 'm1.large',    # 't1.micro',
-                      'software': router_image_key,
+    def _get_config(config_name, config_description, router_ami, sim_ami):
+        has_fc1 = False
+        has_fc2 = False
+        router_public_network_itf = "eth0"
+        router_private_network_itf = None
+#         if cloud_provider == "softlayer":
+#             router_public_network_itf = "bond1"
+#             router_private_network_itf = "bond0"
+        openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
+        private_subnet = '10.0.0.0/24'
+        machines = {}
+        machines['router'] = {'hardware': 'm1.large',    # 't1.micro',
+                      'software': router_ami,
                       'ip': ROUTER_IP,   # 'startup_script': router_script,
                       'public_network_itf': router_public_network_itf,
                       'private_network_itf': router_private_network_itf,
@@ -737,11 +696,9 @@ def launch(constellation_name, tags):
                                           'from_port': 9090,
                                           'to_port': 9090,
                                           'cidr': '0.0.0.0/0', },
-                                         ]
-                          }
-
-    machines['sim'] = {'hardware': 'cg1.4xlarge',
-                  'software': simulator_image_key,
+                                         ]}
+        machines['sim'] = {'hardware': 'cg1.4xlarge',
+                  'software': sim_ami,
                   'ip': SIM_IP,
                       'security_group': [{'protocol': 'icmp',  # ping
                                           'from_port': -1,
@@ -765,17 +722,104 @@ def launch(constellation_name, tags):
                                           'cidr': openvpn_client_addr, }]
                     }
 
-    if has_fc1:
-        machines['fc1'] = {'hardware': 'cg1.4xlarge',
-                  'software': 'ubuntu_1204_x64_cluster',
-                  'ip': FC1_IP,
-                    }
-    if has_fc2:
-        machines['fc2'] = {'hardware': 'cg1.4xlarge',
-                  'software': 'ubuntu_1204_x64_cluster',
-                  'ip': FC2_IP,
-                    }
+        if has_fc1:
+            machines['fc1'] = {'hardware': 'cg1.4xlarge',
+                      'software': 'ubuntu_1204_x64_cluster',
+                      'ip': FC1_IP,
+                        }
+        if has_fc2:
+            machines['fc2'] = {'hardware': 'cg1.4xlarge',
+                      'software': 'ubuntu_1204_x64_cluster',
+                      'ip': FC2_IP,
+                        }
 
+        config = {"name": config_name,
+                  "description": config_description,
+                  "machines": machines
+                  }
+        return config
+
+    vrc_desc = """VRC Atlas simulator:
+ a router and a GPU simulator, using gazebo and drcsim packages
+<ol>
+  <li>Hardware:
+      <ol>
+          <li>Router: m1.large (large server)</li>
+          <li>Simulator: cg1.4xlarge (Single tenant GPU cluster instance)</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Groovy</li>
+  <li>Simulator: Gazebo (current)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
+    stable = "This is a stable version running from saved disk images"
+    stable += " that contain preinstalled software."
+
+    install = "All software will be downloaded and installed while you wait, "
+    install += "from basic OS images, using current software packages."
+
+    us_east_cfgs = configs["aws"]["regions"]["us-east-1"]["configurations"]
+    us_east_cfgs.append(_get_config(
+                          config_name="VRC (Virtual Robotics Challenge)",
+                          config_description=vrc_desc + install,
+                          router_ami='ami-137bcf7a',
+                          sim_ami='ami-98fa58f1'))
+    us_east_cfgs.append(_get_config(
+                         config_name="VRC-stable (Virtual Robotics Challenge)",
+                         config_description=vrc_desc + stable,
+                         router_ami='ami-75e4d91c',
+                         sim_ami='ami-4de4d924'))
+
+    eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
+    eu_west_cfgs.append(_get_config(
+                          config_name="VRC (Virtual Robotics Challenge)",
+                          config_description=vrc_desc + install,
+                          router_ami='ami-f2191786',
+                          sim_ami='ami-fc191788'))
+    eu_west_cfgs.append(_get_config(
+                         config_name="VRC-stable (Virtual Robotics Challenge)",
+                         config_description=vrc_desc + stable,
+                         router_ami='ami-3c02f64b',
+                         sim_ami='ami-3a02f64d'))
+    return configs
+
+
+def launch(configuration, constellation_name, tags):
+    """
+    Called by cloudsimd when it receives a launch message
+    """
+    constellation = ConstellationState(constellation_name)
+
+    stable = constellation.get_value('configuration').find('stable') >= 0
+    use_latest_version = stable == False
+    has_fc1 = False
+    has_fc2 = False
+
+    scripts = {}
+    scripts['router'] = ''
+    scripts['sim'] = ''
+    scripts['fc1'] = ''
+    scripts['fc2'] = ''
+
+    cloud_provider = tags['cloud_provider']
+    #username = tags['username']
+    config = tags['configuration']
+    constellation_directory = tags['constellation_directory']
+    credentials_fname = os.path.join(constellation_directory,
+                                     'credentials.txt')
+    router_public_network_itf = "eth0"
+    router_private_network_itf = None
+
+    if cloud_provider == "softlayer":
+        router_public_network_itf = "bond1"
+        router_private_network_itf = "bond0"
+    log("launch constellation name: %s" % constellation_name)
+
+    constellation.set_value("launch_stage", "launch")
+
+    machines = configuration['machines']
     _init_computer_data(constellation_name, machines)
 
     ros_master_ip = SIM_IP

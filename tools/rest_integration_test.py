@@ -24,8 +24,10 @@ from cloudsimd.launchers.launch_utils.testing import get_boto_path
 from cloudsimd.launchers.launch_utils.testing import get_test_path
 
 
-CLOUDSIM_CONFIG = "CloudSim-stable"
-SIM_CONFIG = "Simulator-stable"
+CLOUDSIM_CONFIG = "CloudSim (m1.small)"
+SIM_CONFIG = "Simulator-stable (cg1.4xlarge)"
+CLOUD_CREDS = "aws"
+CLOUD_REGION = "us-east-1"
 
 try:
     logging.basicConfig(filename='/tmp/rest_integration_test.log',
@@ -76,7 +78,7 @@ def _diff_list(a, b):
     return [aa for aa in a if aa not in b]
 
 
-def launch_constellation(api, config, max_count=100):
+def launch_constellation_and_wait(api, config, max_count=100):
     """
     Launch a new constellation, waits for it to appear, and
     returns the new constellation name
@@ -86,7 +88,7 @@ def launch_constellation(api, config, max_count=100):
     # be the first
     previous_constellations = [x['constellation_name'] \
                                for x in api.get_constellations()]
-    api.launch_constellation("aws", config)
+    api.launch_constellation(CLOUD_CREDS, CLOUD_REGION, config)
     print("waiting 10 secs")
     time.sleep(10)
 
@@ -288,10 +290,15 @@ class RestTest(unittest.TestCase):
     def setUp(self):
             
         self.title("setUp")
-        # provide no op flush to avoid crashes
-        sys.stdout.flush = flush
-        sys.stderr.flush = flush
-        
+
+        try:
+            # provide no op flush to avoid crashes when sys.stdout and stderr
+            # are overriden to write xml files (when running with Jenkins)
+            sys.stdout.flush = flush
+            sys.stderr.flush = flush
+        except:
+            print("Using normal sys.stdout and sys.stderr")
+
         self.cloudsim_api = None
         self.simulator_name = None
         self.papa_cloudsim_name = None
@@ -313,6 +320,7 @@ class RestTest(unittest.TestCase):
         self.title("create_cloudsim")
         self.ip = cloudsim.create_cloudsim(username=self.user,
                                   credentials_fname=self.creds_fname,
+                                  region=CLOUD_REGION,
                                   configuration=CLOUDSIM_CONFIG,
                                   authentication_type="Basic",
                                   password=self.password,
@@ -327,7 +335,8 @@ class RestTest(unittest.TestCase):
         self.cloudsim_api = CloudSimRestApi(self.ip, self.user, self.password)
         
         self.title("launch baby cloudsim")
-        self.baby_cloudsim_name = launch_constellation(self.cloudsim_api, 
+        self.baby_cloudsim_name = launch_constellation_and_wait(
+                                                   self.cloudsim_api, 
                                                    config=CLOUDSIM_CONFIG)
         print("# baby cloudsim %s launched" % (self.baby_cloudsim_name))
         self.assertTrue(True, "baby cloudsim not created")
@@ -352,8 +361,8 @@ class RestTest(unittest.TestCase):
         print("# baby cloudsim machine updated")
 
         self.title("launch simulator")
-        self.simulator_name = launch_constellation(self.cloudsim_api, 
-                                                   config=SIM_CONFIG)
+        self.simulator_name = launch_constellation_and_wait(self.cloudsim_api, 
+                                                            config=SIM_CONFIG)
         print("# Simulator %s launched" % (self.simulator_name))
         self.assertTrue(True, "simulator not created")
  

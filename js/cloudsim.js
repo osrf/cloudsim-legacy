@@ -8,7 +8,7 @@ function create_constellation(div_name, configuration, constellation, machine_da
 
     var machines_div =  constellation_div.querySelector("#machines" );
 
-    if(configuration.indexOf("DRC") ==0)
+    if(configuration.indexOf("VRC") ==0)
     {
     	create_task_list_widget(constellation_div, constellation);
 
@@ -93,7 +93,6 @@ function create_constellation(div_name, configuration, constellation, machine_da
         create_latency_widget(machine_div, constellation, machine_name, "cs_latency", "RTT latency to its parent CloudSim", 550);
     }
 
-
     if(configuration.indexOf("Simulator") == 0)
     {
         create_task_list_widget(constellation_div, constellation);
@@ -108,7 +107,6 @@ function create_constellation(div_name, configuration, constellation, machine_da
         create_gzweb_widget(machine_div, constellation, machine_name, machine_data["sim_public_ip"]);
         create_latency_widget(machine_div, constellation, machine_name, "sim_latency", "RTT latency between the simulator and OCU over the VPN", 1.1);
     }
-
 }
 
 

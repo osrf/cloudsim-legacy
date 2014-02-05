@@ -1,18 +1,17 @@
 from __future__ import print_function
+
 import unittest
-import logging
-import testing
 import json
 import time
 import redis
 import uuid
 import os
-import shutil
+import logging
+import testing
 
 
 def log(msg, channel=__name__, severity='debug'):
     log_msg(msg, channel, severity)
-    #print("cloudsim log> %s" % msg)
 
 
 def log_msg(msg, channel, severity):
@@ -308,29 +307,29 @@ def init_constellation_data(constellation_name, data, cloudsim_config):
     initializes the Redis data for a new constellation and copies the
     cloud credentials.
     """
-    log('init_constellation_data %s' % constellation_name)
+    from aws import copy_aws_credentials
+
+    log('init_constellation_data %s, %s' % (constellation_name, data))
     cloud_provider = data['cloud_provider']
     config = data['configuration']
     username = data['username']
+    region = data['region']
 
     root_dir = cloudsim_config['machines_directory']
     constellation_directory = os.path.join(root_dir, constellation_name)
     os.makedirs(constellation_directory)
 
     # save a copy of the credentials in the constellation directory
-    credentials_src = None
-    if cloud_provider == "softlayer":
-        credentials_src = cloudsim_config['softlayer_path']
-    elif cloud_provider == "aws":
-        credentials_src = cloudsim_config['boto_path']
+    credentials_fname = os.path.join(constellation_directory,
+                                   'credentials.txt')
+    credentials_src = cloudsim_config['boto_path']
     if not os.path.exists(credentials_src):
         raise LaunchException(
             'Cannot find credentials for cloud '
             'provider "%s"' % cloud_provider)
 
-    credentials_fname = os.path.join(constellation_directory,
-                                     'credentials.txt')
-    shutil.copy(credentials_src, credentials_fname)
+    copy_aws_credentials(credentials_src, credentials_fname, region)
+
     version = cloudsim_config['cloudsim_version']
     gmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
     data['GMT'] = gmt
