@@ -114,6 +114,10 @@ class CloudSimRestApi(object):
                 return c
         raise Exception('constellation "%s" not found' % constellation_name)
 
+    def get_tasks(self, constellation_name):
+        constellation = self.get_constellation_data(constellation_name)
+        return constellation['tasks']
+
     def launch_constellation(self, provider, configuration):
         """
         Creates a new constellation with the specified configuration
