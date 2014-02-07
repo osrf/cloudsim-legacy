@@ -793,12 +793,12 @@ def resume_monitoring(root_dir):
     for const_name in constellation_names:
         try:
             log("      resume_monitoring %s" % const_name)
-            async_monitor(constellation_name)
+            async_monitor(const_name)
         except Exception, e:
             log("MONITOR ERROR %s in constellation : %s" % (e, const_name))
             tb = traceback.format_exc()
             log("traceback:  %s" % tb)
-            log("deleting %s from redis database" % constellation_name)
+            log("deleting %s from redis database" % const_name)
 
 
 def _async_create_task(constellation_name, data):

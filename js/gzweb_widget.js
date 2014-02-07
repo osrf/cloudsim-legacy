@@ -1,4 +1,5 @@
 var GZWEB_PORT = 8080;
+var NOTEBOOK_PORT = 8888;
 
 function create_start_stop_service(machine_div,
 							constellation_name,
@@ -15,7 +16,7 @@ function create_start_stop_service(machine_div,
 	var simulator_key = "gazebo";
 	var ip_key = "sim_public_ip";
 	console.log("create_sim_service '" + title + "' for " + constellation_name);
-	
+
     var widget_div = _create_empty_widget(machine_div, service_state_key);
     var status = status_img("gray");
     widget_div.innerHTML = status + "<b>" + title +"</b>";
@@ -47,20 +48,20 @@ function create_start_stop_service(machine_div,
          }, btn_timeout); // setTimeOut
     }
     widget_div.appendChild(stop_button);
-    
+
     var link = document.createElement('span');
     widget_div.appendChild(link);
-    
+
     var count = 0;
     var img = widget_div.querySelector("img");
     $.subscribe("/constellation", function(event, data){
         if(data.constellation_name != constellation_name)
-            return;       
-        if (count == 100) 
+            return;
+        if (count == 100)
             count =0;
-        else 
-            count ++;     
-        var simulator_running = false;        
+        else
+            count ++;
+        var simulator_running = false;
         var service_state = data[service_state_key];
 
         // X and simulator must be running
@@ -71,7 +72,7 @@ function create_start_stop_service(machine_div,
             	simulator_running = true;
             }
         }
-        
+
         if(is_sim_service)
         {
         	if (simulator_running == false)
@@ -80,9 +81,9 @@ function create_start_stop_service(machine_div,
 	        	if(link.innerHTML != "")
 	        		link.innerHTML = "";
 	        	stop_button.disabled = true;
-	            start_button.disabled = true;        	
+	            start_button.disabled = true;
 	        	return;
-	        }      
+	        }
         }
         if (service_state == "running")
         {
@@ -99,7 +100,7 @@ function create_start_stop_service(machine_div,
         	colors =  ["/js/images/gray_status.png", "/js/images/blue_status.png"];
         	var color = colors[count % colors.length];
         	img.src = color;
-        }	
+        }
         else if (service_state == "stopping")
         {
         	colors =  ["/js/images/gray_status.png", "/js/images/red_status.png"];
@@ -128,7 +129,7 @@ function create_cloudsim_notebook_widget(machine_div,
     var service_state_key = "gzweb";
     var service_state_key = "cloudsim_notebook";  // gz_web_key
     var btn_timeout = 10000;
-    var link_txt = '<a href=http://' + ip_address + ':' + GZWEB_PORT;
+    var link_txt = '<a href=http://' + ip_address + ':' + NOTEBOOK_PORT;
     link_txt += ' target="_blank" >Python notebook</a>';
     var start_func = function(){
         start_cloudsim_notebook(constellation_name);
@@ -159,12 +160,12 @@ function create_gzweb_widget(machine_div,
 	var service_state_key = "gzweb"; // gz_web_key
 	var btn_timeout = 10000;
 
-    var link_txt = '<a href=http://' + ip_address + ":8888" + ' target="_blank" >3D view</a> ' ;
-    
+    var link_txt = '<a href=http://' + ip_address + ':' + GZWEB_PORT + ' target="_blank" >3D view</a> ' ;
+
 	var start_func = function(){
 		start_web_tools(constellation_name);
 	}
-	
+
 	var stop_func = function(){
 		stop_web_tools(constellation_name);
 	}

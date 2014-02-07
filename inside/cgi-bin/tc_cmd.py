@@ -37,4 +37,3 @@ redis_client.publish('cloudsim_cmds', s)
 print('Content-type: application/json')
 print("\n")
 print(s)
-
