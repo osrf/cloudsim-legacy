@@ -88,7 +88,7 @@ function create_start_stop_service(machine_div,
         if (service_state == "running")
         {
             img.src = "/js/images/blue_status.png";
-            if (link.innerHTML != link_txt)
+            if (link.innerHTML == "")
             {
             	link.innerHTML = link_txt;
             }
@@ -129,8 +129,8 @@ function create_cloudsim_notebook_widget(machine_div,
     var service_state_key = "gzweb";
     var service_state_key = "cloudsim_notebook";  // gz_web_key
     var btn_timeout = 10000;
-    var link_txt = '<a href=http://' + ip_address + ':' + NOTEBOOK_PORT;
-    link_txt += ' target="_blank" >Python notebook</a>';
+    var link_txt = '<a href="http://' + ip_address + ':' + NOTEBOOK_PORT + '"';
+    link_txt += ' target="_blank">Python notebook</a>';
     var start_func = function(){
         start_cloudsim_notebook(constellation_name);
     }
@@ -160,7 +160,7 @@ function create_gzweb_widget(machine_div,
 	var service_state_key = "gzweb"; // gz_web_key
 	var btn_timeout = 10000;
 
-    var link_txt = '<a href=http://' + ip_address + ':' + GZWEB_PORT + ' target="_blank" >3D view</a> ' ;
+    var link_txt = '<a href="http://' + ip_address + ':' + GZWEB_PORT + '" target="_blank">3D view</a> ' ;
 
 	var start_func = function(){
 		start_web_tools(constellation_name);
