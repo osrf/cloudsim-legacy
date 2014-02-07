@@ -54,15 +54,21 @@ function create_constellation(div_name, configuration, constellation, machine_da
     		var machine_state_key = machine_name + "_state";
     		create_machine_state_widget(machine_div, constellation, machine_name, cloud_state_key, machine_state_key);
 
+    		if (machine_name == "router")
+    		{
+    			create_cloudsim_notebook_widget(machine_div, constellation, machine_name, machine_data["router_public_ip"]);
+
+    		}
+
     		if(has_simulator)
     		{
     			create_simulator_state_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo");
-    			
     		}
 
     		if (machine_name == "router")
     		{
-    			create_gzweb_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo", "gzweb", "router_public_ip");
+    			create_gzweb_widget(machine_div, constellation, machine_name, machine_data["router_public_ip"]);
+
     		}
     		
     		create_latency_widget(machine_div, constellation, machine_name, latency_key, latency_msg, max_latency);
@@ -96,8 +102,9 @@ function create_constellation(div_name, configuration, constellation, machine_da
         create_hostname_widget(machine_div, constellation, machine_name, "sim_public_ip", "sim_aws_id", "username", "gmt", "sim_zip_file", disable_key_download );
         create_machine_launch_monitor_widget(machine_div, constellation, machine_name, "sim_launch_msg", "sim_state");
         create_machine_state_widget(machine_div, constellation, machine_name,"sim_aws_state");
+        create_cloudsim_notebook_widget(machine_div, constellation, machine_name, machine_data["sim_public_ip"]);
         create_simulator_state_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo");
-        create_gzweb_widget(machine_div, constellation, machine_name, "sim_glx_state", "gazebo", "gzweb", "sim_public_ip");
+        create_gzweb_widget(machine_div, constellation, machine_name, machine_data["sim_public_ip"]);
         create_latency_widget(machine_div, constellation, machine_name, "sim_latency", "RTT latency between the simulator and OCU over the VPN", 1.1);
     }
 }

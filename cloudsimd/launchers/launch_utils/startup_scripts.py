@@ -11,7 +11,7 @@ def get_open_vpn_single(client_ip,
                         server_ip):
     s = """
 
-cat <<DELIM >  /home/ubuntu/openvpn.config  
+cat <<DELIM >  /home/ubuntu/openvpn.config
 dev tun
 ifconfig """ + server_ip + " " + client_ip + """
 secret static.key
@@ -27,9 +27,9 @@ openvpn --genkey --secret static.key
 echo "Setting key permissions" >> /home/ubuntu/setup.log
 chmod 644 static.key
 
-echo "Set up for autostart by copying conf to /etc/openvpn" >> /home/ubuntu/setup.log 
+echo "Set up for autostart by copying conf to /etc/openvpn" >> /home/ubuntu/setup.log
 cp /home/ubuntu/openvpn.config /etc/openvpn/openvpn.conf
-cp static.key /etc/openvpn/static.key    
+cp static.key /etc/openvpn/static.key
 
 echo "openvpn setup complete" >> /home/ubuntu/setup.log
 
@@ -86,9 +86,7 @@ echo "    sudo killall openvpn"
 """
 
 
-def create_openvpn_client_cfg_file(hostname,
-                            client_ip,
-                            server_ip):
+def create_openvpn_client_cfg_file(hostname, client_ip, server_ip):
     s = """
 remote """ + hostname + """
 dev tun
@@ -134,7 +132,7 @@ def create_ssh_connect_file(key_file, ip):
 # ssh -i """ + key_file + " ubuntu@" + ip + """
 
 #
-# This commands is similar, but it suppresses prompts and can be invoked 
+# This commands is similar, but it suppresses prompts and can be invoked
 # from any directory
 #
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -186,9 +184,9 @@ deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise universe
 deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
 deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise-updates universe
 
-## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
 ## team, and may not be under a free licence. Please satisfy yourself as to
-## your rights to use the software. Also, please note that software in 
+## your rights to use the software. Also, please note that software in
 ## multiverse WILL NOT receive any review or updates from the Ubuntu
 ## security team.
 deb http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
@@ -304,7 +302,7 @@ echo "libapache2-mod-auth-openid 0.6 installed from ppa:rye/ppa" >> /home/ubuntu
 /etc/init.d/apache2 restart
 echo "apache2 restarted" >> /home/ubuntu/setup.log
 
-# to list installed modules  
+# to list installed modules
 # apachectl -t -D DUMP_MODULES
 
 # Make sure that www-data can run programs in the background (used inside CGI scripts)
@@ -336,13 +334,13 @@ touch /home/ubuntu/cloudsim/setup/done
 
 def get_simulator_script(ubuntu_sources_repo,
                          drc_package_name,
-                   machine_ip,
-                   ros_master_ip,
-                   gpu_driver_list,
-                   ppa_list,
-                   OPENVPN_CLIENT_IP,
-                   OPENVPN_SERVER_IP
-                   ):
+                         machine_ip,
+                         ros_master_ip,
+                         gpu_driver_list,
+                         ppa_list,
+                         OPENVPN_CLIENT_IP,
+                         OPENVPN_SERVER_IP
+                         ):
 
     s = """#!/bin/bash
 # Exit on error
@@ -392,7 +390,7 @@ cat <<DELIM > """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash
 sudo reboot now
 
 DELIM
-chmod +x """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash    
+chmod +x """ + cloudsim_dir + """/reboot_""" + machine_name + """.bash
     """
     return s
 
@@ -489,7 +487,7 @@ touch /home/ubuntu/cloudsim/setup/deploy_ready
 
 
 """ + _configure_and_install_iptable_generator(
-                                        public_network_interface_name) + """
+        public_network_interface_name) + """
 """ + _robotics_packages_install_generator(drc_package_name) + """
 
 # roscore is in simulator's machine
@@ -506,8 +504,8 @@ DELIM
 
 # _networking_sniffing_and_control_generator
 """ + _networking_sniffing_and_control_generator(
-                                        private_network_interface_name,
-                                        public_network_interface_name) + """
+        private_network_interface_name,
+        public_network_interface_name) + """
 """ + _gzweb_clone_and_deploy_generator() + """
 """ + _notebook_install_and_upstart_generator() + """
 
@@ -940,10 +938,10 @@ chmod +x /home/ubuntu/cloudsim/ping_gl.bash
 
 
 def _start_sim_stop_sim_local_generator(machine_ip,
-                source_sim_fname="/home/ubuntu/cloudsim/sim_setup.bash",
-                start_sim_fname="/home/ubuntu/cloudsim/start_gazebo.bash",
-                ping_sim_fname="/home/ubuntu/cloudsim/ping_gazebo.bash",
-                stop_sim_fname="/home/ubuntu/cloudsim/stop_gazebo.bash"):
+        source_sim_fname="/home/ubuntu/cloudsim/sim_setup.bash",
+        start_sim_fname="/home/ubuntu/cloudsim/start_gazebo.bash",
+        ping_sim_fname="/home/ubuntu/cloudsim/ping_gazebo.bash",
+        stop_sim_fname="/home/ubuntu/cloudsim/stop_gazebo.bash"):
     s = """
 #!/bin/bash
 
@@ -1020,7 +1018,7 @@ echo \`date\` "Stop sim - Begin" >> """ + stop_sim_fname + """.log
 # TODO: re-enable this log cleanup logic.  Waiting on Gazebo issue #842
 #if timeout -k 1 2 gztopic list; then
 #  LOG_PATH=\`ps aux | grep gzserver | grep -m 1 record_path | cut -d = -f 3 | cut -d ' ' -f 1\`/state.log
-#  echo "  Log file: \$LOG_PATH" >> /home/ubuntu/cloudsim/stop_sim.log 
+#  echo "  Log file: \$LOG_PATH" >> /home/ubuntu/cloudsim/stop_sim.log
 #  timeout -k 1 10 gzlog stop
 #  # Let cleanup start, which pauses the world
 #  sleep 5
@@ -1031,7 +1029,7 @@ echo \`date\` "Stop sim - Begin" >> """ + stop_sim_fname + """.log
 #        break
 #    fi
 #    # look for the name of the Log file
-#    if [ "\`tail -n 1 \$LOG_PATH\`" = "</gazebo_log>" ] ; then 
+#    if [ "\`tail -n 1 \$LOG_PATH\`" = "</gazebo_log>" ] ; then
 #        echo "  Log end tag detected" >> /home/ubuntu/cloudsim/stop_sim.log
 #        break
 #    fi
@@ -1218,7 +1216,7 @@ chmod +x /home/ubuntu/cloudsim/load_gazebo_models.bash
 
 
 def _get_gzweb_deploy_generator(cloudsim_dir):
-    s="""
+    s = """
 #
 # gzweb
 #
@@ -1249,7 +1247,7 @@ date
 
 """ + cloudsim_dir + """/gzweb/start_gzweb.sh &
 
-sudo start cloudsim_notebook
+# sudo start cloudsim_notebook
 
 DELIM
 chmod +x """ + cloudsim_dir + """/start_gzweb.bash
@@ -1266,7 +1264,7 @@ date
 
 """ + cloudsim_dir + """/gzweb/stop_gzweb.sh
 
-sudo stop cloudsim_notebook
+# sudo stop cloudsim_notebook
 
 DELIM
 
@@ -1281,6 +1279,48 @@ ps aux | grep ws_server  | grep -v grep
 
 DELIM
 chmod +x """ + cloudsim_dir + """/ping_gzweb.bash
+
+
+# ----------------------------------------------------------------------------
+cat <<DELIM > """ + cloudsim_dir + """/start_cloudsim_notebook.bash
+#!/bin/bash
+
+sudo start cloudsim_notebook
+
+DELIM
+chmod +x """ + cloudsim_dir + """/start_cloudsim_notebook.bash
+
+# ----------------------------------------------------------------------------
+cat <<DELIM > """ + cloudsim_dir + """/stop_cloudsim_notebook.bash
+#!/bin/bash
+
+sudo stop cloudsim_notebook
+
+DELIM
+chmod +x """ + cloudsim_dir + """/stop_cloudsim_notebook.bash
+
+# ----------------------------------------------------------------------------
+cat <<DELIM > """ + cloudsim_dir + """/ping_cloudsim_notebook.bash
+#!/bin/bash
+
+# Fails with 1 if cloudsim_notebook is not running
+# exits with 0 if cloudsim_notebook is running
+
+check_upstart_service(){
+    status \$1 | grep -q "^\$1 start" > /dev/null
+    return \$?
+}
+
+if check_upstart_service cloudsim_notebook; then
+    echo "RUNNING"
+    exit 0
+else
+    echo "STOPPED"
+    exit 1
+fi
+
+DELIM
+chmod +x """ + cloudsim_dir + """/ping_cloudsim_notebook.bash
 
     """
     return s
@@ -1298,7 +1338,7 @@ def _get_deploy_start_stop_sim_generator(cloudsim_dir,
 sudo vrc_init_tc.py """ + public_network_interface_name + """
 
 """
-    if private_network_interface_name == None:
+    if private_network_interface_name is None:
         restore_default_tc_rules += ""
     else:
         restore_default_tc_rules += """
@@ -1392,11 +1432,11 @@ def get_simulator_deploy_script(cloudsim_dir="/home/ubuntu/cloudsim"):
 """ + _get_gzweb_deploy_generator(cloudsim_dir) + """
 
 """ + _get_deploy_start_stop_sim_generator(
-           cloudsim_dir,
-           public_network_interface_name,
-           private_network_interface_name,
-           sim_ip=None  # None here means call a local script (no ssh from a router)
-           ) + """
+        cloudsim_dir,
+        public_network_interface_name,
+        private_network_interface_name,
+        sim_ip=None  # None here means call a local script (no ssh from router)
+        ) + """
 
 """ + _get_score_deploy_generator(cloudsim_dir) + """
 """ + _get_network_usage_deploy_generator(cloudsim_dir) + """
@@ -1541,7 +1581,7 @@ chmod +x """ + cloudsim_dir + """/copy_net_usage.bash
 cat <<DELIM > """ + cloudsim_dir + """/get_sim_logs.bash
 #!/bin/bash
 
-# Get state.log and score.log from the simulator 
+# Get state.log and score.log from the simulator
 
 USAGE="Usage: get_sim_logs.bash <task_dirname>"
 
@@ -1598,8 +1638,8 @@ DELIM
 chmod +x """ + cloudsim_dir + """/get_network_usage.bash
     """
     return s
-    
-    
+
+
 def _get_score_deploy_generator(cloudsim_dir):
     s = """# ----------------------------------------------------
 
@@ -1621,7 +1661,7 @@ class UpperCase(unittest.TestCase):
     def atest_one(self):
         dst_dir = '/home/hugo/code/tests/deploy_test'
         s = get_router_deploy_script("eth0", "eth0", {"sim": "10.51",
-                                            "router": "10.50"}, dst_dir)
+                                     "router": "10.50"}, dst_dir)
         fname = os.path.join(dst_dir, "gen.sh")
         with open(fname, 'w') as f:
             f.write(s)
@@ -1629,25 +1669,25 @@ class UpperCase(unittest.TestCase):
     def ztest_drc_script(self):
 
         s = get_drc_script(
-           ubuntu_sources_repo="http://us.archive.ubuntu.com/ubuntu/",
-           drc_package_name="drcsim",
-           machine_ip="10.51",
-           ros_master_ip="10.51",
-           gpu_driver_list="",
-           ppa_list=[],
-           OPENVPN_CLIENT_IP="11.8.0.0",
-           ROUTER_IP="10.50")
+            ubuntu_sources_repo="http://us.archive.ubuntu.com/ubuntu/",
+            drc_package_name="drcsim",
+            machine_ip="10.51",
+            ros_master_ip="10.51",
+            gpu_driver_list="",
+            ppa_list=[],
+            OPENVPN_CLIENT_IP="11.8.0.0",
+            ROUTER_IP="10.50")
         print(s)
 
         s = get_router_script(
-                  ubuntu_sources_repo="http://us.archive.ubuntu.com/ubuntu/",
-                  public_network_interface_name='eth0',
-                  private_network_interface_name=None,
-                  machine_private_ip='10.50',
-                  ros_master_ip='10.51',
-                  drc_package_name='drcsim',
-                  vpn_server_ip='11.8.0.1',
-                  vpn_client_ip='11.8.0.2')
+            ubuntu_sources_repo="http://us.archive.ubuntu.com/ubuntu/",
+            public_network_interface_name='eth0',
+            private_network_interface_name=None,
+            machine_private_ip='10.50',
+            ros_master_ip='10.51',
+            drc_package_name='drcsim',
+            vpn_server_ip='11.8.0.1',
+            vpn_client_ip='11.8.0.2')
         print(s)
 
     def test_deploy_simulator(self):

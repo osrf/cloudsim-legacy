@@ -17,7 +17,10 @@ machine_states = ['terminated', 'terminating', 'stopped' 'stopping',
                   'network_setup', 'packages_setup', 'rebooting',
                   'running',  'simulation_running']
 constellation_states = ['terminated', 'terminating', 'launching', 'running']
+
 LATENCY_TIME_BUFFER = 60
+GZWEB_KEY = "gzweb"
+CLOUDSIM_NOTEBOOK_KEY = "cloudsim_notebook"
 
 
 def log(msg, channel=__name__, severity="debug"):
@@ -118,10 +121,11 @@ def get_ssh_client(constellation_name, machine_state, ip_key, sshkey_key):
     """
     ssh_client = None
     constellation = ConstellationState(constellation_name)
-    if machine_states.index(machine_state) >= machine_states.index(
-                                                            'packages_setup'):
-        constellation_directory = constellation.get_value(
-                                                'constellation_directory')
+    if machine_states.index(machine_state) >= \
+       machine_states.index('packages_setup'):
+
+        constellation_directory = \
+            constellation.get_value('constellation_directory')
         machine_ip = constellation.get_value(ip_key)
         key_pair_name = constellation.get_value(sshkey_key)
         ssh_client = SshClient(constellation_directory,
@@ -136,15 +140,13 @@ def monitor_launch_state(constellation_name, ssh_client,
                          dpkg_cmd,
                          launch_msg_key):
 
-    if ssh_client == None:  # too early to verify
+    if ssh_client is None:  # too early to verify
         return
     try:
         constellation = ConstellationState(constellation_name)
         constellation_state = constellation.get_value("constellation_state")
         if constellation_states.index(constellation_state) >= \
-                                constellation_states.index("launching"):
-            #if machine_state == "running":
-            #    constellation.set_value(launch_msg_key, "complete")
+           constellation_states.index("launching"):
             if machine_state == 'packages_setup':
                 dpkg_line = ssh_client.cmd(dpkg_cmd)
                 package_msg = parse_dpkg_line(dpkg_line)
@@ -163,14 +165,14 @@ def monitor_simulator(constellation_name,
     Detects if the simulator is running and writes the
     result into the "gazebo" dictionary key
     """
-    if ssh_client == None:
+    if ssh_client is None:
         #constellation.set_value("gazebo", "not running")
         return False
 
     constellation = ConstellationState(constellation_name)
     simulation_state = constellation.get_value(sim_state_key)
     if machine_states.index(simulation_state) >= \
-                            machine_states.index('running'):
+       machine_states.index('running'):
         gl_state = constellation.get_value("sim_glx_state")
         if gl_state == "running":
             try:
@@ -187,31 +189,41 @@ def monitor_simulator(constellation_name,
     return True
 
 
+def monitor_cloudsim_notebook(constellation_name, ssh_client):
+    constellation = ConstellationState(constellation_name)
+    try:
+        out = ssh_client.cmd("bash cloudsim/ping_cloudsim_notebook.bash")
+        constellation.set_value(CLOUDSIM_NOTEBOOK_KEY, "running")
+    except Exception, e:
+        log("monitor: cloudsim/ping_cloudsim_notebook.bash error: %s" % e)
+        constellation.set_value(CLOUDSIM_NOTEBOOK_KEY, "")
+
+
 def monitor_gzweb(constellation_name, ssh_client, sim_state):
     """
     Detects if the gzweb is running and writes the
     url into the "gzweb" dictionary key
     """
-    gzweb_key = "gzweb"
+
     constellation = ConstellationState(constellation_name)
     simulation_state = constellation.get_value('sim_state')
     if machine_states.index(simulation_state) >= \
-                            machine_states.index('running'):
+       machine_states.index('running'):
         gl_state = constellation.get_value("gazebo")
         if gl_state == "running":
             try:
-                # current_state = constellation.get_value(gzweb_key)
+                # current_state = constellation.get_value(GZWEB_KEY)
                 out = ssh_client.cmd("bash cloudsim/ping_gzweb.bash")
                 log("ping_gzweb returned [%s]" % out)
                 if out == "":
-                    constellation.set_value(gzweb_key, "not running")
+                    constellation.set_value(GZWEB_KEY, "not running")
                     return False
                 else:
-                    constellation.set_value(gzweb_key, "running")
+                    constellation.set_value(GZWEB_KEY, "running")
                     return True
             except Exception, e:
                 log("monitor: cloudsim/ping_gzweb.bash error: %s" % e)
-                constellation.set_value(gzweb_key, "")
+                constellation.set_value(GZWEB_KEY, "")
                 return False
     return False
 
@@ -249,7 +261,7 @@ def monitor_ssh_ping(constellation_name,
     Pings a machine and integrates the results with the existing data into the
     database. The ping is done from the ssh client (i.e router computer)
     """
-    if ssh_client == None:
+    if ssh_client is None:
         return
     try:
         ping_str = ssh_client.cmd("ping -c3 %s" % ip_address)
@@ -345,14 +357,13 @@ def monitor_task(constellation_name, ssh_router):
         if score_str:
             final_score += "%s" % score_str
         log("score %s" % final_score)
-        constellation.update_task_value(task['task_id'],
-                                            'task_message',
-                                            final_score)
+        constellation.update_task_value(
+            task['task_id'], 'task_message', final_score)
         if sim_time > timeout:
             task = constellation.get_task(task_id)
             timeout_msg = ' [Timeout]'
             msg = task['task_message']
-            if  msg.find(timeout_msg) < 0:
+            if msg.find(timeout_msg) < 0:
                 msg += timeout_msg
                 constellation.update_task_value(task['task_id'],
                                                 'task_message',
