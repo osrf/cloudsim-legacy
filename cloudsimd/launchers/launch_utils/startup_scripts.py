@@ -1292,15 +1292,15 @@ chmod +x """ + cloudsim_dir + """/stop_cloudsim_notebook.bash
 cat <<DELIM > """ + cloudsim_dir + """/ping_cloudsim_notebook.bash
 #!/bin/bash
 
-# Fails with 1 if cloudsimd is not running
-# exits with 0 if cloudsimd is running
+# Fails with 1 if cloudsim_notebook is not running
+# exits with 0 if cloudsim_notebook is running
 
 check_upstart_service(){
     status \$1 | grep -q "^\$1 start" > /dev/null
     return \$?
 }
 
-if check_upstart_service cloudsimd; then
+if check_upstart_service cloudsim_notebook; then
     echo "RUNNING"
     exit 0
 else
