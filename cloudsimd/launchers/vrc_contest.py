@@ -11,12 +11,13 @@ import dateutil.parser
 
 from shutil import copyfile
 
-from launch_utils.traffic_shaping import  run_tc_command
+from launch_utils.traffic_shaping import run_tc_command
 
 
 from launch_utils.monitoring import constellation_is_terminated,\
     monitor_launch_state,  monitor_ssh_ping,\
-    monitor_task, monitor_simulator, TaskTimeOut, monitor_gzweb
+    monitor_task, monitor_simulator, TaskTimeOut, monitor_gzweb,\
+    monitor_cloudsim_notebook
 
 from launch_utils.softlayer import load_osrf_creds,\
     get_softlayer_path, get_machine_login_info, create_openvpn_key
@@ -38,7 +39,7 @@ from launch_utils.ssh_queue import get_ssh_cmd_generator, empty_ssh_queue
 
 import multiprocessing
 from launch_utils.sl_cloud import acquire_softlayer_constellation,\
- terminate_softlayer_constellation
+    terminate_softlayer_constellation
 
 from launch_utils.aws import acquire_aws_constellation,\
     get_aws_ubuntu_sources_repo
@@ -59,6 +60,20 @@ launch_sequence = ["nothing", "os_reload", "launch", "init_router",
 
 def log(msg, channel=__name__, severity="info"):
     log_msg(msg, channel, severity)
+
+
+def start_cloudsim_notebook(constellation_name):
+    log("start_cloudsim_notebook for %s" % (constellation_name))
+    ssh_router = _get_ssh_router(constellation_name)
+    o = ssh_router.cmd("cloudsim/start_cloudsim_notebook.bash")
+    log("cloudsim_notebook started for %s: %s" % (constellation_name, o))
+
+
+def stop_cloudsim_notebook(constellation_name):
+    log("stop_cloudsim_notebook for %s" % (constellation_name))
+    ssh_router = _get_ssh_router(constellation_name)
+    o = ssh_router.cmd("cloudsim/stop_cloudsim_notebook.bash")
+    log("cloudsim_notebook stopped for %s: %s" % (constellation_name, o))
 
 
 def start_gzweb(constellation_name):
@@ -103,10 +118,10 @@ def get_ping_data(ping_str):
 
 
 def _start_simulator(constellation_name,
-                    package_name,
-                    launch_file_name,
-                    launch_args,
-                    task_timeout):
+                     package_name,
+                     launch_file_name,
+                     launch_args,
+                     task_timeout):
     ssh_router = _get_ssh_router(constellation_name)
     c = "bash cloudsim/start_sim.bash %s %s %s" % (package_name,
                                                    launch_file_name,
@@ -141,10 +156,10 @@ def start_task(constellation_name, task):
     log("** START SIMULATOR ***")
     try:
         _start_simulator(constellation_name,
-                    task['ros_package'],
-                    task['ros_launch'],
-                    task['ros_args'],
-                    task['timeout'])
+                         task['ros_package'],
+                         task['ros_launch'],
+                         task['ros_args'],
+                         task['timeout'])
     finally:
         log("START TASK  DONE %s for %s" % (constellation_name, task))
 
@@ -166,8 +181,8 @@ def check_for_end_of_task(constellation_name, ssh_router):
 
 def _get_ssh_router(constellation_name):
     constellation = ConstellationState(constellation_name)
-    constellation_directory = constellation.get_value(
-                                                    'constellation_directory')
+    constellation_directory = \
+        constellation.get_value('constellation_directory')
     router_ip = constellation.get_value("router_public_ip")
     ssh_router = SshClient(constellation_directory,
                            "key-router",
@@ -200,13 +215,20 @@ def monitor_gzweb_proc(constellation_name, counter):
     log("monitor_gzweb_proc() ENDS %s" % counter)
 
 
+def monitor_notebook_proc(constellation_name, counter):
+    # monitor_cloudsim_notebook
+    ssh_client = _get_ssh_router(constellation_name)
+    monitor_cloudsim_notebook(constellation_name, ssh_client)
+    log("monitor_notebook_prop() ENDS %s" % counter)
+
+
 def monitor_launch(constellation_name, machine_name, counter):
     ssh_router = _get_ssh_router(constellation_name)
     constellation = ConstellationState(constellation_name)
     machine_state = constellation.get_value('%s_state' % machine_name)
     monitor_launch_state(constellation_name, ssh_router, machine_state,
-                             "cloudsim/dpkg_log_%s.bash" % machine_name,
-                             '%s_launch_msg' % machine_name)
+                         "cloudsim/dpkg_log_%s.bash" % machine_name,
+                         '%s_launch_msg' % machine_name)
     log("monitor_launch() ENDS %s %s" % (machine_name, counter))
 
 
@@ -228,25 +250,29 @@ def monitor(constellation_name, counter):
 
     procs = []
     p = multiprocessing.Process(target=monitor_simulator_proc,
-                            args=(constellation_name, counter))
+                                args=(constellation_name, counter))
     procs.append(p)
 
     p = multiprocessing.Process(target=monitor_task_proc,
-                                    args=(constellation_name, counter))
+                                args=(constellation_name, counter))
     procs.append(p)
 
     p = multiprocessing.Process(target=monitor_gzweb_proc,
-                            args=(constellation_name, counter))
+                                args=(constellation_name, counter))
+    procs.append(p)
+
+    p = multiprocessing.Process(target=monitor_notebook_proc,
+                                args=(constellation_name, counter))
     procs.append(p)
 
     for machine_name, data in machines.iteritems():
         ip = data['ip']
         if machine_name == "router":
             ip = OPENVPN_CLIENT_IP
-        p = multiprocessing.Process(target=ssh_ping_proc,
-                        args=(constellation_name,
-                              ip,
-                              '%s_latency' % machine_name, counter))
+        p = multiprocessing.Process(
+            target=ssh_ping_proc,
+            args=(constellation_name,
+                  ip, '%s_latency' % machine_name, counter))
         procs.append(p)
 
     for p in procs:
@@ -327,9 +353,9 @@ def create_private_machine_zip(machine_name_prefix,
 
 
 def _create_deploy_zip_files(constellation_name,
-                     constellation_directory,
-                     machines,
-                     zipped_files=[]):
+                             constellation_directory,
+                             machines,
+                             zipped_files=[]):
 
     private_network_interface_name = machines['router']['public_network_itf']
     public_network_interface_name = machines['router']['private_network_itf']
@@ -338,26 +364,6 @@ def _create_deploy_zip_files(constellation_name,
     deploy_script = get_router_deploy_script(private_network_interface_name,
                                              public_network_interface_name,
                                              machines_to_ip)
-
-# import apt
-#
-# cache = apt.Cache()
-# p = cache['drcsim']
-# v = p.installed.version
-# d = p.description
-
-# pkg = cache['python-apt'] # Access the Package object for python-apt
-# print 'python-apt is trusted:', pkg.candidate.origins[0].trusted
-#
-# # Mark python-apt for install
-# pkg.mark_install()
-#
-# print 'python-apt is marked for install:', pkg.marked_install
-#
-# print 'python-apt is (summary):', pkg.candidate.summary
-#
-# # Now, really install it
-# cache.commit()
 
     # constellation = ConstellationState(constellation_name)
     deploy_dir = os.path.join(constellation_directory, "deploy")
@@ -409,8 +415,8 @@ def create_router_zip(router_ip, constellation_name, key_prefix,
     os.chmod(vpnkey_fname, 0600)
 
     # create open vpn config file
-    file_content = create_openvpn_client_cfg_file(router_ip,
-                    client_ip=OPENVPN_CLIENT_IP, server_ip=OPENVPN_SERVER_IP)
+    file_content = create_openvpn_client_cfg_file(
+        router_ip, client_ip=OPENVPN_CLIENT_IP, server_ip=OPENVPN_SERVER_IP)
     fname_vpn_cfg = os.path.join(router_machine_dir, "openvpn.config")
     with open(fname_vpn_cfg, 'w') as f:
         f.write(file_content)
@@ -446,7 +452,7 @@ def create_router_zip(router_ip, constellation_name, key_prefix,
     router_fname_zip = os.path.join(router_machine_dir,
                                     "router_%s.zip" % constellation_name)
     create_zip_file(router_fname_zip,
-                            "router_%s" % constellation_name, files_to_zip)
+                    "router_%s" % constellation_name, files_to_zip)
 
     # create another zip file, this time for users only
     # (without the ssh key or the ssh-router.bash)
@@ -454,16 +460,16 @@ def create_router_zip(router_ip, constellation_name, key_prefix,
                     fname_vpn_cfg,
                     vpnkey_fname,
                     fname_ros, ]
-    router_user_fname_zip = os.path.join(router_machine_dir,
-                                    "user_router_%s.zip" % constellation_name)
+    router_user_fname_zip = os.path.join(
+        router_machine_dir, "user_router_%s.zip" % constellation_name)
     create_zip_file(router_user_fname_zip,
-                                "router_%s" % constellation_name, files_to_zip)
+                    "router_%s" % constellation_name, files_to_zip)
     return router_fname_zip, router_user_fname_zip
 
 
 def _create_zip_files(constellation_name,
-                     constellation_directory,
-                     machines):
+                      constellation_directory,
+                      machines):
     """
     Creates zip files for each machines. Different files are generated for
     user roles (ex: user_router.zip has no router ssh key)
@@ -480,26 +486,27 @@ def _create_zip_files(constellation_name,
         zip_fname = os.path.join(constellation_directory,
                                  "%s.zip" % machine_name)
         zip_user_fname = os.path.join(constellation_directory,
-                                 "user_%s.zip" % machine_name)
+                                      "user_%s.zip" % machine_name)
 
         constellation.set_value(msg_key, 'creating zip file')
         if machine_name == "router":
             router_ip = constellation.get_value("router_public_ip")
             router_zip_fname, router_zip_user_fname = create_router_zip(
-                                                    router_ip,
-                                                    constellation_name,
-                                                    machine_key_prefix,
-                                                    constellation_directory)
+                router_ip,
+                constellation_name,
+                machine_key_prefix,
+                constellation_directory)
             shutil.copy(router_zip_fname, zip_fname)
             shutil.copy(router_zip_user_fname, zip_user_fname)
         else:
             constellation.set_value(msg_key, 'creating zip files')
             ip = machine_data['ip']
-            machine_zip_fname = create_private_machine_zip(machine_name,
-                                               ip,
-                                               constellation_name,
-                                               constellation_directory,
-                                               machine_key_prefix)
+            machine_zip_fname = create_private_machine_zip(
+                machine_name,
+                ip,
+                constellation_name,
+                constellation_directory,
+                machine_key_prefix)
             shutil.copy(machine_zip_fname, zip_fname)
             if machine_name != "sim":
                 shutil.copy(machine_zip_fname, zip_user_fname)
@@ -510,8 +517,8 @@ def _create_zip_files(constellation_name,
 
 def _reboot_machines(constellation_name,
                      ssh_router,
-                    machine_names,
-                    constellation_directory):
+                     machine_names,
+                     constellation_directory):
 
     constellation = ConstellationState(constellation_name)
     launch_stage = constellation.get_value("launch_stage")
@@ -520,15 +527,15 @@ def _reboot_machines(constellation_name,
 
     #constellation.set_value('router_aws_state', m)
     __wait_for_find_file(constellation_name,
-                       constellation_directory,
-                       machine_names,
-                       "cloudsim/setup/done",
-                       "running")
+                         constellation_directory,
+                         machine_names,
+                         "cloudsim/setup/done",
+                         "running")
     constellation.set_value('router_launch_msg',
-                                    "Waiting for constellation reboot")
+                            "Waiting for constellation reboot")
     for machine_name in machine_names:
         constellation.set_value('%s_launch_msg' % machine_name,
-                                    "Rebooting after software installation")
+                                "Rebooting after software installation")
         constellation.set_value('%s_aws_state' % machine_name, "rebooting")
 
     for machine_name in machine_names:
@@ -564,13 +571,13 @@ def deploy_constellation(constellation_name, cloud_provider, machines,
                          openvpn_fname):
     constellation = ConstellationState(constellation_name)
 
-    constellation_directory = constellation.get_value(
-                                                    'constellation_directory')
+    constellation_directory = \
+        constellation.get_value('constellation_directory')
 
     deploy_fname = _create_deploy_zip_files(constellation_name,
-        constellation_directory,
-        machines,
-        [openvpn_fname])
+                                            constellation_directory,
+                                            machines,
+                                            [openvpn_fname])
 
     constellation.set_value('router_launch_msg',
                             "waiting for machine to be online")
@@ -620,92 +627,93 @@ def register_configurations(configs):
         openvpn_client_addr = '%s/32' % (OPENVPN_CLIENT_IP)  # '11.8.0.2'
         private_subnet = '10.0.0.0/24'
         machines = {}
-        machines['router'] = {'hardware': 'm1.large',    # 't1.micro',
-                      'software': router_ami,
-                      'ip': ROUTER_IP,   # 'startup_script': router_script,
-                      'public_network_itf': router_public_network_itf,
-                      'private_network_itf': router_private_network_itf,
-                      'security_group': [{'name': 'openvpn',
-                                          'protocol': 'udp',
-                                          'from_port': 1194,
-                                          'to_port': 1194,
-                                          'cidr': '0.0.0.0/0', },
-                                          {'name': 'ping',
-                                           'protocol': 'icmp',
-                                          'from_port': -1,
-                                          'to_port': -1,
-                                          'cidr': '0.0.0.0/0', },
-                                          {'name': 'ssh',
-                                           'protocol': 'tcp',
-                                          'from_port': 22,   # ssh
-                                          'to_port': 22,
-                                          'cidr': '0.0.0.0/0', },
-                                          {'name': 'all udp on private sub',
-                                           'protocol': 'udp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': private_subnet, },
-                                          {'name': 'all tcp on private sub',
-                                          'protocol': 'tcp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': private_subnet, },
-                                         {'name': 'gzweb',
-                                          'protocol': 'tcp',
-                                          'from_port': 8080,
-                                          'to_port': 8080,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'name': 'gzweb websocket',
-                                          'protocol': 'tcp',
-                                          'from_port': 7681,
-                                          'to_port': 7681,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'name': 'python notebook',
-                                          'protocol': 'tcp',
-                                          'from_port': 8888,
-                                          'to_port': 8888,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'name': 'robot web tools',
-                                          'protocol': 'tcp',
-                                          'from_port': 9090,
-                                          'to_port': 9090,
-                                          'cidr': '0.0.0.0/0', },
-                                         ]}
-        machines['sim'] = {'hardware': 'cg1.4xlarge',
-                  'software': sim_ami,
-                  'ip': SIM_IP,
-                      'security_group': [{'protocol': 'icmp',  # ping
-                                          'from_port': -1,
-                                          'to_port': -1,
-                                          'cidr': '0.0.0.0/0', },
-                                         {'protocol': 'udp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': private_subnet, },
-                                         {'protocol': 'tcp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': private_subnet, },
-                                         {'protocol': 'tcp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': openvpn_client_addr, },
-                                         {'protocol': 'udp',
-                                          'from_port': 0,
-                                          'to_port': 65535,
-                                          'cidr': openvpn_client_addr, }]
-                    }
+        machines['router'] = {
+            'hardware': 'm1.large',    # 't1.micro',
+            'software': router_ami,
+            'ip': ROUTER_IP,   # 'startup_script': router_script,
+            'public_network_itf': router_public_network_itf,
+            'private_network_itf': router_private_network_itf,
+            'security_group': [{'name': 'openvpn',
+                                'protocol': 'udp',
+                                'from_port': 1194,
+                                'to_port': 1194,
+                                'cidr': '0.0.0.0/0', },
+                               {'name': 'ping',
+                                'protocol': 'icmp',
+                                'from_port': -1,
+                                'to_port': -1,
+                                'cidr': '0.0.0.0/0', },
+                               {'name': 'ssh',
+                                'protocol': 'tcp',
+                                'from_port': 22,   # ssh
+                                'to_port': 22,
+                                'cidr': '0.0.0.0/0', },
+                               {'name': 'all udp on private sub',
+                                'protocol': 'udp',
+                                'from_port': 0,
+                                'to_port': 65535,
+                                'cidr': private_subnet, },
+                               {'name': 'all tcp on private sub',
+                                'protocol': 'tcp',
+                                'from_port': 0,
+                                'to_port': 65535,
+                                'cidr': private_subnet, },
+                               {'name': 'gzweb',
+                                'protocol': 'tcp',
+                                'from_port': 8080,
+                                'to_port': 8080,
+                                'cidr': '0.0.0.0/0', },
+                               {'name': 'gzweb websocket',
+                                'protocol': 'tcp',
+                                'from_port': 7681,
+                                'to_port': 7681,
+                                'cidr': '0.0.0.0/0', },
+                               {'name': 'python notebook',
+                                'protocol': 'tcp',
+                                'from_port': 8888,
+                                'to_port': 8888,
+                                'cidr': '0.0.0.0/0', },
+                               {'name': 'robot web tools',
+                                'protocol': 'tcp',
+                                'from_port': 9090,
+                                'to_port': 9090,
+                                'cidr': '0.0.0.0/0', },
+                               ]}
+        machines['sim'] = {
+            'hardware': 'cg1.4xlarge',
+            'software': sim_ami,
+            'ip': SIM_IP,
+            'security_group': [{'protocol': 'icmp',  # ping
+                                'from_port': -1,
+                                'to_port': -1,
+                                'cidr': '0.0.0.0/0', },
+                               {'protocol': 'udp',
+                                'from_port': 0,
+                                'to_port': 65535,
+                                'cidr': private_subnet, },
+                               {'protocol': 'tcp',
+                                'from_port': 0,
+                                'to_port': 65535,
+                                'cidr': private_subnet, },
+                               {'protocol': 'tcp',
+                                'from_port': 0,
+                                'to_port': 65535,
+                                'cidr': openvpn_client_addr, },
+                               {'protocol': 'udp',
+                                'from_port': 0,
+                                'to_port': 65535,
+                                'cidr': openvpn_client_addr, }]}
 
         if has_fc1:
-            machines['fc1'] = {'hardware': 'cg1.4xlarge',
-                      'software': 'ubuntu_1204_x64_cluster',
-                      'ip': FC1_IP,
-                        }
+            machines['fc1'] = {
+                'hardware': 'cg1.4xlarge',
+                'software': 'ubuntu_1204_x64_cluster',
+                'ip': FC1_IP, }
         if has_fc2:
-            machines['fc2'] = {'hardware': 'cg1.4xlarge',
-                      'software': 'ubuntu_1204_x64_cluster',
-                      'ip': FC2_IP,
-                        }
+            machines['fc2'] = {
+                'hardware': 'cg1.4xlarge',
+                'software': 'ubuntu_1204_x64_cluster',
+                'ip': FC2_IP, }
 
         config = {"name": config_name,
                   "description": config_description,
@@ -736,27 +744,27 @@ def register_configurations(configs):
 
     us_east_cfgs = configs["aws"]["regions"]["us-east-1"]["configurations"]
     us_east_cfgs.append(_get_config(
-                          config_name="VRC (Virtual Robotics Challenge)",
-                          config_description=vrc_desc + install,
-                          router_ami='ami-137bcf7a',
-                          sim_ami='ami-98fa58f1'))
+        config_name="VRC (Virtual Robotics Challenge)",
+        config_description=vrc_desc + install,
+        router_ami='ami-137bcf7a',
+        sim_ami='ami-98fa58f1'))
     us_east_cfgs.append(_get_config(
-                         config_name="VRC-stable (Virtual Robotics Challenge)",
-                         config_description=vrc_desc + stable,
-                         router_ami='ami-75e4d91c',
-                         sim_ami='ami-4de4d924'))
+        config_name="VRC-stable (Virtual Robotics Challenge)",
+        config_description=vrc_desc + stable,
+        router_ami='ami-75e4d91c',
+        sim_ami='ami-4de4d924'))
 
     eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
     eu_west_cfgs.append(_get_config(
-                          config_name="VRC (Virtual Robotics Challenge)",
-                          config_description=vrc_desc + install,
-                          router_ami='ami-f2191786',
-                          sim_ami='ami-fc191788'))
+        config_name="VRC (Virtual Robotics Challenge)",
+        config_description=vrc_desc + install,
+        router_ami='ami-f2191786',
+        sim_ami='ami-fc191788'))
     eu_west_cfgs.append(_get_config(
-                         config_name="VRC-stable (Virtual Robotics Challenge)",
-                         config_description=vrc_desc + stable,
-                         router_ami='ami-3c02f64b',
-                         sim_ami='ami-3a02f64d'))
+        config_name="VRC-stable (Virtual Robotics Challenge)",
+        config_description=vrc_desc + stable,
+        router_ami='ami-3c02f64b',
+        sim_ami='ami-3a02f64d'))
     return configs
 
 
@@ -767,7 +775,7 @@ def launch(configuration, constellation_name, tags):
     constellation = ConstellationState(constellation_name)
 
     stable = constellation.get_value('configuration').find('stable') >= 0
-    use_latest_version = stable == False
+    use_latest_version = stable is False
     has_fc1 = False
     has_fc2 = False
 
@@ -808,56 +816,50 @@ def launch(configuration, constellation_name, tags):
                            'nvidia-current-dev',
                            'nvidia-cg-toolkit']
 
-#         if config.find("nightly") >= 0:
-#             drcsim_package_name = "drcsim-nightly"
-#         elif config.find("nvidia 319") >= 0:
-#             ppa_list = ['xorg-edgers/ppa']
-#             gpu_driver_list = ["nvidia-319", 'nvidia-settings']
-
         log("DRC package %s" % drcsim_package_name)
         log("ppas: %s" % ppa_list)
         log("gpu packages %s" % gpu_driver_list)
 
         ubuntu_sources_repo = "http://us.archive.ubuntu.com/ubuntu/"
         if cloud_provider == "aws":
-            ubuntu_sources_repo = get_aws_ubuntu_sources_repo(
-                                                        credentials_fname)
+            ubuntu_sources_repo = \
+                get_aws_ubuntu_sources_repo(credentials_fname)
 
         scripts['router'] = get_router_script(ubuntu_sources_repo,
                                               router_public_network_itf,
-                                          router_private_network_itf,
-                                          ROUTER_IP,
-                                          SIM_IP,
-                                          drcsim_package_name,
-                                          OPENVPN_SERVER_IP,
-                                          OPENVPN_CLIENT_IP)
+                                              router_private_network_itf,
+                                              ROUTER_IP,
+                                              SIM_IP,
+                                              drcsim_package_name,
+                                              OPENVPN_SERVER_IP,
+                                              OPENVPN_CLIENT_IP)
 
         scripts['sim'] = get_drc_script(ubuntu_sources_repo,
                                         drcsim_package_name,
-                                    SIM_IP,
+                                        SIM_IP,
+                                        ros_master_ip,
+                                        gpu_driver_list,
+                                        ppa_list,
+                                        OPENVPN_CLIENT_IP,
+                                        ROUTER_IP)
+
+        fc1_script = get_drc_script(ubuntu_sources_repo,
+                                    drcsim_package_name,
+                                    FC1_IP,
                                     ros_master_ip,
                                     gpu_driver_list,
                                     ppa_list,
                                     OPENVPN_CLIENT_IP,
                                     ROUTER_IP)
 
-        fc1_script = get_drc_script(ubuntu_sources_repo,
-                                    drcsim_package_name,
-                                        FC1_IP,
-                                        ros_master_ip,
-                                        gpu_driver_list,
-                                        ppa_list,
-                                        OPENVPN_CLIENT_IP,
-                                        ROUTER_IP)
-
         fc2_script = get_drc_script(ubuntu_sources_repo,
                                     drcsim_package_name,
-                                        FC2_IP,
-                                        ros_master_ip,
-                                        gpu_driver_list,
-                                        ppa_list,
-                                        OPENVPN_CLIENT_IP,
-                                        ROUTER_IP)
+                                    FC2_IP,
+                                    ros_master_ip,
+                                    gpu_driver_list,
+                                    ppa_list,
+                                    OPENVPN_CLIENT_IP,
+                                    ROUTER_IP)
 
         if has_fc1:
             scripts['fc1'] = fc1_script
@@ -875,15 +877,15 @@ def launch(configuration, constellation_name, tags):
         log("partial deploy: %s (only sim and router)" % partial_deploy)
 
         acquire_softlayer_constellation(constellation_name,
-                                    constellation_directory,
-                                    partial_deploy,
-                                    constellation_prefix,
-                                    credentials_fname,
-                                    tags,
-                                    scripts['router'],
-                                    scripts['sim'],
-                                    fc1_script,
-                                    fc2_script)
+                                        constellation_directory,
+                                        partial_deploy,
+                                        constellation_prefix,
+                                        credentials_fname,
+                                        tags,
+                                        scripts['router'],
+                                        scripts['sim'],
+                                        fc1_script,
+                                        fc2_script)
 
     if cloud_provider == "aws":
         log("credentials_ec2 %s" % credentials_fname)
@@ -901,7 +903,7 @@ def launch(configuration, constellation_name, tags):
     _create_zip_files(constellation_name, constellation_directory, machines)
 
     deploy_constellation(constellation_name, cloud_provider, machines,
-                             openvpn_fname)
+                         openvpn_fname)
 
     # Not required with any custom AMI
     if use_latest_version:
@@ -917,12 +919,12 @@ def launch(configuration, constellation_name, tags):
                                                      machine_names))
 
     __wait_for_find_file(constellation_name,
-                       constellation_directory,
-                       machine_names,
-                       "cloudsim/setup/done",
-                       "running")
+                         constellation_directory,
+                         machine_names,
+                         "cloudsim/setup/done",
+                         "running")
     log("_run_machines machines %s : %s rebooted!" % (constellation_name,
-                                                     machine_names))
+                                                      machine_names))
 
     # make sure the monitoring of package setup is complete
     time.sleep(10)
@@ -964,8 +966,8 @@ def terminate(constellation_name):
     constellation = ConstellationState(constellation_name)
     machines = constellation.get_value('machines')
 
-    constellation_directory = constellation.get_value(
-                                                    "constellation_directory")
+    constellation_directory = \
+        constellation.get_value("constellation_directory")
     credentials_fname = os.path.join(constellation_directory,
                                      'credentials.txt')
     constellation.set_value('constellation_state', 'terminating')
@@ -986,9 +988,9 @@ def terminate(constellation_name):
         partial = False
         constellation_prefix = constellation_name.split('_')[-1]
         terminate_softlayer_constellation(constellation_name,
-                       constellation_prefix,
-                       partial,
-                       credentials_fname)
+                                          constellation_prefix,
+                                          partial,
+                                          credentials_fname)
 
     for machine_name in machines:
         constellation.set_value("%s_state" % machine_name, 'terminated')
@@ -999,11 +1001,11 @@ def terminate(constellation_name):
 
 
 def __wait_for_find_file(constellation_name,
-                       constellation_directory,
-                       machine_names,
-                       ls_cmd,
-                       end_state,
-                       set_cloud_state=False):
+                         constellation_directory,
+                         machine_names,
+                         ls_cmd,
+                         end_state,
+                         set_cloud_state=False):
 
     constellation = ConstellationState(constellation_name)
 
@@ -1017,13 +1019,15 @@ def __wait_for_find_file(constellation_name,
         key_name = "%s_state" % machine_name
         if set_cloud_state:
             key_name = "%s_aws_state" % machine_name
-        q.append(get_ssh_cmd_generator(ssh_router, "timeout -k 1 10 "
-                    "cloudsim/find_file_%s.bash %s" % (machine_name, ls_cmd),
-                    ls_cmd,
-                    constellation,
-                    key_name,
-                    end_state,
-                    max_retries=500))
+        q.append(
+            get_ssh_cmd_generator(
+                ssh_router, "timeout -k 1 10 "
+                "cloudsim/find_file_%s.bash %s" % (machine_name, ls_cmd),
+                ls_cmd,
+                constellation,
+                key_name,
+                end_state,
+                max_retries=500))
     empty_ssh_queue(q, sleep=2)
 
 
@@ -1182,9 +1186,9 @@ class VrcCase(object):  # (unittest.TestCase):
                           constellation_name,
                           constellation_directory)
         create_private_machine_zip("fc1",
-                                     FC1_IP,
-                                     constellation_name,
-                                     constellation_directory)
+                                   FC1_IP,
+                                   constellation_name,
+                                   constellation_directory)
 
 #     def test_script(self):
 #         s = get_sim_script('drcsim')
@@ -1221,7 +1225,7 @@ class VrcCase(object):  # (unittest.TestCase):
         constellation = ConstellationState(self.constellation_name)
         constellation.set_value("constellation_name", self.constellation_name)
         constellation.set_value("constellation_directory",
-                                    self.constellation_directory)
+                                self.constellation_directory)
         constellation.set_value("configuration", 'vrc_contest')
         constellation.set_value('current_task', "")
         constellation.set_value('tasks', [])
@@ -1272,7 +1276,7 @@ class VrcCase(object):  # (unittest.TestCase):
         log("setting up ubuntu user on simulator machine "
             "[%s / %s]" % (pub_ip, ip))
         cmd = ("cd cloudsim; ./auto_ubuntu.bash "
-            "%s %s ./key-sim.pem.pub" % (ip, password))
+               "%s %s ./key-sim.pem.pub" % (ip, password))
         log(cmd)
         out = ssh_router.cmd(cmd)
         log(out)
@@ -1295,7 +1299,7 @@ class AwsCase(unittest.TestCase):
         print("%s %s" % (self.config, self.constellation_name))
 
         self.constellation_directory = os.path.join(get_test_dir(),
-                                               self.constellation_name)
+                                                    self.constellation_name)
         print(self.constellation_directory)
 
         if os.path.exists(self.constellation_directory):
@@ -1381,8 +1385,8 @@ class SumCase(unittest.TestCase):
 
         machines = ['router', 'sim']
         zip_fname = _create_deploy_zip_files(constellation_name,
-                                 constellation_directory,
-                                 machines)
+                                             constellation_directory,
+                                             machines)
         self.assertTrue(os.path.exists(zip_fname), "not there")
 
     def xtest_deploy(self):
@@ -1395,8 +1399,6 @@ class MoniCase(unittest.TestCase):
     def test_monitorsim(self):
         constellation_name = 'cx9421ebe4'
         monitor(constellation_name, 1)
-#         monitor_launch(constellation_name, "sim")
-#         monitor_launch(constellation_name, "router")
 
     def ztest_ping(self):
         constellation_name = 'cx593c6f5e'
@@ -1411,8 +1413,3 @@ if __name__ == "__main__":
     while True:
         monitor(constellation_name, c)
         c += 1
-
-#    n = 'cxceaae4dc'
-#    i = 0
-#    monitor(n, i)
-#    monitor_gzweb_proc(n)

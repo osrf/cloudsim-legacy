@@ -12,7 +12,7 @@ cgitb.enable()
 email = authorize()
 form = cgi.FieldStorage()
 
-d ={}
+d = {}
 
 try:
     d['command'] = form.getfirst('command')
@@ -25,7 +25,7 @@ try:
     else:
         print ('tc_cmd.py Incorrect command (%s)' % (d['command']))
 except Exception, e:
-    print ("Error processing traffic shaping commands [%s]" % d)   
+    print ("Error processing traffic shaping commands [%s]" % d)
 
 s = dumps(d)
 
@@ -37,4 +37,3 @@ redis_client.publish('cloudsim_cmds', s)
 print('Content-type: application/json')
 print("\n")
 print(s)
-
