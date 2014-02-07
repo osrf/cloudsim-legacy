@@ -319,21 +319,11 @@ def _get_all_configurations():
                                                  "configurations": []}}}
     configs["aws"] = {"description": "Amazon Web Services",
                       "regions": {
-<<<<<<< local
-                        "us-east-1":{"description":"US East (N. Virginia)",
-                                               "configurations":[]}, 
-                        "eu-west-1":{"description":"EU (Ireland)",
-                                               "configurations":[]},
-                        "us-west-2":{"description":"US West (Oregon)",
-                                               "configurations":[]},
-                      }}
-=======
                           "us-east-1": {"description": "US East (N. Virginia)",
                                         "configurations": []},
                           "eu-west-1": {"description": "EU (Ireland)",
                                         "configurations": []}}
                       }
->>>>>>> other
     add_configs_cs(configs)
     add_configs_sim(configs)
     add_configs_vrc(configs)
