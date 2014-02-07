@@ -1,5 +1,4 @@
-
-var GZWEB_PORT = 8888;
+var GZWEB_PORT = 8080;
 
 function create_start_stop_service(machine_div,
 							constellation_name,
