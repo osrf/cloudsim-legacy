@@ -20,14 +20,6 @@ function create_start_stop_service(machine_div,
     var widget_div = _create_empty_widget(machine_div, service_state_key);
     var status = status_img("gray");
     widget_div.innerHTML = status + "<b>" + title +"</b>";
-	var stop_func = function()
-	{
-		stop_web_tools(constellation_name);
-	}
-	
-	var widget_div = _create_empty_widget(machine_div, "gzweb");
-    var status = status_img("gray");
-    widget_div.innerHTML = status + "<b>WebGL interface</b>";
 
     // start button
     var start_button = document.createElement('input');
