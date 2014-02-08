@@ -12,32 +12,14 @@ function create_start_stop_service(machine_div,
 							btn_timeout,
 							is_sim_service)
 {
-	var glx_key = "sim_glx_state";
-	var simulator_key = "gazebo";
-	var ip_key = "sim_public_ip";
-	console.log("create_sim_service '" + title + "' for " + constellation_name);
+    var glx_key = "sim_glx_state";
+    var simulator_key = "gazebo";
+    var ip_key = "sim_public_ip";
+    console.log("create_sim_service '" + title + "' for " + constellation_name);
 
-function create_gzweb_widget(machine_div,
-						     constellation_name,
-						     machine_name,
-							 glx_key,
-							 simulator_key,
-							 gz_web_key,
-							 ip_key)
-{
-	var start_func = function()
-	{
-		start_web_tools(constellation_name);
-	}
-
-	var stop_func = function()
-	{
-		stop_web_tools(constellation_name);
-	}
-	
-	var widget_div = _create_empty_widget(machine_div, "gzweb");
+	var widget_div = _create_empty_widget(machine_div, service_state_key);
     var status = status_img("gray");
-    widget_div.innerHTML = status + "<b>WebGL interface</b>";
+    widget_div.innerHTML = status + "<b>" + title + "</b>";
 
     // start button
     var start_button = document.createElement('input');
@@ -48,9 +30,7 @@ function create_gzweb_widget(machine_div,
     	// start_web_tools(constellation_name);
     	start_func();
     	start_button.disabled = true;
-        setTimeout( function(){
-        	start_button.disabled = false;
-            }, btn_timeout); // setTimeOut
+    	stop_button.disabled = false;
     }
     widget_div.appendChild(start_button);
 
@@ -63,9 +43,7 @@ function create_gzweb_widget(machine_div,
     	// stop_web_tools(constellation_name);
     	stop_func();
     	stop_button.disabled = true;
-        setTimeout( function(){
-        	stop_button.disabled = false;
-         }, btn_timeout); // setTimeOut
+    	start_button.disabled = false;
     }
     widget_div.appendChild(stop_button);
 

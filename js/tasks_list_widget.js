@@ -14,6 +14,7 @@ task_num: 1
 task_tag: Drive
 ros_package: atlas_utils
 ros_launch: vrc_task_1.launch
+bash_src: /home/ubuntu/cloudsim/setup_drc.bash
 */
 
 
