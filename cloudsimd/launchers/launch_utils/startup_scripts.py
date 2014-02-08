@@ -937,7 +937,8 @@ chmod +x /home/ubuntu/cloudsim/ping_gl.bash
     return s
 
 
-def _start_sim_stop_sim_local_generator(machine_ip,
+def _start_sim_stop_sim_local_generator(
+        machine_ip,
         source_sim_fname="/home/ubuntu/cloudsim/sim_setup.bash",
         start_sim_fname="/home/ubuntu/cloudsim/start_gazebo.bash",
         ping_sim_fname="/home/ubuntu/cloudsim/ping_gazebo.bash",
