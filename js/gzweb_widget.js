@@ -12,14 +12,14 @@ function create_start_stop_service(machine_div,
 							btn_timeout,
 							is_sim_service)
 {
-	var glx_key = "sim_glx_state";
-	var simulator_key = "gazebo";
-	var ip_key = "sim_public_ip";
-	console.log("create_sim_service '" + title + "' for " + constellation_name);
+    var glx_key = "sim_glx_state";
+    var simulator_key = "gazebo";
+    var ip_key = "sim_public_ip";
+    console.log("create_sim_service '" + title + "' for " + constellation_name);
 
-    var widget_div = _create_empty_widget(machine_div, service_state_key);
+	var widget_div = _create_empty_widget(machine_div, service_state_key);
     var status = status_img("gray");
-    widget_div.innerHTML = status + "<b>" + title +"</b>";
+    widget_div.innerHTML = status + "<b>" + title + "</b>";
 
     // start button
     var start_button = document.createElement('input');
@@ -27,11 +27,10 @@ function create_start_stop_service(machine_div,
     start_button.setAttribute('value','Start');
     start_button.onclick =  function()
     {
-    	start_func(constellation_name);
+    	// start_web_tools(constellation_name);
+    	start_func();
     	start_button.disabled = true;
-        setTimeout( function(){
-        	start_button.disabled = false;
-            }, btn_timeout); // setTimeOut
+    	stop_button.disabled = false;
     }
     widget_div.appendChild(start_button);
 
@@ -41,11 +40,10 @@ function create_start_stop_service(machine_div,
     stop_button.setAttribute('value','Stop');
     stop_button.onclick =  function()
     {
-    	stop_func(constellation_name);
+    	// stop_web_tools(constellation_name);
+    	stop_func();
     	stop_button.disabled = true;
-        setTimeout( function(){
-        	stop_button.disabled = false;
-         }, btn_timeout); // setTimeOut
+    	start_button.disabled = false;
     }
     widget_div.appendChild(stop_button);
 

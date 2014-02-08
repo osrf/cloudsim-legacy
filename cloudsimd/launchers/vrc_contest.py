@@ -5,25 +5,16 @@ import os
 import time
 import zipfile
 import shutil
-import json
-import subprocess
-import dateutil.parser
-
 from shutil import copyfile
-
-from launch_utils.traffic_shaping import run_tc_command
-
 
 from launch_utils.monitoring import constellation_is_terminated,\
     monitor_launch_state,  monitor_ssh_ping,\
-    monitor_task, monitor_simulator, TaskTimeOut, monitor_gzweb,\
-    monitor_cloudsim_notebook
+    monitor_task, monitor_simulator, monitor_gzweb, monitor_cloudsim_notebook
 
 from launch_utils.softlayer import load_osrf_creds,\
     get_softlayer_path, get_machine_login_info, create_openvpn_key
 
-from launch_utils.launch_db import get_constellation_data, ConstellationState,\
-    get_cloudsim_config, log_msg
+from launch_utils.launch_db import ConstellationState, log_msg
 
 from launch_utils.testing import get_test_path,\
     get_boto_path, get_test_dir
@@ -44,6 +35,7 @@ from launch_utils.sl_cloud import acquire_softlayer_constellation,\
 from launch_utils.aws import acquire_aws_constellation,\
     get_aws_ubuntu_sources_repo
 from launch_utils.aws import terminate_aws_constellation
+from launch_utils.task import stop_ssh_task, start_ssh_task
 
 
 ROUTER_IP = '10.0.0.50'
@@ -117,66 +109,19 @@ def get_ping_data(ping_str):
     return (mini, avg, maxi, mdev)
 
 
-def _start_simulator(constellation_name,
-                     package_name,
-                     launch_file_name,
-                     launch_args,
-                     task_timeout):
-    ssh_router = _get_ssh_router(constellation_name)
-    c = "bash cloudsim/start_sim.bash %s %s %s" % (package_name,
-                                                   launch_file_name,
-                                                   launch_args)
-    cmd = c.strip()
-    r = ssh_router.cmd(cmd)
-    log('_start_simulator %s' % r)
-
-
-def _stop_simulator(constellation_name):
-    cmd = "bash cloudsim/stop_sim.bash"
-    ssh_router = _get_ssh_router(constellation_name)
-    r = ssh_router.cmd(cmd)
-    log('_stop_simulator %s' % r)
-
-
 def start_task(constellation_name, task):
-
-    log("START TASK %s for %s" % (constellation_name, task))
-
-    latency = task['latency']
-    up = task['uplink_data_cap']
-    down = task['downlink_data_cap']
-
-    log("** TC COMMAND ***")
-    run_tc_command(constellation_name,
-                   'sim_machine_name',
-                   'key-router',
-                   'router_public_ip',
-                   latency, up, down)
-
-    log("** START SIMULATOR ***")
-    try:
-        _start_simulator(constellation_name,
-                         task['ros_package'],
-                         task['ros_launch'],
-                         task['ros_args'],
-                         task['timeout'])
-    finally:
-        log("START TASK  DONE %s for %s" % (constellation_name, task))
+    ssh_client = _get_ssh_router(constellation_name)
+    start_ssh_task(ssh_client,
+                   constellation_name,
+                   machine_name_key='sim_machine_name',
+                   keyPairName='key-router',
+                   ip_address_key='router_public_ip',
+                   task=task)
 
 
-def stop_task(constellation, task):
-
-    log("** CONSTELLATION %s *** STOP TASK %s ***" % (constellation,
-                                                      task['task_id']))
-    _stop_simulator(constellation)
-
-    log("** Notify portal ***")
-    notify_portal(constellation, task)
-
-
-def check_for_end_of_task(constellation_name, ssh_router):
-    if monitor_task(constellation_name, ssh_router):
-        raise TaskTimeOut()
+def stop_task(constellation_name, task):
+    ssh_client = _get_ssh_router(constellation_name)
+    stop_ssh_task(ssh_client, constellation_name, task)
 
 
 def _get_ssh_router(constellation_name):
@@ -216,7 +161,6 @@ def monitor_gzweb_proc(constellation_name, counter):
 
 
 def monitor_notebook_proc(constellation_name, counter):
-    # monitor_cloudsim_notebook
     ssh_client = _get_ssh_router(constellation_name)
     monitor_cloudsim_notebook(constellation_name, ssh_client)
     log("monitor_notebook_prop() ENDS %s" % counter)
@@ -1029,142 +973,6 @@ def __wait_for_find_file(constellation_name,
                 end_state,
                 max_retries=500))
     empty_ssh_queue(q, sleep=2)
-
-
-def notify_portal(constellation, task):
-    try:
-        root_log_dir = '/tmp/cloudsim_logs'
-
-        # Get metadata (team, competition, ...)
-        config = get_cloudsim_config()
-        portal_info_fname = config['cloudsim_portal_json_path']
-        log("** Portal JSON path: %s ***" % portal_info_fname)
-        portal_info = None
-        with open(portal_info_fname, 'r') as f:
-            portal_info = json.loads(f.read())
-
-        log("** Portal JSON file opened ***")
-        team = portal_info['team']
-        comp = portal_info['event']
-        task_num = task['vrc_num']
-
-        log("** Team: %s, Event: %s ***" % (team, comp))
-
-        if task_num < '1' or task_num > '3':
-            task_num = '1'
-        run = task['vrc_id']
-        if run < '1' or run > '5':
-            run = '1'
-
-        start_time = task['start_time']
-        start_task = dateutil.parser.parse(start_time)
-        start_task = start_task.strftime("%d/%m/%y %H:%M:%S")
-
-        const = ConstellationState(constellation)
-        constellation_dict = get_constellation_data(constellation)
-        constellation_directory = constellation_dict['constellation_directory']
-        router_ip = const.get_value("router_public_ip")
-
-        task_id = task['ros_launch']
-        task_dirname = task_id.split('.')[0]
-
-        # Store in this cloudsim the network and sim logs
-        router_key = os.path.join(constellation_directory, 'key-router.pem')
-
-        new_msg = task['task_message'] + '<B> Getting logs</B>'
-        const.update_task_value(task['task_id'], 'task_message', new_msg)
-
-        cmd = ('bash /var/www/bin/get_logs.bash %s %s %s'
-               % (task_dirname, router_ip, router_key))
-        subprocess.check_call(cmd.split())
-        log("** Log directory created***")
-
-        # Get the score and falls
-        score = '0'
-        #falls = 'N/A'
-        runtime = 'N/A'
-        try:
-            p = os.path.join(root_log_dir, task_dirname, 'score.log')
-            with open(p) as f:
-                log("** score.log found **")
-                data = f.read()
-                log("** Reading score.log file **")
-                lines = data.split('\n')
-                last_line = lines[-2]
-                log("** Last line: %s **" % last_line)
-                score = last_line.split(',')[4]
-                #falls = last_line.split(',')[5]
-
-                # Time when the task stopped
-                runtime = last_line.split(',')[1]
-                log("** All sim score fields parsed **")
-        except Exception:
-            None
-
-        # Create JSON file with the task metadata
-        data = json.dumps({'team': team, 'event': comp, 'task': task_num,
-                           'start_time': start_task, 'result': 'Terminated',
-                           'runtime': runtime, 'score': score},
-                          sort_keys=True, indent=4, separators=(',', ': '))
-
-        log("** JSON data created **")
-        with open(os.path.join(root_log_dir, task_dirname,
-                               'end_task.json'), 'w') as f:
-            f.write(str(data))
-
-        log("** JSON file created ***")
-
-        new_msg = new_msg.replace('Getting logs', 'Creating tar file')
-        const.update_task_value(task['task_id'], 'task_message', new_msg)
-
-        # Tar all the log content
-        tar_name = (team + '_' + comp + '_' + str(task_num) + '_' + str(run) +
-                    '.tar')
-        p = os.path.join(root_log_dir, task_dirname)
-        cmd = 'tar cf /tmp/' + tar_name + ' -C ' + p + ' .'
-        subprocess.check_call(cmd.split())
-
-        log("** Log directory stored in a tar file ***")
-
-        new_msg = new_msg.replace('Creating tar file',
-                                  'Uploading logs to the portal')
-        const.update_task_value(task['task_id'], 'task_message', new_msg)
-
-        # Send the log to the portal
-        config = get_cloudsim_config()
-        portal_info_fname = config['cloudsim_portal_json_path']
-        portal_info = None
-        with open(portal_info_fname, 'r') as f:
-            portal_info = json.loads(f.read())
-
-        ssh_portal = SshClient('xxx', 'xxx', portal_info['user'],
-                               portal_info['hostname'])
-        # this is a hack
-        ssh_portal.key_fname = config['cloudsim_portal_key_path']
-
-        # Upload the file to the Portal temp dir
-        dest = os.path.join('/tmp', tar_name)
-
-        cmd = ('scp -o UserKnownHostsFile=/dev/null'
-               '-o StrictHostKeyChecking=no'
-               ' -i ' + ssh_portal.key_fname + ' ' + dest + ' ubuntu@' +
-               portal_info['hostname'] + ':/tmp')
-        log('cmd: %s' % cmd)
-        subprocess.check_call(cmd.split())
-
-        # Move the file to the final destination into the Portal
-        final_dest = os.path.join(portal_info['final_destination_dir'],
-                                  tar_name)
-        cmd = 'sudo mv %s %s' % (dest, final_dest)
-        ssh_portal.cmd(cmd)
-
-        new_msg = new_msg.replace('Uploading logs to the portal',
-                                  'Logs uploaded to the portal')
-        const.update_task_value(task['task_id'], 'task_message', new_msg)
-
-    except Exception, excep:
-        log('notify_portal() Exception: %s' % (repr(excep)))
-        raise
 
 
 class MonitorCase(unittest.TestCase):

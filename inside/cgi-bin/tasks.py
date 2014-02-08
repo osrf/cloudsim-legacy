@@ -82,6 +82,7 @@ def get_task_params(constellation, command):
     d["local_stop"] = get_query_param("local_stop")
     d["vrc_id"] = get_query_param("vrc_id")
     d["vrc_num"] = get_query_param("vrc_num")
+    d['bash_src'] = get_query_param("bash_src")
     return d
 
 

@@ -939,10 +939,30 @@ chmod +x /home/ubuntu/cloudsim/ping_gl.bash
 
 def _start_sim_stop_sim_local_generator(
         machine_ip,
+        source_sim_fname="/home/ubuntu/cloudsim/sim_setup.bash",
         start_sim_fname="/home/ubuntu/cloudsim/start_gazebo.bash",
         ping_sim_fname="/home/ubuntu/cloudsim/ping_gazebo.bash",
         stop_sim_fname="/home/ubuntu/cloudsim/stop_gazebo.bash"):
     s = """
+#!/bin/bash
+
+cat <<DELIM > """ + source_sim_fname + """
+
+# cheats (do not enable for competitions)
+export VRC_CHEATS_ENABLED=1
+
+#
+# By default, allow anyone to connect to Gazebo on the network
+# uncomment for competitions
+# export GAZEBO_IP_WHITE_LIST=127.0.0.1
+
+# source environment for drcsim models and robot
+. /usr/share/drcsim/setup.sh
+
+
+DELIM
+# ----------------------------------------------------------------------------
+
 cat <<DELIM > """ + start_sim_fname + """
 #!/bin/bash
 
@@ -952,38 +972,29 @@ MAX_TIME=30
 DIR=\`echo \$2 | cut -d'.' -f 1\`
 rm -rf /tmp/\$DIR
 
-echo \`date\` "\$1 \$2 \$3" >> """ + start_sim_fname + """.log
+echo \`date\` "setup: \$1 pack: \$2 launch: \$3 args: \$4" >> """ + start_sim_fname + """.log
 
-. /usr/share/drcsim/setup.sh
-if [ -f /home/ubuntu/local/share/vrc_arenas/setup.sh ]; then
- . /home/ubuntu/local/share/vrc_arenas/setup.sh
-fi
+# source the simulation environment
+. \$1
+
 export ROS_IP=""" + machine_ip + """
 export GAZEBO_IP=""" + machine_ip + """
 export DISPLAY=:0
 ulimit -c unlimited
 
-#
-# By default
-# Allow anyone to connect to Gazebo on the network
-#
-# export GAZEBO_IP_WHITE_LIST=127.0.0.1
 
 # Kill a pending simulation
 bash /home/ubuntu/cloudsim/stop_sim.bash
 
-# without cheats
-# roslaunch \$1 \$2 \$3 gzname:=gzserver  &
-
-# cheats enabled
-VRC_CHEATS_ENABLED=1 roslaunch \$1 \$2 \$3 gzname:=gzserver  &
+# Launch the robot and simulator
+roslaunch \$2 \$3 \$4 gzname:=gzserver  &
 
 tstart=\$(date +%s)
 timeout -k 1 5 gztopic list
 while [[ \$? -ne 0 ]]; do
     tnow=\$(date +%s)
     if ((tnow-tstart>MAX_TIME)) ;then
-        echo "[simulator start_sim.bash] Timed out waiting for simulation to start"
+        echo "[simulator """ + start_sim_fname + """] Timed out waiting for simulation to start"
         exit 1
     fi
 
@@ -991,7 +1002,7 @@ while [[ \$? -ne 0 ]]; do
     timeout -k 1 5 gztopic list
 done
 
-echo \`date\` "$1 $2 $3 - End" >> """ + start_sim_fname + """.log
+echo \`date\` "$1 $2 $3 $4 - End" >> """ + start_sim_fname + """.log
 
 DELIM
 chmod +x """ + start_sim_fname + """
