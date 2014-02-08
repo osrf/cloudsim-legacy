@@ -576,6 +576,9 @@ def register_configurations(configs):
         config_description=sim_g1_description + stable,
         hardware='cg1.4xlarge',
         image_key='ami-d14479b8'))  # v 2.0
+    
+    # g2 stable ami-8997ace0 
+    
     eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
     eu_west_cfgs.append(_get_config(
         config_name="Simulator (cg1.4xlarge)",
@@ -598,7 +601,7 @@ def register_configurations(configs):
         config_name="Simulator-stable (g2.2xlarge)",
         config_description=sim_g1_description + stable,
         hardware='g2.2xlarge',
-        image_key='ami-0e7b1b3e'))
+        image_key='ami-28d2b118'))  # Simulator-stable (g2.2xlarge) 2.0.2
     return configs
 
 
