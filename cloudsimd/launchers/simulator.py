@@ -634,6 +634,18 @@ def register_configurations(configs):
         config_description=sim_g1_description + stable,
         hardware='cg1.4xlarge',
         image_key='ami-ca26d2bd'))  # v 2.0
+    # adding support for Orgegon
+    us_west_cfgs = configs["aws"]["regions"]["us-west-2"]["configurations"]
+    us_west_cfgs.append(_get_config(
+        config_name="Simulator (g2.2xlarge)",
+        config_description=sim_g1_description + install,
+        hardware='g2.2xlarge',
+        image_key='ami-52b22962'))
+    us_west_cfgs.append(_get_config(
+        config_name="Simulator-stable (g2.2xlarge)",
+        config_description=sim_g1_description + stable,
+        hardware='g2.2xlarge',
+        image_key='ami-0e7b1b3e'))
     return configs
 
 

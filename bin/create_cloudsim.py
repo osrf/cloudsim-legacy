@@ -29,10 +29,10 @@ import common
 if __name__ == "__main__":
     # Specify command line arguments
     parser = argparse.ArgumentParser(
-                        description='Launch a cloudsim instance on the cloud.\n'
-                        'CloudSim supports 2 types of authentication (Google '
-                        'OpenID and Basic authentication, using -b).'
-                        '\n')
+                    description='Launch a cloudsim instance on the cloud.\n'
+                    'CloudSim supports 2 types of authentication (Google '
+                    'OpenID and Basic authentication, using -b).'
+                    '\n')
     parser.add_argument('username',
                         metavar='ADMIN-USER',
                         help='CloudSim admin account username for basic '
@@ -89,7 +89,7 @@ if __name__ == "__main__":
                                   'eu-east-1c',
                                   ],
                          help=msg)
-    msg = 'Default availability zone for AWS region US West (Oregon)'    
+    msg = 'Default availability zone for AWS region US West (Oregon)'
     parser.add_argument('us_west2_az',
                          nargs='?',
                          metavar='US-WEST2-AZ',
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     key = args.access_key
     secret = args.secret_key
 
-    # The real configuration names have spaces in it, so we 
+    # The real configuration names have spaces in it, so we
     # use a shorter version for the cmd line options
     configuration = "%s (m1.small)" % args.config 
     password = args.basic_auth
