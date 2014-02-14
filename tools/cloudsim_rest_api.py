@@ -116,17 +116,19 @@ class CloudSimRestApi(object):
         """
         Returns the data for a specific constellation
         """
-        constellations = self.get_constellations()
-        for c in constellations:
-            if c['constellation_name'] == constellation_name:
-                return c
+        url = 'cloudsim/inside/cgi-bin/constellations'
+        url += '?constellation=%s' % constellation_name
+        cs = self._api_get(url)
+        if len(cs) == 1:
+            return cs[0]
         raise Exception('constellation "%s" not found' % constellation_name)
+
 
     def get_tasks(self, constellation_name):
         constellation = self.get_constellation_data(constellation_name)
         return constellation['tasks']
 
-    def launch_constellation(self, provider, configuration):
+    def launch_constellation(self, provider, region, configuration):
         """
         Creates a new constellation with the specified configuration
         """
@@ -179,12 +181,52 @@ class CloudSimRestApi(object):
         r = self._api_get(url)
         return r
 
-# 
+#
 #     def update_task(self, task_dict):
 #         pass
 # 
 #     def delete_task(self):
 #         pass
+
+    def start_notebook(self, constellation_name):
+        url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py'
+        url += '?command=start_cloudsim_notebook';
+        url += '&constellation=' + constellation_name;
+        r = self._api_get(url)
+        return r
+
+    def ping_notebook(self, constellation_name):
+        """
+        Returns the state of the iPython notebook
+        """
+        state = self.get_constellation_data(constellation_name)
+        return state['cloudsim_notebook']
+
+    def stop_notebook(self, constellation_name):
+        url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py'
+        url += '?command=stop_cloudsim_notebook';
+        url += '&constellation=' + constellation_name;
+        r = self._api_get(url)
+        return r
+
+    def start_gzweb(self, constellation_name):
+        url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=start_gzweb';
+        url += '&constellation=' + constellation_name;
+        r = self._api_get(url)
+        return r
+
+    def stop_gzweb(self, constellation_name):
+        url = '/cloudsim/inside/cgi-bin/cloudsim_cmd.py?command=stop_gzweb';
+        url += '&constellation=' + constellation_name;
+        r = self._api_get(url)
+        return r
+
+    def ping_gzweb(self, constellation_name):
+        """
+        Returns the state of gzweb
+        """
+        state = self.get_constellation_data(constellation_name)
+        return state['gzweb']
 
     def start_task(self, constellation_name, task_id):
         """

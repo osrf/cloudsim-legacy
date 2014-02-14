@@ -151,7 +151,7 @@ if method == 'GET':
         constellation = get_constellation_from_path()
         log("%s, role: %s" % (constellation, role))
         if len(constellation) > 0:
-            s = get_constellation(role, constellation)
+            s = get_constellation(constellation, role)
         else:
             log("listing all constellations")
             l = list_constellations(role)

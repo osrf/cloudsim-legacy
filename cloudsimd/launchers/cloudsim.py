@@ -299,9 +299,10 @@ def register_configurations(configs):
     us_east_cfgs.append(_get_config("CloudSim (m1.small)",
                                     cloudsim_description + install,
                                     'ami-137bcf7a'))
+    # CloudSim-stable (m1.small) 2.0.1
     us_east_cfgs.append(_get_config("CloudSim-stable (m1.small)",
                                     cloudsim_description + stable,
-                                    'ami-f55f7b9c'))
+                                    'ami-598f8a30'))
 
     eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
     eu_west_cfgs.append(_get_config("CloudSim (m1.small)",
@@ -309,15 +310,15 @@ def register_configurations(configs):
                                     'ami-f2191786'))
     eu_west_cfgs.append(_get_config("CloudSim-stable (m1.small)",
                                     cloudsim_description + stable,
-                                    'ami-0f3ed378'))
+                                    'ami-d049b8a7'))
 
     us_west_cfgs = configs["aws"]["regions"]["us-west-2"]["configurations"]
     us_west_cfgs.append(_get_config("CloudSim (m1.small)",
                                     cloudsim_description + install,
                                     'ami-86b328b6'))
-    eu_west_cfgs.append(_get_config("CloudSim-stable (m1.small)",
+    us_west_cfgs.append(_get_config("CloudSim-stable (m1.small)",
                                     cloudsim_description + stable,
-                                    'ami-xxxx'))
+                                    'ami-aebddf9e'))
 
     return configs
 
@@ -626,11 +627,14 @@ def create_cloudsim(username,
                       "regions": {
                         "us-east-1": {"description": "US East (N. Virginia)",
                                                "configurations": []},
+                        "us-west-2": {"description": "US West (Oregon)",
+                                               "configurations": []},
                         "eu-west-1": {"description": "EU (Ireland)",
                                                "configurations": []}}
                           }
         register_configurations(configs)
         cfg = configs['aws']['regions'][region]['configurations'][0]
+        pprint(cfg)
     except:
         raise Exception("configuration %s not found" % configuration)
 
@@ -645,7 +649,6 @@ def create_cloudsim(username,
     data['configuration'] = configuration
     data['region'] = region
 
-    pprint(configs)
     log("\n\nCreate CloudSim")
     log("authentication type %s" % authentication_type)
     if authentication_type == "Basic":
