@@ -256,7 +256,7 @@ def run_notebook(cloudsim_api, constellation_name):
 
     count=100
     while count > 0:
-        sleep(5)
+        time.sleep(5)
         count -= 1
         r = cloudsim_api.ping_notebook(constellation_name)
         if r == "running":
@@ -271,7 +271,7 @@ def stop_notebook(cloudsim_api, constellation_name):
 
     count=100
     while count > 0:
-        sleep(5)
+        time.sleep(5)
         count -= 1
         r = cloudsim_api.ping_notebook(constellation_name)
         if r == "stopped":
