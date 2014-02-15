@@ -117,10 +117,10 @@ class CloudSimRestApi(object):
         Returns the data for a specific constellation
         """
         url = 'cloudsim/inside/cgi-bin/constellations'
-        url += '?constellation=%s' % constellation_name
+        url += '/%s' % constellation_name
         cs = self._api_get(url)
-        if len(cs) == 1:
-            return cs[0]
+        if cs:
+            return cs
         raise Exception('constellation "%s" not found' % constellation_name)
 
 
