@@ -595,10 +595,10 @@ def register_configurations(configs):
         hardware='g2.2xlarge',
         image_key='ami-b93264d0'))
     us_east_cfgs.append(_get_config(
-        config_name="Simulator-stable (g2.2xlarge)",
+        config_name="Simulator-stable (g2.2xlarge)",  # v 2.0.3
         config_description=sim_g2_description + stable,
         hardware='g2.2xlarge',
-        image_key='ami-8997ace0'))
+        image_key='ami-4d8d8924'))
 
     eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
     eu_west_cfgs.append(_get_config(
@@ -611,6 +611,16 @@ def register_configurations(configs):
         config_description=sim_g1_description + stable,
         hardware='cg1.4xlarge',
         image_key='ami-ca26d2bd'))  # v 2.0
+    eu_west_cfgs.append(_get_config(
+        config_name="Simulator (g2.2xlarge)",
+        config_description=sim_g1_description + install,
+        hardware='g2.2xlarge',
+        image_key='ami-05cb2672'))
+    eu_west_cfgs.append(_get_config(
+        config_name="Simulator-stable (g2.2xlarge)",
+        config_description=sim_g1_description + stable,
+        hardware='g2.2xlarge',
+        image_key='ami-b4e313c3'))
 
     us_west_cfgs = configs["aws"]["regions"]["us-west-2"]["configurations"]
     us_west_cfgs.append(_get_config(
@@ -622,7 +632,7 @@ def register_configurations(configs):
         config_name="Simulator-stable (g2.2xlarge)",
         config_description=sim_g1_description + stable,
         hardware='g2.2xlarge',
-        image_key='ami-28d2b118'))  # Simulator-stable (g2.2xlarge) 2.0.2
+        image_key='ami-b4e313c3'))
     return configs
 
 

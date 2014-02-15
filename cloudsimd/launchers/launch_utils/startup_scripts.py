@@ -656,8 +656,8 @@ cat <<DELIM > /etc/init/cloudsim_notebook.conf
 description "OSRF cloud simulation platform. Ipython notebook as a service"
 author  "Hugo Boyer<hugo@osrfoundation.org>"
 
-start on runlevel [234]
-stop on runlevel [0156]
+# start on runlevel [234]
+# stop on runlevel [0156]
 
 exec sudo -u ubuntu /home/ubuntu/cloudsim/cloudsim_notebook.bash> /var/log/cloudsim_notebook.log 2>&1
 
