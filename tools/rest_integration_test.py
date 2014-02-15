@@ -271,10 +271,11 @@ def stop_notebook(cloudsim_api, constellation_name):
 
     count=100
     while count > 0:
+        print("count %s/100" % count)
         time.sleep(5)
         count -= 1
         r = cloudsim_api.ping_notebook(constellation_name)
-        if r == "stopped":
+        if r == "":
             return
     raise RestException("Can't start notebook on %s" % constellation_name)
 
@@ -287,7 +288,7 @@ def run_gzweb(cloudsim_api, constellation_name):
 
     count=100
     while count > 0:
-        sleep(5)
+        time.sleep(5)
         count -= 1
         r = cloudsim_api.ping_gzweb(constellation_name)
         if r == "running":
@@ -303,10 +304,11 @@ def stop_gzweb(cloudsim_api, constellation_name):
 
     count=100
     while count > 0:
+        print("count %s/100" % count)
         sleep(5)
         count -= 1
         r = cloudsim_api.ping_gzweb(constellation_name)
-        if r == "stopped":
+        if r == "":
             return
     raise RestException("Can't start notebook on %s" % constellation_name)
 
