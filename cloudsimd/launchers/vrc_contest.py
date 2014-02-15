@@ -1155,7 +1155,7 @@ class AwsCase(unittest.TestCase):
         task['latency'] = 0
         task['uplink_data_cap'] = 0
         task['downlink_data_cap'] = 0
-        task['ros_package'] = "atlas_utils"
+        task['ros_package'] = "drcsim_gazebo"
         task['ros_launch'] = "vrc_task_1.launch"
         task['ros_args'] = ""
         task['timeout'] = 60

@@ -55,7 +55,7 @@ def create_task_dict(title, launch_file='vrc_task_1.launch'):
 
     task = {}
     task['task_title'] = title
-    task['ros_package'] = 'atlas_utils'
+    task['ros_package'] = 'drcsim_gazebo'
     task['ros_launch'] = launch_file
     task['launch_args'] = ''
     task['timeout'] = '3600'
@@ -259,6 +259,7 @@ def run_notebook(cloudsim_api, constellation_name):
         time.sleep(5)
         count -= 1
         r = cloudsim_api.ping_notebook(constellation_name)
+        print("%s/100 notebook state: %s" % (count, r))
         if r == "running":
             return
     raise RestException("Can't start notebook on %s" % constellation_name)
@@ -275,6 +276,7 @@ def stop_notebook(cloudsim_api, constellation_name):
         time.sleep(5)
         count -= 1
         r = cloudsim_api.ping_notebook(constellation_name)
+        print("%s/100 notebook state: %s" % (count, r))
         if r == "":
             return
     raise RestException("Can't start notebook on %s" % constellation_name)
@@ -291,9 +293,10 @@ def run_gzweb(cloudsim_api, constellation_name):
         time.sleep(5)
         count -= 1
         r = cloudsim_api.ping_gzweb(constellation_name)
+        print("%s/100 gzweb state: %s" % (count, r))
         if r == "running":
             return
-    raise RestException("Can't start notebook on %s" % constellation_name)
+    raise RestException("Can't start gzweb on %s" % constellation_name)
 
 
 def stop_gzweb(cloudsim_api, constellation_name):
@@ -305,9 +308,10 @@ def stop_gzweb(cloudsim_api, constellation_name):
     count=100
     while count > 0:
         print("count %s/100" % count)
-        sleep(5)
+        time.sleep(5)
         count -= 1
         r = cloudsim_api.ping_gzweb(constellation_name)
+        print("%s/100 gzweb state: %s" % (count, r))
         if r == "":
             return
     raise RestException("Can't start notebook on %s" % constellation_name)
