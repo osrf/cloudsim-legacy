@@ -233,7 +233,6 @@ class CloudSimRestApi(object):
         Start a simulation task
         """
         url = '/cloudsim/inside/cgi-bin/cloudsim_cmd' 
-
         param_dict = {'command' : 'start_task', 
                       'constellation' : constellation_name,
                       'task_id' : task_id}

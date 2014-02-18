@@ -303,7 +303,7 @@ def stop_gzweb(cloudsim_api, constellation_name):
     """
     Stops the gzweb service and waits for its status to "stopped"
     """
-    cloudsim_api.stop_notebook(constellation_name)
+    cloudsim_api.stop_gzweb(constellation_name)
 
     count=100
     while count > 0:
