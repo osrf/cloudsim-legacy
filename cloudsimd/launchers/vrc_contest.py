@@ -695,8 +695,8 @@ def register_configurations(configs):
     us_east_cfgs.append(_get_config(
         config_name="VRC-stable (Virtual Robotics Challenge)",
         config_description=vrc_desc + stable,
-        router_ami='ami-75e4d91c',
-        sim_ami='ami-4de4d924'))
+        router_ami='ami-7765631e',  # v2.0
+        sim_ami='ami-d76563be'))
 
     eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
     eu_west_cfgs.append(_get_config(
@@ -707,8 +707,8 @@ def register_configurations(configs):
     eu_west_cfgs.append(_get_config(
         config_name="VRC-stable (Virtual Robotics Challenge)",
         config_description=vrc_desc + stable,
-        router_ami='ami-3c02f64b',
-        sim_ami='ami-3a02f64d'))
+        router_ami='ami-1254a465',
+        sim_ami='ami-1054a467'))
     return configs
 
 
