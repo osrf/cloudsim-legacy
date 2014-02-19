@@ -634,7 +634,6 @@ def create_cloudsim(username,
                           }
         register_configurations(configs)
         cfg = configs['aws']['regions'][region]['configurations'][0]
-        pprint(cfg)
     except:
         raise Exception("configuration %s not found" % configuration)
 
