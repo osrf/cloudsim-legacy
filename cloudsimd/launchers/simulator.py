@@ -559,6 +559,19 @@ def register_configurations(configs):
   <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
 </ol>
 """
+    sim_g2_description = """VRC Atlas simulator: GPU simulator using gazebo and drcsim packages
+<ol>
+  <li>Hardware:
+      <ol>
+          <li>Simulator machine type: g2.2xlarge</li>
+      </ol>
+  </li>
+  <li>OS: Ubuntu 12.04 (Precise)</li>
+  <li>ROS: Groovy</li>
+  <li>Simulator: Gazebo (current)</li>
+  <li>Robot: drcsim (Atlas, Darpa Robotics Challenge edition)</li>
+</ol>
+"""
     stable = "This is a stable version running from saved disk images"
     stable += " that contain preinstalled software."
 
@@ -576,9 +589,17 @@ def register_configurations(configs):
         config_description=sim_g1_description + stable,
         hardware='cg1.4xlarge',
         image_key='ami-d14479b8'))  # v 2.0
-    
-    # g2 stable ami-8997ace0 
-    
+    us_east_cfgs.append(_get_config(
+        config_name="Simulator (g2.2xlarge)",
+        config_description=sim_g2_description + install,
+        hardware='g2.2xlarge',
+        image_key='ami-b93264d0'))
+    us_east_cfgs.append(_get_config(
+        config_name="Simulator-stable (g2.2xlarge)",  # v 2.0.3
+        config_description=sim_g2_description + stable,
+        hardware='g2.2xlarge',
+        image_key='ami-4d8d8924'))
+
     eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
     eu_west_cfgs.append(_get_config(
         config_name="Simulator (cg1.4xlarge)",
@@ -590,7 +611,17 @@ def register_configurations(configs):
         config_description=sim_g1_description + stable,
         hardware='cg1.4xlarge',
         image_key='ami-ca26d2bd'))  # v 2.0
-    # adding support for Orgegon
+    eu_west_cfgs.append(_get_config(
+        config_name="Simulator (g2.2xlarge)",
+        config_description=sim_g1_description + install,
+        hardware='g2.2xlarge',
+        image_key='ami-05cb2672'))
+    eu_west_cfgs.append(_get_config(
+        config_name="Simulator-stable (g2.2xlarge)",
+        config_description=sim_g1_description + stable,
+        hardware='g2.2xlarge',
+        image_key='ami-b4e313c3'))
+
     us_west_cfgs = configs["aws"]["regions"]["us-west-2"]["configurations"]
     us_west_cfgs.append(_get_config(
         config_name="Simulator (g2.2xlarge)",
@@ -601,7 +632,7 @@ def register_configurations(configs):
         config_name="Simulator-stable (g2.2xlarge)",
         config_description=sim_g1_description + stable,
         hardware='g2.2xlarge',
-        image_key='ami-28d2b118'))  # Simulator-stable (g2.2xlarge) 2.0.2
+        image_key='ami-b4e313c3'))
     return configs
 
 

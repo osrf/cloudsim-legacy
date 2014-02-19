@@ -151,7 +151,8 @@ if method == 'GET':
         constellation = get_constellation_from_path()
         log("%s, role: %s" % (constellation, role))
         if len(constellation) > 0:
-            s = get_constellation(role, constellation)
+            l = get_constellation(constellation, role)
+            s = json.dumps(l)
         else:
             log("listing all constellations")
             l = list_constellations(role)

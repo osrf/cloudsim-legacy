@@ -11,7 +11,7 @@ import logging
 from cloudsim_rest_api import CloudSimRestApi
 import traceback
 
-# add cloudsim directory to sytem path
+# add cloudsim directory to system path
 basepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, basepath)
 print (sys.path)
@@ -24,8 +24,9 @@ from cloudsimd.launchers.launch_utils.testing import get_boto_path
 from cloudsimd.launchers.launch_utils.testing import get_test_path
 
 
-CLOUDSIM_CONFIG = "CloudSim (m1.small)"
-SIM_CONFIG = "Simulator-stable (cg1.4xlarge)"
+CLOUDSIM_CONFIG = "CloudSim-stable (m1.small)"
+SIM_CONFIG = "Simulator-stable (g2.2xlarge)"  # Simulator-stable (cg1.4xlarge)
+
 CLOUD_CREDS = "aws"
 CLOUD_REGION = "us-east-1"
 
@@ -51,22 +52,24 @@ def create_task_dict(title, launch_file='vrc_task_1.launch'):
         t = now - dt
         s = t.isoformat()
         return s
-    task_dict = {}
-    task_dict['task_title'] = title
-    task_dict['ros_package'] = 'atlas_utils'
-    task_dict['ros_launch'] = launch_file
-    task_dict['launch_args'] = ''
-    task_dict['timeout'] = '3600'
-    task_dict['latency'] = '0'
-    task_dict['uplink_data_cap'] = '0'
-    task_dict['downlink_data_cap'] = '0'
-    task_dict['local_start'] = _get_now_str(-1)  # yesterday
-    task_dict['local_stop'] = _get_now_str(1)    # tomorrow
-    task_dict['vrc_id'] = 1
-    task_dict['vrc_num'] = 1
-    return task_dict
-    
-    
+
+    task = {}
+    task['task_title'] = title
+    task['ros_package'] = 'drcsim_gazebo'
+    task['ros_launch'] = launch_file
+    task['launch_args'] = ''
+    task['timeout'] = '3600'
+    task['latency'] = '0'
+    task['uplink_data_cap'] = '0'
+    task['downlink_data_cap'] = '0'
+    task['local_start'] = _get_now_str(-1)  # yesterday
+    task['local_stop'] = _get_now_str(1)    # tomorrow
+    task['bash_src'] =  "/home/ubuntu/cloudsim/sim_setup.bash"
+    task['vrc_id'] = 1
+    task['vrc_num'] = 1
+    return task
+
+
 class RestException(Exception):
     pass
 
@@ -88,6 +91,7 @@ def launch_constellation_and_wait(api, config, max_count=100):
     # be the first
     previous_constellations = [x['constellation_name'] \
                                for x in api.get_constellations()]
+
     api.launch_constellation(CLOUD_CREDS, CLOUD_REGION, config)
     print("waiting 10 secs")
     time.sleep(10)
@@ -99,11 +103,11 @@ def launch_constellation_and_wait(api, config, max_count=100):
         count += 1
         if count > max_count:
             raise RestException("Timeout in Launch %s" % config)
-        
+
         constellation_list = api.get_constellations()
         current_names = [x['constellation_name'] \
                                for x in constellation_list]
-        
+
         new_constellations = _diff_list(current_names, previous_constellations)
         print ("%s/%s) new constellations: %s" % (count,
                                                   max_count,
@@ -244,10 +248,78 @@ def run_task(cloudsim_api, constellation_name, task_id,
                         sleep_secs)
 
 
+def run_notebook(cloudsim_api, constellation_name):
+    """
+    Starts the notebook service and waits for its status to be "running"
+    """
+    cloudsim_api.start_notebook(constellation_name)
+
+    count=100
+    while count > 0:
+        time.sleep(5)
+        count -= 1
+        r = cloudsim_api.ping_notebook(constellation_name)
+        print("%s/100 notebook state: %s" % (count, r))
+        if r == "running":
+            return
+    raise RestException("Can't start notebook on %s" % constellation_name)
+
+def stop_notebook(cloudsim_api, constellation_name):
+    """
+    Stops the notebook service and waits for its status to "stopped"
+    """
+    cloudsim_api.stop_notebook(constellation_name)
+
+    count=100
+    while count > 0:
+        print("count %s/100" % count)
+        time.sleep(5)
+        count -= 1
+        r = cloudsim_api.ping_notebook(constellation_name)
+        print("%s/100 notebook state: %s" % (count, r))
+        if r == "":
+            return
+    raise RestException("Can't start notebook on %s" % constellation_name)
+
+
+def run_gzweb(cloudsim_api, constellation_name):
+    """
+    Starts the gzweb service and waits for its status to be "running"
+    """
+    cloudsim_api.start_gzweb(constellation_name)
+
+    count=100
+    while count > 0:
+        time.sleep(5)
+        count -= 1
+        r = cloudsim_api.ping_gzweb(constellation_name)
+        print("%s/100 gzweb state: %s" % (count, r))
+        if r == "running":
+            return
+    raise RestException("Can't start gzweb on %s" % constellation_name)
+
+
+def stop_gzweb(cloudsim_api, constellation_name):
+    """
+    Stops the gzweb service and waits for its status to "stopped"
+    """
+    cloudsim_api.stop_gzweb(constellation_name)
+
+    count=100
+    while count > 0:
+        print("count %s/100" % count)
+        time.sleep(5)
+        count -= 1
+        r = cloudsim_api.ping_gzweb(constellation_name)
+        print("%s/100 gzweb state: %s" % (count, r))
+        if r == "":
+            return
+    raise RestException("Can't start notebook on %s" % constellation_name)
+
 def stop_task(cloudsim_api, constellation_name, task_id, max_count=100,
               sleep_secs=1):
     """
-    Stops a task and waits for its status to be "running"
+    Stops a task and waits for its status to go from "running" to "stopped"
     """
     # check task
     task_dict = cloudsim_api.read_task(constellation_name, task_id)
@@ -262,7 +334,7 @@ def stop_task(cloudsim_api, constellation_name, task_id, max_count=100,
                         task_id,
                         'stopped',
                         max_count,
-                        sleep_secs)    
+                        sleep_secs)
 
 def flush():
     """
@@ -333,13 +405,33 @@ class RestTest(unittest.TestCase):
                                                      self.user,
                                                      self.password))
         self.cloudsim_api = CloudSimRestApi(self.ip, self.user, self.password)
-        
+
+        cfgs = self.cloudsim_api.get_machine_configs()
+        try:
+            print(cfgs.keys())
+            print(cfgs)
+            cfgs_creds = cfgs[CLOUD_CREDS]['regions']
+            cfgs_region = cfgs_creds[CLOUD_REGION]['configurations']
+            cfgs_names = [x['name'] for x in cfgs_region]
+            print("configs: %s" % cfgs_names)
+
+        except Exception, e:
+            import traceback
+            tb = traceback.format_exc()
+            print("traceback:  %s" % tb)
+
         self.title("launch baby cloudsim")
         self.baby_cloudsim_name = launch_constellation_and_wait(
                                                    self.cloudsim_api, 
                                                    config=CLOUDSIM_CONFIG)
         print("# baby cloudsim %s launched" % (self.baby_cloudsim_name))
         self.assertTrue(True, "baby cloudsim not created")
+
+        self.title("launch simulator")
+        self.simulator_name = launch_constellation_and_wait(self.cloudsim_api,
+                                                            config=SIM_CONFIG)
+        print("# Simulator %s launched" % (self.simulator_name))
+        self.assertTrue(True, "simulator not created")
 
         self.title("Wait for baby cloudsim readyness")
         print("api.get_constellation_data('%s')" % self.baby_cloudsim_name)
@@ -360,12 +452,6 @@ class RestTest(unittest.TestCase):
                                      max_count=100)
         print("# baby cloudsim machine updated")
 
-        self.title("launch simulator")
-        self.simulator_name = launch_constellation_and_wait(self.cloudsim_api, 
-                                                            config=SIM_CONFIG)
-        print("# Simulator %s launched" % (self.simulator_name))
-        self.assertTrue(True, "simulator not created")
- 
         self.title("Wait for simulator readyness")
         print("api.get_constellation_data('%s')" % self.simulator_name)
         wait_for_constellation_state(self.cloudsim_api,
@@ -375,7 +461,11 @@ class RestTest(unittest.TestCase):
                                      max_count=100)
         self.assertTrue(True, "simulator not ready")
         print("# Simulator machine ready")
- 
+
+        self.title("Test notebook")
+        run_notebook(self.cloudsim_api,self.simulator_name)
+        stop_notebook(self.cloudsim_api,self.simulator_name)
+
         # the simulator is ready!
         self.title("# create task")
         print('tid = create_task(api, "%s", '
@@ -388,6 +478,11 @@ class RestTest(unittest.TestCase):
                                    task_dict)
         self.assertTrue(True, "task not created")
         run_task(self.cloudsim_api,self.simulator_name, self.task_id)
+
+        self.title("Test gzweb")
+        run_gzweb(self.cloudsim_api,self.simulator_name)
+        stop_gzweb(self.cloudsim_api,self.simulator_name)
+
         self.assertTrue(True, "task not run")
         self.title("# stop task")
         stop_task(self.cloudsim_api,self.simulator_name, self.task_id)
