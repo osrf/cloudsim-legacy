@@ -310,7 +310,7 @@ def register_configurations(configs):
                                     'ami-f2191786'))
     eu_west_cfgs.append(_get_config("CloudSim-stable (m1.small)",
                                     cloudsim_description + stable,
-                                    ''))
+                                    'ami-62867515'))
 
     us_west_cfgs = configs["aws"]["regions"]["us-west-2"]["configurations"]
     us_west_cfgs.append(_get_config("CloudSim (m1.small)",
@@ -318,7 +318,7 @@ def register_configurations(configs):
                                     'ami-86b328b6'))
     us_west_cfgs.append(_get_config("CloudSim-stable (m1.small)",
                                     cloudsim_description + stable,
-                                    ''))
+                                    'ami-8e9df0be'))
 
     return configs
 
