@@ -299,10 +299,10 @@ def register_configurations(configs):
     us_east_cfgs.append(_get_config("CloudSim (m1.small)",
                                     cloudsim_description + install,
                                     'ami-137bcf7a'))
-    # CloudSim-stable (m1.small) 2.0.2
+    # CloudSim-stable (m1.small) 2.0.4
     us_east_cfgs.append(_get_config("CloudSim-stable (m1.small)",
                                     cloudsim_description + stable,
-                                    'ami-67efeb0e'))
+                                    'ami-d5ded8bc'))
 
     eu_west_cfgs = configs["aws"]["regions"]["eu-west-1"]["configurations"]
     eu_west_cfgs.append(_get_config("CloudSim (m1.small)",
@@ -310,7 +310,7 @@ def register_configurations(configs):
                                     'ami-f2191786'))
     eu_west_cfgs.append(_get_config("CloudSim-stable (m1.small)",
                                     cloudsim_description + stable,
-                                    'ami-faf4048d'))
+                                    ''))
 
     us_west_cfgs = configs["aws"]["regions"]["us-west-2"]["configurations"]
     us_west_cfgs.append(_get_config("CloudSim (m1.small)",
@@ -318,7 +318,7 @@ def register_configurations(configs):
                                     'ami-86b328b6'))
     us_west_cfgs.append(_get_config("CloudSim-stable (m1.small)",
                                     cloudsim_description + stable,
-                                    'ami-b4cba984'))
+                                    ''))
 
     return configs
 

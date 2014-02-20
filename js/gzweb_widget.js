@@ -27,10 +27,9 @@ function create_start_stop_service(machine_div,
     start_button.setAttribute('value','Start');
     start_button.onclick =  function()
     {
-    	// start_web_tools(constellation_name);
-    	start_func();
     	start_button.disabled = true;
     	stop_button.disabled = false;
+    	start_func();
     }
     widget_div.appendChild(start_button);
 
@@ -40,10 +39,9 @@ function create_start_stop_service(machine_div,
     stop_button.setAttribute('value','Stop');
     stop_button.onclick =  function()
     {
-    	// stop_web_tools(constellation_name);
-    	stop_func();
     	stop_button.disabled = true;
     	start_button.disabled = false;
+    	stop_func();
     }
     widget_div.appendChild(stop_button);
 
