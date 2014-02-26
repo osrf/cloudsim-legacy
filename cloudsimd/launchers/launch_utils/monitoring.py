@@ -298,7 +298,12 @@ def monitor_task(constellation_name, ssh_router):
         sim_time = float(d['sim_time']) / 1e9
         fall_count = d['falls']
         msg = d['message']
-        return (score, sim_time, fall_count, msg)
+        score_str = ""
+        #score_str += "<b>%s</b>: %s. " % ("score", score)
+        score_str += "<b>%s</b>: %s. " % ("sim time",   sim_time)
+        score_str += " %s" % (msg)
+        score_str += "<b>falls:</b> %s." % fall_count
+        return score_str
 
     #log("monitor_task BEGIN")
     constellation = ConstellationState(constellation_name)
@@ -314,13 +319,10 @@ def monitor_task(constellation_name, ssh_router):
         try:
             s = ssh_router.cmd("cloudsim/get_score.bash")
             log(s)
-            score, sim_time, fall_count, msg = parse_score_data(s)
-            score_str = ""
-            #score_str += "<b>%s</b>: %s. " % ("score", score)
-            score_str += "<b>%s</b>: %s. " % ("sim time",   sim_time)
-            score_str += " %s" % (msg)
-            score_str += "<b>falls:</b> %s." % fall_count
-
+            try:
+                score_str = parse_score_data(s)
+            except:
+                score_str = s
         except Exception, e:
             #score_str = "No score available."
             tb = traceback.format_exc()
