@@ -97,6 +97,10 @@ secret openvpn.key
 
 
 def create_ros_connect_file(machine_ip, master_ip):
+    """
+    Creates a client side file to source in order to get gazebo / ROS to
+    connect to the cloud based simulation
+    """
 
     s = """
 # To connect via ROS:
