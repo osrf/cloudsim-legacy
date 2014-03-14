@@ -633,6 +633,30 @@ def register_configurations(configs):
         config_description=sim_g1_description + stable,
         hardware='g2.2xlarge',
         image_key='ami-b8d2b088'))
+
+    us_west_cfgs.append(_get_config(
+        config_name="Simulator CloudSim-Ed (g2.2xlarge)",
+        config_description="""
+        
+        
+        CloudSim-ED: Robotics education in the cloud
+        
+        <ol>
+            <li>
+                Launch the simulator constellation
+            </li>
+            <li>
+                Enroll in the course: <a 
+                        target="_blank"
+                        href='https://sunlit-vortex-449.appspot.com'>
+                        Introduction to Wheeled Mobile Robots
+                    </a>
+            </li>
+        </ol>
+        """ + stable,
+        hardware='g2.2xlarge',
+        image_key='ami-5ab6d86a'))
+
     return configs
 
 
