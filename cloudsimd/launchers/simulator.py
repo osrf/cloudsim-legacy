@@ -632,7 +632,7 @@ def register_configurations(configs):
         config_name="Simulator-stable (g2.2xlarge)",
         config_description=sim_g1_description + stable,
         hardware='g2.2xlarge',
-        image_key='ami-b4e313c3'))
+        image_key='ami-b8d2b088'))
     return configs
 
 
